@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, ArrowLeftRight, Check, ChevronDown, ChevronRight, Clock3, Crosshair, ExternalLink, Info, Layers3, MapPin, Palette, Radio, RefreshCw, Search, SlidersHorizontal, Star, TrainFront, TriangleAlert, X } from 'lucide-react';
 import type { Board, Departure, Station } from '../shared/types';
 import { ageLabel, boardable, clockTime, countdown, distanceMeters, firstTo, freshness } from '../shared/display';
@@ -35,6 +35,7 @@ export default function App() {
   const [routes, setRoutes] = useState<string[]>(() => storage.get('routes', []));
   const [destination, setDestination] = useState('');
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const autoOpenedFavorite = useRef(false);
   const { board, cached, error, refresh } = useBoard(stationId);
   useLayoutEffect(() => {
     if (board?.departures.length && !performance.getEntriesByName('sfn-board-visible').length) performance.mark('sfn-board-visible');
@@ -57,6 +58,24 @@ export default function App() {
     const url = new URL(location.href); url.searchParams.set('station', id); history.pushState({}, '', url);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+  useEffect(() => {
+    // A shared link is explicit. Otherwise, if the rider has favorites, use a
+    // one-shot location fix to open the closest one on a fresh visit. If the
+    // browser declines location, the saved station remains the instant fallback.
+    if (autoOpenedFavorite.current || new URLSearchParams(location.search).has('station') || !favorites.length || !stations.length) return;
+    autoOpenedFavorite.current = true;
+    const favoriteStations = favorites.map(id => stations.find(s => s.id === id)).filter((s): s is Station => !!s);
+    if (!favoriteStations.length) return;
+    void locate().then(({ coords }) => {
+      const closest = favoriteStations.reduce((best, candidate) => distanceMeters(coords.latitude, coords.longitude, candidate.lat, candidate.lon) < distanceMeters(coords.latitude, coords.longitude, best.lat, best.lon) ? candidate : best);
+      if (closest.id === stationId) return;
+      setStationId(closest.id);
+      storage.set('station', closest.id);
+      setDestination('');
+      setTripKey(null);
+      const url = new URL(location.href); url.searchParams.set('station', closest.id); history.replaceState({}, '', url);
+    }).catch(() => { /* location is optional; keep the saved station */ });
+  }, [favorites, stations, stationId]);
   const toggleFavorite = (id: string) => setFavorites(v => v.includes(id) ? v.filter(s => s !== id) : [...v, id]);
   const getNearby = async () => {
     setPanel('stations'); setQuery(''); setLocationState(''); setLocating(true);

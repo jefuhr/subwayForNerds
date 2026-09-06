@@ -8,6 +8,7 @@ import { FEED_ROUTES, normalizeFeed, normalizeAlerts, buildBoard, nowSeconds } f
 import type { Board, ServiceAlert, SourceState, StationContext, Train } from '../shared/types';
 import { enrichSchedule, type Schedules } from './schedules';
 import { HELIUM_URL, normalizeConsists, enrichConsist, type ConsistTrip } from './consists';
+import { FleetService, fleetSnapshot } from './fleet';
 
 const upstream = 'https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/';
 export interface FeedSlot { state: SourceState; raw?: any; trains: Map<string, Train>; digest?: string }
@@ -26,6 +27,7 @@ export class TransitService {
   revision = 0;
   schedules?: Schedules;
   consists = new Map<string, ConsistTrip>();
+  fleet?: FleetService;
   consistState: SourceState = { id: 'helium', timestamp: null, fetchedAt: null, error: null };
   scheduleWorker?: Worker;
   readonly cacheDir: string;
@@ -52,6 +54,7 @@ export class TransitService {
     states.push({ ...this.consistState });
     const all = [...this.slots.values()].flatMap(s => [...s.trains.values()]);
     for (const train of all) enrichConsist(train, this.consists, now);
+    this.fleet?.observe(all.filter(t => !this.slots.get(t.feed)?.state.error && !this.consistState.error).flatMap(t => { const s = fleetSnapshot(t, now); return s ? [s] : []; }), now);
     const partToStation = new Map(this.catalog.flatMap(s => s.parts.map(p => [p.id, s.id] as const)));
     const byStation = new Map<string, Train[]>();
     for (const t of all) {
@@ -124,6 +127,7 @@ export class TransitService {
       this.refreshBoards();
       return;
     }
+    this.startFleet();
     this.schedules = await this.restore('schedules');
     await Promise.all([...this.slots.keys()].map(async id => {
       const cached = await this.restore(id);
@@ -150,6 +154,18 @@ export class TransitService {
     this.startContext();
     this.schedule(() => this.refreshConsists(), 10000);
     this.schedule(() => this.refreshSchedules(), 3600000);
+  }
+  startFleet() {
+    if (this.fleet) return;
+    this.fleet = new FleetService(path.join(this.cacheDir, 'fleet.sqlite'));
+    this.schedule(async () => {
+      await this.fleet!.ready;
+      const response = await this.request('https://data.ny.gov/resource/kir5-i9xt.json?$limit=50000');
+      const rows = await response.json();
+      if (!Array.isArray(rows) || rows.length >= 50000) throw new Error('Fleet inventory exceeds import limit');
+      await this.fleet!.call('importRoster', rows, new Date().toISOString().slice(0, 10));
+    }, 86400000);
+    this.schedule(async () => { await this.fleet!.call('cleanup', nowSeconds()); }, 86400000);
   }
   startContext() {
     const jobs: { id: string; url: string; interval: number; apply: (r: any) => void }[] = [
@@ -218,5 +234,5 @@ export class TransitService {
     return { entrances: this.entrances.filter(e => String(e.complex_id) === id), equipment,
       outages: this.outages.filter(e => ids.has(e.equipment || e.equipmentno)), sources: [...this.contextStates.values()] };
   }
-  stop() { this.stopped = true; for (const timer of this.timers) clearTimeout(timer); this.timers.clear(); void this.scheduleWorker?.terminate(); }
+  async stop() { this.stopped = true; for (const timer of this.timers) clearTimeout(timer); this.timers.clear(); await this.scheduleWorker?.terminate(); await this.fleet?.close().catch(() => {}); }
 }

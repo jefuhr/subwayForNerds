@@ -8,6 +8,7 @@ import { gzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 import { TransitService } from './service';
 import { nowSeconds } from './transit';
+import { transfers } from './transfers';
 
 export async function createServer(service = new TransitService({ fixtureDir: process.env.FIXTURE_DIR })) {
   const app = Fastify({ logger: process.env.NODE_ENV === 'production' });
@@ -48,6 +49,23 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
     const detail = service.details.get(req.query.key || '');
     return detail ? send(req, reply, detail) : reply.code(404).send({ error: 'This trip is no longer in the current feed' });
   });
+  app.get<{ Querystring: { key?: string; stopId?: string; sequence?: string } }>(api + '/trips/transfers', (req, reply) => {
+    const { key, stopId, sequence } = req.query;
+    if (!key || !stopId || (sequence != null && !/^\d+$/.test(sequence))) return reply.code(400).send({ error: 'Trip and valid stop identity required' });
+    return send(req, reply, transfers(service.details.get(key)?.train, service.boards, stopId, sequence == null ? undefined : Number(sequence), nowSeconds()));
+  });
+  app.get<{ Querystring: Record<string, string> }>(api + '/fleet', async (req, reply) => {
+    if (!service.fleet) return reply.code(503).send({ error: 'Fleet database is starting or unavailable' });
+    if (Object.values(req.query).some(v => typeof v !== 'string' || v.length > 200) || (req.query.page && !/^[1-9]\d{0,5}$/.test(req.query.page))) return reply.code(400).send({ error: 'Invalid fleet filter' });
+    try { return send(req, reply, await service.fleet.list(req.query, nowSeconds())); }
+    catch { return reply.code(503).send({ error: 'Fleet database unavailable; departures are unaffected' }); }
+  });
+  for (const kind of ['cars', 'consists']) app.get<{ Params: { id: string } }>(api + '/fleet/' + kind + '/:id', async (req, reply) => {
+    if (!service.fleet) return reply.code(503).send({ error: 'Fleet database unavailable' });
+    try { const data = await service.fleet.detail(req.params.id, nowSeconds()); return data ? send(req, reply, data) : reply.code(404).send({ error: 'Car or consist has not been recorded' }); }
+    catch { return reply.code(503).send({ error: 'Fleet database unavailable; departures are unaffected' }); }
+  });
+  app.get(api + '/fleet/health', () => ({ available: !!service.fleet?.initialized && !service.fleet.error, error: service.fleet?.error || null }));
   app.get(api + '/health', () => ({ status: [...service.slots.values()].every(s => s.state.timestamp && nowSeconds() - s.state.timestamp <= 90 && !s.state.error) ? 'ok' : 'degraded', feeds: [...service.slots.values()].map(s => ({ ...s.state, age: s.state.timestamp ? nowSeconds() - s.state.timestamp : null })), stationCount: service.catalog.length }));
   app.get('/healthz', () => ({ status: 'ok' }));
   if (base !== '/') app.get(base.slice(0, -1), (_req, reply) => reply.redirect(base));

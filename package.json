@@ -3,14 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": { "node": ">=22.13" },
   "scripts": {
     "dev": "concurrently -k 'tsx watch server/index.ts' 'vite --host 0.0.0.0'",
     "build": "tsc --noEmit && vite build",
     "start": "tsx server/index.ts",
     "test": "tsx --test test/*.test.ts",
     "test:browser": "playwright test",
-    "check": "npm run build && npm test"
+    "check": "npm run build && npm test",
+    "fleet:db": "node scripts/fleet-db.mjs"
   },
   "dependencies": {
     "@fastify/compress": "^8.0.0",

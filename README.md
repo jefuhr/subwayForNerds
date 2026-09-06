@@ -2,12 +2,12 @@
 
 A station-first NYC subway console for people who already know the map. Live
 departures, stop-relative train positions, reported tracks, stopping patterns,
-operations IDs, physical car numbers when reported, and direct-train comparisons. Web first, with a future Capacitor
+operations IDs, physical car numbers when reported, future-stop connections, and a persistent fleet browser. Web first, with a future Capacitor
 wrapper in mind.
 
 ## Run locally
 
-Requires Node.js 22 or newer. No API key is needed for the currently configured
+Requires Node.js 22.13 or newer. No API key is needed for the currently configured
 public endpoints.
 
 ```sh
@@ -41,9 +41,12 @@ the app beyond localhost so geolocation and service workers work.
   group are shown initially; each group can expand. Route and direction filters
   persist across visits. Tap a train for its full remaining stop sequence and raw
   decoded NYCT fields.
-- Choose a downstream stop to compare direct trains. Only fresh predictions for
-  boardable trains participate. The highlighted arrival does not account for your
-  walking time, platform access, transfers or a guaranteed connection.
+- Tap a future stop inside train details to compare connecting departures against
+  that train's predicted arrival. Raw gaps include no walking buffer or guaranteed
+  platform access. Stale, skipped, canceled and unassigned predictions are excluded.
+- Open Fleet for grouped consists or individual cars, last reports, sourced home-yard
+  estimates and 30 days of collected movement history. See [fleet data and operations](docs/fleet.md)
+  for coverage, identity rules, backup/restore and API details.
 - Station info includes constituent station accessibility, entrance coordinates,
   equipment status, upcoming/current outages and published travel alternatives.
 - Ten themes: the original Subway Console plus NYC Ferry, Night, Hello Kitty,
@@ -69,8 +72,9 @@ within five minutes of each other can attach `consistCars` numbers and equipment
 types to departures and train details. Stale routes, ambiguous IDs, unassigned
 trains, and invalid car lists are omitted. Car data expires five minutes after
 its report or fetch time; failed requests do not interrupt departure predictions.
-Car lists are not persisted across server restarts and cached offline boards hide
-them. Reported order does not establish which end of the train is leading.
+The fleet database retains last observations across restarts, but only new reports
+can establish current assignments. Cached offline boards hide live car lists.
+Reported order does not establish which end of the train is leading.
 
 Scheduled and reported actual track fields are separate. Some feed groups populate
 `actual_track` at future stops; this is not evidence of the train's current

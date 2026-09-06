@@ -16,6 +16,7 @@ COPY --from=build --chown=node:node /app/server ./server
 COPY --from=build --chown=node:node /app/shared ./shared
 COPY --from=build --chown=node:node /app/data ./data
 COPY --from=build --chown=node:node /app/package.json ./package.json
+COPY --from=build --chown=node:node /app/scripts/fleet-db.mjs ./scripts/fleet-db.mjs
 RUN mkdir /app/state && chown node:node /app/state
 USER node
 EXPOSE 8091

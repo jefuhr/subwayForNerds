@@ -77,12 +77,10 @@ test('nearby stations use explicit permission and retain manual search after den
   await page.getByRole('textbox', { name: 'Search stations' }).fill('Jay Metro');
   await expect(page.locator('.station-result')).toHaveCount(1);
 });
-test('downstream comparison ranks direct trains and line filters can be reset', async ({ page }) => {
+test('downstream comparison is removed and line filters can be reset', async ({ page }) => {
   await page.goto('./?station=602');
   await expect(page.locator('.train-row').first()).toBeVisible();
-  const destination = page.getByRole('combobox', { name: 'Compare arrivals at a downstream station' });
-  await destination.selectOption({ index: 1 });
-  await expect(page.locator('.comparison-note')).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Compare arrivals at a downstream station' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Lines', exact: true }).click();
   await page.locator('.route-filters button').first().click();
   await page.getByRole('button', { name: 'Back to the board' }).click();
@@ -91,6 +89,54 @@ test('downstream comparison ranks direct trains and line filters can be reset', 
   await page.getByRole('button', { name: 'Show every line' }).click();
   await page.getByRole('button', { name: 'Back to the board' }).click();
   await expect(page.locator('.filter-button')).not.toContainText('(1)');
+});
+test('future stops open arrival-relative transfers and return to the train', async ({ page }) => {
+  await page.goto('./?station=602');
+  await page.locator('.train-row').first().click();
+  await page.locator('.stop-link:enabled').first().click();
+  await expect(page.locator('.transfer-view')).toBeVisible();
+  await expect(page.locator('.transfer-view')).toContainText('raw time gaps');
+  await expect(page.locator('.transfer-view')).toContainText('Your train:');
+  await page.getByRole('button', { name: 'Back to train' }).click();
+  await expect(page.getByText('Operations ID', { exact: true })).toBeVisible();
+  expect(await page.locator('dialog').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+});
+test('fleet is lazy, searchable, grouped, and exposes car history without overflow', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', r => { if (r.url().includes('/api/v1/fleet')) requests.push(r.url()); });
+  await page.goto('./?station=602');
+  await expect(page.locator('.train-row').first()).toBeVisible();
+  expect(requests).toHaveLength(0);
+  await page.locator('button[aria-label="Open fleet"]:visible, .sidebar button:has-text("Fleet browser"):visible').click();
+  await expect(page.locator('.fleet-row').first()).toBeVisible();
+  await page.getByRole('textbox', { name: 'Search fleet', exact: true }).fill('4149');
+  await expect(page.locator('.fleet-row')).toHaveCount(1);
+  await expect(page.locator('.fleet-row')).toContainText('5 cars');
+  await page.locator('.fleet-row').click();
+  await expect(page.getByText('Observed changes · last 30 days', { exact: true })).toBeVisible();
+  await expect(page.locator('.fleet-next')).toContainText('Next stop:');
+  expect(await page.locator('dialog').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+  await page.getByRole('button', { name: 'Back to fleet', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Fleet grouping' }).selectOption('cars');
+  await expect(page.locator('.fleet-row')).toContainText('1 car');
+  await page.getByRole('textbox', { name: 'Search fleet', exact: true }).fill('OL912');
+  await expect(page.locator('.fleet-row')).toContainText('0L912');
+  await expect(page.locator('.fleet-row')).toContainText('Never observed');
+});
+test('fleet mobile search remains above a simulated keyboard', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'Mobile viewport behavior');
+  await page.goto('./?station=602');
+  await page.getByRole('button', { name: 'Open fleet', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Search fleet', exact: true }).fill('4149');
+  await page.evaluate(() => {
+    Object.defineProperty(window.visualViewport!, 'height', { configurable: true, value: 390 });
+    Object.defineProperty(window.visualViewport!, 'offsetTop', { configurable: true, value: 20 });
+    window.visualViewport!.dispatchEvent(new Event('resize'));
+  });
+  const input = await page.getByRole('textbox', { name: 'Search fleet', exact: true }).boundingBox();
+  expect(input!.y + input!.height).toBeLessThan(410);
+  expect(await page.getByRole('textbox', { name: 'Search fleet', exact: true }).evaluate(el => getComputedStyle(el).fontSize)).toBe('16px');
+  expect(await page.locator('dialog').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
 });
 test('all themes and station context render without overflow', async ({ page }) => {
   await page.goto('./?station=602');

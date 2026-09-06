@@ -21,13 +21,6 @@ export function ageLabel(timestamp: number | null | undefined, now: number) {
   return `${Math.floor(seconds / 3600)}h ago`;
 }
 export const boardable = (d: Departure) => !['SKIPPED', 'CANCELED', 'DELETED'].includes(d.relationship || '');
-export function firstTo(departures: Departure[], destination: string, now: number) {
-  return departures.filter(d => boardable(d) && freshness(d.timestamp, now) === 'live' && d.time != null && d.time >= now)
-    .flatMap(d => {
-      const stop = d.onward.find(s => s.stationId === destination);
-      return stop?.time != null && stop.time >= d.time! ? [{ key: d.key, time: stop.time }] : [];
-    }).sort((a, b) => a.time - b.time)[0];
-}
 export function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
   const rad = Math.PI / 180, dlat = (lat2 - lat1) * rad, dlon = (lon2 - lon1) * rad;
   const a = Math.sin(dlat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dlon / 2) ** 2;

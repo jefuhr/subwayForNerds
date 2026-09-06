@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { decode, extension } from '../server/decode';
 import { normalizeFeed, normalizeAlerts, buildBoard, FEED_ROUTES, tripKey, patternFor, locationFor, alertActive } from '../server/transit';
 import { bundledCatalog } from '../server/catalog';
-import { firstTo, freshness, countdown, distanceMeters } from '../shared/display';
+import { freshness, countdown, distanceMeters } from '../shared/display';
 import type { Departure, ServiceAlert, Train } from '../shared/types';
 import { enrichSchedule } from '../server/schedules';
 
@@ -55,16 +55,6 @@ test('separates connected station parts and retains unknown tracks', () => {
   const unknown = structuredClone(sample); delete (unknown.entity[0].trip_update.stop_time_update[0] as any)['.transit_realtime.nyct_stop_time_update'];
   const row = buildBoard(station, normalizeFeed('gtfs', unknown, bundledCatalog).values(), [], [], bundledCatalog, now).departures[0];
   assert.equal(row.actualTrack, undefined); assert.equal(row.scheduledTrack, undefined);
-});
-test('skipped and canceled trips cannot win a downstream comparison', () => {
-  const row = buildBoard(station, normalizeFeed('gtfs', sample, bundledCatalog).values(), [], [], bundledCatalog, now).departures[0];
-  const d = row.onward[0].stationId;
-  const fast = { ...row, key: 'later-express', time: now + 180, onward: [{ ...row.onward[0], time: now + 300 }] };
-  assert.equal(firstTo([row, fast], d, now)?.key, 'later-express');
-  assert.equal(firstTo([row, { ...fast, relationship: 'SKIPPED' }], d, now)?.key, row.key);
-  assert.equal(firstTo([{ ...fast, relationship: 'CANCELED' }], d, now), undefined);
-  assert.equal(firstTo([{ ...fast, onward: [{ ...fast.onward[0], time: null }] }], d, now), undefined);
-  assert.equal(firstTo([{ ...fast, timestamp: now - 100 }], d, now), undefined);
 });
 test('stale, expired, cached, and missing data do not masquerade as live countdowns', () => {
   assert.equal(freshness(now - 91, now), 'stale'); assert.equal(freshness(now - 301, now), 'expired');

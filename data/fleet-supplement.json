@@ -1,0 +1,2763 @@
+{
+  "sources": [
+    {
+      "url": "https://www.ttmg.org/nymta-mpi.html",
+      "date": "2026-09-06",
+      "note": "R156 locomotive range; partial work-equipment coverage."
+    },
+    {
+      "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+      "date": "2026-09-06",
+      "note": "Historical preservation inventory; partial museum coverage."
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+      "date": "2026-09-06",
+      "note": "R211S roster range; no live location assumed."
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Home-yard estimate rules; not yard sightings."
+    }
+  ],
+  "cars": [
+    {
+      "id": "sir:R211S:100",
+      "number": "100",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:101",
+      "number": "101",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:102",
+      "number": "102",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:103",
+      "number": "103",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:104",
+      "number": "104",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:105",
+      "number": "105",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:106",
+      "number": "106",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:107",
+      "number": "107",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:108",
+      "number": "108",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:109",
+      "number": "109",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:110",
+      "number": "110",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:111",
+      "number": "111",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:112",
+      "number": "112",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:113",
+      "number": "113",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:114",
+      "number": "114",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:115",
+      "number": "115",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:116",
+      "number": "116",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:117",
+      "number": "117",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:118",
+      "number": "118",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:119",
+      "number": "119",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:120",
+      "number": "120",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:121",
+      "number": "121",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:122",
+      "number": "122",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:123",
+      "number": "123",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:124",
+      "number": "124",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:125",
+      "number": "125",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:126",
+      "number": "126",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:127",
+      "number": "127",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:128",
+      "number": "128",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:129",
+      "number": "129",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:130",
+      "number": "130",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:131",
+      "number": "131",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:132",
+      "number": "132",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:133",
+      "number": "133",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:134",
+      "number": "134",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:135",
+      "number": "135",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:136",
+      "number": "136",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:137",
+      "number": "137",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:138",
+      "number": "138",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:139",
+      "number": "139",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:140",
+      "number": "140",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:141",
+      "number": "141",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:142",
+      "number": "142",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:143",
+      "number": "143",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:144",
+      "number": "144",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:145",
+      "number": "145",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:146",
+      "number": "146",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:147",
+      "number": "147",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:148",
+      "number": "148",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:149",
+      "number": "149",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:150",
+      "number": "150",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:151",
+      "number": "151",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:152",
+      "number": "152",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:153",
+      "number": "153",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:154",
+      "number": "154",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:155",
+      "number": "155",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:156",
+      "number": "156",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:157",
+      "number": "157",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:158",
+      "number": "158",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:159",
+      "number": "159",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:160",
+      "number": "160",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:161",
+      "number": "161",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:162",
+      "number": "162",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:163",
+      "number": "163",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:164",
+      "number": "164",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:165",
+      "number": "165",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:166",
+      "number": "166",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:167",
+      "number": "167",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:168",
+      "number": "168",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:169",
+      "number": "169",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:170",
+      "number": "170",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:171",
+      "number": "171",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:172",
+      "number": "172",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:173",
+      "number": "173",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "sir:R211S:174",
+      "number": "174",
+      "equipment": "R211S",
+      "category": "sir",
+      "aliases": [],
+      "lifecycle": "Documented fleet; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://en.wikipedia.org/wiki/R211_(New_York_City_Subway_car)",
+          "date": "2026-09-06",
+          "note": "Published R211S number range. Retrieved date, not an observation."
+        }
+      ],
+      "yard": {
+        "name": "Clifton",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Published SIR home facility; not a current location report."
+      }
+    },
+    {
+      "id": "nyct:R156:0L912",
+      "number": "0L912",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL912",
+        "L912"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L913",
+      "number": "0L913",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL913",
+        "L913"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L914",
+      "number": "0L914",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL914",
+        "L914"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L915",
+      "number": "0L915",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL915",
+        "L915"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L916",
+      "number": "0L916",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL916",
+        "L916"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L917",
+      "number": "0L917",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL917",
+        "L917"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L918",
+      "number": "0L918",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL918",
+        "L918"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L919",
+      "number": "0L919",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL919",
+        "L919"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L920",
+      "number": "0L920",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL920",
+        "L920"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L921",
+      "number": "0L921",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL921",
+        "L921"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L922",
+      "number": "0L922",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL922",
+        "L922"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L923",
+      "number": "0L923",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL923",
+        "L923"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L924",
+      "number": "0L924",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL924",
+        "L924"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L925",
+      "number": "0L925",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL925",
+        "L925"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L926",
+      "number": "0L926",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL926",
+        "L926"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L927",
+      "number": "0L927",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL927",
+        "L927"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L928",
+      "number": "0L928",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL928",
+        "L928"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L929",
+      "number": "0L929",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL929",
+        "L929"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L930",
+      "number": "0L930",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL930",
+        "L930"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L931",
+      "number": "0L931",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL931",
+        "L931"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L932",
+      "number": "0L932",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL932",
+        "L932"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L933",
+      "number": "0L933",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL933",
+        "L933"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L934",
+      "number": "0L934",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL934",
+        "L934"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L935",
+      "number": "0L935",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL935",
+        "L935"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L936",
+      "number": "0L936",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL936",
+        "L936"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L937",
+      "number": "0L937",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL937",
+        "L937"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L938",
+      "number": "0L938",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL938",
+        "L938"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R156:0L939",
+      "number": "0L939",
+      "equipment": "R156",
+      "category": "work",
+      "aliases": [
+        "OL939",
+        "L939"
+      ],
+      "lifecycle": "Documented work equipment; operational status unverified",
+      "evidence": [
+        {
+          "url": "https://www.ttmg.org/nymta-mpi.html",
+          "date": "2026-09-06",
+          "note": "Published locomotive range. Leading character is zero; aliases accommodate common lettering. No current yard assignment established."
+        }
+      ]
+    },
+    {
+      "id": "nyct:Low-V:4902",
+      "number": "4902",
+      "equipment": "Low-V",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:Low-V:5290",
+      "number": "5290",
+      "equipment": "Low-V",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:Low-V:5292",
+      "number": "5292",
+      "equipment": "Low-V",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:Low-V:5443",
+      "number": "5443",
+      "equipment": "Low-V",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:Low-V:5483",
+      "number": "5483",
+      "equipment": "Low-V",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:Low-V:5655",
+      "number": "5655",
+      "equipment": "Low-V",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:BU:1273",
+      "number": "1273",
+      "equipment": "BU",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:BU:1404",
+      "number": "1404",
+      "equipment": "BU",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:BU:1407",
+      "number": "1407",
+      "equipment": "BU",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:Q:1612C",
+      "number": "1612C",
+      "equipment": "Q",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:AB:2204",
+      "number": "2204",
+      "equipment": "AB",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:AB:2390",
+      "number": "2390",
+      "equipment": "AB",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:AB:2391",
+      "number": "2391",
+      "equipment": "AB",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:AB:2392",
+      "number": "2392",
+      "equipment": "AB",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:D:6019ABC",
+      "number": "6019ABC",
+      "equipment": "D",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:D:6095ABC",
+      "number": "6095ABC",
+      "equipment": "D",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:D:6112ABC",
+      "number": "6112ABC",
+      "equipment": "D",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R1:100",
+      "number": "100",
+      "equipment": "R1",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R1:103",
+      "number": "103",
+      "equipment": "R1",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R1:381",
+      "number": "381",
+      "equipment": "R1",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R4:401",
+      "number": "401",
+      "equipment": "R4",
+      "category": "museum",
+      "aliases": [
+        "491"
+      ],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R4:484",
+      "number": "484",
+      "equipment": "R4",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R6:1000",
+      "number": "1000",
+      "equipment": "R6",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R6:1300",
+      "number": "1300",
+      "equipment": "R6",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R7A:1575",
+      "number": "1575",
+      "equipment": "R7A",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R9:1802",
+      "number": "1802",
+      "equipment": "R9",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R12:5760",
+      "number": "5760",
+      "equipment": "R12",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R15:6239",
+      "number": "6239",
+      "equipment": "R15",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R17:6609",
+      "number": "6609",
+      "equipment": "R17",
+      "category": "museum",
+      "aliases": [],
+      "lifecycle": "Preserved per historical inventory; present condition unverified",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/NYCT_Vintage_Vehicle_Summary",
+          "date": "2026-09-06",
+          "note": "Historical preservation inventory, reviewed on the displayed date; not a new sighting or current location."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R211T:4040",
+      "number": "4040",
+      "equipment": "R211T",
+      "category": "passenger",
+      "aliases": [],
+      "lifecycle": "Documented linked set; operational status unverified",
+      "fixedSet": "set:R211T:4040-4044",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/New_Technology_Trains_-_B_Division",
+          "date": "2022-11-02",
+          "note": "Documented five-car open-gangway test set delivery; later changes may supersede this grouping."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R211T:4041",
+      "number": "4041",
+      "equipment": "R211T",
+      "category": "passenger",
+      "aliases": [],
+      "lifecycle": "Documented linked set; operational status unverified",
+      "fixedSet": "set:R211T:4040-4044",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/New_Technology_Trains_-_B_Division",
+          "date": "2022-11-02",
+          "note": "Documented five-car open-gangway test set delivery; later changes may supersede this grouping."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R211T:4042",
+      "number": "4042",
+      "equipment": "R211T",
+      "category": "passenger",
+      "aliases": [],
+      "lifecycle": "Documented linked set; operational status unverified",
+      "fixedSet": "set:R211T:4040-4044",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/New_Technology_Trains_-_B_Division",
+          "date": "2022-11-02",
+          "note": "Documented five-car open-gangway test set delivery; later changes may supersede this grouping."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R211T:4043",
+      "number": "4043",
+      "equipment": "R211T",
+      "category": "passenger",
+      "aliases": [],
+      "lifecycle": "Documented linked set; operational status unverified",
+      "fixedSet": "set:R211T:4040-4044",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/New_Technology_Trains_-_B_Division",
+          "date": "2022-11-02",
+          "note": "Documented five-car open-gangway test set delivery; later changes may supersede this grouping."
+        }
+      ]
+    },
+    {
+      "id": "nyct:R211T:4044",
+      "number": "4044",
+      "equipment": "R211T",
+      "category": "passenger",
+      "aliases": [],
+      "lifecycle": "Documented linked set; operational status unverified",
+      "fixedSet": "set:R211T:4040-4044",
+      "evidence": [
+        {
+          "url": "https://www.nycsubway.org/wiki/New_Technology_Trains_-_B_Division",
+          "date": "2022-11-02",
+          "note": "Documented five-car open-gangway test set delivery; later changes may supersede this grouping."
+        }
+      ]
+    }
+  ],
+  "yardRules": [
+    {
+      "name": "East New York",
+      "equipment": ["R143"],
+      "routes": [],
+      "rosterAssignment": true,
+      "url": "https://en.wikipedia.org/wiki/R143_(New_York_City_Subway_car)",
+      "date": "2026-09-06",
+      "note": "Published class-wide home-yard assignment, reviewed on this date. Temporary movements are not modeled."
+    },
+    {
+      "name": "Corona",
+      "equipment": ["R188"],
+      "routes": [],
+      "rosterAssignment": true,
+      "url": "https://en.wikipedia.org/wiki/R188_(New_York_City_Subway_car)",
+      "date": "2026-09-06",
+      "note": "Published class-wide maintenance assignment, reviewed on this date. Temporary movements are not modeled."
+    },
+    {
+      "name": "240th Street",
+      "routes": [
+        "1"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    },
+    {
+      "name": "239th Street",
+      "routes": [
+        "2"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    },
+    {
+      "name": "Livonia",
+      "routes": [
+        "3"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    },
+    {
+      "name": "Jerome",
+      "routes": [
+        "4"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    },
+    {
+      "name": "East 180th Street",
+      "routes": [
+        "5"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    },
+    {
+      "name": "Westchester",
+      "routes": [
+        "6",
+        "6X"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    },
+    {
+      "name": "Corona",
+      "routes": [
+        "7",
+        "7X"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    },
+    {
+      "name": "Concourse",
+      "routes": [
+        "D"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    },
+    {
+      "name": "Jamaica",
+      "routes": [
+        "E",
+        "F",
+        "FX",
+        "G",
+        "R"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    },
+    {
+      "name": "East New York",
+      "routes": [
+        "J",
+        "Z",
+        "L",
+        "M"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    },
+    {
+      "name": "Coney Island",
+      "routes": [
+        "B",
+        "N",
+        "Q",
+        "W"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    },
+    {
+      "name": "Clifton",
+      "routes": [
+        "SI",
+        "SIR"
+      ],
+      "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+      "date": "2026-09-06",
+      "note": "Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+    }
+  ]
+}

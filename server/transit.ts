@@ -27,7 +27,7 @@ export function normalizeFeed(feed: string, raw: any, catalog: Station[]): Map<s
     const predictions = (update.stop_time_update || []).map((s: any) => {
       const track = extension(s, 'nyct_stop_time_update');
       const known = stops.get(parentStop(s.stop_id || ''));
-      return { id: s.stop_id || '', name: known?.name || s.stop_id || 'Unknown stop', stationId: known?.stationId,
+      return { id: s.stop_id || '', sequence: s.stop_sequence == null ? undefined : Number(s.stop_sequence), name: known?.name || s.stop_id || 'Unknown stop', stationId: known?.stationId,
         arrival: number(s.arrival?.time), departure: number(s.departure?.time),
         ...(track.scheduled_track ? { scheduledTrack: track.scheduled_track } : {}),
         ...(track.actual_track ? { actualTrack: track.actual_track } : {}),
@@ -121,7 +121,7 @@ export function buildBoard(station: Station, trains: Iterable<Train>, states: So
     departures.push({ key: `${train.key}|${stop.id}|${i}`, tripKey: train.key, route: train.route, destination: train.destination,
       direction, stopId: stop.id, partId: part.id,
       area: `${part.line} · ${direction === 'NORTH' ? part.north : direction === 'SOUTH' ? part.south : 'Direction unknown'}${relevantTrack ? ` · Track ${relevantTrack}` : ''}`,
-      time, arrival: stop.arrival, scheduledTrack: stop.scheduledTrack, actualTrack: stop.actualTrack,
+      time, arrival: stop.arrival, departure: stop.departure, scheduledTrack: stop.scheduledTrack, actualTrack: stop.actualTrack,
       pattern: pattern.label, patternSource: pattern.source, location: locationFor(train), locationTimestamp: train.position?.timestamp,
       stopsAway: train.position?.stopId ? (train.stops.findIndex(s => s.id === train.position!.stopId) >= 0 ? i - train.stops.findIndex(s => s.id === train.position!.stopId) : null) : null,
       assigned: train.assigned, feed: train.feed, timestamp: train.timestamp,

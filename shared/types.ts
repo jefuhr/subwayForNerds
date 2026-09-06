@@ -9,8 +9,14 @@ export interface SourceState {
   id: string; timestamp: number | null; fetchedAt: number | null; error: string | null;
 }
 export interface StopPrediction {
+  sequence?: number;
   id: string; name: string; stationId?: string; arrival: number | null; departure: number | null;
   scheduledTrack?: string; actualTrack?: string; relationship?: string;
+}
+export interface TransferResult {
+  originTimestamp?: number;
+  station?: Station; arrival: number | null; basis: 'arrival' | 'departure'; message?: string;
+  connections: (Departure & { gap: number; basis: 'arrival' | 'departure' })[]; sources: SourceState[];
 }
 export interface Consist {
   cars: { number: string; type?: string }[];
@@ -25,6 +31,7 @@ export interface Train {
   scheduledPattern?: { shape: string; headsign: string; stops: string[]; source: string };
 }
 export interface Departure {
+  departure?: number | null;
   key: string; tripKey: string; route: string; destination: string; direction: string;
   stopId: string; partId: string; area: string; time: number | null; arrival: number | null;
   scheduledTrack?: string; actualTrack?: string; pattern: string; patternSource: 'inferred' | 'static';

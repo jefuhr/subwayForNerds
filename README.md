@@ -29,9 +29,11 @@ the app beyond localhost so geolocation and service workers work.
 
 ## How the board works
 
-- The first visit opens Union Square. Subsequent visits restore the last station.
-  The station title opens search; stars save favorites. A nearby button requests
-  location only when tapped and sorts stations on-device by straight-line distance.
+- A fresh visit with saved favorites requests one location fix and opens the
+  closest favorite; if location is unavailable, the last station is restored
+  (Union Square is the initial fallback). The station title opens search; stars
+  save favorites. A nearby button can request location again and sorts stations
+  on-device by straight-line distance.
 - A complex includes its constituent stations. Direction, constituent station and
   reported/scheduled track define the groups. A group is a feed-based boarding
   area, not a guarantee of shared platform access. Unknown tracks stay unknown.

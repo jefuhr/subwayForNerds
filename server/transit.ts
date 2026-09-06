@@ -1,6 +1,7 @@
 import type { Board, Departure, ServiceAlert, SourceState, Station, Train } from '../shared/types';
 import { extension } from './decode';
 import { parentStop } from './catalog';
+import corridorDefinitions from '../data/corridors.json';
 
 export const FEED_ROUTES: Record<string, string[]> = {
   gtfs: ['1','2','3','4','5','6','6X','7','7X','GS'], 'gtfs-ace': ['A','C','E','H'],
@@ -70,19 +71,28 @@ export function alertActive(alert: ServiceAlert, now: number) {
 // Names come from the official station Line field. Local/express is inferred only
 // within known station corridors, not from a route's usual daytime reputation.
 const corridorAliases: Record<string, string> = { 'Lexington Av': 'Lex', 'Broadway - 7Av': 'Broadway–7 Av', '6th Av - Culver': '6 Av–Culver', '8th Av - Fulton St': '8 Av–Fulton' };
+const corridorCache = new WeakMap<Station[], Map<string, Station['parts'][number]>>();
+function corridors(catalog: Station[]) {
+  let cached = corridorCache.get(catalog);
+  if (!cached) {
+    cached = new Map(catalog.flatMap(s => s.parts.map(p => [p.id, p] as const))); corridorCache.set(catalog, cached);
+  }
+  return cached;
+}
 export function patternFor(train: Train, stopId: string, catalog: Station[]): { label: string; source: 'inferred' | 'static' } {
-  const parts = catalog.flatMap(s => s.parts);
-  const part = parts.find(p => p.id === parentStop(stopId));
+  const context = corridors(catalog);
+  const part = context.get(parentStop(stopId));
   const corridor = part?.line || 'Service pattern';
-  const label = corridorAliases[corridor] || corridor;
-  // Position-based skipped-station checks require a known ordered corridor.
-  // Latitude ordering is safe only on these explicitly supported north/south trunks.
-  if (!['Brighton', 'Lexington Av', 'Broadway - 7Av'].includes(corridor)) return { label, source: 'static' };
-  const ordered = parts.filter(p => p.line === corridor).sort((a, b) => a.lat - b.lat);
-  const remaining = train.stops.filter(s => s.relationship !== 'SKIPPED');
-  const indices = remaining.map(s => ordered.findIndex(p => p.id === parentStop(s.id))).filter(i => i >= 0);
-  const current = ordered.findIndex(p => p.id === part?.id);
-  const ahead = indices.slice(Math.max(0, indices.indexOf(current)));
+  const definition = corridorDefinitions.find(c => c.stops.includes(parentStop(stopId)));
+  const label = definition?.name || corridorAliases[corridor] || corridor;
+  if (!definition) return { label, source: 'static' };
+  const index = train.stops.findIndex(s => s.id === stopId);
+  const ahead: number[] = [];
+  for (const stop of train.stops.slice(index)) {
+    const position = definition.stops.indexOf(parentStop(stop.id));
+    if (position < 0) break; // Don't infer across a branch departure or reroute.
+    if (stop.relationship !== 'SKIPPED') ahead.push(position);
+  }
   if (ahead.length < 2) return { label, source: 'static' };
   const skips = ahead.some((value, i) => i > 0 && Math.abs(value - ahead[i - 1]) > 1);
   return { label: `${label} ${skips ? 'express' : 'local'}`, source: 'inferred' };
@@ -122,8 +132,22 @@ export function buildBoard(station: Station, trains: Iterable<Train>, states: So
   departures.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity) || a.key.localeCompare(b.key));
   const routes = new Set([...station.routes, ...departures.map(d => d.route)]);
   const feedIds = new Set(Object.entries(FEED_ROUTES).filter(([, r]) => r.some(x => routes.has(x))).map(([id]) => id));
+  if (station.routes.includes('SIR')) feedIds.add('gtfs-si');
+  for (const part of station.parts) {
+    if (part.line === 'Franklin Shuttle') feedIds.add('gtfs-bdfm');
+    if (part.line === 'Lexington - Shuttle') feedIds.add('gtfs');
+    if (part.line === 'Rockaway') feedIds.add('gtfs-ace');
+  }
   departures.forEach(d => feedIds.add(d.feed));
   const stationStops = new Set(station.parts.map(p => p.id));
   return { station, generatedAt: now, departures, sources: states.filter(s => feedIds.has(s.id) || s.id === 'subway-alerts'),
-    alerts: alerts.filter(a => alertActive(a, now) && (a.stops.length ? a.stops.some(s => stationStops.has(parentStop(s))) : a.routes.some(r => routes.has(r)))) };
+    alerts: alerts.filter(a => {
+      if (!alertActive(a, now)) return false;
+      // Selectors are ORed; constraints inside one selector must all match.
+      // Agency-wide notices have no narrower selector and still belong here.
+      if (a.selectors.length && !a.selectors.some(s =>
+        (!s.route || routes.has(s.route)) && (!s.stop || stationStops.has(parentStop(s.stop))) &&
+        (!s.trip || departures.some(d => d.tripKey.split('|')[2] === s.trip)))) return false;
+      return a.stops.length ? a.stops.some(s => stationStops.has(parentStop(s))) : !a.routes.length || a.routes.some(r => routes.has(r));
+    }) };
 }

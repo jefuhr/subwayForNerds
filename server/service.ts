@@ -6,6 +6,7 @@ import { bundledCatalog, fromSocrata, makeCatalog } from './catalog';
 import { decode } from './decode';
 import { FEED_ROUTES, normalizeFeed, normalizeAlerts, buildBoard, nowSeconds } from './transit';
 import type { Board, ServiceAlert, SourceState, StationContext, Train } from '../shared/types';
+import { enrichSchedule, type Schedules } from './schedules';
 
 const upstream = 'https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/';
 export interface FeedSlot { state: SourceState; raw?: any; trains: Map<string, Train>; digest?: string }
@@ -14,7 +15,7 @@ export class TransitService {
   slots = new Map<string, FeedSlot>();
   alerts: ServiceAlert[] = [];
   boards = new Map<string, Board>();
-  details = new Map<string, { train: Train; raw: unknown }>();
+  details = new Map<string, { train: Train; raw: unknown; source: { state: SourceState; header: unknown } }>();
   entrances: Record<string, string>[] = [];
   equipment: Record<string, string>[] = [];
   outages: Record<string, string>[] = [];
@@ -22,6 +23,8 @@ export class TransitService {
   timers = new Set<ReturnType<typeof setTimeout>>();
   stopped = false;
   revision = 0;
+  schedules?: Schedules;
+  scheduleWorker?: Worker;
   readonly cacheDir: string;
   constructor(readonly options: { fixtureDir?: string; cacheDir?: string; fetcher?: typeof fetch } = {}) {
     this.cacheDir = options.cacheDir || process.env.STATE_DIR || 'state';
@@ -57,7 +60,7 @@ export class TransitService {
     this.details.clear();
     for (const slot of this.slots.values()) for (const train of slot.trains.values()) {
       const raw = slot.raw?.entity?.filter((e: any) => (e.trip_update?.trip?.trip_id || e.vehicle?.trip?.trip_id) === train.tripId);
-      this.details.set(train.key, { train, raw });
+      this.details.set(train.key, { train, raw, source: { state: { ...slot.state }, header: slot.raw?.header } });
     }
     this.revision++;
   }
@@ -72,7 +75,10 @@ export class TransitService {
     if (!changed && !recovered) return;
     slot.raw = raw;
     if (id === 'subway-alerts') this.alerts = normalizeAlerts(raw);
-    else slot.trains = normalizeFeed(id, raw, this.catalog);
+    else {
+      slot.trains = normalizeFeed(id, raw, this.catalog);
+      for (const train of slot.trains.values()) enrichSchedule(train, this.schedules);
+    }
     this.refreshBoards();
   }
   schedule(task: () => Promise<void>, interval: number) {
@@ -97,6 +103,7 @@ export class TransitService {
       this.refreshBoards();
       return;
     }
+    this.schedules = await this.restore('schedules');
     await Promise.all([...this.slots.keys()].map(async id => {
       const cached = await this.restore(id);
       if (cached) try { this.accept(id, cached.raw, cached.fetchedAt); } catch { /* Ignore corrupt cache. */ }
@@ -127,7 +134,10 @@ export class TransitService {
       { id: 'stations', url: 'https://data.ny.gov/resource/39hk-dx4f.json?$limit=1000', interval: 86400000, apply: r => {
         const next = makeCatalog(r.map(fromSocrata)); if (next.length < 400) throw new Error('Incomplete station catalog');
         this.catalog = next;
-        for (const [id, slot] of this.slots) if (slot.raw && id !== 'subway-alerts') slot.trains = normalizeFeed(id, slot.raw, next);
+        for (const [id, slot] of this.slots) if (slot.raw && id !== 'subway-alerts') {
+          slot.trains = normalizeFeed(id, slot.raw, next);
+          for (const train of slot.trains.values()) enrichSchedule(train, this.schedules);
+        }
         this.refreshBoards();
       } },
       { id: 'entrances', url: 'https://data.ny.gov/resource/i9wp-a4ja.json?$limit=10000', interval: 86400000, apply: r => { this.entrances = r; } },
@@ -155,10 +165,17 @@ export class TransitService {
   }
   async refreshSchedules() {
     const worker = new Worker(new URL('./schedule-worker.mjs', import.meta.url));
+    this.scheduleWorker = worker;
     await new Promise<void>((resolve, reject) => {
       worker.once('message', async (result) => {
         try {
           if (result.error) throw new Error(result.error);
+          this.schedules = result;
+          for (const slot of this.slots.values()) for (const train of slot.trains.values()) {
+            delete train.scheduledPattern;
+            enrichSchedule(train, result);
+          }
+          this.refreshBoards();
           await this.persist('schedules', result);
           this.contextStates.set('schedules', { id: 'schedules', timestamp: result.timestamp, fetchedAt: nowSeconds(), error: null });
           resolve();
@@ -166,6 +183,10 @@ export class TransitService {
       });
       worker.once('error', reject);
       worker.once('exit', code => { if (code !== 0) reject(new Error(`Schedule worker exited ${code}`)); });
+    }).catch(error => {
+      const previous = this.contextStates.get('schedules');
+      this.contextStates.set('schedules', { id: 'schedules', timestamp: previous?.timestamp ?? null, fetchedAt: previous?.fetchedAt ?? null, error: String(error) });
+      throw error;
     });
   }
   context(id: string): StationContext | undefined {
@@ -175,5 +196,5 @@ export class TransitService {
     return { entrances: this.entrances.filter(e => String(e.complex_id) === id), equipment,
       outages: this.outages.filter(e => ids.has(e.equipment || e.equipmentno)), sources: [...this.contextStates.values()] };
   }
-  stop() { this.stopped = true; for (const timer of this.timers) clearTimeout(timer); this.timers.clear(); }
+  stop() { this.stopped = true; for (const timer of this.timers) clearTimeout(timer); this.timers.clear(); void this.scheduleWorker?.terminate(); }
 }

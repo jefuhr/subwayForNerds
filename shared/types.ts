@@ -17,6 +17,7 @@ export interface Train {
   destination: string; direction: string; trainId?: string; assigned?: boolean;
   timestamp: number; position?: { stopId?: string; name: string; status?: string; timestamp?: number };
   stops: StopPrediction[]; relationship?: string; alerts: string[];
+  scheduledPattern?: { shape: string; headsign: string; stops: string[]; source: string };
 }
 export interface Departure {
   key: string; tripKey: string; route: string; destination: string; direction: string;

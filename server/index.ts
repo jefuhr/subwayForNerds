@@ -4,8 +4,10 @@ import staticFiles from '@fastify/static';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 import { TransitService } from './service';
+import { nowSeconds } from './transit';
 
 export async function createServer(service = new TransitService({ fixtureDir: process.env.FIXTURE_DIR })) {
   const app = Fastify({ logger: process.env.NODE_ENV === 'production' });
@@ -13,15 +15,24 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
   if (!/^\/(?:[A-Za-z0-9_-]+\/)*$/.test(base)) throw new Error('APP_BASE must be an absolute path ending in /');
   await app.register(compress);
   const api = base + 'api/v1';
+  const encoded = new WeakMap<object, { json: string; gzip: Buffer; etag: string }>();
   app.addHook('onSend', async (_req, reply, payload) => {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
     return payload;
   });
   const send = (req: any, reply: any, value: unknown) => {
-    const json = JSON.stringify(value), etag = '"' + createHash('sha1').update(json).digest('hex') + '"';
+    let cached = typeof value === 'object' && value !== null ? encoded.get(value) : undefined;
+    if (!cached) {
+      const json = JSON.stringify(value), etag = '"' + createHash('sha1').update(json).digest('hex') + '"';
+      cached = { json, gzip: gzipSync(json, { level: 4 }), etag };
+      if (typeof value === 'object' && value !== null) encoded.set(value, cached);
+    }
+    const { json, gzip, etag } = cached;
     reply.header('ETag', etag).header('Cache-Control', 'no-cache').type('application/json');
+    reply.header('Vary', 'Accept-Encoding');
     if (req.headers['if-none-match'] === etag) return reply.code(304).send();
+    if ((req.headers['accept-encoding'] || '').split(',').some((s: string) => /^\s*gzip\s*(?:;\s*q=(?!0(?:\.0*)?\s*$)[\d.]+)?\s*$/.test(s))) return reply.header('Content-Encoding', 'gzip').send(gzip);
     return reply.send(json);
   };
   app.get(api + '/stations', (req, reply) => send(req, reply, service.catalog));
@@ -37,12 +48,12 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
     const detail = service.details.get(req.query.key || '');
     return detail ? send(req, reply, detail) : reply.code(404).send({ error: 'This trip is no longer in the current feed' });
   });
-  app.get(api + '/health', () => ({ status: [...service.slots.values()].some(s => s.state.timestamp && !s.state.error) ? 'ok' : 'degraded', feeds: [...service.slots.values()].map(s => s.state), stationCount: service.catalog.length }));
+  app.get(api + '/health', () => ({ status: [...service.slots.values()].every(s => s.state.timestamp && nowSeconds() - s.state.timestamp <= 90 && !s.state.error) ? 'ok' : 'degraded', feeds: [...service.slots.values()].map(s => ({ ...s.state, age: s.state.timestamp ? nowSeconds() - s.state.timestamp : null })), stationCount: service.catalog.length }));
   app.get('/healthz', () => ({ status: 'ok' }));
   if (base !== '/') app.get(base.slice(0, -1), (_req, reply) => reply.redirect(base));
   if (existsSync(resolve('dist'))) {
     await app.register(staticFiles, { root: resolve('dist'), prefix: base, index: ['index.html'],
-      setHeaders: (res, file) => { res.setHeader('Cache-Control', file.includes('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache'); } });
+      setHeaders: (reply, file) => { reply.header('Cache-Control', file.includes('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache'); } });
   }
   app.addHook('onClose', () => service.stop());
   return app;

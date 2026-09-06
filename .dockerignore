@@ -1,0 +1,7 @@
+node_modules
+dist
+state
+.git
+test-results
+artifacts
+.env

@@ -24,8 +24,9 @@ test('search, favorite, restore, direction filters, and theme persistence', asyn
   await page.locator('.station-result>button:first-child').first().click();
   await expect(page.locator('h1')).toHaveText('Atlantic Av-Barclays Ctr');
   await page.getByRole('button', { name: 'Favorite this station', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose direction', exact: true }).click();
   await page.getByRole('button', { name: 'Northbound', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Northbound', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Choose direction', exact: true })).toContainText('Northbound');
   const themeButton = page.locator('.theme-trigger:visible, button[aria-label="Choose theme"]:visible');
   await themeButton.click();
   await page.getByRole('button', { name: /Hello Kitty/ }).click();

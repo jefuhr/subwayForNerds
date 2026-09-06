@@ -6,9 +6,13 @@
     <meta name="theme-color" content="#101311" />
     <meta name="description" content="A station-first NYC subway console. Live trains, tracks, stopping patterns, and the details that make your commute." />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="%BASE_URL%icon-192.png" />
     <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="%BASE_URL%icon-192.png" />
+    <!-- iOS ignores the manifest icons and saves a screenshot of the page unless it finds this. 180px is the size it asks for. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="%BASE_URL%icon-180.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Subway Nerds" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Subways for Nerds</title>
     <script>try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem('sfn:theme')) || 'subway'; } catch {}</script>
   </head>

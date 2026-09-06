@@ -2,7 +2,7 @@ const CACHE = 'sfn-shell-__BUILD_VERSION__';
 const scope = new URL(self.registration.scope);
 const assets = [/* __PRECACHE__ */];
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll([scope.pathname, 'icon.svg', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest', ...assets].map(p => new URL(p, scope).pathname))));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll([scope.pathname, 'icon.svg', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'kitty.png', 'manifest.webmanifest', ...assets].map(p => new URL(p, scope).pathname))));
 });
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('sfn-shell-') && k !== CACHE).map(k => caches.delete(k)))));

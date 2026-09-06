@@ -12,11 +12,16 @@ export interface StopPrediction {
   id: string; name: string; stationId?: string; arrival: number | null; departure: number | null;
   scheduledTrack?: string; actualTrack?: string; relationship?: string;
 }
+export interface Consist {
+  cars: { number: string; type?: string }[];
+  updatedAt: number; fetchedAt: number; source: 'helium';
+}
 export interface Train {
   key: string; feed: string; tripId: string; serviceDate?: string; route: string;
   destination: string; direction: string; trainId?: string; assigned?: boolean;
   timestamp: number; position?: { stopId?: string; name: string; status?: string; timestamp?: number };
   stops: StopPrediction[]; relationship?: string; alerts: string[];
+  consist?: Consist;
   scheduledPattern?: { shape: string; headsign: string; stops: string[]; source: string };
 }
 export interface Departure {
@@ -25,6 +30,7 @@ export interface Departure {
   scheduledTrack?: string; actualTrack?: string; pattern: string; patternSource: 'inferred' | 'static';
   location: string; locationTimestamp?: number; stopsAway: number | null;
   assigned?: boolean; feed: string; timestamp: number; relationship?: string; alerts: string[];
+  consist?: Consist;
   onward: { stationId: string; stopId: string; name: string; time: number | null }[];
 }
 export interface ServiceAlert {

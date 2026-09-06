@@ -17,6 +17,34 @@ test('station board loads, has no horizontal overflow, and opens complete train 
   await expect(page.locator('dialog')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+test('departures show car ranges and details show each car, then expire old reports', async ({ page }) => {
+  // Synthetic enrichment of recorded departures; no live Helium dependency.
+  const consist = { source: 'helium', updatedAt: Date.parse('2026-09-06T00:59:40Z') / 1000,
+    fetchedAt: Date.parse('2026-09-06T00:59:40Z') / 1000,
+    cars: ['4149', '4148', '4147', '4146', '4145', '4374', '4373', '4372', '4371', '4370'].map(number => ({ number, type: 'R211A' })) };
+  await page.route('**/api/v1/stations/602/board', async route => {
+    const response = await route.fetch(), board = await response.json();
+    board.departures.forEach((d: any) => { d.consist = consist; });
+    await route.fulfill({ response, json: board });
+  });
+  await page.route('**/api/v1/trips?*', async route => {
+    const response = await route.fetch(), detail = await response.json();
+    detail.train.consist = consist;
+    await route.fulfill({ response, json: detail });
+  });
+  await page.goto('./?station=602');
+  await expect(page.locator('.train-consist').first()).toHaveText('Cars 4149–4145, 4374–4370');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.locator('.train-row').first().click();
+  await expect(page.locator('.consist-cars li')).toHaveCount(10);
+  await expect(page.locator('.consist-cars li').first()).toHaveText('4149R211A');
+  expect(await page.locator('dialog').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+  await page.clock.fastForward(301000);
+  await expect(page.locator('.consist-cars li')).toHaveCount(0);
+  await expect(page.getByText('Not currently available', { exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.train-consist')).toHaveCount(0);
+});
 test('search, favorite, restore, direction filters, and theme persistence', async ({ page }) => {
   await page.goto('./?station=602');
   await page.locator('.station-name-button').click();

@@ -125,6 +125,7 @@ export function buildBoard(station: Station, trains: Iterable<Train>, states: So
       pattern: pattern.label, patternSource: pattern.source, location: locationFor(train), locationTimestamp: train.position?.timestamp,
       stopsAway: train.position?.stopId ? (train.stops.findIndex(s => s.id === train.position!.stopId) >= 0 ? i - train.stops.findIndex(s => s.id === train.position!.stopId) : null) : null,
       assigned: train.assigned, feed: train.feed, timestamp: train.timestamp,
+      ...(train.consist ? { consist: train.consist } : {}),
       relationship: stop.relationship === 'SKIPPED' ? 'SKIPPED' : train.relationship,
       alerts: train.alerts,
       onward: train.stops.slice(i + 1).filter(s => s.stationId && s.relationship !== 'SKIPPED').map(s => ({ stationId: s.stationId!, stopId: s.id, name: s.name, time: s.arrival ?? s.departure })) });
@@ -140,7 +141,7 @@ export function buildBoard(station: Station, trains: Iterable<Train>, states: So
   }
   departures.forEach(d => feedIds.add(d.feed));
   const stationStops = new Set(station.parts.map(p => p.id));
-  return { station, generatedAt: now, departures, sources: states.filter(s => feedIds.has(s.id) || s.id === 'subway-alerts'),
+  return { station, generatedAt: now, departures, sources: states.filter(s => feedIds.has(s.id) || s.id === 'subway-alerts' || s.id === 'helium'),
     alerts: alerts.filter(a => {
       if (!alertActive(a, now)) return false;
       // Selectors are ORed; constraints inside one selector must all match.

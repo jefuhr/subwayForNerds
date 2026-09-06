@@ -2,7 +2,7 @@
 
 A station-first NYC subway console for people who already know the map. Live
 departures, stop-relative train positions, reported tracks, stopping patterns,
-operations IDs, and direct-train comparisons. Web first, with a future Capacitor
+operations IDs, physical car numbers when reported, and direct-train comparisons. Web first, with a future Capacitor
 wrapper in mind.
 
 ## Run locally
@@ -60,8 +60,17 @@ a worker thread. The `state/` directory retains last successful responses.
 
 Preserved feed fields distinguish absent assignment/status from explicit false or
 zero. Vehicle joins use feed, service date, trip ID and start time. Entity numbers
-are not train identities. Physical car numbers and exact signal blocks are not
-available from these sources.
+are not train identities. Exact signal blocks are not available from these sources.
+
+A separate server poller requests `https://helium-prod.mylirr.org/v1/subway/trips`
+every 10 seconds, with independent timeout/backoff. Helium's `tripId` matches the
+NYCT extension's `train_id`, not the GTFS `trip_id`. Matching routes and reports
+within five minutes of each other can attach `consistCars` numbers and equipment
+types to departures and train details. Stale routes, ambiguous IDs, unassigned
+trains, and invalid car lists are omitted. Car data expires five minutes after
+its report or fetch time; failed requests do not interrupt departure predictions.
+Car lists are not persisted across server restarts and cached offline boards hide
+them. Reported order does not establish which end of the train is leading.
 
 Scheduled and reported actual track fields are separate. Some feed groups populate
 `actual_track` at future stops; this is not evidence of the train's current

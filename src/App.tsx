@@ -5,6 +5,7 @@ import { ageLabel, boardable, clockTime, countdown, distanceMeters, firstTo, fre
 import { api, locate, storage } from './platform';
 import { useBoard } from './useBoard';
 import { themes } from './themes';
+import { consistSummary, currentConsist } from '../shared/consist';
 import Modal from './Modal';
 
 const TrainDetail = lazy(() => import('./Details').then(m => ({ default: m.TrainDetail })));
@@ -96,7 +97,7 @@ export default function App() {
   const groups = new Map<string, Departure[]>();
   for (const d of visible) { const key = [d.direction, d.partId, d.actualTrack || d.scheduledTrack || '?'].join('|'); const rows = groups.get(key) || []; rows.push(d); groups.set(key, rows); }
   const sortedGroups = [...groups.values()].sort((a, b) => a[0].direction.localeCompare(b[0].direction) || a[0].partId.localeCompare(b[0].partId) || (a[0].actualTrack || a[0].scheduledTrack || '').localeCompare(b[0].actualTrack || b[0].scheduledTrack || ''));
-  const trainSources = board?.sources.filter(s => s.id !== 'subway-alerts') || [];
+  const trainSources = board?.sources.filter(s => s.id !== 'subway-alerts' && s.id !== 'helium') || [];
   const live = !cached && trainSources.some(s => freshness(s.timestamp, now) === 'live');
   const degraded = trainSources.some(s => freshness(s.timestamp, now) !== 'live' || s.error);
   const alertSource = board?.sources.find(s => s.id === 'subway-alerts');
@@ -163,7 +164,7 @@ function PlatformGroup({ departures, board, now, cached, destination, winner, op
       const disabled = !boardable(d), previous = departures.slice(0, index).reverse().find(x => boardable(x));
       const gap = previous?.time != null && d.time != null && !cached && freshness(d.timestamp, now) === 'live' && freshness(previous.timestamp, now) === 'live' ? Math.round((d.time - previous.time) / 60) : null;
       return <button className={'train-row ' + (rank ? 'best-train ' : '') + (disabled ? 'canceled ' : '')} key={d.key} onClick={() => open(d.tripKey)} aria-label={`${d.route} to ${d.destination}, ${disabled ? d.relationship : time.value + ' ' + time.unit}, ${d.location}. Open train details`}>
-        <div className="train-identity"><Bullet route={d.route} /><div className="train-destination"><strong>{d.destination}</strong><span className="train-pattern">{d.pattern}<span className="pattern-marker" title={d.patternSource === 'inferred' ? 'Inferred from remaining stopping pattern' : 'Station corridor metadata'}>{d.patternSource === 'inferred' ? 'est.' : ''}</span></span><div className="train-tags">{rank && <span className="best-tag">FIRST TO YOUR STOP <ArrowUpRight size={11} /></span>}{disabled && <span className="disruption-tag">{d.relationship?.toLowerCase()}</span>}{d.alerts.length > 0 && <span className="disruption-tag">{d.alerts[0]}</span>}{d.assigned === false && <span className="disruption-tag">not yet assigned</span>}{d.actualTrack && d.scheduledTrack && d.actualTrack !== d.scheduledTrack && <span className="disruption-tag">track {d.actualTrack} · scheduled {d.scheduledTrack}</span>}</div></div></div>
+        <div className="train-identity"><Bullet route={d.route} /><div className="train-destination"><strong>{d.destination}</strong><span className="train-pattern">{d.pattern}<span className="pattern-marker" title={d.patternSource === 'inferred' ? 'Inferred from remaining stopping pattern' : 'Station corridor metadata'}>{d.patternSource === 'inferred' ? 'est.' : ''}</span></span>{!cached && currentConsist(d.consist, now) && <span className="train-consist" title={`Helium · reported ${ageLabel(d.consist.updatedAt, now)}`}>Cars {consistSummary(d.consist.cars)}{freshness(d.consist.updatedAt, now) !== 'live' ? ' · last reported' : ''}</span>}<div className="train-tags">{rank && <span className="best-tag">FIRST TO YOUR STOP <ArrowUpRight size={11} /></span>}{disabled && <span className="disruption-tag">{d.relationship?.toLowerCase()}</span>}{d.alerts.length > 0 && <span className="disruption-tag">{d.alerts[0]}</span>}{d.assigned === false && <span className="disruption-tag">not yet assigned</span>}{d.actualTrack && d.scheduledTrack && d.actualTrack !== d.scheduledTrack && <span className="disruption-tag">track {d.actualTrack} · scheduled {d.scheduledTrack}</span>}</div></div></div>
         <div className={'train-location ' + (positionOld ? 'position-old' : '')}><span><span className="location-dot" />{cached || positionOld || freshness(d.timestamp, now) !== 'live' ? 'Last report: ' : ''}{d.location}</span><small>{d.stopsAway != null && d.stopsAway >= 0 ? `${d.stopsAway} ${d.stopsAway === 1 ? 'stop' : 'stops'} away` : 'Stop-relative position'}{d.locationTimestamp ? ` · ${ageLabel(d.locationTimestamp, now)}` : ''}</small></div>
         <div className="train-time"><div><strong>{disabled ? '—' : time.value}</strong><span>{disabled ? 'not boarding' : time.unit}</span></div><small>{destination ? target ? `${clockTime(target.time)} at your stop` : 'Does not report your stop' : gap != null && gap > 0 ? `+${gap}m after previous` : clockTime(d.time)}</small></div><ChevronRight className="row-chevron" size={15} />
       </button>;

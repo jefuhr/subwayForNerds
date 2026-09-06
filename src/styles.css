@@ -50,3 +50,5 @@
   .direction-control{margin:0 0 8px}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
+
+.train-consist{display:block;margin-top:5px;color:var(--muted);font:10px/1.5 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere}.consist-cars{display:flex;flex-wrap:wrap;gap:7px;list-style:none;padding:0;margin:0}.consist-cars li{padding:9px 11px;background:var(--card);border:1px solid var(--line);border-radius:5px;font:12px/1.5 ui-monospace,monospace}.consist-cars strong{display:block}.consist-cars small{display:block;font-size:10px;color:var(--muted)}

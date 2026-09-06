@@ -7,6 +7,7 @@ import { decode } from './decode';
 import { FEED_ROUTES, normalizeFeed, normalizeAlerts, buildBoard, nowSeconds } from './transit';
 import type { Board, ServiceAlert, SourceState, StationContext, Train } from '../shared/types';
 import { enrichSchedule, type Schedules } from './schedules';
+import { HELIUM_URL, normalizeConsists, enrichConsist, type ConsistTrip } from './consists';
 
 const upstream = 'https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/';
 export interface FeedSlot { state: SourceState; raw?: any; trains: Map<string, Train>; digest?: string }
@@ -24,6 +25,8 @@ export class TransitService {
   stopped = false;
   revision = 0;
   schedules?: Schedules;
+  consists = new Map<string, ConsistTrip>();
+  consistState: SourceState = { id: 'helium', timestamp: null, fetchedAt: null, error: null };
   scheduleWorker?: Worker;
   readonly cacheDir: string;
   constructor(readonly options: { fixtureDir?: string; cacheDir?: string; fetcher?: typeof fetch } = {}) {
@@ -44,9 +47,11 @@ export class TransitService {
   async restore(name: string): Promise<any | undefined> {
     try { return JSON.parse(await readFile(path.join(this.cacheDir, `${name}.json`), 'utf8')); } catch { return undefined; }
   }
-  refreshBoards() {
+  refreshBoards(now = nowSeconds()) {
     const states = [...this.slots.values()].map(s => ({ ...s.state }));
+    states.push({ ...this.consistState });
     const all = [...this.slots.values()].flatMap(s => [...s.trains.values()]);
+    for (const train of all) enrichConsist(train, this.consists, now);
     const partToStation = new Map(this.catalog.flatMap(s => s.parts.map(p => [p.id, s.id] as const)));
     const byStation = new Map<string, Train[]>();
     for (const t of all) {
@@ -55,7 +60,7 @@ export class TransitService {
       }
     }
     const boards = new Map<string, Board>();
-    for (const s of this.catalog) boards.set(s.id, buildBoard(s, byStation.get(s.id) || [], states, this.alerts, this.catalog));
+    for (const s of this.catalog) boards.set(s.id, buildBoard(s, byStation.get(s.id) || [], states, this.alerts, this.catalog, now));
     this.boards = boards;
     this.details.clear();
     for (const slot of this.slots.values()) for (const train of slot.trains.values()) {
@@ -63,6 +68,22 @@ export class TransitService {
       this.details.set(train.key, { train, raw, source: { state: { ...slot.state }, header: slot.raw?.header } });
     }
     this.revision++;
+  }
+  acceptConsists(raw: unknown, fetchedAt: number) {
+    this.consists = normalizeConsists(raw, fetchedAt);
+    this.consistState = { id: 'helium', timestamp: Math.max(0, ...[...this.consists.values()].map(t => t.consist.updatedAt)) || null, fetchedAt, error: null };
+    this.refreshBoards();
+  }
+  async refreshConsists() {
+    try {
+      const response = await this.request(HELIUM_URL);
+      this.acceptConsists(await response.json(), nowSeconds());
+    } catch (error) {
+      this.consistState.error = String(error);
+      // Keep a recent successful result only until its independent expiry.
+      this.refreshBoards();
+      throw error;
+    }
   }
   accept(id: string, raw: any, fetchedAt: number) {
     const slot = this.slots.get(id)!;
@@ -127,6 +148,7 @@ export class TransitService {
       } catch (error) { slot.state.error = String(error); this.refreshBoards(); throw error; }
     }, id === 'subway-alerts' ? 60000 : 15000);
     this.startContext();
+    this.schedule(() => this.refreshConsists(), 10000);
     this.schedule(() => this.refreshSchedules(), 3600000);
   }
   startContext() {

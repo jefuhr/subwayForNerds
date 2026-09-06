@@ -4,6 +4,7 @@ import type { Board, StationContext, Train } from '../shared/types';
 import { ageLabel, clockTime, freshness } from '../shared/display';
 import { api } from './platform';
 import Modal from './Modal';
+import { currentConsist } from '../shared/consist';
 
 export function TrainDetail({ tripKey, close, now }: { tripKey: string; close: () => void; now: number }) {
   const [data, setData] = useState<{ train: Train; raw: unknown }>();
@@ -26,6 +27,10 @@ export function TrainDetail({ tripKey, close, now }: { tripKey: string; close: (
         <div><dt>Service date</dt><dd>{train.serviceDate || 'Not reported'}</dd></div>
         <div><dt>Position report</dt><dd>{train.position ? `${train.position.name} · ${ageLabel(train.position.timestamp, now)}` : 'Not reported'}</dd></div>
       </dl>
+      <section className="consist-detail">
+        <div className="section-label">CAR NUMBERS <span>{currentConsist(train.consist, now) ? `Helium · reported ${ageLabel(train.consist.updatedAt, now)}` : 'Not currently available'}</span></div>
+        {currentConsist(train.consist, now) && <><ol className="consist-cars">{train.consist.cars.map((car, i) => <li key={i}><strong>{car.number}</strong>{car.type && <small>{car.type}</small>}</li>)}</ol><p className="fine-print">Cars are listed in reported order; the front of the train is not confirmed.</p></>}
+      </section>
       {train.alerts.map(a => <p key={a} className="notice"><AlertTriangle size={16} />{a}</p>)}
       <div className="section-label">REMAINING STOPPING PATTERN <span>Arrival / departure · Eastern</span></div>
       <ol className="stop-sequence">{train.stops.map((s, i) => <li key={s.id + i} className={s.relationship === 'SKIPPED' ? 'skipped' : ''}>

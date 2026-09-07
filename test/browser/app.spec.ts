@@ -23,7 +23,8 @@ test('service changes stay compact, explain their source, and become last-known'
   await page.goto('./?station=602');
   const row=page.locator('.train-row').first();
   await expect(row.locator('.change-label')).toHaveCount(3);
-  await expect(row.locator('.change-more')).toHaveText('+1');
+  await expect(row.locator('.change-more')).toHaveCount(0);
+  await expect(row.locator('.change-icons .change-label').first()).toHaveAttribute('aria-label', /track 4/);
   await expect(row).toHaveAccessibleDescription(/track 4/);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await row.click();
@@ -64,7 +65,7 @@ test('departures show car ranges and details show each car, then expire old repo
     await route.fulfill({ response, json: detail });
   });
   await page.goto('./?station=602');
-  await expect(page.locator('.train-consist').first()).toHaveText('R211A');
+  await expect(page.locator('.train-consist').first()).toHaveText('R211A · 4149–4145, 4374–4370');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.locator('.train-row').first().click();
   await expect(page.locator('.consist-cars li')).toHaveCount(10);
@@ -83,9 +84,8 @@ test('search, favorite, restore, direction filters, and theme persistence', asyn
   await page.locator('.station-result>button:first-child').first().click();
   await expect(page.locator('h1')).toHaveText('Atlantic Av-Barclays Ctr');
   await page.getByRole('button', { name: 'Favorite this station', exact: true }).click();
-  await page.getByRole('button', { name: 'Choose direction', exact: true }).click();
   await page.getByRole('button', { name: 'Northbound', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Choose direction', exact: true })).toContainText('Northbound');
+  await expect(page.getByRole('button', { name: 'Northbound', exact: true })).toHaveAttribute('aria-pressed', 'true');
   const themeButton = page.locator('.theme-trigger:visible, button[aria-label="Choose theme"]:visible');
   await themeButton.click();
   await page.getByRole('button', { name: /Hello Kitty/ }).click();
@@ -107,19 +107,6 @@ test('nearby stations use explicit permission and retain manual search after den
   await expect(page.getByText('Location permission is off. You can still search for any station.')).toBeVisible();
   await page.getByRole('textbox', { name: 'Search stations' }).fill('Jay Metro');
   await expect(page.locator('.station-result')).toHaveCount(1);
-});
-test('downstream comparison is removed and line filters can be reset', async ({ page }) => {
-  await page.goto('./?station=602');
-  await expect(page.locator('.train-row').first()).toBeVisible();
-  await expect(page.getByRole('combobox', { name: 'Compare arrivals at a downstream station' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Lines', exact: true }).click();
-  await page.locator('.route-filters button').first().click();
-  await page.getByRole('button', { name: 'Back to the board' }).click();
-  await expect(page.locator('.filter-button')).toContainText('(1)');
-  await page.locator('.filter-button').click();
-  await page.getByRole('button', { name: 'Show every line' }).click();
-  await page.getByRole('button', { name: 'Back to the board' }).click();
-  await expect(page.locator('.filter-button')).not.toContainText('(1)');
 });
 test('future stops open arrival-relative transfers and return to the train', async ({ page }) => {
   await page.goto('./?station=602');
@@ -195,3 +182,75 @@ test('installed shell and recent board recover offline without live countdowns',
   await context.setOffline(false);
   await expect(page.getByText('LIVE FEED', { exact: true })).toBeVisible();
 });
+
+test('direct filters combine, toggle, reset, and persist', async ({ page }) => {
+  await page.route('**/api/v1/stations/602/board', async route => {
+    const response = await route.fetch(), board = await response.json();
+    const seed = board.departures[0];
+    board.departures = ['NORTH', 'SOUTH'].flatMap(direction => ['4', '5'].map(line => ({
+      ...seed, key: `${direction}-${line}`, direction, route: line, time: 1788656500,
+    })));
+    await route.fulfill({ response, json: board });
+  });
+  await page.goto('./?station=602');
+  const directions = page.getByRole('group', { name: 'Direction filters' });
+  const lines = page.getByRole('group', { name: 'Line filters' });
+  const north = directions.getByRole('button', { name: 'Northbound', exact: true });
+  const all = lines.getByRole('button', { name: 'All lines', exact: true });
+  await expect(page.locator('.train-row')).toHaveCount(4);
+  await north.focus();
+  await page.keyboard.press('Enter');
+  await expect(north).toBeFocused();
+  await expect(page.locator('.train-row')).toHaveCount(2);
+  await lines.getByRole('button', { name: 'Line 4', exact: true }).click();
+  await expect(page.locator('.train-row')).toHaveCount(1);
+  await lines.getByRole('button', { name: 'Line 5', exact: true }).click();
+  await expect(page.locator('.train-row')).toHaveCount(2);
+  await expect(lines.locator('[aria-pressed=true]')).toHaveCount(2);
+  await page.reload();
+  await expect(north).toHaveAttribute('aria-pressed', 'true');
+  await expect(lines.locator('[aria-pressed=true]')).toHaveCount(2);
+  await expect(page.locator('.train-row')).toHaveCount(2);
+  await lines.getByRole('button', { name: 'Line 4', exact: true }).click();
+  await expect(page.locator('.train-row .route-bullet')).toHaveText(['5']);
+  await lines.getByRole('button', { name: 'Line 5', exact: true }).click();
+  await expect(all).toHaveAttribute('aria-pressed', 'true');
+  await lines.getByRole('button', { name: 'Line 4', exact: true }).click();
+  await all.click();
+  await expect(lines.locator('[aria-pressed=true]')).toHaveCount(1);
+  await directions.getByRole('button', { name: 'Southbound', exact: true }).click();
+  await expect(page.locator('.platform-subheading>span:last-child')).toHaveText(['SOUTHBOUND']);
+  await lines.getByRole('button', { name: 'Line L', exact: true }).click();
+  await expect(page.getByText('No trains match these filters')).toBeVisible();
+  await page.getByRole('button', { name: 'Reset filters', exact: true }).click();
+  await expect(directions.getByRole('button', { name: 'All directions' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(all).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.train-row')).toHaveCount(4);
+  await expect(page.locator('dialog')).toHaveCount(0);
+});
+
+for (const width of [1440, 390, 320]) {
+  test(`filter groups remain side by side at ${width}px with many routes`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto('./?station=611');
+    const directions = page.getByRole('group', { name: 'Direction filters' });
+    const lines = page.getByRole('group', { name: 'Line filters' });
+    await expect(lines.getByRole('button').nth(8)).toBeVisible();
+    const left = (await directions.boundingBox())!, right = (await lines.boundingBox())!;
+    expect(left.y).toBe(right.y);
+    expect(left.width).toBeCloseTo(right.width, 0);
+    expect(right.x - left.x - left.width).toBeCloseTo(12, 0);
+    for (const group of [directions, lines]) {
+      const bounds = (await group.boundingBox())!;
+      for (const button of await group.getByRole('button').all()) {
+        await expect(button).toBeVisible();
+        const box = (await button.boundingBox())!;
+        expect(box.height).toBeGreaterThanOrEqual(44);
+        expect(box.x).toBeGreaterThanOrEqual(bounds.x);
+        expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width + 1);
+      }
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect(page.locator('dialog')).toHaveCount(0);
+  });
+}

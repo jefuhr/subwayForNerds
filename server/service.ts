@@ -9,6 +9,7 @@ import type { Board, ServiceAlert, SourceState, StationContext, Train } from '..
 import { enrichSchedule, type Schedules } from './schedules';
 import { HELIUM_URL, normalizeConsists, enrichConsist, type ConsistTrip } from './consists';
 import { FleetService, fleetSnapshot } from './fleet';
+import { ChangeDetector } from './changes';
 
 const upstream = 'https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/';
 export interface FeedSlot { state: SourceState; raw?: any; trains: Map<string, Train>; digest?: string }
@@ -30,6 +31,7 @@ export class TransitService {
   fleet?: FleetService;
   consistState: SourceState = { id: 'helium', timestamp: null, fetchedAt: null, error: null };
   scheduleWorker?: Worker;
+  changeDetector = new ChangeDetector();
   readonly cacheDir: string;
   constructor(readonly options: { fixtureDir?: string; cacheDir?: string; fetcher?: typeof fetch } = {}) {
     this.cacheDir = options.cacheDir || process.env.STATE_DIR || 'state';
@@ -53,6 +55,9 @@ export class TransitService {
     const states = [...this.slots.values()].map(s => ({ ...s.state }));
     states.push({ ...this.consistState });
     const all = [...this.slots.values()].flatMap(s => [...s.trains.values()]);
+    const names = new Map(this.catalog.flatMap(s => s.parts.map(p => [p.id, p.name] as const)));
+    for (const train of all) this.changeDetector.enrich(train, this.alerts, this.slots.get('subway-alerts')?.state, this.schedules, now, names, !!this.contextStates.get('schedules')?.error, !!this.slots.get(train.feed)?.state.error);
+    this.changeDetector.prune(now);
     for (const train of all) enrichConsist(train, this.consists, now);
     this.fleet?.observe(all.filter(t => !this.slots.get(t.feed)?.state.error && !this.consistState.error).flatMap(t => { const s = fleetSnapshot(t, now); return s ? [s] : []; }), now);
     const partToStation = new Map(this.catalog.flatMap(s => s.parts.map(p => [p.id, s.id] as const)));
@@ -128,7 +133,7 @@ export class TransitService {
       return;
     }
     this.startFleet();
-    this.schedules = await this.restore('schedules');
+    const restoredSchedules = this.refreshSchedules(true).catch(() => { /* Missing/old cache is rebuilt by the independent poller. */ });
     await Promise.all([...this.slots.keys()].map(async id => {
       const cached = await this.restore(id);
       if (cached) try { this.accept(id, cached.raw, cached.fetchedAt); } catch { /* Ignore corrupt cache. */ }
@@ -153,7 +158,7 @@ export class TransitService {
     }, id === 'subway-alerts' ? 60000 : 15000);
     this.startContext();
     this.schedule(() => this.refreshConsists(), 10000);
-    this.schedule(() => this.refreshSchedules(), 3600000);
+    this.schedule(async () => { await restoredSchedules; await this.refreshSchedules(); }, 3600000);
   }
   startFleet() {
     if (this.fleet) return;
@@ -201,8 +206,9 @@ export class TransitService {
       }, job.interval);
     }
   }
-  async refreshSchedules() {
-    const worker = new Worker(new URL('./schedule-worker.mjs', import.meta.url));
+  async refreshSchedules(restore = false) {
+    const cacheFile = path.join(this.cacheDir, 'schedules.json');
+    const worker = new Worker(new URL('./schedule-worker.mjs', import.meta.url), { workerData: restore ? { restore: cacheFile } : { cacheFile } });
     this.scheduleWorker = worker;
     await new Promise<void>((resolve, reject) => {
       worker.once('message', async (result) => {
@@ -213,9 +219,8 @@ export class TransitService {
             delete train.scheduledPattern;
             enrichSchedule(train, result);
           }
-          this.refreshBoards();
-          await this.persist('schedules', result);
           this.contextStates.set('schedules', { id: 'schedules', timestamp: result.timestamp, fetchedAt: nowSeconds(), error: null });
+          this.refreshBoards();
           resolve();
         } catch (error) { reject(error); }
       });
@@ -224,6 +229,7 @@ export class TransitService {
     }).catch(error => {
       const previous = this.contextStates.get('schedules');
       this.contextStates.set('schedules', { id: 'schedules', timestamp: previous?.timestamp ?? null, fetchedAt: previous?.fetchedAt ?? null, error: String(error) });
+      this.refreshBoards();
       throw error;
     });
   }

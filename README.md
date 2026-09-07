@@ -44,6 +44,10 @@ the app beyond localhost so geolocation and service workers work.
 - Tap a future stop inside train details to compare connecting departures against
   that train's predicted arrival. Raw gaps include no walking buffer or guaranteed
   platform access. Stale, skipped, canceled and unassigned predictions are excluded.
+- Compact service-change labels compare each trip with weekday daytime service,
+  distinguishing routine overnight/weekend patterns, planned work, disruptions,
+  and reported track changes. Open train details for evidence and affected stops.
+  See [service-change detection](docs/service-changes.md) for comparison limits.
 - Open Fleet for grouped consists or individual cars, last reports, sourced home-yard
   estimates and 30 days of collected movement history. See [fleet data and operations](docs/fleet.md)
   for coverage, identity rules, backup/restore and API details.
@@ -70,7 +74,7 @@ every 10 seconds, with independent timeout/backoff. Helium's `tripId` matches th
 NYCT extension's `train_id`, not the GTFS `trip_id`. Matching routes and reports
 within five minutes of each other can attach `consistCars` numbers and equipment
 types to departures and train details. Stale routes, ambiguous IDs, unassigned
-trains, and invalid car lists are omitted. Car data expires five minutes after
+  trains, and invalid car lists are omitted. Car data expires five minutes after
 its report or fetch time; failed requests do not interrupt departure predictions.
 The fleet database retains last observations across restarts, but only new reports
 can establish current assignments. Cached offline boards hide live car lists.

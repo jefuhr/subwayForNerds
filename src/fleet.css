@@ -1,4 +1,9 @@
 .fleet-panel{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:16px;flex:1}
+.board-toolbar{display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:12px}
+.board-toolbar .direction-control{margin:0;justify-self:start}
+.board-toolbar .board-actions{justify-self:end}
+.quick-filter-button{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:6px;background:var(--raised);color:var(--ink);padding:8px 10px;font:inherit;font-size:11px;min-height:34px}
+.quick-filter-button:hover,.quick-filter-button.active{background:var(--accent-tint);color:var(--accent)}
 .fleet-filters{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .fleet-filters select,.fleet-filters input:not([type=checkbox]){font:inherit;font-size:16px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;min-width:0;max-width:100%}
 .fleet-filters label{display:flex;align-items:center;gap:8px}
@@ -30,4 +35,4 @@
 .transfer-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;padding:12px 0;border-top:1px solid var(--line)}
 .transfer-row span:last-child{text-align:right}
 .transfer-row small{display:block;color:var(--muted);margin-top:5px}
-@media(max-width:800px){.fleet-row{grid-template-columns:minmax(0,1fr) 16px}.fleet-numbers{grid-column:1}.fleet-position{grid-column:1}.fleet-row>svg{grid-column:2;grid-row:1 / span 2;align-self:center}.topbar-right .system-clock{display:none}.fleet-panel input{font-size:16px}.fleet-panel>.station-search-input{position:sticky;top:0;background:var(--canvas);z-index:1}.fleet-filters select{flex:1;min-width:130px}.fleet-panel .raw-details{overflow-wrap:anywhere}}
+@media(max-width:800px){.board-toolbar{grid-template-columns:auto 1fr;gap:8px}.board-toolbar .board-actions{grid-column:2;justify-self:end}.board-toolbar .board-actions .text-button:first-child{display:none}.board-toolbar .direction-control{grid-column:1}.fleet-row{grid-template-columns:minmax(0,1fr) 16px}.fleet-numbers{grid-column:1}.fleet-position{grid-column:1}.fleet-row>svg{grid-column:2;grid-row:1 / span 2;align-self:center}.topbar-right .system-clock{display:none}.fleet-panel input{font-size:16px}.fleet-panel>.station-search-input{position:sticky;top:0;background:var(--canvas);z-index:1}.fleet-filters select{flex:1;min-width:130px}.fleet-panel .raw-details{overflow-wrap:anywhere}}

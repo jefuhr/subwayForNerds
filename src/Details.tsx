@@ -5,6 +5,8 @@ import { ageLabel, clockTime, freshness } from '../shared/display';
 import { api } from './platform';
 import Modal from './Modal';
 import { currentConsist } from '../shared/consist';
+import { ChangeDetails, ChangeLabels } from './Changes';
+import { changesAhead } from '../shared/changes';
 
 export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: string; close: () => void; now: number; openFleet?: (id?: string) => void }) {
   const [data, setData] = useState<{ train: Train; raw: unknown }>();
@@ -35,10 +37,11 @@ export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: strin
         {currentConsist(train.consist, now) && <><ol className="consist-cars">{train.consist.cars.map((car, i) => <li key={i}><button className="car-link" onClick={() => openFleet?.(car.type ? `${train.feed === 'gtfs-si' ? 'sir' : 'nyct'}:${/^R160[AB]?$/.test(car.type) ? 'R160' : car.type}:${car.number}` : undefined)}><strong>{car.number}</strong>{car.type && <small>{car.type}</small>}</button></li>)}</ol><p className="fine-print">Tap a car for its fleet history. Reported order does not confirm the front of the train.</p></>}
       </section>
       {train.alerts.map(a => <p key={a} className="notice"><AlertTriangle size={16} />{a}</p>)}
+      <ChangeDetails changes={changesAhead(train.changes, 0)} now={now} />
       <div className="section-label">REMAINING STOPPING PATTERN <span>Arrival / departure · Eastern</span></div>
       <ol className="stop-sequence">{train.stops.map((s, i) => <li key={s.id + i} className={s.relationship === 'SKIPPED' ? 'skipped' : ''}>
         <button className="stop-link" disabled={s.relationship === 'SKIPPED' || !s.stationId || (s.arrival ?? s.departure ?? Infinity) < now} aria-label={`Transfers at ${s.name}`} onClick={() => { savedScroll.current = trainView.current?.closest('dialog')?.scrollTop || 0; setSelected(s); }}>
-        <span className="stop-dot" /><div><strong>{s.name}</strong><small>{s.id}{s.relationship === 'SKIPPED' ? ' · skipped' : ''}{s.scheduledTrack ? ` · scheduled track ${s.scheduledTrack}` : ''}{s.actualTrack ? ` · reported track ${s.actualTrack}` : ''}</small></div>
+        <span className="stop-dot" /><div><strong>{s.name}</strong><small>{s.id}{s.relationship === 'SKIPPED' ? ' · skipped' : ''}{s.scheduledTrack ? ` · scheduled track ${s.scheduledTrack}` : ''}{s.actualTrack ? ` · reported track ${s.actualTrack}` : ''}</small><ChangeLabels changes={s.changes} now={now} /></div>
         <span className="stop-time">{clockTime(s.arrival)}{s.departure && s.departure !== s.arrival && <small>dep {clockTime(s.departure)}</small>}</span>
         </button>
       </li>)}</ol>
@@ -70,7 +73,7 @@ function TransferView({ tripKey, stop, now, back }: { tripKey: string; stop: Sto
     {error && <p className="notice">{error}</p>}{!data && !error && <p className="empty">Checking connecting departures…</p>}
     {data && <><p>Your train: {clockTime(data.arrival)} estimated {data.basis}{data.basis === 'departure' ? ' (arrival unavailable)' : ''} · updated {ageLabel(data.originTimestamp, now)}</p>{stale && !data.message && <p className="notice">Predictions are stale or the arrival estimate has passed. Awaiting an update.</p>}<p className="fine-print">Next 30 minutes · raw time gaps, no walking allowance. Boarding areas may require stairs, passageways, or different platform access. Connections are not guaranteed.</p>
       {data.message && <p className="notice">{data.message}</p>}
-      {[...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, connections]) => <section className="transfer-group" key={key}><h4>{connections[0].route} · {connections[0].area}</h4>{connections.sort((a, b) => a.time! - b.time!).map(d => <div className="transfer-row" key={d.key}><span><strong>{d.destination}</strong><small>{d.actualTrack ? `Reported track ${d.actualTrack}` : d.scheduledTrack ? `Scheduled track ${d.scheduledTrack}` : 'Track not reported'}</small></span><span><strong>{clockTime(d.time)}</strong><small>{d.gap < 60 ? '<1 min' : `${Math.floor(d.gap / 60)} min`} after arrival · {d.basis}{d.basis === 'arrival' ? ' fallback' : ''}</small></span></div>)}</section>)}
+      {[...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, connections]) => <section className="transfer-group" key={key}><h4>{connections[0].route} · {connections[0].area}</h4>{connections.sort((a, b) => a.time! - b.time!).map(d => <div className="transfer-row" key={d.key}><span><strong>{d.destination}</strong><small>{d.actualTrack ? `Reported track ${d.actualTrack}` : d.scheduledTrack ? `Scheduled track ${d.scheduledTrack}` : 'Track not reported'}</small><ChangeLabels changes={d.changes} now={now} /></span><span><strong>{clockTime(d.time)}</strong><small>{d.gap < 60 ? '<1 min' : `${Math.floor(d.gap / 60)} min`} after arrival · {d.basis}{d.basis === 'arrival' ? ' fallback' : ''}</small></span></div>)}</section>)}
       <details className="raw-details"><summary>Prediction sources</summary>{data.sources.map(s => <p key={s.id}>{s.id} · {clockTime(s.timestamp)}{s.error ? ' · unavailable' : ''}</p>)}</details>
     </>}
   </section>;

@@ -15,6 +15,7 @@ export interface FleetRow { id: string; kind: 'car' | 'consist'; cars: FleetCar[
 export interface FleetPage {
   rows: FleetRow[]; total: number; page: number; pages: number; generatedAt: number;
   coverage: { category: string; count: number; note: string }[];
+  facets: { equipment: string[]; route: string[]; yard: string[] };
   sources: Evidence[]; error?: string;
 }
 export interface FleetDetail { cars: FleetCar[]; history: FleetObservation[]; generatedAt: number }

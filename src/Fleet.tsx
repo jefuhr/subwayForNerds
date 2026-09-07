@@ -42,12 +42,17 @@ export default function Fleet({ close, now, initialId, station, trip }: { close:
           <select aria-label="Fleet grouping" value={filters.view} onChange={e => update('view', e.target.value)}><option value="groups">Grouped consists</option><option value="cars">Individual cars</option></select>
           <select aria-label="Fleet category" value={filters.category} onChange={e => update('category', e.target.value)}><option value="">All categories</option>{['passenger', 'work', 'museum', 'sir'].map(c => <option key={c} value={c}>{c === 'sir' ? 'SIR' : c}</option>)}</select>
           <select aria-label="Reporting status" value={filters.status} onChange={e => update('status', e.target.value)}><option value="">Any reporting status</option><option value="reporting">Currently reporting</option><option value="unreported">Not currently reporting</option></select>
-          <details><summary>More filters</summary><div className="fleet-filters">{['equipment', 'route', 'yard'].map(key => <input key={key} aria-label={`Filter fleet ${key}`} placeholder={key} value={filters[key as keyof typeof filters]} onChange={e => update(key, key === 'route' ? e.target.value.toUpperCase() : e.target.value)} />)}<label><input type="checkbox" checked={filters.retired === 'true'} onChange={e => update('retired', e.target.checked ? 'true' : '')} />Include retired / scrapped</label></div></details>
+          <FleetFacetFilters filters={filters} update={update} />
         </div>
         <FleetResults filters={filters} now={now} select={setSelected} page={p => update('page', String(p))} />
       </>}
     </div>
   </Modal>;
+}
+function FleetFacetFilters({ filters, update }: { filters: Record<string, string>; update: (key: string, value: string) => void }) {
+  const { data } = useFleetData<FleetPage>('fleet?view=cars&page=1');
+  const options = data?.facets;
+  return <details><summary>More filters</summary><div className="fleet-filters"><select aria-label="Filter fleet equipment" value={filters.equipment} onChange={e => update('equipment', e.target.value)}><option value="">All car types</option>{(options?.equipment || []).map(v => <option key={v} value={v}>{v}</option>)}<option value="unknown">Unknown / unreported</option></select><select aria-label="Filter fleet route" value={filters.route} onChange={e => update('route', e.target.value)}><option value="">All routes</option>{(options?.route || []).map(v => <option key={v} value={v}>{v}</option>)}<option value="unknown">Unknown / unreported</option></select><select aria-label="Filter fleet yard" value={filters.yard} onChange={e => update('yard', e.target.value)}><option value="">All yards</option>{(options?.yard || []).map(v => <option key={v} value={v}>{v}</option>)}<option value="unknown">Unknown / unreported</option></select><label><input type="checkbox" checked={filters.retired === 'true'} onChange={e => update('retired', e.target.checked ? 'true' : '')} />Include retired / scrapped</label></div></details>;
 }
 function FleetResults({ filters, now, select, page }: { filters: Record<string, string>; now: number; select: (s: { id: string; kind: string }) => void; page: (p: number) => void }) {
   const [settled, setSettled] = useState(filters);

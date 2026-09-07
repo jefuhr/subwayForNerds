@@ -148,8 +148,8 @@ export class FleetStore {
       members.sort((a, b) => order ? order.indexOf(a.id) - order.indexOf(b.id) : a.number.localeCompare(b.number, undefined, { numeric: true }));
       return { id, cars: members, kind: id.startsWith('observed:') || id.startsWith('set:') ? 'consist' : 'car', reporting: members.some(c => c.reporting) };
     }).filter(row => row.cars.some(c =>
-      (!query.category || c.category === query.category) && (!query.equipment || c.equipment.toLowerCase().includes(query.equipment.toLowerCase())) &&
-      (!query.route || c.last?.route === query.route) && (!query.yard || c.estimatedYard?.name.toLowerCase().includes(query.yard.toLowerCase())) &&
+      (!query.category || c.category === query.category) && (!query.equipment || (query.equipment === 'unknown' ? !c.equipment : c.equipment.toLowerCase().includes(query.equipment.toLowerCase()))) &&
+      (!query.route || (query.route === 'unknown' ? !c.last?.route : c.last?.route === query.route)) && (!query.yard || (query.yard === 'unknown' ? !c.estimatedYard : c.estimatedYard?.name.toLowerCase().includes(query.yard.toLowerCase()))) &&
       (query.retired === 'true' || c.reporting || !/retired|scrapped|^\d{2}\/\d{2}\/\d{4}$/.test(c.lifecycle.toLowerCase())) &&
       (query.status !== 'reporting' || c.reporting) && (query.status !== 'unreported' || !c.reporting) &&
       terms.every(t => `${c.number} ${c.aliases.join(' ')} ${c.equipment} ${c.last?.location || ''} ${c.estimatedYard?.name || ''}`.toLowerCase().includes(t))))
@@ -157,6 +157,7 @@ export class FleetStore {
     const pages = Math.max(1, Math.ceil(rows.length / 100));
     const page = Math.min(pages, Math.max(1, Number(query.page) || 1));
     return { rows: rows.slice((page - 1) * 100, page * 100), page, pages, total: rows.length, generatedAt: now,
+      facets: { equipment: [...new Set(cars.map(c => c.equipment).filter(Boolean))].sort(), route: [...new Set(cars.map(c => c.last?.route).filter(Boolean))].sort(), yard: [...new Set(cars.map(c => c.estimatedYard?.name).filter(Boolean))].sort() },
       coverage: ['passenger', 'sir', 'work', 'museum'].map(category => ({ category, count: cars.filter(c => c.category === category).length,
         note: category === 'passenger' ? 'Published NYCT roster plus observed cars; roster status may conflict.' : 'Partial documented inventory; live reporting is not guaranteed.' })),
       sources: [JSON.parse(this.db.prepare("SELECT data FROM meta WHERE key='roster'").get()?.data || 'null'), ...JSON.parse(this.db.prepare("SELECT data FROM meta WHERE key='supplement'").get()?.data || '[]')].filter(Boolean) };

@@ -4,6 +4,37 @@ test.beforeEach(async ({ page }) => {
   // Recorded feed clock: prevents replayed fixtures from impersonating live data.
   await page.clock.install({ time: new Date('2026-09-06T00:59:40Z') });
 });
+test('service changes stay compact, explain their source, and become last-known', async ({ page }) => {
+  const timestamp = Date.parse('2026-09-06T00:59:40Z') / 1000;
+  const changes = [
+    { id:'track', kind:'track', classification:'unknown', label:'track 4 · scheduled 3', description:'Reported track assignment differs from the schedule.', stopIndices:[0], affectedStops:[], alertIds:[], evidence:[{source:'gtfs',timestamp,staleAfter:90}] },
+    { id:'night', kind:'pattern', classification:'scheduled', label:'overnight · extra stops', description:'Matches the published overnight pattern, different from weekday daytime service.', stopIndices:[1], affectedStops:[], alertIds:[], evidence:[{source:'schedules',timestamp,staleAfter:7200}] },
+    { id:'work', kind:'advisory', classification:'planned', label:'planned · boarding change', description:'Published maintenance notice.', stopIndices:[1], affectedStops:[], alertIds:['work'], advisory:true, evidence:[{source:'subway-alerts',timestamp,staleAfter:90}] }
+  ];
+  await page.route('**/api/v1/stations/602/board', async route => {
+    const response=await route.fetch(), board=await response.json(); board.departures.forEach((d:any)=>{d.changes=changes;});
+    await route.fulfill({response,json:board});
+  });
+  await page.route('**/api/v1/trips?*', async route => {
+    const response=await route.fetch(), detail=await response.json(); detail.train.changes=changes;
+    detail.train.stops[0].changes=[changes[0]];
+    await route.fulfill({response,json:detail});
+  });
+  await page.goto('./?station=602');
+  const row=page.locator('.train-row').first();
+  await expect(row.locator('.change-label')).toHaveCount(3);
+  await expect(row.locator('.change-more')).toHaveText('+1');
+  await expect(row).toHaveAccessibleDescription(/track 4/);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await row.click();
+  await expect(page.getByRole('heading',{name:'Different from normal'})).toBeVisible();
+  await page.locator('.change-explanation summary').first().click();
+  await expect(page.getByText('Reported track assignment differs from the schedule.',{exact:true})).toBeVisible();
+  await expect(page.locator('.stop-link .change-label').first()).toBeVisible();
+  expect(await page.locator('dialog').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  await page.clock.fastForward(91000);
+  await expect(page.locator('.change-explanation').first()).toContainText('last known');
+});
 test('station board loads, has no horizontal overflow, and opens complete train details', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto('./?station=602');
@@ -33,7 +64,7 @@ test('departures show car ranges and details show each car, then expire old repo
     await route.fulfill({ response, json: detail });
   });
   await page.goto('./?station=602');
-  await expect(page.locator('.train-consist').first()).toHaveText('Cars 4149–4145, 4374–4370');
+  await expect(page.locator('.train-consist').first()).toHaveText('R211A');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.locator('.train-row').first().click();
   await expect(page.locator('.consist-cars li')).toHaveCount(10);

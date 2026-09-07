@@ -9,6 +9,7 @@ export interface SourceState {
   id: string; timestamp: number | null; fetchedAt: number | null; error: string | null;
 }
 export interface StopPrediction {
+  changes?: TripChange[];
   sequence?: number;
   id: string; name: string; stationId?: string; arrival: number | null; departure: number | null;
   scheduledTrack?: string; actualTrack?: string; relationship?: string;
@@ -23,6 +24,8 @@ export interface Consist {
   updatedAt: number; fetchedAt: number; source: 'helium';
 }
 export interface Train {
+  changes?: TripChange[];
+  startTime?: string;
   key: string; feed: string; tripId: string; serviceDate?: string; route: string;
   destination: string; direction: string; trainId?: string; assigned?: boolean;
   timestamp: number; position?: { stopId?: string; name: string; status?: string; timestamp?: number };
@@ -31,6 +34,7 @@ export interface Train {
   scheduledPattern?: { shape: string; headsign: string; stops: string[]; source: string };
 }
 export interface Departure {
+  changes?: TripChange[];
   departure?: number | null;
   key: string; tripKey: string; route: string; destination: string; direction: string;
   stopId: string; partId: string; area: string; time: number | null; arrival: number | null;
@@ -41,9 +45,27 @@ export interface Departure {
   onward: { stationId: string; stopId: string; name: string; time: number | null }[];
 }
 export interface ServiceAlert {
+  alertType?: string; activePeriodLabel?: string; planNumbers?: string[];
+  affectedSelectors?: AlertSelector[];
   id: string; title: string; description: string; effect?: string;
-  routes: string[]; stops: string[]; selectors: { route?: string; stop?: string; trip?: string; direction?: number }[];
+  routes: string[]; stops: string[]; selectors: AlertSelector[];
   periods: { start?: number; end?: number }[]; updatedAt?: number; raw?: unknown;
+}
+export interface AlertSelector {
+  route?: string; stop?: string; trip?: string; direction?: number;
+  serviceDate?: string; startTime?: string; priority?: number;
+}
+export interface TripChange {
+  id: string;
+  kind: 'track' | 'boarding' | 'pattern' | 'skip' | 'cancellation' | 'advisory';
+  classification: 'scheduled' | 'planned' | 'unplanned' | 'unknown';
+  label: string; description?: string; location?: string;
+  // Indices address occurrences in this snapshot, not persistent stop identities.
+  stopIndices: number[]; affectedStops: string[];
+  before?: string; after?: string;
+  evidence: { source: string; timestamp: number; staleAfter: number; unavailable?: boolean }[];
+  alertIds: string[];
+  advisory?: boolean;
 }
 export interface Board {
   station: Station; generatedAt: number; sources: SourceState[];

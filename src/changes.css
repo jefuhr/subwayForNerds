@@ -1,0 +1,6 @@
+.change-labels{display:flex;flex-wrap:wrap;gap:4px;max-width:100%;margin-top:4px}
+.change-label{display:inline-flex;align-items:center;gap:4px;font-size:11px;line-height:1.35;padding:3px 5px;border:1px solid currentColor;border-radius:4px;white-space:normal;overflow-wrap:anywhere;text-align:left;color:var(--warning);background:var(--card)}
+.change-label svg{flex-shrink:0}.change-scheduled{color:var(--muted);border-color:var(--line);background:var(--raised)}
+.change-unplanned{color:var(--danger)}.change-planned{color:var(--accent)}.change-stale,.change-more{color:var(--muted);border-color:var(--line)}
+.change-details{margin:16px 0}.change-details h3{margin:0}.change-explanation{border-bottom:1px solid var(--line);padding:8px 0}.change-explanation summary{cursor:pointer}.change-explanation .change-labels{display:inline-flex;vertical-align:middle}.change-explanation p{white-space:pre-wrap;font-size:14px}.change-explanation small{color:var(--muted)}
+.train-destination .change-labels .change-label{font-size:11px}.stop-link .change-labels{grid-column:auto}.transfer-row .change-labels{max-width:100%}

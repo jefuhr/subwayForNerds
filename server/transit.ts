@@ -1,4 +1,5 @@
-import type { Board, Departure, ServiceAlert, SourceState, Station, Train } from '../shared/types';
+import type { AlertSelector, Board, Departure, ServiceAlert, SourceState, Station, Train } from '../shared/types';
+import { changesAhead, changeSummary } from '../shared/changes';
 import { extension } from './decode';
 import { parentStop } from './catalog';
 import corridorDefinitions from '../data/corridors.json';
@@ -33,7 +34,7 @@ export function normalizeFeed(feed: string, raw: any, catalog: Station[]): Map<s
         ...(track.actual_track ? { actualTrack: track.actual_track } : {}),
         ...(s.schedule_relationship ? { relationship: s.schedule_relationship } : {}) };
     });
-    const train: Train = { key, feed, tripId: descriptor.trip_id, serviceDate: descriptor.start_date,
+    const train: Train = { key, feed, tripId: descriptor.trip_id, serviceDate: descriptor.start_date, startTime: descriptor.start_time,
       route: descriptor.route_id || '?', destination: predictions.at(-1)?.name || 'Destination unavailable',
       direction: ext.direction || (predictions[0]?.id.endsWith('N') ? 'NORTH' : predictions[0]?.id.endsWith('S') ? 'SOUTH' : 'UNKNOWN'),
       timestamp, stops: predictions, relationship: descriptor.schedule_relationship, alerts: [],
@@ -56,11 +57,17 @@ export function normalizeFeed(feed: string, raw: any, catalog: Station[]): Map<s
 export function normalizeAlerts(raw: any): ServiceAlert[] {
   return (raw.entity || []).filter((e: any) => e.alert).map((e: any) => {
     const a = e.alert, ext = extension(a, 'mercury_alert');
-    const selectors = (a.informed_entity || []).map((s: any) => ({ route: s.route_id, stop: s.stop_id, trip: s.trip?.trip_id, direction: s.direction_id }));
+    const selector = (s: any): AlertSelector => ({ route: s.route_id || s.trip?.route_id, stop: s.stop_id, trip: s.trip?.trip_id,
+      direction: s.direction_id ?? s.trip?.direction_id, serviceDate: s.trip?.start_date, startTime: s.trip?.start_time,
+      priority: Number(extension(s, 'mercury_entity_selector').sort_order?.split(':').at(-1)) || undefined });
+    const selectors = (a.informed_entity || []).map(selector);
     return { id: e.id, title: english(a.header_text), description: english(a.description_text), effect: a.effect,
       routes: [...new Set<string>(selectors.map((s: any) => s.route).filter(Boolean))],
       stops: [...new Set<string>([...selectors.map((s: any) => s.stop), ...(ext.affected_stations || []).map((s: any) => s.stop_id)].filter(Boolean))],
       selectors, periods: (a.active_period || []).map((p: any) => ({ start: number(p.start) ?? undefined, end: number(p.end) ?? undefined })),
+      alertType: ext.alert_type, activePeriodLabel: english(ext.human_readable_active_period),
+      planNumbers: [...(ext.service_plan_number || []), ...(ext.general_order_number || [])],
+      affectedSelectors: (ext.affected_stations || []).map(selector),
       updatedAt: number(ext.updated_at) ?? undefined, raw: a };
   });
 }
@@ -128,6 +135,7 @@ export function buildBoard(station: Station, trains: Iterable<Train>, states: So
       ...(train.consist ? { consist: train.consist } : {}),
       relationship: stop.relationship === 'SKIPPED' ? 'SKIPPED' : train.relationship,
       alerts: train.alerts,
+      changes: changesAhead(train.changes, i).map(changeSummary),
       onward: train.stops.slice(i + 1).filter(s => s.stationId && s.relationship !== 'SKIPPED').map(s => ({ stationId: s.stationId!, stopId: s.id, name: s.name, time: s.arrival ?? s.departure })) });
   }
   departures.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity) || a.key.localeCompare(b.key));

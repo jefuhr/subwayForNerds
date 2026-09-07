@@ -26,6 +26,7 @@ service.acceptConsists({ trips: [{ tripId: selected.trainId, routeId: selected.r
   consistCars: ['4149', '4148', '4147', '4146', '4145'].map(number => ({ number, type: 'R211A' })) }] }, fixtureNow);
 const snapshots = [...service.details.values()].flatMap(({ train }) => { const s = fleetSnapshot(train, fixtureNow); return s ? [s] : []; });
 await service.fleet.call('observe', snapshots, fixtureNow);
+process.env.STATE_DIR = fleetDir;
 const app = await createServer(service);
-await app.listen({ host: '127.0.0.1', port: 8092 });
+await app.listen({ host: '127.0.0.1', port: Number(process.env.SFN_TEST_PORT || 8092) });
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { void app.close().then(() => rm(fleetDir, { recursive: true, force: true })).then(() => process.exit(0)); });

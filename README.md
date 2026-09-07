@@ -184,7 +184,19 @@ below 200ms. Actual results and platform limitations belong in `docs/validation.
 - Theme palettes and local Lato/Flame font assets were adapted from the user's
   `~/DiD_Open` mobile branch. The interface and transit service are new.
 
-No accounts or analytics are included. Location stays on-device. Browser storage
-holds preferences, a station catalog, and up to eight recent station snapshots.
+No accounts are required. Location stays on-device. First-party analytics record
+sessions, station views, and control actions with a random browser ID, coarse
+device category, and referring hostname. No location, search text, full referrer
+URL, raw IP address, or raw user-agent string is stored in analytics. Events are
+kept for 365 days in `STATE_DIR/analytics.sqlite`, separate from fleet data.
+Public aggregates are available at `/subwaysForNerds/stats`; browser counts are
+estimates. Collection starts at deployment with no historical backfill.
+
+Browser storage holds per-station direction and line preferences, a station
+catalog, and snapshots for every favorite plus eight recent nonfavorites when
+space permits. Favorites preload immediately and refresh every 30 seconds; the
+selected station refreshes every 10 seconds. Fetching pauses while hidden or
+offline. Nonfavorite snapshots are evicted first when storage fills.
+
 Future native shells can reuse the API/UI and replace `src/platform.ts` adapters
 for native storage and geolocation.

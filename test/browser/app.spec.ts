@@ -236,19 +236,35 @@ for (const width of [1440, 390, 320]) {
     const directions = page.getByRole('group', { name: 'Direction filters' });
     const lines = page.getByRole('group', { name: 'Line filters' });
     await expect(lines.getByRole('button').nth(8)).toBeVisible();
-    const left = (await directions.boundingBox())!, right = (await lines.boundingBox())!;
+    const left = (await directions.boundingBox())!, right = (await page.locator('.route-filter-strip').boundingBox())!;
     expect(left.y).toBe(right.y);
-    expect(left.width).toBeCloseTo(right.width, 0);
     expect(right.x - left.x - left.width).toBeCloseTo(12, 0);
+    expect(left.height).toBeLessThanOrEqual(48);
+    expect(right.height).toBeLessThanOrEqual(48);
     for (const group of [directions, lines]) {
-      const bounds = (await group.boundingBox())!;
-      for (const button of await group.getByRole('button').all()) {
-        await expect(button).toBeVisible();
+      const buttons = await group.getByRole('button').all();
+      const first = (await buttons[0].boundingBox())!;
+      for (const button of buttons) {
         const box = (await button.boundingBox())!;
         expect(box.height).toBeGreaterThanOrEqual(44);
-        expect(box.x).toBeGreaterThanOrEqual(bounds.x);
-        expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width + 1);
+        expect(box.y).toBe(first.y);
       }
+    }
+    await expect(directions.getByRole('button', { name: 'All directions' })).toHaveText('');
+    if (await lines.evaluate(el => el.scrollWidth > el.clientWidth + 1)) {
+      const more = page.getByRole('button', { name: 'Scroll to more lines', exact: true });
+      await more.click();
+      await expect.poll(() => lines.evaluate(el => el.scrollLeft)).toBeGreaterThan(0);
+      for (let i = 0; i < 20 && await more.count(); i++) {
+        await more.click();
+        await page.waitForTimeout(350);
+      }
+      const last = lines.getByRole('button').last();
+      await expect(last).toBeInViewport();
+      await last.click();
+      await expect(last).toHaveAttribute('aria-pressed', 'true');
+      await page.getByRole('button', { name: 'Scroll to first lines' }).click();
+      await expect.poll(() => lines.evaluate(el => el.scrollLeft)).toBe(0);
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await expect(page.locator('dialog')).toHaveCount(0);

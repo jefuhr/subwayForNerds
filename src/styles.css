@@ -46,9 +46,14 @@
 /* B division orange route bullets use the official white-on-orange treatment. */
 .route-bullet.orange{--route-ink:#fff}
 
-.departure-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:10px 0 17px;margin-bottom:22px;border-bottom:1px solid var(--line)}
-.direction-filters,.route-filters{display:flex;flex-wrap:wrap;align-content:flex-start;align-items:flex-start;gap:6px;min-width:0}
-.route-filters{justify-content:flex-end}
-.departure-filters button{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;max-width:100%;padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--muted);font-size:11px}
+.departure-filters{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;padding:8px 0 10px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.direction-filters,.route-filters{display:flex;align-items:center;gap:4px;min-width:0}
+.route-filter-strip{display:flex;justify-content:flex-end;min-width:0;gap:4px}
+.route-filters{overflow-x:auto;scrollbar-width:none;padding:2px;scroll-padding:2px;overscroll-behavior-x:contain}
+.route-filters::-webkit-scrollbar{display:none}
+.departure-filters button{display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--muted);font-size:11px;white-space:nowrap}
+.direction-filters button{padding:5px;width:44px}
 .departure-filters button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-tint);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .route-filters button:has(.route-bullet){padding:5px}
+.route-filters button:focus-visible{outline-offset:-3px}
+.route-scroll{align-self:center}

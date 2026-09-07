@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, ArrowLeftRight, Check, ChevronDown, ChevronRight, Clock3, Crosshair, ExternalLink, Info, MapPin, Palette, Radio, RefreshCw, Search, Star, TrainFront, TriangleAlert, X } from 'lucide-react';
+import { ArrowDown, MoveVertical, ArrowRight, ArrowUp, ArrowUpRight, ArrowLeftRight, Check, ChevronLeft, ChevronDown, ChevronRight, Clock3, Crosshair, ExternalLink, Info, MapPin, Palette, Radio, RefreshCw, Search, Star, TrainFront, TriangleAlert, X } from 'lucide-react';
 import type { Board, Departure, Station } from '../shared/types';
 import { ageLabel, boardable, clockTime, countdown, distanceMeters, freshness } from '../shared/display';
 import { api, locate, storage } from './platform';
@@ -129,8 +129,8 @@ export default function App() {
         <section id="departures" className="departure-board" tabIndex={-1}>
           <div className="board-toolbar"><div className="board-title"><h2>Departures</h2><span className="count-badge">{visible.length}</span></div><div className="board-actions"><button className="text-button" onClick={() => setPanel('alerts')}><TriangleAlert size={14} />Alerts{alerts.length ? ` (${alerts.length})` : ''}</button><button className="icon-button" onClick={refresh} aria-label="Refresh departures"><RefreshCw size={15} /></button></div></div>
           <div className="departure-filters">
-            <div className="direction-filters" role="group" aria-label="Direction filters">{[['ALL', 'All directions'], ['NORTH', 'Northbound'], ['SOUTH', 'Southbound']].map(([id, name]) => <button key={id} aria-pressed={direction === id} onClick={() => setDirection(id)}>{name}</button>)}</div>
-            <div className="route-filters" role="group" aria-label="Line filters"><button aria-pressed={!routes.length} onClick={() => setRoutes([])}>All lines</button>{availableRoutes.map(r => <button key={r} aria-label={`Line ${r}`} aria-pressed={routes.includes(r)} onClick={() => setRoutes(v => v.includes(r) ? v.filter(x => x !== r) : [...v, r])}><Bullet route={r} /></button>)}</div>
+            <div className="direction-filters" role="group" aria-label="Direction filters">{[['ALL', 'All directions'], ['NORTH', 'Northbound'], ['SOUTH', 'Southbound']].map(([id, name]) => <button key={id} aria-label={name} title={name} aria-pressed={direction === id} onClick={() => setDirection(id)}>{id === 'ALL' ? <MoveVertical size={19} /> : id === 'NORTH' ? <ArrowUp size={19} /> : <ArrowDown size={19} />}</button>)}</div>
+            <RouteFilters availableRoutes={availableRoutes} routes={routes} setRoutes={setRoutes} />
           </div>
           {!board && <div className="loading-board"><span className="loading-line" /><span className="loading-line" /><span className="loading-line" /><p>{error || 'Connecting to your station…'}</p>{error && <button onClick={() => setPanel('stations')} className="text-button">Choose a station</button>}</div>}
           {board && !visible.length && <div className="empty-board"><TrainFront size={30} /><h3>{routes.length || direction !== 'ALL' ? 'No trains match these filters' : 'No departures reported yet'}</h3><p>{routes.length || direction !== 'ALL' ? 'Try all directions and lines.' : 'Feeds refresh automatically. An empty board does not mean service is suspended.'}</p>{(routes.length > 0 || direction !== 'ALL') && <button className="primary-button" onClick={() => { setRoutes([]); setDirection('ALL'); }}>Reset filters</button>}</div>}
@@ -144,6 +144,30 @@ export default function App() {
     {panel === 'themes' && <Modal title="Make it yours" eyebrow="SAME SIGNAL. DIFFERENT FREQUENCY." close={() => setPanel(null)}><p className="muted">A subway original, with a few friends from the ferry.</p><div className="theme-grid">{themes.map(t => <button key={t.id} className={'theme-option ' + (theme === t.id ? 'chosen' : '')} onClick={() => setTheme(t.id)} aria-pressed={theme === t.id}><span className="theme-swatch" style={{ background: t.color }} /><span><strong>{t.name}</strong><small>{t.note}</small></span>{theme === t.id && <Check size={17} />}</button>)}</div></Modal>}
     {panel === 'alerts' && <Modal title="Service notes" eyebrow="WHAT CHANGED" close={() => setPanel(null)}><p className="fine-print">Alert feed updated {ageLabel(alertSource?.timestamp, now)}{alertSource?.error ? ' · connection unavailable' : ''}</p>{(cached || freshness(alertSource?.timestamp, now) !== 'live') && <p className="notice">Alert information is stale or unavailable. This is not confirmation of normal service.</p>}{!alerts.length && <p className="empty">No active alerts matched this station in the last feed.</p>}{alerts.map(a => <article className="alert-detail" key={a.id}><div className="route-list">{a.routes.map(r => <Bullet key={r} route={r} small />)}</div><h3>{a.title}</h3><p>{a.description.replace(/<[^>]*>/g, '')}</p><details className="raw-details"><summary>Alert source details</summary><pre>{JSON.stringify(a.raw, null, 2)}</pre></details></article>)}</Modal>}
     <Suspense fallback={<div className="panel-loading" role="status">Opening details…</div>}>{panel === 'fleet' && <Fleet close={() => setPanel(null)} now={now} initialId={fleetId} station={selectStation} trip={key => { setPanel(null); setTripKey(key); }} />}{tripKey && <TrainDetail tripKey={tripKey} close={() => setTripKey(null)} now={now} openFleet={openFleet} />}{panel === 'context' && board && <ContextDetail board={board} close={() => setPanel(null)} now={now} />}</Suspense>
+  </div>;
+}
+function RouteFilters({ availableRoutes, routes, setRoutes }: { availableRoutes: string[]; routes: string[]; setRoutes: React.Dispatch<React.SetStateAction<string[]>> }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [overflow, setOverflow] = useState(false);
+  const [atEnd, setAtEnd] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current!;
+    const update = () => {
+      setOverflow(el.scrollWidth > el.clientWidth + 1);
+      setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    el.addEventListener('scroll', update);
+    update();
+    return () => { observer.disconnect(); el.removeEventListener('scroll', update); };
+  }, [availableRoutes.join('|')]);
+  return <div className="route-filter-strip">
+    <div ref={ref} className="route-filters" role="group" aria-label="Line filters"><button aria-pressed={!routes.length} onClick={() => setRoutes([])}>All lines</button>{availableRoutes.map(r => <button key={r} aria-label={`Line ${r}`} aria-pressed={routes.includes(r)} onClick={() => setRoutes(v => v.includes(r) ? v.filter(x => x !== r) : [...v, r])}><Bullet route={r} /></button>)}</div>
+    {overflow && <button className="route-scroll" aria-label={atEnd ? 'Scroll to first lines' : 'Scroll to more lines'} onClick={() => {
+      const el = ref.current!;
+      el.scrollTo({ left: atEnd ? 0 : el.scrollLeft + Math.max(44, el.clientWidth - 44), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    }}>{atEnd ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}</button>}
   </div>;
 }
 function StationShortcut({ station, selected, onClick }: { station: Station; selected: boolean; onClick: () => void }) {

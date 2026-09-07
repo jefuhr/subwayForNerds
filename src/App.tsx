@@ -4,6 +4,8 @@ import type { Board, Departure, Station } from '../shared/types';
 import { ageLabel, boardable, clockTime, countdown, distanceMeters, freshness } from '../shared/display';
 import { api, locate, storage } from './platform';
 import { useBoard } from './useBoard';
+import { readPreferences, type Preference } from './preferences';
+import { track, stationView } from './analytics';
 import { themes } from './themes';
 import { consistSummary, currentConsist } from '../shared/consist';
 import Modal from './Modal';
@@ -34,13 +36,20 @@ export default function App() {
   const [nearby, setNearby] = useState<{ latitude: number; longitude: number }>();
   const [locationState, setLocationState] = useState('');
   const [locating, setLocating] = useState(false);
-  const [direction, setDirection] = useState(() => storage.get('direction', 'ALL'));
-  const [routes, setRoutes] = useState<string[]>(() => storage.get('routes', []));
+  const [preferences, setPreferences] = useState(readPreferences);
+  const { direction, routes } = preferences[stationId] || { direction: 'ALL', routes: [] };
+  const savePreference = (patch: Partial<Preference>) => setPreferences(previous => {
+    const next = { ...previous, [stationId]: { direction, routes, ...patch } };
+    storage.set('preferences', { version: 1, stations: next }); return next;
+  });
+  const setDirection = (value: string) => { track('direction', stationId); savePreference({ direction: value }); };
+  const setRoutes: React.Dispatch<React.SetStateAction<string[]>> = value => { track('line', stationId); savePreference({ routes: typeof value === 'function' ? value(routes) : value }); };
+  const openTrip = (key: string) => { track('train_open', stationId); setTripKey(key); };
   const [fleetId, setFleetId] = useState<string>();
-  const openFleet = (id?: string) => { setTripKey(null); setFleetId(id); setPanel('fleet'); };
+  const openFleet = (id?: string) => { track('fleet_open', stationId); setTripKey(null); setFleetId(id); setPanel('fleet'); };
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const autoOpenedFavorite = useRef(false);
-  const { board, cached, error, refresh } = useBoard(stationId);
+  const { board, cached, error, refresh } = useBoard(stationId, favorites);
   useLayoutEffect(() => {
     if (board?.departures.length && !performance.getEntriesByName('sfn-board-visible').length) performance.mark('sfn-board-visible');
   }, [board]);
@@ -55,7 +64,7 @@ export default function App() {
   useEffect(() => { const pop = () => { setStationId(readStation()); }; window.addEventListener('popstate', pop); return () => window.removeEventListener('popstate', pop); }, []);
   useEffect(() => { const selected = themes.some(t => t.id === theme) ? theme : 'subway'; document.documentElement.dataset.theme = selected; storage.set('theme', selected); }, [theme]);
   useEffect(() => { storage.set('favorites', favorites); }, [favorites]);
-  useEffect(() => { storage.set('direction', direction); storage.set('routes', routes); }, [direction, routes]);
+  useEffect(() => { if (board) stationView(stationId); }, [board, stationId]);
   useEffect(() => { document.title = station ? `${station.name} · Subways for Nerds` : 'Subways for Nerds'; }, [station?.name]);
   const selectStation = (id: string) => {
     setStationId(id); storage.set('station', id); setTripKey(null); setPanel(null);
@@ -79,7 +88,7 @@ export default function App() {
       const url = new URL(location.href); url.searchParams.set('station', closest.id); history.replaceState({}, '', url);
     }).catch(() => { /* location is optional; keep the saved station */ });
   }, [favorites, stations, stationId]);
-  const toggleFavorite = (id: string) => setFavorites(v => v.includes(id) ? v.filter(s => s !== id) : [...v, id]);
+  const toggleFavorite = (id: string) => { track(favorites.includes(id) ? 'favorite_remove' : 'favorite_add', id); setFavorites(v => v.includes(id) ? v.filter(s => s !== id) : [...v, id]); };
   const getNearby = async () => {
     setPanel('stations'); setQuery(''); setLocationState(''); setLocating(true);
     try { const fix = await locate(); setNearby(fix.coords); }
@@ -133,17 +142,18 @@ export default function App() {
             <RouteFilters availableRoutes={availableRoutes} routes={routes} setRoutes={setRoutes} />
           </div>
           {!board && <div className="loading-board"><span className="loading-line" /><span className="loading-line" /><span className="loading-line" /><p>{error || 'Connecting to your station…'}</p>{error && <button onClick={() => setPanel('stations')} className="text-button">Choose a station</button>}</div>}
-          {board && !visible.length && <div className="empty-board"><TrainFront size={30} /><h3>{routes.length || direction !== 'ALL' ? 'No trains match these filters' : 'No departures reported yet'}</h3><p>{routes.length || direction !== 'ALL' ? 'Try all directions and lines.' : 'Feeds refresh automatically. An empty board does not mean service is suspended.'}</p>{(routes.length > 0 || direction !== 'ALL') && <button className="primary-button" onClick={() => { setRoutes([]); setDirection('ALL'); }}>Reset filters</button>}</div>}
-          <div className="platform-groups">{sortedGroups.map(group => <PlatformGroup key={group[0].direction + group[0].partId + (group[0].actualTrack || group[0].scheduledTrack || '?')} departures={group} board={board!} now={now} cached={cached} open={setTripKey} />)}</div>
+          {board && !visible.length && <div className="empty-board"><TrainFront size={30} /><h3>{routes.length || direction !== 'ALL' ? 'No trains match these filters' : 'No departures reported yet'}</h3><p>{routes.length || direction !== 'ALL' ? 'Try all directions and lines.' : 'Feeds refresh automatically. An empty board does not mean service is suspended.'}</p>{(routes.length > 0 || direction !== 'ALL') && <button className="primary-button" onClick={() => { track('reset', stationId); savePreference({ routes: [], direction: 'ALL' }); }}>Reset filters</button>}</div>}
+          <div className="platform-groups">{sortedGroups.map(group => <PlatformGroup key={group[0].direction + group[0].partId + (group[0].actualTrack || group[0].scheduledTrack || '?')} departures={group} board={board!} now={now} cached={cached} open={openTrip} />)}</div>
         </section>
         <section className="board-footer"><div><Radio size={14} /><span>FEED CHECK</span></div><div className="source-chips">{trainSources.map(s => <span key={s.id} title={s.error || `Source: ${s.id}`} className={freshness(s.timestamp, now) === 'live' && !s.error ? '' : 'source-stale'}><i />{s.id.replace('gtfs-', '').replace('gtfs', '1–7 / S').toUpperCase()} <b>{ageLabel(s.timestamp, now)}</b></span>)}</div><p>Times are predictions, not promises. Track labels are feed-reported.</p></section>
-        <div className="end-note"><span>YOU KNOW THE MAP. WE’LL WATCH THE TRAINS.</span><span>NYC / 24:7</span></div>
+        <div className="end-note"><span>YOU KNOW THE MAP. WE’LL WATCH THE TRAINS.</span><a href={import.meta.env.BASE_URL + 'stats'}>Stats</a><span>NYC / 24:7</span></div>
+        <p className="fine-print">First-party usage statistics estimate visits and returning browsers using a random browser ID. Station views and control actions are retained for one year. No location or search text is collected.</p>
       </div>
     </main>
     {panel === 'stations' && <Modal fullscreen title={nearby ? 'Stations near you' : 'Find your station'} eyebrow="THE WHOLE SYSTEM" close={() => setPanel(null)}><div className="station-search-input"><Search size={18} /><input autoFocus autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="Station, line, or borough…" value={query} onChange={e => setQuery(e.target.value)} aria-label="Search stations" />{query && <button className="icon-button" onClick={() => setQuery('')} aria-label="Clear search"><X size={16} /></button>}</div><div className="search-tools"><button className="text-button" onClick={getNearby} disabled={locating}><Crosshair size={16} />{locating ? 'Finding your location…' : 'Use my location'}</button>{nearby && <button className="text-button" onClick={() => setNearby(undefined)}>Clear nearby sort</button>}</div>{locationState && <p className="notice">{locationState}</p>}{catalogError && <p className="notice">{catalogError}</p>}<p className="fine-print">{nearby ? 'Sorted by straight-line distance to the closest station in each complex.' : `${stations.length} station complexes · favorites first`}</p><div className="station-results">{matchingStations.map(({ station: s, distance }) => <div className="station-result" key={s.id}><button onClick={() => selectStation(s.id)}><div><strong>{s.name}</strong><small>{boroughs[s.borough] || s.borough}{distance != null ? ` · ${distance < 1000 ? Math.round(distance) + ' m' : (distance / 1000).toFixed(1) + ' km'} away` : ''}</small></div><div className="route-list">{s.routes.map(r => <Bullet route={r} small key={r} />)}</div></button><button className="icon-button" onClick={() => toggleFavorite(s.id)} aria-label={favorites.includes(s.id) ? `Unfavorite ${s.name}` : `Favorite ${s.name}`}><Star size={16} fill={favorites.includes(s.id) ? 'currentColor' : 'none'} /></button></div>)}</div>{!matchingStations.length && <p className="empty">No stations found. Try another name or line.</p>}</Modal>}
     {panel === 'themes' && <Modal title="Make it yours" eyebrow="SAME SIGNAL. DIFFERENT FREQUENCY." close={() => setPanel(null)}><p className="muted">A subway original, with a few friends from the ferry.</p><div className="theme-grid">{themes.map(t => <button key={t.id} className={'theme-option ' + (theme === t.id ? 'chosen' : '')} onClick={() => setTheme(t.id)} aria-pressed={theme === t.id}><span className="theme-swatch" style={{ background: t.color }} /><span><strong>{t.name}</strong><small>{t.note}</small></span>{theme === t.id && <Check size={17} />}</button>)}</div></Modal>}
     {panel === 'alerts' && <Modal title="Service notes" eyebrow="WHAT CHANGED" close={() => setPanel(null)}><p className="fine-print">Alert feed updated {ageLabel(alertSource?.timestamp, now)}{alertSource?.error ? ' · connection unavailable' : ''}</p>{(cached || freshness(alertSource?.timestamp, now) !== 'live') && <p className="notice">Alert information is stale or unavailable. This is not confirmation of normal service.</p>}{!alerts.length && <p className="empty">No active alerts matched this station in the last feed.</p>}{alerts.map(a => <article className="alert-detail" key={a.id}><div className="route-list">{a.routes.map(r => <Bullet key={r} route={r} small />)}</div><h3>{a.title}</h3><p>{a.description.replace(/<[^>]*>/g, '')}</p><details className="raw-details"><summary>Alert source details</summary><pre>{JSON.stringify(a.raw, null, 2)}</pre></details></article>)}</Modal>}
-    <Suspense fallback={<div className="panel-loading" role="status">Opening details…</div>}>{panel === 'fleet' && <Fleet close={() => setPanel(null)} now={now} initialId={fleetId} station={selectStation} trip={key => { setPanel(null); setTripKey(key); }} />}{tripKey && <TrainDetail tripKey={tripKey} close={() => setTripKey(null)} now={now} openFleet={openFleet} />}{panel === 'context' && board && <ContextDetail board={board} close={() => setPanel(null)} now={now} />}</Suspense>
+    <Suspense fallback={<div className="panel-loading" role="status">Opening details…</div>}>{panel === 'fleet' && <Fleet close={() => setPanel(null)} now={now} initialId={fleetId} station={selectStation} trip={key => { setPanel(null); openTrip(key); }} />}{tripKey && <TrainDetail tripKey={tripKey} close={() => setTripKey(null)} now={now} openFleet={openFleet} />}{panel === 'context' && board && <ContextDetail board={board} close={() => setPanel(null)} now={now} />}</Suspense>
   </div>;
 }
 function RouteFilters({ availableRoutes, routes, setRoutes }: { availableRoutes: string[]; routes: string[]; setRoutes: React.Dispatch<React.SetStateAction<string[]>> }) {

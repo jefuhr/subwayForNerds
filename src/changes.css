@@ -4,3 +4,7 @@
 .change-unplanned{color:var(--danger)}.change-planned{color:var(--accent)}.change-stale,.change-more{color:var(--muted);border-color:var(--line)}
 .change-details{margin:16px 0}.change-details h3{margin:0}.change-explanation{border-bottom:1px solid var(--line);padding:8px 0}.change-explanation summary{cursor:pointer}.change-explanation .change-labels{display:inline-flex;vertical-align:middle}.change-explanation p{white-space:pre-wrap;font-size:14px}.change-explanation small{color:var(--muted)}
 .train-destination .change-labels .change-label{font-size:11px}.stop-link .change-labels{grid-column:auto}.transfer-row .change-labels{max-width:100%}
+
+.change-icons .change-label{padding:0;border:0;background:none}
+.change-icons .change-planned,.change-icons .change-scheduled{color:#d5a000}
+.change-icons .change-unplanned{color:#e53935}

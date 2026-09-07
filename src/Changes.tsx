@@ -4,15 +4,15 @@ import { changeStale } from '../shared/changes';
 import { ageLabel } from '../shared/display';
 import './changes.css';
 
-export function ChangeLabels({ changes = [], now, cached = false, id }: { changes?: TripChange[]; now: number; cached?: boolean; id?: string }) {
+export function ChangeLabels({ changes = [], now, cached = false, id, iconsOnly = false }: { changes?: TripChange[]; now: number; cached?: boolean; id?: string; iconsOnly?: boolean }) {
   if (!changes.length) return null;
-  return <span id={id} className="change-labels">{changes.slice(0,2).map(c => {
+  return <span id={id} className={`change-labels${iconsOnly ? ' change-icons' : ''}`}>{(iconsOnly ? changes : changes.slice(0,2)).map(c => {
     const stale = changeStale(c, now, cached);
     const Icon = c.classification === 'scheduled' || stale ? Clock3 : TriangleAlert;
-    return <span key={c.id} className={`change-label change-${stale ? 'stale' : c.classification}`} title={c.description || c.label}>
-      <Icon size={12} aria-hidden="true" />{stale ? 'last known · ' : ''}{c.label}{c.advisory ? ' · advisory' : ''}
+    return <span key={c.id} className={`change-label change-${stale && !iconsOnly ? 'stale' : c.classification}`} title={`${stale ? 'Last known · ' : ''}${c.description || c.label}`} aria-label={iconsOnly ? `${c.classification} · ${stale ? 'last known · ' : ''}${c.label}` : undefined}>
+      <Icon size={iconsOnly ? 16 : 12} aria-hidden="true" />{!iconsOnly && <>{stale ? 'last known · ' : ''}{c.label}{c.advisory ? ' · advisory' : ''}</>}
     </span>;
-  })}{changes.length > 2 && <span className="change-label change-more" title="Open train details for all changes">+{changes.length-2}</span>}</span>;
+  })}{!iconsOnly && changes.length > 2 && <span className="change-label change-more" title="Open train details for all changes">+{changes.length-2}</span>}</span>;
 }
 export function ChangeDetails({ changes = [], now }: { changes?: TripChange[]; now: number }) {
   if (!changes.length) return null;

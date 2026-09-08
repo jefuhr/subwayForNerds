@@ -141,15 +141,15 @@ test('nearest favorite restores that station preferences and reset affects only 
   await context.setGeolocation({ latitude: closest.lat, longitude: closest.lon });
   await page.addInitScript(() => {
     localStorage.setItem('sfn:station', '602'); localStorage.setItem('sfn:favorites', '["602","617"]');
-    localStorage.setItem('sfn:preferences', JSON.stringify({ version: 1, stations: { '602': { direction: 'NORTH', routes: ['4'] }, '617': { direction: 'SOUTH', routes: ['NONEXISTENT'] } } }));
+    localStorage.setItem('sfn:preferences', JSON.stringify({ version: 1, stations: { '602': { direction: 'NORTH', routes: ['4'] }, '617': { direction: 'SOUTH', routes: ['NONEXISTENT'], view: 'corridor' } } }));
   });
   await page.goto('./');
   await expect(page.locator('h1')).toHaveText(closest.name);
   await expect(page.getByRole('button', { name: 'Southbound', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Reset filters', exact: true }).click();
   const preferences = await page.evaluate(() => JSON.parse(localStorage.getItem('sfn:preferences')!).stations);
-  expect(preferences['617']).toEqual({ direction: 'ALL', routes: [] });
-  expect(preferences['602']).toEqual({ direction: 'NORTH', routes: ['4'] });
+  expect(preferences['617']).toEqual({ direction: 'ALL', routes: [], view: 'corridor' });
+  expect(preferences['602']).toEqual({ direction: 'NORTH', routes: ['4'], view: 'track' });
 });
 
 test('analytics retries immutable batches in memory when storage and delivery fail', async ({ page }) => {

@@ -34,8 +34,14 @@ the app beyond localhost so geolocation and service workers work.
   (Union Square is the initial fallback). The station title opens search; stars
   save favorites. A nearby button can request location again and sorts stations
   on-device by straight-line distance.
-- A complex includes its constituent stations. Direction, constituent station and
-  reported/scheduled track define the groups. A group is a feed-based boarding
+- The View menu beside Departures offers track, direction across all platforms,
+  direction by route family, direction by station corridor, and service views.
+  Each station remembers its view. Track is the default; service sections contain
+  separate direction lists. Combined views retain each train’s boarding area.
+  Direction grouping uses feed northbound/southbound assignments, including
+  crosstown services; each train retains its local direction label.
+  A complex includes its constituent stations. Direction, constituent station and
+  reported/scheduled track define the default groups. A group is a feed-based boarding
   area, not a guarantee of shared platform access. Unknown tracks stay unknown.
 - Trains from different routes are interleaved by predicted time. Five rows per
   group are shown initially; each group can expand. Route and direction filters

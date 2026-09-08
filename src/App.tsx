@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, MoveVertical, ArrowRight, ArrowUp, ArrowUpRight, ArrowLeftRight, Check, ChevronLeft, ChevronDown, ChevronRight, Clock3, Crosshair, ExternalLink, Info, MapPin, Palette, Radio, RefreshCw, Search, Star, TrainFront, TriangleAlert, X } from 'lucide-react';
-import type { Board, Departure, Station } from '../shared/types';
+import type { Board, Station } from '../shared/types';
 import { ageLabel, boardable, clockTime, countdown, distanceMeters, freshness } from '../shared/display';
 import { api, locate, storage } from './platform';
 import { useBoard } from './useBoard';
@@ -9,6 +9,8 @@ import { track, stationView } from './analytics';
 import { themes } from './themes';
 import { consistSummary, currentConsist } from '../shared/consist';
 import Modal from './Modal';
+import DepartureViewMenu from './DepartureViewMenu';
+import { groupDepartures, directionLabel, type DepartureGroup, type DepartureView } from '../shared/departureGroups';
 import { ChangeLabels } from './Changes';
 
 const TrainDetail = lazy(() => import('./Details').then(m => ({ default: m.TrainDetail })));
@@ -37,9 +39,9 @@ export default function App() {
   const [locationState, setLocationState] = useState('');
   const [locating, setLocating] = useState(false);
   const [preferences, setPreferences] = useState(readPreferences);
-  const { direction, routes } = preferences[stationId] || { direction: 'ALL', routes: [] };
+  const { direction, routes, view } = preferences[stationId] || { direction: 'ALL', routes: [], view: 'track' };
   const savePreference = (patch: Partial<Preference>) => setPreferences(previous => {
-    const next = { ...previous, [stationId]: { direction, routes, ...patch } };
+    const next = { ...previous, [stationId]: { direction, routes, view, ...patch } };
     storage.set('preferences', { version: 1, stations: next }); return next;
   });
   const setDirection = (value: string) => { track('direction', stationId); savePreference({ direction: value }); };
@@ -103,9 +105,8 @@ export default function App() {
   }, [stations, query, nearby, favorites]);
   const availableRoutes = [...new Set([...(station?.routes || []), ...(board?.departures.map(d => d.route) || [])].map(displayRoute))];
   const visible = (board?.departures || []).filter(d => (direction === 'ALL' || d.direction === direction) && (!routes.length || routes.includes(displayRoute(d.route))) && !(freshness(d.timestamp, now) === 'live' && d.time != null && d.time < now - 30));
-  const groups = new Map<string, Departure[]>();
-  for (const d of visible) { const key = [d.direction, d.partId, d.actualTrack || d.scheduledTrack || '?'].join('|'); const rows = groups.get(key) || []; rows.push(d); groups.set(key, rows); }
-  const sortedGroups = [...groups.values()].sort((a, b) => a[0].direction.localeCompare(b[0].direction) || a[0].partId.localeCompare(b[0].partId) || (a[0].actualTrack || a[0].scheduledTrack || '').localeCompare(b[0].actualTrack || b[0].scheduledTrack || ''));
+  const sortedGroups = board ? groupDepartures(visible, board.station, view) : [];
+  const services = [...new Set(sortedGroups.map(g => g.service).filter((s): s is string => !!s))];
   const trainSources = board?.sources.filter(s => s.id !== 'subway-alerts' && s.id !== 'helium') || [];
   const live = !cached && trainSources.some(s => freshness(s.timestamp, now) === 'live');
   const degraded = trainSources.some(s => freshness(s.timestamp, now) !== 'live' || s.error);
@@ -136,14 +137,14 @@ export default function App() {
         </section>
         {(error || degraded) && <div className="notice-bar"><TriangleAlert size={16} /><span>{error || 'Some feeds are stale or unavailable. Check source ages below.'}</span>{alerts.length > 0 && <button onClick={() => setPanel('alerts')}>View {alerts.length > 1 ? `${alerts.length} alerts` : 'alert'}<ArrowRight size={15} /></button>}</div>}
         <section id="departures" className="departure-board" tabIndex={-1}>
-          <div className="board-toolbar"><div className="board-title"><h2>Departures</h2><span className="count-badge">{visible.length}</span></div><div className="board-actions"><button className="text-button" onClick={() => setPanel('alerts')}><TriangleAlert size={14} />Alerts{alerts.length ? ` (${alerts.length})` : ''}</button><button className="icon-button" onClick={refresh} aria-label="Refresh departures"><RefreshCw size={15} /></button></div></div>
+          <div className="board-toolbar"><div className="board-title"><h2>Departures</h2><span className="count-badge">{visible.length}</span><DepartureViewMenu key={stationId} value={view} onChange={value => savePreference({ view: value })} /></div><div className="board-actions"><button className="text-button" onClick={() => setPanel('alerts')}><TriangleAlert size={14} />Alerts{alerts.length ? ` (${alerts.length})` : ''}</button><button className="icon-button" onClick={refresh} aria-label="Refresh departures"><RefreshCw size={15} /></button></div></div>
           <div className="departure-filters">
             <div className="direction-filters" role="group" aria-label="Direction filters">{[['ALL', 'All directions'], ['NORTH', 'Northbound'], ['SOUTH', 'Southbound']].map(([id, name]) => <button key={id} aria-label={name} title={name} aria-pressed={direction === id} onClick={() => setDirection(id)}>{id === 'ALL' ? <MoveVertical size={19} /> : id === 'NORTH' ? <ArrowUp size={19} /> : <ArrowDown size={19} />}</button>)}</div>
             <RouteFilters availableRoutes={availableRoutes} routes={routes} setRoutes={setRoutes} />
           </div>
           {!board && <div className="loading-board"><span className="loading-line" /><span className="loading-line" /><span className="loading-line" /><p>{error || 'Connecting to your station…'}</p>{error && <button onClick={() => setPanel('stations')} className="text-button">Choose a station</button>}</div>}
           {board && !visible.length && <div className="empty-board"><TrainFront size={30} /><h3>{routes.length || direction !== 'ALL' ? 'No trains match these filters' : 'No departures reported yet'}</h3><p>{routes.length || direction !== 'ALL' ? 'Try all directions and lines.' : 'Feeds refresh automatically. An empty board does not mean service is suspended.'}</p>{(routes.length > 0 || direction !== 'ALL') && <button className="primary-button" onClick={() => { track('reset', stationId); savePreference({ routes: [], direction: 'ALL' }); }}>Reset filters</button>}</div>}
-          <div className="platform-groups">{sortedGroups.map(group => <PlatformGroup key={group[0].direction + group[0].partId + (group[0].actualTrack || group[0].scheduledTrack || '?')} departures={group} board={board!} now={now} cached={cached} open={openTrip} />)}</div>
+          <div className="platform-groups">{view === 'service' ? services.map(service => <section className="service-section" key={stationId + service} aria-label={`Service ${service}`}><h3 className="service-heading"><Bullet route={service} />Service {service}</h3><div className="service-directions">{sortedGroups.filter(g => g.service === service).map(group => <PlatformGroup key={stationId + group.key} group={group} view={view} board={board!} now={now} cached={cached} open={openTrip} />)}</div></section>) : sortedGroups.map(group => <PlatformGroup key={stationId + group.key} group={group} view={view} board={board!} now={now} cached={cached} open={openTrip} />)}</div>
         </section>
         <section className="board-footer"><div><Radio size={14} /><span>FEED CHECK</span></div><div className="source-chips">{trainSources.map(s => <span key={s.id} title={s.error || `Source: ${s.id}`} className={freshness(s.timestamp, now) === 'live' && !s.error ? '' : 'source-stale'}><i />{s.id.replace('gtfs-', '').replace('gtfs', '1–7 / S').toUpperCase()} <b>{ageLabel(s.timestamp, now)}</b></span>)}</div><p>Times are predictions, not promises. Track labels are feed-reported.</p></section>
         <div className="end-note"><span>YOU KNOW THE MAP. WE’LL WATCH THE TRAINS.</span><a href={import.meta.env.BASE_URL + 'stats'}>Stats</a><span>NYC / 24:7</span></div>
@@ -183,21 +184,22 @@ function RouteFilters({ availableRoutes, routes, setRoutes }: { availableRoutes:
 function StationShortcut({ station, selected, onClick }: { station: Station; selected: boolean; onClick: () => void }) {
   return <button className={'station-shortcut ' + (selected ? 'current' : '')} onClick={onClick}><span>{station.name}</span><div className="route-list">{station.routes.slice(0, 8).map(r => <Bullet key={r} route={r} small />)}</div>{selected && <span className="current-indicator" />}</button>;
 }
-function PlatformGroup({ departures, board, now, cached, open }: { departures: Departure[]; board: Board; now: number; cached: boolean; open: (key: string) => void }) {
+function PlatformGroup({ group, view, board, now, cached, open }: { group: DepartureGroup; view: DepartureView; board: Board; now: number; cached: boolean; open: (key: string) => void }) {
   const [expanded, setExpanded] = useState(false);
-  const first = departures[0], part = board.station.parts.find(p => p.id === first.partId)!;
+  const departures = group.departures;
+  const first = departures[0], part = board.station.parts.find(p => p.id === first.partId);
   const track = first.actualTrack || first.scheduledTrack;
-  const direction = first.direction === 'NORTH' ? part.north : first.direction === 'SOUTH' ? part.south : 'Direction unknown';
+  const direction = view === 'track' ? (first.direction === 'NORTH' ? part?.north : first.direction === 'SOUTH' ? part?.south : undefined) || directionLabel(group.direction) : directionLabel(group.direction);
   const rows = expanded ? departures : departures.slice(0, 5);
-  return <section className="platform-card"><header className="platform-heading"><div className="platform-direction">{first.direction === 'NORTH' ? <ArrowUp size={17} /> : <ArrowDown size={17} />}<h3>{direction}</h3></div><span className="platform-track">{track ? `TRACK ${track}` : 'TRACK UNKNOWN'}<span>{first.actualTrack ? 'reported' : track ? 'scheduled' : 'direction group'}</span></span><div className="platform-subheading"><span>{part.line}</span><span>{first.direction === 'NORTH' ? 'NORTHBOUND' : first.direction === 'SOUTH' ? 'SOUTHBOUND' : 'UNKNOWN DIRECTION'}</span></div></header>
+  return <section className="platform-card"><header className="platform-heading"><div className="platform-direction">{group.direction === 'NORTH' ? <ArrowUp size={17} /> : group.direction === 'SOUTH' ? <ArrowDown size={17} /> : <MoveVertical size={17} />}<h3>{direction}</h3></div>{view === 'track' && <span className="platform-track">{track ? `TRACK ${track}` : 'TRACK UNKNOWN'}<span>{first.actualTrack ? 'reported' : track ? 'scheduled' : 'direction group'}</span></span>}<div className="platform-subheading"><span>{view === 'track' ? part?.line || first.partId : view === 'direction' ? 'All platforms' : view === 'service' ? `Service ${group.service}` : group.label}</span><span>{first.direction === 'NORTH' ? 'NORTHBOUND' : first.direction === 'SOUTH' ? 'SOUTHBOUND' : 'UNKNOWN DIRECTION'}</span></div></header>
     <div className="column-labels"><span>TRAIN / DESTINATION</span><span>CURRENT POSITION</span><span>ARRIVES IN</span></div>
     <div>{rows.map((d, index) => {
       const time = countdown(d.time, d.timestamp, now, cached);
       const positionOld = d.locationTimestamp != null && now - d.locationTimestamp > 90;
       const disabled = !boardable(d), previous = departures.slice(0, index).reverse().find(x => boardable(x));
       const gap = previous?.time != null && d.time != null && !cached && freshness(d.timestamp, now) === 'live' && freshness(previous.timestamp, now) === 'live' ? Math.round((d.time - previous.time) / 60) : null;
-      return <button className={'train-row ' + (disabled ? 'canceled ' : '')} key={d.key} onClick={() => open(d.tripKey)} aria-describedby={d.changes?.length ? `changes-${encodeURIComponent(d.key)}` : undefined} aria-label={`${d.route} to ${d.destination}, ${disabled ? d.relationship : time.value + ' ' + time.unit}, ${d.location}. Open train details`}>
-        <div className="train-identity"><Bullet route={d.route} /><div className="train-destination"><strong>{d.destination}</strong><span className="train-pattern">{d.pattern}<span className="pattern-marker" title={d.patternSource === 'inferred' ? 'Inferred from remaining stopping pattern' : 'Station corridor metadata'}>{d.patternSource === 'inferred' ? 'est.' : ''}</span></span>{!cached && currentConsist(d.consist, now) && <span className="train-consist" title={`Helium · reported ${ageLabel(d.consist.updatedAt, now)}`}>{[...new Set(d.consist.cars.map(car => car.type).filter(Boolean))].join(' / ') || 'Car type not reported'} · {consistSummary(d.consist.cars)}{freshness(d.consist.updatedAt, now) !== 'live' ? ' · last reported' : ''}</span>}<div className="train-tags">{disabled && !d.changes?.some(c => c.kind === 'cancellation' || c.kind === 'skip') && <span className="disruption-tag">{d.relationship?.toLowerCase()}</span>}{d.alerts.length > 0 && <span className="change-label change-unknown" title={d.alerts.join(" · ")} aria-label={d.alerts.join(" · ")}><TriangleAlert size={16} aria-hidden="true" /></span>}{d.assigned === false && <span className="disruption-tag">not yet assigned</span>}{!d.changes && d.actualTrack && d.scheduledTrack && d.actualTrack !== d.scheduledTrack && <span className="disruption-tag">track {d.actualTrack} · scheduled {d.scheduledTrack}</span>}</div><ChangeLabels iconsOnly id={`changes-${encodeURIComponent(d.key)}`} changes={d.changes} now={now} cached={cached} /></div></div>
+      return <button className={'train-row ' + (disabled ? 'canceled ' : '')} key={d.key} onClick={() => open(d.tripKey)} aria-describedby={d.changes?.length ? `changes-${encodeURIComponent(d.key)}` : undefined} aria-label={`${d.route} to ${d.destination}, ${disabled ? d.relationship : time.value + ' ' + time.unit}, ${d.location}.${view !== 'track' ? ` ${d.area || d.partId}, ${d.actualTrack ? 'reported track' : d.scheduledTrack ? 'scheduled track' : 'track unknown'}.` : ''} Open train details`}>
+        <div className="train-identity"><Bullet route={d.route} /><div className="train-destination"><strong>{d.destination}</strong><span className="train-pattern">{d.pattern}<span className="pattern-marker" title={d.patternSource === 'inferred' ? 'Inferred from remaining stopping pattern' : 'Station corridor metadata'}>{d.patternSource === 'inferred' ? 'est.' : ''}</span></span>{!cached && currentConsist(d.consist, now) && <span className="train-consist" title={`Helium · reported ${ageLabel(d.consist.updatedAt, now)}`}>{[...new Set(d.consist.cars.map(car => car.type).filter(Boolean))].join(' / ') || 'Car type not reported'} · {consistSummary(d.consist.cars)}{freshness(d.consist.updatedAt, now) !== 'live' ? ' · last reported' : ''}</span>}{view !== 'track' && <span className="train-boarding">{d.area || d.partId} · {d.actualTrack ? 'reported track' : d.scheduledTrack ? 'scheduled track' : 'track unknown'}</span>}<div className="train-tags">{disabled && !d.changes?.some(c => c.kind === 'cancellation' || c.kind === 'skip') && <span className="disruption-tag">{d.relationship?.toLowerCase()}</span>}{d.alerts.length > 0 && <span className="change-label change-unknown" title={d.alerts.join(" · ")} aria-label={d.alerts.join(" · ")}><TriangleAlert size={16} aria-hidden="true" /></span>}{d.assigned === false && <span className="disruption-tag">not yet assigned</span>}{!d.changes && d.actualTrack && d.scheduledTrack && d.actualTrack !== d.scheduledTrack && <span className="disruption-tag">track {d.actualTrack} · scheduled {d.scheduledTrack}</span>}</div><ChangeLabels iconsOnly id={`changes-${encodeURIComponent(d.key)}`} changes={d.changes} now={now} cached={cached} /></div></div>
         <div className={'train-location ' + (positionOld ? 'position-old' : '')}><span><span className="location-dot" />{cached || positionOld || freshness(d.timestamp, now) !== 'live' ? 'Last report: ' : ''}{d.location}</span><small>{d.stopsAway != null && d.stopsAway >= 0 ? `${d.stopsAway} ${d.stopsAway === 1 ? 'stop' : 'stops'} away` : 'Stop-relative position'}{d.locationTimestamp ? ` · ${ageLabel(d.locationTimestamp, now)}` : ''}</small></div>
         <div className="train-time"><div><strong>{disabled ? '—' : time.value}</strong><span>{disabled ? 'not boarding' : time.unit}</span></div><small>{gap != null && gap > 0 ? `+${gap}m after previous` : clockTime(d.time)}</small></div><ChevronRight className="row-chevron" size={15} />
       </button>;

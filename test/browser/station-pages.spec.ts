@@ -22,18 +22,18 @@ test('favorite pages navigate with controls, keyboard, history and per-station f
   await seed(page);
   await page.goto('./?station=602');
   await expect(active(page).locator('h1')).toHaveText('14 St-Union Sq');
-  await expect(active(page).getByRole('button', { name: 'Previous station' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Previous station' })).toBeDisabled();
   await active(page).getByRole('button', { name: 'Northbound', exact: true }).click();
   await active(page).getByRole('button', { name: 'View: Track', exact: true }).click();
   await page.getByRole('menuitemradio', { name: 'By direction · all platforms', exact: true }).click();
-  await active(page).getByRole('button', { name: 'Next station', exact: true }).click();
+  await page.getByRole('button', { name: 'Next station', exact: true }).click();
   await expect(page).toHaveURL(/station=617/);
   await expect(active(page).getByRole('button', { name: 'View: Track', exact: true })).toBeVisible();
   await expect(active(page).getByRole('button', { name: 'All directions', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(active(page).getByRole('navigation', { name: 'Station pages' })).toBeFocused();
+  await expect(page.getByRole('navigation', { name: 'Station pages' })).toBeFocused();
   await page.keyboard.press('ArrowRight');
   await expect(page).toHaveURL(/station=611/);
-  await expect(active(page).getByRole('button', { name: 'Next station', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Next station', exact: true })).toBeDisabled();
   await page.goBack(); await expect(page).toHaveURL(/station=617/);
   await page.goBack(); await expect(page).toHaveURL(/station=602/);
   await expect(active(page).getByRole('button', { name: 'Northbound', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -44,22 +44,22 @@ test('favorite pages navigate with controls, keyboard, history and per-station f
 test('temporary station remains available and favorite edits keep current station selected', async ({ page }) => {
   await seed(page, ['617', '611']);
   await page.goto('./?station=602');
-  await expect(active(page).locator('.station-page-count')).toHaveText('1 / 3');
-  await active(page).getByRole('button', { name: 'Next station', exact: true }).click();
+  await expect(page.locator('.station-page-count')).toHaveText('1 / 3');
+  await page.getByRole('button', { name: 'Next station', exact: true }).click();
   await expect(page).toHaveURL(/station=617/);
-  await active(page).getByRole('button', { name: 'Previous station', exact: true }).click();
+  await page.getByRole('button', { name: 'Previous station', exact: true }).click();
   await expect(page).toHaveURL(/station=602/);
   await active(page).getByRole('button', { name: 'Favorite this station', exact: true }).click();
-  await expect(active(page).locator('.station-page-count')).toHaveText('3 / 3');
+  await expect(page.locator('.station-page-count')).toHaveText('3 / 3');
   await active(page).getByRole('button', { name: 'Remove favorite station', exact: true }).click();
-  await expect(active(page).locator('.station-page-count')).toHaveText('1 / 3');
+  await expect(page.locator('.station-page-count')).toHaveText('1 / 3');
   await expect(active(page).locator('h1')).toHaveText('14 St-Union Sq');
 });
 
 test('touch swipes change pages without hijacking vertical or filter scrolling', async ({ page, isMobile }) => {
   test.skip(!isMobile);
   await seed(page); await page.goto('./?station=602');
-  await expect(active(page).locator('.station-page-count')).toHaveText('1 / 3');
+  await expect(page.locator('.station-page-count')).toHaveText('1 / 3');
   await swipe(page, 120); await expect(page).toHaveURL(/station=602/);
   await swipe(page, -20, 120); await expect(page).toHaveURL(/station=602/);
   await swipe(page, -130, 0, '.active-page .route-filters'); await expect(page).toHaveURL(/station=602/);
@@ -75,9 +75,9 @@ test('location sorts favorites and opens closest unless a station is explicit', 
   });
   await page.goto('./');
   await expect(page).toHaveURL(/station=611/);
-  await expect(active(page).locator('.station-page-count')).toHaveText('1 / 3');
+  await expect(page.locator('.station-page-count')).toHaveText('1 / 3');
   await page.goto('./?station=602');
-  await expect(active(page).locator('.station-page-count')).toHaveText('2 / 3');
+  await expect(page.locator('.station-page-count')).toHaveText('2 / 3');
   await expect(page).toHaveURL(/station=602/);
 });
 
@@ -87,12 +87,12 @@ test('late location does not change the selected station or saved-order pages af
     navigator.geolocation.getCurrentPosition = ok => { (window as any).resolveLocation = () => ok({ coords: { latitude: 40.7527, longitude: -73.9772 } } as GeolocationPosition); };
   });
   await page.goto('./');
-  await expect(active(page).locator('.station-page-count')).toHaveText('1 / 3');
-  await active(page).getByRole('button', { name: 'Next station', exact: true }).click();
+  await expect(page.locator('.station-page-count')).toHaveText('1 / 3');
+  await page.getByRole('button', { name: 'Next station', exact: true }).click();
   await expect(page).toHaveURL(/station=617/);
   await page.evaluate(() => (window as any).resolveLocation());
   await expect(page).toHaveURL(/station=617/);
-  await expect(active(page).locator('.station-page-count')).toHaveText('2 / 3');
+  await expect(page.locator('.station-page-count')).toHaveText('2 / 3');
 });
 
 test('zero or one page hides controls; many favorites and reduced motion stay usable', async ({ page }) => {
@@ -105,8 +105,8 @@ test('zero or one page hides controls; many favorites and reduced motion stay us
   await page.addInitScript(ids => localStorage.setItem('sfn:favorites', JSON.stringify(ids)), ids);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(`./?station=${ids[0]}`);
-  await expect(active(page).locator('.station-page-dots button')).toHaveCount(30);
-  await active(page).getByRole('button', { name: 'Next station', exact: true }).click();
+  await expect(page.locator('.station-page-dots button')).toHaveCount(30);
+  await page.getByRole('button', { name: 'Next station', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`station=${ids[1]}`));
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
@@ -116,13 +116,13 @@ test('cached favorites remain swipeable offline and a root visit restores its or
   await expect(active(page).locator('h1')).toHaveText('14 St-Union Sq');
   await expect.poll(() => page.evaluate(() => ['602', '617', '611'].every(id => !!localStorage.getItem('sfn:board:' + id)))).toBe(true);
   await context.setOffline(true);
-  await active(page).getByRole('button', { name: 'Next station', exact: true }).click();
+  await page.getByRole('button', { name: 'Next station', exact: true }).click();
   await expect(page).toHaveURL(/station=617/);
   await expect(active(page).locator('.status-pill')).toHaveText('CACHED BOARD');
   await expect(active(page).locator('.train-row').first()).toBeVisible();
   await page.goBack();
   await expect(active(page).locator('h1')).toHaveText('14 St-Union Sq');
-  await expect(active(page).locator('.station-page-count')).toHaveText('1 / 3');
+  await expect(page.locator('.station-page-count')).toHaveText('1 / 3');
 });
 
 test('native touch gestures preserve vertical scrolling and train taps, and do not navigate behind dialogs', async ({ page, context, isMobile, browserName }) => {

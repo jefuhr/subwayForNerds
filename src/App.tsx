@@ -4,7 +4,7 @@ import type { Board, Station } from '../shared/types';
 import { ageLabel, boardable, clockTime, countdown, distanceMeters, freshness } from '../shared/display';
 import { api, locate, storage } from './platform';
 import { useBoard, boardSnapshot } from './useBoard';
-import StationPager, { PageControls } from './StationPager';
+import StationPager from './StationPager';
 import { orderFavorites, stationPages, type Coordinates } from './stationPages';
 import { readPreferences, type Preference } from './preferences';
 import { track, stationView } from './analytics';
@@ -144,13 +144,12 @@ export default function App() {
     </aside>
     <main className="main-panel">
       <header className="topbar"><div className="mobile-brand"><img src={import.meta.env.BASE_URL + 'kitty.png'} alt="" width={128} height={128} />subways for nerds<span>.</span></div><div className="desktop-breadcrumb"><span>THE SYSTEM</span><ChevronRight size={12} /><span>STATION BOARD</span></div><div className="topbar-right"><button className="text-button mobile-only" onClick={() => openFleet()} aria-label="Open fleet"><TrainFront size={16} />Fleet</button><span className="system-clock"><Clock3 size={13} />{clockTime(now)}<span> NYC</span></span><button className="icon-button mobile-only" onClick={() => setPanel('themes')} aria-label="Choose theme"><Palette size={18} /></button><a className="ferry-link" href="https://juliet.nyc/ferryTimesMobile/" target="_blank" rel="noreferrer">Taking the ferry? <ArrowUpRight size={13} /></a></div></header>
-      <StationPager pages={pages} current={stationId} disabled={!!panel || !!tripKey} select={selectStation} render={(id, active, navigate) => {
+      <StationPager pages={pages} current={stationId} disabled={!!panel || !!tripKey} select={selectStation} name={id => stations.find(s => s.id === id)?.name || `Station ${id}`} render={(id, active) => {
         const snapshot = id === stationId ? { board, cached, error } : boardSnapshot(id);
         return <StationPage key={id} {...snapshot} stationId={id} station={snapshot.board?.station || stations.find(s => s.id === id)}
           active={active} now={now} favorites={favorites} preference={preferences[id] || { direction: 'ALL', routes: [], view: 'track' }}
           savePreference={savePreference} setDirection={setDirection} setRoutes={setRoutes} toggleFavorite={toggleFavorite}
-          setPanel={setPanel} setNearby={setNearby} getNearby={getNearby} openTrip={openTrip} refresh={refresh}
-          pages={pages} stationName={id => stations.find(s => s.id === id)?.name || `Station ${id}`} navigate={navigate} />;
+          setPanel={setPanel} setNearby={setNearby} getNearby={getNearby} openTrip={openTrip} refresh={refresh} />;
       }} />
     </main>
     {panel === 'stations' && <Modal fullscreen title={nearby ? 'Stations near you' : 'Find your station'} eyebrow="THE WHOLE SYSTEM" close={() => setPanel(null)}><div className="station-search-input"><Search size={18} /><input autoFocus autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="Station, line, or borough…" value={query} onChange={e => setQuery(e.target.value)} aria-label="Search stations" />{query && <button className="icon-button" onClick={() => setQuery('')} aria-label="Clear search"><X size={16} /></button>}</div><div className="search-tools"><button className="text-button" onClick={getNearby} disabled={locating}><Crosshair size={16} />{locating ? 'Finding your location…' : 'Use my location'}</button>{nearby && <button className="text-button" onClick={() => setNearby(undefined)}>Clear nearby sort</button>}</div>{locationState && <p className="notice">{locationState}</p>}{catalogError && <p className="notice">{catalogError}</p>}<p className="fine-print">{nearby ? 'Sorted by straight-line distance to the closest station in each complex.' : `${stations.length} station complexes · favorites first`}</p><div className="station-results">{matchingStations.map(({ station: s, distance }) => <div className="station-result" key={s.id}><button onClick={() => selectStation(s.id)}><div><strong>{s.name}</strong><small>{boroughs[s.borough] || s.borough}{distance != null ? ` · ${distance < 1000 ? Math.round(distance) + ' m' : (distance / 1000).toFixed(1) + ' km'} away` : ''}</small></div><div className="route-list">{s.routes.map(r => <Bullet route={r} small key={r} />)}</div></button><button className="icon-button" onClick={() => toggleFavorite(s.id)} aria-label={favorites.includes(s.id) ? `Unfavorite ${s.name}` : `Favorite ${s.name}`}><Star size={16} fill={favorites.includes(s.id) ? 'currentColor' : 'none'} /></button></div>)}</div>{!matchingStations.length && <p className="empty">No stations found. Try another name or line.</p>}</Modal>}
@@ -159,13 +158,12 @@ export default function App() {
     <Suspense fallback={<div className="panel-loading" role="status">Opening details…</div>}>{panel === 'fleet' && <Fleet close={() => setPanel(null)} now={now} initialId={fleetId} station={selectStation} trip={key => { setPanel(null); openTrip(key); }} />}{tripKey && <TrainDetail tripKey={tripKey} close={() => setTripKey(null)} now={now} openFleet={openFleet} />}{panel === 'context' && board && <ContextDetail board={board} close={() => setPanel(null)} now={now} />}</Suspense>
   </div>;
 }
-function StationPage({ stationId, station, board, cached, error, active, now, favorites, preference, savePreference, setDirection, setRoutes, toggleFavorite, setPanel, setNearby, getNearby, openTrip, refresh, pages, stationName, navigate }: {
+function StationPage({ stationId, station, board, cached, error, active, now, favorites, preference, savePreference, setDirection, setRoutes, toggleFavorite, setPanel, setNearby, getNearby, openTrip, refresh }: {
   stationId: string; station?: Station; board?: Board; cached: boolean; error: string; active: boolean; now: number;
   favorites: string[]; preference: Preference; savePreference: (patch: Partial<Preference>) => void;
   setDirection: (value: string) => void; setRoutes: React.Dispatch<React.SetStateAction<string[]>>;
   toggleFavorite: (id: string) => void; setPanel: (panel: 'stations' | 'themes' | 'alerts' | 'context' | 'fleet' | null) => void;
   setNearby: (coords: Coordinates | undefined) => void; getNearby: () => void; openTrip: (key: string) => void; refresh: () => void;
-  pages: string[]; stationName: (id: string) => string; navigate: (id: string) => void;
 }) {
   const { direction, routes, view } = preference;
   const availableRoutes = [...new Set([...(station?.routes || []), ...(board?.departures.map(d => d.route) || [])].map(displayRoute))];
@@ -182,7 +180,6 @@ function StationPage({ stationId, station, board, cached, error, active, now, fa
           <div className="station-title-row"><button className="station-name-button" onClick={() => { setPanel('stations'); setNearby(undefined); }}><h1>{station?.name || 'Your next train'}</h1><ChevronDown size={24} /></button><button className={'icon-button favorite-button ' + (favorites.includes(stationId) ? 'active' : '')} onClick={() => toggleFavorite(stationId)} aria-label={favorites.includes(stationId) ? 'Remove favorite station' : 'Favorite this station'} aria-pressed={favorites.includes(stationId)}><Star size={22} fill={favorites.includes(stationId) ? 'currentColor' : 'none'} /></button></div>
           <div className="station-meta"><div className="route-list">{(station?.routes || []).map(r => <Bullet route={r} small key={r} />)}</div><span className="station-description">{station?.parts.length ? `${station.parts.length} ${station.parts.length === 1 ? 'station' : 'connected stations'}` : 'Station-first. Always.'}</span><button className="text-button" onClick={() => board && setPanel('context')} disabled={!board}><Info size={14} />Station info<ArrowUpRight size={13} /></button><button className="nearby-mobile text-button" onClick={getNearby}><Crosshair size={16} />Nearby</button></div>
         </section>
-        <PageControls pages={pages} current={stationId} name={stationName} select={navigate} />
         {(error || degraded) && <div className="notice-bar"><TriangleAlert size={16} /><span>{error || 'Some feeds are stale or unavailable. Check source ages below.'}</span>{alerts.length > 0 && <button onClick={() => setPanel('alerts')}>View {alerts.length > 1 ? `${alerts.length} alerts` : 'alert'}<ArrowRight size={15} /></button>}</div>}
         <section id={active ? 'departures' : undefined} className="departure-board" tabIndex={-1}>
           <div className="board-toolbar"><div className="board-title"><h2>Departures</h2><span className="count-badge">{visible.length}</span><DepartureViewMenu key={stationId} value={view} onChange={value => savePreference({ view: value })} /></div><div className="board-actions"><button className="text-button" onClick={() => setPanel('alerts')}><TriangleAlert size={14} />Alerts{alerts.length ? ` (${alerts.length})` : ''}</button><button className="icon-button" onClick={refresh} aria-label="Refresh departures"><RefreshCw size={15} /></button></div></div>

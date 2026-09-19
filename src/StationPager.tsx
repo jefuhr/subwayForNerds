@@ -1,14 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-export function PageControls({ pages, current, name, select }: { pages: string[]; current: string; name: (id: string) => string; select: (id: string) => void }) {
+function PageControls({ pages, current, name, select }: { pages: string[]; current: string; name: (id: string) => string; select: (id: string) => void }) {
   const ref = useRef<HTMLElement>(null);
   const index = pages.indexOf(current);
   useEffect(() => {
     const dot = ref.current?.querySelector<HTMLElement>('[aria-current="true"]');
     if (dot?.parentElement) {
       const strip = dot.parentElement;
-      strip.scrollLeft = dot.offsetLeft - strip.offsetLeft - strip.clientWidth / 2 + dot.clientWidth / 2;
+      strip.scrollLeft = dot.offsetLeft - strip.clientWidth / 2 + dot.clientWidth / 2;
     }
   }, [current, pages.join('|')]);
   if (pages.length < 2) return null;
@@ -18,14 +18,15 @@ export function PageControls({ pages, current, name, select }: { pages: string[]
   }}>
     <button className="icon-button" aria-label="Previous station" disabled={index <= 0} onClick={() => select(pages[index - 1])}><ChevronLeft size={18} /></button>
     <div className="station-page-dots">{pages.map((id, i) => <button key={id} aria-label={`Go to ${name(id)}, page ${i + 1} of ${pages.length}`} aria-current={id === current ? 'true' : undefined} title={name(id)} onClick={() => select(id)}><span /></button>)}</div>
-    <span className="station-page-count" aria-live="polite">{index + 1} / {pages.length}</span>
+    <span className="station-page-count sr-only" aria-live="polite">{index + 1} / {pages.length}</span>
     <button className="icon-button" aria-label="Next station" disabled={index >= pages.length - 1} onClick={() => select(pages[index + 1])}><ChevronRight size={18} /></button>
   </nav>;
 }
 
-export default function StationPager({ pages, current, disabled, select, render }: {
+export default function StationPager({ pages, current, disabled, select, name, render }: {
   pages: string[]; current: string; disabled: boolean; select: (id: string) => void;
-  render: (id: string, active: boolean, navigate: (id: string) => void) => ReactNode;
+  name: (id: string) => string;
+  render: (id: string, active: boolean) => ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState(0);
@@ -39,7 +40,7 @@ export default function StationPager({ pages, current, disabled, select, render 
   useLayoutEffect(() => {
     reset();
     if (restorePagerFocus.current) {
-      ref.current?.querySelector<HTMLElement>('.active-page .station-pager')?.focus({ preventScroll: true });
+      ref.current?.querySelector<HTMLElement>('.station-pager')?.focus({ preventScroll: true });
       restorePagerFocus.current = false;
     }
   }, [current, disabled, pages.join('|')]);
@@ -86,12 +87,13 @@ export default function StationPager({ pages, current, disabled, select, render 
     el.addEventListener('touchend', end); el.addEventListener('touchcancel', cancel);
     return () => { el.removeEventListener('touchstart', start); el.removeEventListener('touchmove', move); el.removeEventListener('touchend', end); el.removeEventListener('touchcancel', cancel); };
   }, [current, disabled, pages.join('|')]);
-  return <div ref={ref} className="station-pages" onClickCapture={e => { if (suppressClick.current) { e.preventDefault(); e.stopPropagation(); suppressClick.current = false; } }}>
+  return <div ref={ref} className={'station-pages' + (pages.length > 1 ? ' has-pager' : '')} onClickCapture={e => { if (suppressClick.current && !(e.target as Element).closest('.station-pager')) { e.preventDefault(); e.stopPropagation(); suppressClick.current = false; } }}>
     <div className={'station-page-track' + (sliding ? ' sliding' : '') + (drag ? ' moving' : '')} style={{ transform: `translateX(${drag}px)` }}>
       {[-1, 0, 1].map(offset => {
         const id = pages[index + offset];
-        return id ? <div key={id} className={'station-page ' + (offset === 0 ? 'active-page' : 'neighbor-page')} style={offset ? { left: `${offset * 100}%` } : undefined} inert={offset !== 0} aria-hidden={offset !== 0 ? true : undefined}>{render(id, offset === 0, navigate)}</div> : null;
+        return id ? <div key={id} className={'station-page ' + (offset === 0 ? 'active-page' : 'neighbor-page')} style={offset ? { left: `${offset * 100}%` } : undefined} inert={offset !== 0} aria-hidden={offset !== 0 ? true : undefined}>{render(id, offset === 0)}</div> : null;
       })}
     </div>
+    {pages.length > 1 && !disabled && <div className="station-pager-dock"><PageControls pages={pages} current={current} name={name} select={navigate} /></div>}
   </div>;
 }

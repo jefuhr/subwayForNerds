@@ -34,6 +34,12 @@ the app beyond localhost so geolocation and service workers work.
   (Union Square is the initial fallback). The station title opens search; stars
   save favorites. A nearby button can request location again and sorts stations
   on-device by straight-line distance.
+- Swipe horizontally between favorite station boards, or use the page dots,
+  arrows, or keyboard arrows while the pager is focused. Favorites are ordered
+  by distance for the visit; without location they retain saved order. Browsing
+  freezes the order so a late location fix cannot interrupt navigation. Shared
+  station links keep their selected station, and nonfavorites get a temporary
+  first page. Each page retains its station's filters and cached departures.
 - A complex includes its constituent stations. Direction, constituent station and
   reported/scheduled track define the groups. A group is a feed-based boarding
   area, not a guarantee of shared platform access. Unknown tracks stay unknown.

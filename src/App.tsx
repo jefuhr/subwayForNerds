@@ -3,7 +3,9 @@ import { ArrowDown, MoveVertical, ArrowRight, ArrowUp, ArrowUpRight, ArrowLeftRi
 import type { Board, Departure, Station } from '../shared/types';
 import { ageLabel, boardable, clockTime, countdown, distanceMeters, freshness } from '../shared/display';
 import { api, locate, storage } from './platform';
-import { useBoard } from './useBoard';
+import { useBoard, boardSnapshot } from './useBoard';
+import StationPager, { PageControls } from './StationPager';
+import { orderFavorites, stationPages, type Coordinates } from './stationPages';
 import { readPreferences, type Preference } from './preferences';
 import { track, stationView } from './analytics';
 import { themes } from './themes';
@@ -48,7 +50,13 @@ export default function App() {
   const [fleetId, setFleetId] = useState<string>();
   const openFleet = (id?: string) => { track('fleet_open', stationId); setTripKey(null); setFleetId(id); setPanel('fleet'); };
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
-  const autoOpenedFavorite = useRef(false);
+  const locationRequested = useRef(false);
+  const browsing = useRef(false);
+  const explicitStation = useRef(new URLSearchParams(location.search).has('station'));
+  const [visitLocation, setVisitLocation] = useState<Coordinates>();
+  const [temporaryStation, setTemporaryStation] = useState<string | null>(() => favorites.includes(stationId) ? null : stationId);
+  const favoriteStations = useMemo(() => orderFavorites(favorites, stations, visitLocation), [favorites, stations, visitLocation]);
+  const pages = stationPages(favoriteStations.map(s => s.id), temporaryStation, stationId);
   const { board, cached, error, refresh } = useBoard(stationId, favorites);
   useLayoutEffect(() => {
     if (board?.departures.length && !performance.getEntriesByName('sfn-board-visible').length) performance.mark('sfn-board-visible');
@@ -61,34 +69,48 @@ export default function App() {
     void load(); window.addEventListener('online', load);
     return () => { controller.abort(); window.removeEventListener('online', load); };
   }, []);
-  useEffect(() => { const pop = () => { setStationId(readStation()); }; window.addEventListener('popstate', pop); return () => window.removeEventListener('popstate', pop); }, []);
+  useEffect(() => {
+    // Preserve the original selection when Back returns to a URL without a station.
+    history.replaceState({ ...history.state, stationId }, '', location.href);
+  }, []);
+  useEffect(() => { const pop = () => {
+    browsing.current = true;
+    const id = new URLSearchParams(location.search).get('station') || history.state?.stationId || readStation(); setStationId(id); storage.set('station', id);
+    if (!favorites.includes(id)) setTemporaryStation(id);
+    setTripKey(null); setPanel(null); window.scrollTo({ top: 0, behavior: 'instant' });
+  }; window.addEventListener('popstate', pop); return () => window.removeEventListener('popstate', pop); }, [favorites]);
   useEffect(() => { const selected = themes.some(t => t.id === theme) ? theme : 'subway'; document.documentElement.dataset.theme = selected; storage.set('theme', selected); }, [theme]);
   useEffect(() => { storage.set('favorites', favorites); }, [favorites]);
   useEffect(() => { if (board) stationView(stationId); }, [board, stationId]);
   useEffect(() => { document.title = station ? `${station.name} · Subways for Nerds` : 'Subways for Nerds'; }, [station?.name]);
   const selectStation = (id: string) => {
+    browsing.current = true;
+    if (!favorites.includes(id)) setTemporaryStation(id);
     setStationId(id); storage.set('station', id); setTripKey(null); setPanel(null);
-    const url = new URL(location.href); url.searchParams.set('station', id); history.pushState({}, '', url);
+    const url = new URL(location.href); url.searchParams.set('station', id); history.pushState({ stationId: id }, '', url);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
   useEffect(() => {
-    // A shared link is explicit. Otherwise, if the rider has favorites, use a
-    // one-shot location fix to open the closest one on a fresh visit. If the
-    // browser declines location, the saved station remains the instant fallback.
-    if (autoOpenedFavorite.current || new URLSearchParams(location.search).has('station') || !favorites.length || !stations.length) return;
-    autoOpenedFavorite.current = true;
-    const favoriteStations = favorites.map(id => stations.find(s => s.id === id)).filter((s): s is Station => !!s);
-    if (!favoriteStations.length) return;
+    if (locationRequested.current || !favoriteStations.length) return;
+    locationRequested.current = true;
     void locate().then(({ coords }) => {
-      const closest = favoriteStations.reduce((best, candidate) => distanceMeters(coords.latitude, coords.longitude, candidate.lat, candidate.lon) < distanceMeters(coords.latitude, coords.longitude, best.lat, best.lon) ? candidate : best);
-      if (closest.id === stationId) return;
-      setStationId(closest.id);
-      storage.set('station', closest.id);
-      setTripKey(null);
-      const url = new URL(location.href); url.searchParams.set('station', closest.id); history.replaceState({}, '', url);
-    }).catch(() => { /* location is optional; keep the saved station */ });
-  }, [favorites, stations, stationId]);
-  const toggleFavorite = (id: string) => { track(favorites.includes(id) ? 'favorite_remove' : 'favorite_add', id); setFavorites(v => v.includes(id) ? v.filter(s => s !== id) : [...v, id]); };
+      if (browsing.current) return;
+      const fix = { latitude: coords.latitude, longitude: coords.longitude };
+      setVisitLocation(fix);
+      const closest = orderFavorites(favorites, stations, fix)[0];
+      if (explicitStation.current || !closest) return;
+      setStationId(closest.id); setTemporaryStation(null);
+      storage.set('station', closest.id); setTripKey(null);
+      const url = new URL(location.href); url.searchParams.set('station', closest.id); history.replaceState({ stationId: closest.id }, '', url);
+    }).catch(() => { /* Optional location: preserve the saved order and station. */ });
+  }, [favorites, stations, favoriteStations]);
+  const toggleFavorite = (id: string) => {
+    browsing.current = true;
+    track(favorites.includes(id) ? 'favorite_remove' : 'favorite_add', id);
+    if (favorites.includes(id) && id === stationId) setTemporaryStation(id);
+    if (!favorites.includes(id) && temporaryStation === id) setTemporaryStation(null);
+    setFavorites(v => v.includes(id) ? v.filter(s => s !== id) : [...v, id]);
+  };
   const getNearby = async () => {
     setPanel('stations'); setQuery(''); setLocationState(''); setLocating(true);
     try { const fix = await locate(); setNearby(fix.coords); }
@@ -101,19 +123,10 @@ export default function App() {
       .map(s => ({ station: s, distance: nearby ? Math.min(...s.parts.map(p => distanceMeters(nearby.latitude, nearby.longitude, p.lat, p.lon))) : null }))
       .sort((a, b) => nearby ? (a.distance || 0) - (b.distance || 0) : Number(favorites.includes(b.station.id)) - Number(favorites.includes(a.station.id)) || a.station.name.localeCompare(b.station.name));
   }, [stations, query, nearby, favorites]);
-  const availableRoutes = [...new Set([...(station?.routes || []), ...(board?.departures.map(d => d.route) || [])].map(displayRoute))];
-  const visible = (board?.departures || []).filter(d => (direction === 'ALL' || d.direction === direction) && (!routes.length || routes.includes(displayRoute(d.route))) && !(freshness(d.timestamp, now) === 'live' && d.time != null && d.time < now - 30));
-  const groups = new Map<string, Departure[]>();
-  for (const d of visible) { const key = [d.direction, d.partId, d.actualTrack || d.scheduledTrack || '?'].join('|'); const rows = groups.get(key) || []; rows.push(d); groups.set(key, rows); }
-  const sortedGroups = [...groups.values()].sort((a, b) => a[0].direction.localeCompare(b[0].direction) || a[0].partId.localeCompare(b[0].partId) || (a[0].actualTrack || a[0].scheduledTrack || '').localeCompare(b[0].actualTrack || b[0].scheduledTrack || ''));
-  const trainSources = board?.sources.filter(s => s.id !== 'subway-alerts' && s.id !== 'helium') || [];
-  const live = !cached && trainSources.some(s => freshness(s.timestamp, now) === 'live');
-  const degraded = trainSources.some(s => freshness(s.timestamp, now) !== 'live' || s.error);
   const alertSource = board?.sources.find(s => s.id === 'subway-alerts');
   const alerts = board?.alerts || [];
-  const favoriteStations = favorites.map(id => stations.find(s => s.id === id)).filter((s): s is Station => !!s);
   const shortcuts = quickStations.map(id => stations.find(s => s.id === id)).filter((s): s is Station => !!s);
-  return <div className="app-shell">
+  return <div className="app-shell" onPointerDownCapture={() => { browsing.current = true; }} onTouchStartCapture={() => { browsing.current = true; }} onKeyDownCapture={() => { browsing.current = true; }}>
     <a href="#departures" className="skip-link">Skip to departures</a>
     <aside className="sidebar">
       <a className="wordmark" href={import.meta.env.BASE_URL} aria-label="Subways for Nerds home"><span className="logo-mark"><img src={import.meta.env.BASE_URL + 'kitty.png'} alt="" width={128} height={128} /></span><span>subways<span className="wordmark-bottom">for nerds<span className="brand-dot">.</span></span></span></a>
@@ -129,13 +142,48 @@ export default function App() {
     </aside>
     <main className="main-panel">
       <header className="topbar"><div className="mobile-brand"><img src={import.meta.env.BASE_URL + 'kitty.png'} alt="" width={128} height={128} />subways for nerds<span>.</span></div><div className="desktop-breadcrumb"><span>THE SYSTEM</span><ChevronRight size={12} /><span>STATION BOARD</span></div><div className="topbar-right"><button className="text-button mobile-only" onClick={() => openFleet()} aria-label="Open fleet"><TrainFront size={16} />Fleet</button><span className="system-clock"><Clock3 size={13} />{clockTime(now)}<span> NYC</span></span><button className="icon-button mobile-only" onClick={() => setPanel('themes')} aria-label="Choose theme"><Palette size={18} /></button><a className="ferry-link" href="https://juliet.nyc/ferryTimesMobile/" target="_blank" rel="noreferrer">Taking the ferry? <ArrowUpRight size={13} /></a></div></header>
+      <StationPager pages={pages} current={stationId} disabled={!!panel || !!tripKey} select={selectStation} render={(id, active, navigate) => {
+        const snapshot = id === stationId ? { board, cached, error } : boardSnapshot(id);
+        return <StationPage key={id} {...snapshot} stationId={id} station={snapshot.board?.station || stations.find(s => s.id === id)}
+          active={active} now={now} favorites={favorites} preference={preferences[id] || { direction: 'ALL', routes: [] }}
+          savePreference={savePreference} setDirection={setDirection} setRoutes={setRoutes} toggleFavorite={toggleFavorite}
+          setPanel={setPanel} setNearby={setNearby} getNearby={getNearby} openTrip={openTrip} refresh={refresh}
+          pages={pages} stationName={id => stations.find(s => s.id === id)?.name || `Station ${id}`} navigate={navigate} />;
+      }} />
+    </main>
+    {panel === 'stations' && <Modal fullscreen title={nearby ? 'Stations near you' : 'Find your station'} eyebrow="THE WHOLE SYSTEM" close={() => setPanel(null)}><div className="station-search-input"><Search size={18} /><input autoFocus autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="Station, line, or borough…" value={query} onChange={e => setQuery(e.target.value)} aria-label="Search stations" />{query && <button className="icon-button" onClick={() => setQuery('')} aria-label="Clear search"><X size={16} /></button>}</div><div className="search-tools"><button className="text-button" onClick={getNearby} disabled={locating}><Crosshair size={16} />{locating ? 'Finding your location…' : 'Use my location'}</button>{nearby && <button className="text-button" onClick={() => setNearby(undefined)}>Clear nearby sort</button>}</div>{locationState && <p className="notice">{locationState}</p>}{catalogError && <p className="notice">{catalogError}</p>}<p className="fine-print">{nearby ? 'Sorted by straight-line distance to the closest station in each complex.' : `${stations.length} station complexes · favorites first`}</p><div className="station-results">{matchingStations.map(({ station: s, distance }) => <div className="station-result" key={s.id}><button onClick={() => selectStation(s.id)}><div><strong>{s.name}</strong><small>{boroughs[s.borough] || s.borough}{distance != null ? ` · ${distance < 1000 ? Math.round(distance) + ' m' : (distance / 1000).toFixed(1) + ' km'} away` : ''}</small></div><div className="route-list">{s.routes.map(r => <Bullet route={r} small key={r} />)}</div></button><button className="icon-button" onClick={() => toggleFavorite(s.id)} aria-label={favorites.includes(s.id) ? `Unfavorite ${s.name}` : `Favorite ${s.name}`}><Star size={16} fill={favorites.includes(s.id) ? 'currentColor' : 'none'} /></button></div>)}</div>{!matchingStations.length && <p className="empty">No stations found. Try another name or line.</p>}</Modal>}
+    {panel === 'themes' && <Modal title="Make it yours" eyebrow="SAME SIGNAL. DIFFERENT FREQUENCY." close={() => setPanel(null)}><p className="muted">A subway original, with a few friends from the ferry.</p><div className="theme-grid">{themes.map(t => <button key={t.id} className={'theme-option ' + (theme === t.id ? 'chosen' : '')} onClick={() => setTheme(t.id)} aria-pressed={theme === t.id}><span className="theme-swatch" style={{ background: t.color }} /><span><strong>{t.name}</strong><small>{t.note}</small></span>{theme === t.id && <Check size={17} />}</button>)}</div></Modal>}
+    {panel === 'alerts' && <Modal title="Service notes" eyebrow="WHAT CHANGED" close={() => setPanel(null)}><p className="fine-print">Alert feed updated {ageLabel(alertSource?.timestamp, now)}{alertSource?.error ? ' · connection unavailable' : ''}</p>{(cached || freshness(alertSource?.timestamp, now) !== 'live') && <p className="notice">Alert information is stale or unavailable. This is not confirmation of normal service.</p>}{!alerts.length && <p className="empty">No active alerts matched this station in the last feed.</p>}{alerts.map(a => <article className="alert-detail" key={a.id}><div className="route-list">{a.routes.map(r => <Bullet key={r} route={r} small />)}</div><h3>{a.title}</h3><p>{a.description.replace(/<[^>]*>/g, '')}</p><details className="raw-details"><summary>Alert source details</summary><pre>{JSON.stringify(a.raw, null, 2)}</pre></details></article>)}</Modal>}
+    <Suspense fallback={<div className="panel-loading" role="status">Opening details…</div>}>{panel === 'fleet' && <Fleet close={() => setPanel(null)} now={now} initialId={fleetId} station={selectStation} trip={key => { setPanel(null); openTrip(key); }} />}{tripKey && <TrainDetail tripKey={tripKey} close={() => setTripKey(null)} now={now} openFleet={openFleet} />}{panel === 'context' && board && <ContextDetail board={board} close={() => setPanel(null)} now={now} />}</Suspense>
+  </div>;
+}
+function StationPage({ stationId, station, board, cached, error, active, now, favorites, preference, savePreference, setDirection, setRoutes, toggleFavorite, setPanel, setNearby, getNearby, openTrip, refresh, pages, stationName, navigate }: {
+  stationId: string; station?: Station; board?: Board; cached: boolean; error: string; active: boolean; now: number;
+  favorites: string[]; preference: Preference; savePreference: (patch: Partial<Preference>) => void;
+  setDirection: (value: string) => void; setRoutes: React.Dispatch<React.SetStateAction<string[]>>;
+  toggleFavorite: (id: string) => void; setPanel: (panel: 'stations' | 'themes' | 'alerts' | 'context' | 'fleet' | null) => void;
+  setNearby: (coords: Coordinates | undefined) => void; getNearby: () => void; openTrip: (key: string) => void; refresh: () => void;
+  pages: string[]; stationName: (id: string) => string; navigate: (id: string) => void;
+}) {
+  const { direction, routes } = preference;
+  const availableRoutes = [...new Set([...(station?.routes || []), ...(board?.departures.map(d => d.route) || [])].map(displayRoute))];
+  const visible = (board?.departures || []).filter(d => (direction === 'ALL' || d.direction === direction) && (!routes.length || routes.includes(displayRoute(d.route))) && !(freshness(d.timestamp, now) === 'live' && d.time != null && d.time < now - 30));
+  const groups = new Map<string, Departure[]>();
+  for (const d of visible) { const key = [d.direction, d.partId, d.actualTrack || d.scheduledTrack || '?'].join('|'); const rows = groups.get(key) || []; rows.push(d); groups.set(key, rows); }
+  const sortedGroups = [...groups.values()].sort((a, b) => a[0].direction.localeCompare(b[0].direction) || a[0].partId.localeCompare(b[0].partId) || (a[0].actualTrack || a[0].scheduledTrack || '').localeCompare(b[0].actualTrack || b[0].scheduledTrack || ''));
+  const trainSources = board?.sources.filter(s => s.id !== 'subway-alerts' && s.id !== 'helium') || [];
+  const live = !cached && trainSources.some(s => freshness(s.timestamp, now) === 'live');
+  const degraded = trainSources.some(s => freshness(s.timestamp, now) !== 'live' || s.error);
+  const alerts = board?.alerts || [];
+  return (
       <div className="board-content">
         <section className="station-heading"><div className="station-kicker"><span className="eyebrow">{boroughs[station?.borough || ''] || 'NEW YORK CITY'} / STATION {stationId}</span><span className={'status-pill ' + (live ? 'live' : 'stale')}><i />{live ? degraded ? 'PARTIAL LIVE DATA' : 'LIVE FEED' : cached && board ? 'CACHED BOARD' : board ? 'AWAITING LIVE DATA' : 'CONNECTING'}</span></div>
           <div className="station-title-row"><button className="station-name-button" onClick={() => { setPanel('stations'); setNearby(undefined); }}><h1>{station?.name || 'Your next train'}</h1><ChevronDown size={24} /></button><button className={'icon-button favorite-button ' + (favorites.includes(stationId) ? 'active' : '')} onClick={() => toggleFavorite(stationId)} aria-label={favorites.includes(stationId) ? 'Remove favorite station' : 'Favorite this station'} aria-pressed={favorites.includes(stationId)}><Star size={22} fill={favorites.includes(stationId) ? 'currentColor' : 'none'} /></button></div>
           <div className="station-meta"><div className="route-list">{(station?.routes || []).map(r => <Bullet route={r} small key={r} />)}</div><span className="station-description">{station?.parts.length ? `${station.parts.length} ${station.parts.length === 1 ? 'station' : 'connected stations'}` : 'Station-first. Always.'}</span><button className="text-button" onClick={() => board && setPanel('context')} disabled={!board}><Info size={14} />Station info<ArrowUpRight size={13} /></button><button className="nearby-mobile text-button" onClick={getNearby}><Crosshair size={16} />Nearby</button></div>
         </section>
+        <PageControls pages={pages} current={stationId} name={stationName} select={navigate} />
         {(error || degraded) && <div className="notice-bar"><TriangleAlert size={16} /><span>{error || 'Some feeds are stale or unavailable. Check source ages below.'}</span>{alerts.length > 0 && <button onClick={() => setPanel('alerts')}>View {alerts.length > 1 ? `${alerts.length} alerts` : 'alert'}<ArrowRight size={15} /></button>}</div>}
-        <section id="departures" className="departure-board" tabIndex={-1}>
+        <section id={active ? 'departures' : undefined} className="departure-board" tabIndex={-1}>
           <div className="board-toolbar"><div className="board-title"><h2>Departures</h2><span className="count-badge">{visible.length}</span></div><div className="board-actions"><button className="text-button" onClick={() => setPanel('alerts')}><TriangleAlert size={14} />Alerts{alerts.length ? ` (${alerts.length})` : ''}</button><button className="icon-button" onClick={refresh} aria-label="Refresh departures"><RefreshCw size={15} /></button></div></div>
           <div className="departure-filters">
             <div className="direction-filters" role="group" aria-label="Direction filters">{[['ALL', 'All directions'], ['NORTH', 'Northbound'], ['SOUTH', 'Southbound']].map(([id, name]) => <button key={id} aria-label={name} title={name} aria-pressed={direction === id} onClick={() => setDirection(id)}>{id === 'ALL' ? <MoveVertical size={19} /> : id === 'NORTH' ? <ArrowUp size={19} /> : <ArrowDown size={19} />}</button>)}</div>
@@ -149,13 +197,9 @@ export default function App() {
         <div className="end-note"><span>YOU KNOW THE MAP. WE’LL WATCH THE TRAINS.</span><a href={import.meta.env.BASE_URL + 'stats'}>Stats</a><span>NYC / 24:7</span></div>
         <p className="fine-print">First-party usage statistics estimate visits and returning browsers using a random browser ID. Station views and control actions are retained for one year. No location or search text is collected.</p>
       </div>
-    </main>
-    {panel === 'stations' && <Modal fullscreen title={nearby ? 'Stations near you' : 'Find your station'} eyebrow="THE WHOLE SYSTEM" close={() => setPanel(null)}><div className="station-search-input"><Search size={18} /><input autoFocus autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="Station, line, or borough…" value={query} onChange={e => setQuery(e.target.value)} aria-label="Search stations" />{query && <button className="icon-button" onClick={() => setQuery('')} aria-label="Clear search"><X size={16} /></button>}</div><div className="search-tools"><button className="text-button" onClick={getNearby} disabled={locating}><Crosshair size={16} />{locating ? 'Finding your location…' : 'Use my location'}</button>{nearby && <button className="text-button" onClick={() => setNearby(undefined)}>Clear nearby sort</button>}</div>{locationState && <p className="notice">{locationState}</p>}{catalogError && <p className="notice">{catalogError}</p>}<p className="fine-print">{nearby ? 'Sorted by straight-line distance to the closest station in each complex.' : `${stations.length} station complexes · favorites first`}</p><div className="station-results">{matchingStations.map(({ station: s, distance }) => <div className="station-result" key={s.id}><button onClick={() => selectStation(s.id)}><div><strong>{s.name}</strong><small>{boroughs[s.borough] || s.borough}{distance != null ? ` · ${distance < 1000 ? Math.round(distance) + ' m' : (distance / 1000).toFixed(1) + ' km'} away` : ''}</small></div><div className="route-list">{s.routes.map(r => <Bullet route={r} small key={r} />)}</div></button><button className="icon-button" onClick={() => toggleFavorite(s.id)} aria-label={favorites.includes(s.id) ? `Unfavorite ${s.name}` : `Favorite ${s.name}`}><Star size={16} fill={favorites.includes(s.id) ? 'currentColor' : 'none'} /></button></div>)}</div>{!matchingStations.length && <p className="empty">No stations found. Try another name or line.</p>}</Modal>}
-    {panel === 'themes' && <Modal title="Make it yours" eyebrow="SAME SIGNAL. DIFFERENT FREQUENCY." close={() => setPanel(null)}><p className="muted">A subway original, with a few friends from the ferry.</p><div className="theme-grid">{themes.map(t => <button key={t.id} className={'theme-option ' + (theme === t.id ? 'chosen' : '')} onClick={() => setTheme(t.id)} aria-pressed={theme === t.id}><span className="theme-swatch" style={{ background: t.color }} /><span><strong>{t.name}</strong><small>{t.note}</small></span>{theme === t.id && <Check size={17} />}</button>)}</div></Modal>}
-    {panel === 'alerts' && <Modal title="Service notes" eyebrow="WHAT CHANGED" close={() => setPanel(null)}><p className="fine-print">Alert feed updated {ageLabel(alertSource?.timestamp, now)}{alertSource?.error ? ' · connection unavailable' : ''}</p>{(cached || freshness(alertSource?.timestamp, now) !== 'live') && <p className="notice">Alert information is stale or unavailable. This is not confirmation of normal service.</p>}{!alerts.length && <p className="empty">No active alerts matched this station in the last feed.</p>}{alerts.map(a => <article className="alert-detail" key={a.id}><div className="route-list">{a.routes.map(r => <Bullet key={r} route={r} small />)}</div><h3>{a.title}</h3><p>{a.description.replace(/<[^>]*>/g, '')}</p><details className="raw-details"><summary>Alert source details</summary><pre>{JSON.stringify(a.raw, null, 2)}</pre></details></article>)}</Modal>}
-    <Suspense fallback={<div className="panel-loading" role="status">Opening details…</div>}>{panel === 'fleet' && <Fleet close={() => setPanel(null)} now={now} initialId={fleetId} station={selectStation} trip={key => { setPanel(null); openTrip(key); }} />}{tripKey && <TrainDetail tripKey={tripKey} close={() => setTripKey(null)} now={now} openFleet={openFleet} />}{panel === 'context' && board && <ContextDetail board={board} close={() => setPanel(null)} now={now} />}</Suspense>
-  </div>;
+  );
 }
+
 function RouteFilters({ availableRoutes, routes, setRoutes }: { availableRoutes: string[]; routes: string[]; setRoutes: React.Dispatch<React.SetStateAction<string[]>> }) {
   const ref = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState(false);

@@ -12,6 +12,7 @@ function entry(id: string) {
   if (!cache.has(id)) cache.set(id, { board: storage.get<Board | undefined>('board:' + id, undefined), cached: true, error: '', checked: 0 });
   return cache.get(id)!;
 }
+export function boardSnapshot(id: string) { return entry(id); }
 function persist() {
   const recent = [...cache.keys()].reverse().filter(id => !favorites.includes(id)).slice(0, 8);
   let ids = [...new Set([...favorites, ...recent])];

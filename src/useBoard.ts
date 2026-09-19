@@ -9,17 +9,18 @@ const listeners = new Set<() => void>();
 let selected = '', favorites: string[] = [], running = false;
 const emit = () => listeners.forEach(fn => fn());
 function entry(id: string) {
-  if (!cache.has(id)) cache.set(id, { board: storage.get<Board | undefined>('board:' + id, undefined), cached: true, error: '', checked: 0 });
+  if (!cache.has(id)) cache.set(id, { board: storage.get<Board | undefined>('board:' + id, undefined), cached: true, error: navigator.onLine ? '' : 'Offline · showing your last saved board', checked: 0 });
   return cache.get(id)!;
 }
 export function boardSnapshot(id: string) { return entry(id); }
-function persist() {
+function persist(changed: string) {
   const recent = [...cache.keys()].reverse().filter(id => !favorites.includes(id)).slice(0, 8);
   let ids = [...new Set([...favorites, ...recent])];
   for (const old of storage.get<string[]>('cachedStations', [])) if (!ids.includes(old)) {
     try { localStorage.removeItem('sfn:board:' + old); } catch { /* optional storage */ }
   }
-  for (const id of ids) {
+  for (const id of [changed]) {
+    if (!ids.includes(id)) continue;
     const board = entry(id).board;
     if (!board) continue;
     while (true) {
@@ -43,7 +44,7 @@ function pump() {
     if (busy.size >= 3) break;
     busy.add(id);
     void api<Board>(`stations/${encodeURIComponent(id)}/board`).then(board => {
-      cache.set(id, { board, cached: false, error: '', checked: Date.now() }); persist();
+      cache.set(id, { board, cached: !navigator.onLine, error: navigator.onLine ? '' : 'Offline · showing your last saved board', checked: Date.now() }); persist(id);
     }).catch(() => {
       cache.set(id, { ...entry(id), checked: Date.now(), cached: true, error: navigator.onLine ? 'Feed connection interrupted. Retrying…' : 'Offline · showing your last saved board' });
     }).finally(() => { busy.delete(id); emit(); pump(); });
@@ -59,7 +60,11 @@ export function useBoard(id: string, saved: string[]) {
     window.addEventListener('online', change); window.addEventListener('offline', change);
     return () => { running = false; listeners.delete(render); clearInterval(timer); document.removeEventListener('visibilitychange', change); window.removeEventListener('online', change); window.removeEventListener('offline', change); };
   }, []);
-  useEffect(() => { selected = id; favorites = saved; entry(id); pump(); }, [id, saved]);
+  useEffect(() => {
+    for (const added of saved) if (!favorites.includes(added)) entry(added).checked = 0;
+    selected = id; favorites = saved;
+    const current = entry(id); cache.delete(id); cache.set(id, current); pump();
+  }, [id, saved]);
   const state = entry(id);
   return { ...state, refresh: () => { state.checked = 0; pump(); } };
 }

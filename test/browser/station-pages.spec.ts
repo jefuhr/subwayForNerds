@@ -24,8 +24,11 @@ test('favorite pages navigate with controls, keyboard, history and per-station f
   await expect(active(page).locator('h1')).toHaveText('14 St-Union Sq');
   await expect(active(page).getByRole('button', { name: 'Previous station' })).toBeDisabled();
   await active(page).getByRole('button', { name: 'Northbound', exact: true }).click();
+  await active(page).getByRole('button', { name: 'View: Track', exact: true }).click();
+  await page.getByRole('menuitemradio', { name: 'By direction · all platforms', exact: true }).click();
   await active(page).getByRole('button', { name: 'Next station', exact: true }).click();
   await expect(page).toHaveURL(/station=617/);
+  await expect(active(page).getByRole('button', { name: 'View: Track', exact: true })).toBeVisible();
   await expect(active(page).getByRole('button', { name: 'All directions', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(active(page).getByRole('navigation', { name: 'Station pages' })).toBeFocused();
   await page.keyboard.press('ArrowRight');
@@ -34,6 +37,7 @@ test('favorite pages navigate with controls, keyboard, history and per-station f
   await page.goBack(); await expect(page).toHaveURL(/station=617/);
   await page.goBack(); await expect(page).toHaveURL(/station=602/);
   await expect(active(page).getByRole('button', { name: 'Northbound', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(active(page).getByRole('button', { name: 'View: Direction', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 

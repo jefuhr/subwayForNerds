@@ -75,3 +75,12 @@
 .station-page-dots button[aria-current] span{background:var(--accent);opacity:1;transform:scale(1.35)}
 .station-page-count{font:10px ui-monospace,monospace;color:var(--muted);white-space:nowrap;margin:0 4px}
 @media(prefers-reduced-motion:reduce){.station-page-track.sliding{transition:none}}
+
+/* Departure display choices and grouped boarding information. */
+.board-toolbar{gap:8px;flex-wrap:wrap}.board-title{min-width:0;flex-wrap:wrap}
+.departure-view{position:relative}.view-trigger{gap:5px;padding:6px 8px;border:1px solid var(--line);border-radius:5px;background:var(--card);white-space:nowrap}
+.view-menu{position:absolute;top:calc(100% + 5px);right:0;z-index:8;width:265px;max-width:calc(100vw - 30px);padding:5px;border:1px solid var(--line);border-radius:7px;background:var(--card);box-shadow:0 8px 24px #0003}
+.view-menu button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:42px;padding:9px;text-align:left;font-size:12px;border-radius:4px;line-height:1.4}.view-menu button svg{flex-shrink:0}.view-menu button:hover,.view-menu button:focus-visible{background:var(--raised)}.view-menu button[aria-checked=true]{color:var(--accent)}
+.train-boarding{display:block;margin-top:5px;font-size:10px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
+.service-section{min-width:0}.service-heading{display:flex;align-items:center;gap:10px;font-size:15px;margin:0 0 12px}.service-directions{display:grid;gap:14px}
+@media(max-width:560px){.board-title{gap:6px}.view-trigger{font-size:10px;padding:5px 6px;min-height:40px}.board-actions{margin-left:auto}.view-menu{position:fixed;top:auto;right:15px;margin-top:5px}.train-boarding{font-size:9px}}

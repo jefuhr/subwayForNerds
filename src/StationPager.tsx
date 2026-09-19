@@ -58,7 +58,7 @@ export default function StationPager({ pages, current, disabled, select, render 
     const el = ref.current!;
     const start = (e: TouchEvent) => {
       suppressClick.current = false;
-      if (disabled || timer.current || pages.length < 2 || e.touches.length !== 1 || (e.target as Element).closest('.route-filter-strip, .station-pager, input, select, textarea, a')) return;
+      if (disabled || timer.current || pages.length < 2 || e.touches.length !== 1 || (e.target as Element).closest('.route-filter-strip, .station-pager, .departure-view, input, select, textarea, a')) return;
       gesture.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
     const move = (e: TouchEvent) => {

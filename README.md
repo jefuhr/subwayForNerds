@@ -40,8 +40,14 @@ the app beyond localhost so geolocation and service workers work.
   freezes the order so a late location fix cannot interrupt navigation. Shared
   station links keep their selected station, and nonfavorites get a temporary
   first page. Each page retains its station's filters and cached departures.
-- A complex includes its constituent stations. Direction, constituent station and
-  reported/scheduled track define the groups. A group is a feed-based boarding
+- The View menu beside Departures offers track, direction across all platforms,
+  direction by route family, direction by station corridor, and service views.
+  Each station remembers its view. Track is the default; service sections contain
+  separate direction lists. Combined views retain each train’s boarding area.
+  Direction grouping uses feed northbound/southbound assignments, including
+  crosstown services; each train retains its local direction label.
+  A complex includes its constituent stations. Direction, constituent station and
+  reported/scheduled track define the default groups. A group is a feed-based boarding
   area, not a guarantee of shared platform access. Unknown tracks stay unknown.
 - Trains from different routes are interleaved by predicted time. Five rows per
   group are shown initially; each group can expand. Route and direction filters
@@ -190,7 +196,19 @@ below 200ms. Actual results and platform limitations belong in `docs/validation.
 - Theme palettes and local Lato/Flame font assets were adapted from the user's
   `~/DiD_Open` mobile branch. The interface and transit service are new.
 
-No accounts or analytics are included. Location stays on-device. Browser storage
-holds preferences, a station catalog, and up to eight recent station snapshots.
+No accounts are required. Location stays on-device. First-party analytics record
+sessions, station views, and control actions with a random browser ID, coarse
+device category, and referring hostname. No location, search text, full referrer
+URL, raw IP address, or raw user-agent string is stored in analytics. Events are
+kept for 365 days in `STATE_DIR/analytics.sqlite`, separate from fleet data.
+Public aggregates are available at `/subwaysForNerds/stats`; browser counts are
+estimates. Collection starts at deployment with no historical backfill.
+
+Browser storage holds per-station direction and line preferences, a station
+catalog, and snapshots for every favorite plus eight recent nonfavorites when
+space permits. Favorites preload immediately and refresh every 30 seconds; the
+selected station refreshes every 10 seconds. Fetching pauses while hidden or
+offline. Nonfavorite snapshots are evicted first when storage fills.
+
 Future native shells can reuse the API/UI and replace `src/platform.ts` adapters
 for native storage and geolocation.

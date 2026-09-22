@@ -1,3 +1,4 @@
+import { NJT_LINES, NJT_DEPARTURES_URL, NJT_SCHEDULES_URL, NJT_ALERTS_URL } from '../shared/njt';
 import { PATH_ROUTES } from '../shared/path';
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, MoveVertical, ArrowRight, ArrowUp, ArrowUpRight, ArrowLeftRight, Check, ChevronLeft, ChevronDown, ChevronRight, Clock3, Crosshair, ExternalLink, Info, MapPin, Palette, Radio, RefreshCw, Search, Star, TrainFront, TriangleAlert, X } from 'lucide-react';
@@ -24,6 +25,7 @@ const quickStations = ['602', '617', '611', '607'];
 const displayRoute = (route: string) => ({ GS: 'S', FS: 'S', H: 'S', SI: 'SIR' })[route] || route;
 const routeColor = (route: string) => /^[123]$/.test(route) ? 'red' : /^[456]/.test(route) ? 'green' : /^7/.test(route) ? 'purple' : /^[ACE]$/.test(route) ? 'blue' : /^(B|D|F|FX|M)$/.test(route) ? 'orange' : /^[NQRW]$/.test(route) ? 'yellow' : route === 'G' ? 'lime' : /^[JZ]$/.test(route) ? 'brown' : 'gray';
 export function Bullet({ route, small = false }: { route: string; small?: boolean }) {
+  if (NJT_LINES[route]) return <span className={`route-bullet njt-route ${small ? 'small' : ''}`} style={{ background: NJT_LINES[route].color }} title={'NJ Transit ' + NJT_LINES[route].name}>{NJT_LINES[route].label}</span>;
   if (route.startsWith('PATH')) return <span className={`route-bullet path-route ${small ? 'small' : ''}`} style={{ background: PATH_ROUTES[route]?.color }} title={'PATH ' + (PATH_ROUTES[route]?.label || '')}>{PATH_ROUTES[route]?.label || 'PATH'}</span>;
   return <span className={`route-bullet ${routeColor(route)} ${small ? 'small' : ''}`} title={route}>{displayRoute(route)}</span>;
 }
@@ -122,8 +124,8 @@ export default function App() {
     finally { setLocating(false); }
   };
   const matchingStations = useMemo(() => {
-    const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
-    return stations.filter(s => terms.every(t => `${s.name} ${boroughs[s.borough] || s.borough} ${s.routes.join(' ')} ${s.parts.map(p => p.line).join(' ')}`.toLowerCase().includes(t)))
+    const terms = query.toLowerCase().replace(/[–—-]/g, ' ').trim().split(/\s+/).filter(Boolean);
+    return stations.filter(s => terms.every(t => `${s.name} ${NJT_LINES[s.routes[0]] ? 'NJT light rail lightrail' : ''} ${s.municipality || ''} ${s.parts.map(p => p.stationId).join(' ')} ${boroughs[s.borough] || s.borough} ${s.routes.join(' ')} ${s.parts.map(p => p.line).join(' ')}`.toLowerCase().replace(/[–—-]/g, ' ').includes(t)))
       .map(s => ({ station: s, distance: nearby ? Math.min(...s.parts.map(p => distanceMeters(nearby.latitude, nearby.longitude, p.lat, p.lon))) : null }))
       .sort((a, b) => nearby ? (a.distance || 0) - (b.distance || 0) : Number(favorites.includes(b.station.id)) - Number(favorites.includes(a.station.id)) || a.station.name.localeCompare(b.station.name));
   }, [stations, query, nearby, favorites]);
@@ -167,6 +169,7 @@ function StationPage({ stationId, station, board, cached, error, active, now, fa
   toggleFavorite: (id: string) => void; setPanel: (panel: 'stations' | 'themes' | 'alerts' | 'context' | 'fleet' | null) => void;
   setNearby: (coords: Coordinates | undefined) => void; getNearby: () => void; openTrip: (key: string) => void; refresh: () => void;
 }) {
+  const externalDepartures = station?.departureMode === 'external';
   const { direction, routes, view } = preference;
   const availableRoutes = [...new Set([...(station?.routes || []), ...(board?.departures.map(d => d.route) || [])].map(displayRoute))];
   const visible = (board?.departures || []).filter(d => (direction === 'ALL' || d.direction === direction) && (!routes.length || routes.includes(displayRoute(d.route))) && !(freshness(d.timestamp, now) === 'live' && d.time != null && d.time < now - 30));
@@ -178,12 +181,13 @@ function StationPage({ stationId, station, board, cached, error, active, now, fa
   const alerts = board?.alerts || [];
   return (
       <div className="board-content">
-        <section className="station-heading"><div className="station-kicker"><span className="eyebrow">{boroughs[station?.borough || ''] || 'NEW YORK CITY'} / STATION {stationId}</span><span className={'status-pill ' + (live ? 'live' : 'stale')}><i />{live ? degraded ? 'PARTIAL LIVE DATA' : 'LIVE FEED' : cached && board ? 'CACHED BOARD' : board ? 'AWAITING LIVE DATA' : 'CONNECTING'}</span></div>
+        <section className="station-heading"><div className="station-kicker"><span className="eyebrow">{boroughs[station?.borough || ''] || 'NEW YORK CITY'} / STATION {stationId}</span><span className={'status-pill ' + (live ? 'live' : 'stale')}><i />{externalDepartures ? 'STATION DIRECTORY' : live ? degraded ? 'PARTIAL LIVE DATA' : 'LIVE FEED' : cached && board ? 'CACHED BOARD' : board ? 'AWAITING LIVE DATA' : 'CONNECTING'}</span></div>
           <div className="station-title-row"><button className="station-name-button" onClick={() => { setPanel('stations'); setNearby(undefined); }}><h1>{station?.name || 'Your next train'}</h1><ChevronDown size={24} /></button><button className={'icon-button favorite-button ' + (favorites.includes(stationId) ? 'active' : '')} onClick={() => toggleFavorite(stationId)} aria-label={favorites.includes(stationId) ? 'Remove favorite station' : 'Favorite this station'} aria-pressed={favorites.includes(stationId)}><Star size={22} fill={favorites.includes(stationId) ? 'currentColor' : 'none'} /></button></div>
           <div className="station-meta"><div className="route-list">{(station?.routes || []).map(r => <Bullet route={r} small key={r} />)}</div><span className="station-description">{station?.parts.length ? `${station.parts.length} ${station.parts.length === 1 ? 'station' : 'connected stations'}` : 'Station-first. Always.'}</span><button className="text-button" onClick={() => board && setPanel('context')} disabled={!board}><Info size={14} />Station info<ArrowUpRight size={13} /></button><button className="nearby-mobile text-button" onClick={getNearby}><Crosshair size={16} />Nearby</button></div>
         </section>
         {(error || degraded) && <div className="notice-bar"><TriangleAlert size={16} /><span>{error || 'Some feeds are stale or unavailable. Check source ages below.'}</span>{alerts.length > 0 && <button onClick={() => setPanel('alerts')}>View {alerts.length > 1 ? `${alerts.length} alerts` : 'alert'}<ArrowRight size={15} /></button>}</div>}
         <section id={active ? 'departures' : undefined} className="departure-board" tabIndex={-1}>
+          {externalDepartures ? <NjtStationInfo station={station!} /> : <>
           <div className="board-toolbar"><div className="board-title"><h2>Departures</h2><span className="count-badge">{visible.length}</span><DepartureViewMenu key={stationId} value={view} onChange={value => savePreference({ view: value })} /></div><div className="board-actions"><button className="text-button" onClick={() => setPanel('alerts')}><TriangleAlert size={14} />Alerts{alerts.length ? ` (${alerts.length})` : ''}</button><button className="icon-button" onClick={refresh} aria-label="Refresh departures"><RefreshCw size={15} /></button></div></div>
           <div className="departure-filters">
             <div className="direction-filters" role="group" aria-label="Direction filters">{(station?.id.startsWith('path-') ? [['ALL', 'All directions'], ['TO_NY', 'To New York'], ['TO_NJ', 'To New Jersey']] : [['ALL', 'All directions'], ['NORTH', 'Northbound'], ['SOUTH', 'Southbound']]).map(([id, name]) => <button key={id} aria-label={name} title={name} aria-pressed={direction === id} onClick={() => setDirection(id)}>{id === 'ALL' ? <MoveVertical size={19} /> : (id === 'NORTH' || id === 'TO_NY') ? <ArrowUp size={19} /> : <ArrowDown size={19} />}</button>)}</div>
@@ -192,12 +196,26 @@ function StationPage({ stationId, station, board, cached, error, active, now, fa
           {!board && <div className="loading-board"><span className="loading-line" /><span className="loading-line" /><span className="loading-line" /><p>{error || 'Connecting to your station…'}</p>{error && <button onClick={() => setPanel('stations')} className="text-button">Choose a station</button>}</div>}
           {board && !visible.length && <div className="empty-board"><TrainFront size={30} /><h3>{routes.length || direction !== 'ALL' ? 'No trains match these filters' : 'No departures reported yet'}</h3><p>{routes.length || direction !== 'ALL' ? 'Try all directions and lines.' : 'Feeds refresh automatically. An empty board does not mean service is suspended.'}</p>{(routes.length > 0 || direction !== 'ALL') && <button className="primary-button" onClick={() => { track('reset', stationId); savePreference({ routes: [], direction: 'ALL' }); }}>Reset filters</button>}</div>}
           <div className="platform-groups">{view === 'service' ? services.map(service => <section className="service-section" key={stationId + service} aria-label={`Service ${service}`}><h3 className="service-heading"><Bullet route={service} />Service {service}</h3><div className="service-directions">{sortedGroups.filter(g => g.service === service).map(group => <PlatformGroup key={stationId + group.key} group={group} view={view} board={board!} now={now} cached={cached} open={openTrip} />)}</div></section>) : sortedGroups.map(group => <PlatformGroup key={stationId + group.key} group={group} view={view} board={board!} now={now} cached={cached} open={openTrip} />)}</div>
+          </>}
         </section>
-        <section className="board-footer"><div><Radio size={14} /><span>FEED CHECK</span></div><div className="source-chips">{trainSources.map(s => <span key={s.id} title={s.error || `Source: ${s.id}`} className={freshness(s.timestamp, now) === 'live' && !s.error ? '' : 'source-stale'}><i />{s.id.replace('gtfs-', '').replace('gtfs', '1–7 / S').toUpperCase()} <b>{ageLabel(s.timestamp, now)}</b></span>)}</div><p>Times are predictions, not promises. Track labels are feed-reported.</p></section>
+        {!externalDepartures && <section className="board-footer"><div><Radio size={14} /><span>FEED CHECK</span></div><div className="source-chips">{trainSources.map(s => <span key={s.id} title={s.error || `Source: ${s.id}`} className={freshness(s.timestamp, now) === 'live' && !s.error ? '' : 'source-stale'}><i />{s.id.replace('gtfs-', '').replace('gtfs', '1–7 / S').toUpperCase()} <b>{ageLabel(s.timestamp, now)}</b></span>)}</div><p>Times are predictions, not promises. Track labels are feed-reported.</p></section>}
         <div className="end-note"><span>YOU KNOW THE MAP. WE’LL WATCH THE TRAINS.</span><a href={import.meta.env.BASE_URL + 'stats'}>Stats</a><span>NYC / 24:7</span></div>
         <p className="fine-print">First-party usage statistics estimate visits and returning browsers using a random browser ID. Station views and control actions are retained for one year. No location or search text is collected.</p>
       </div>
   );
+}
+
+function NjtStationInfo({ station }: { station: Station }) {
+  return <div className="njt-station-info">
+    <h2>{NJT_LINES[station.routes[0]]?.name}</h2>
+    <p>{station.municipality} · NJ Transit station {station.parts[0].stationId}</p>
+    <p>Live light rail departures are not connected in this app. Check NJ Transit for upcoming trains, schedules and service changes.</p>
+    <div className="njt-links">
+      <a className="primary-button" href={NJT_DEPARTURES_URL} target="_blank" rel="noreferrer">NJ Transit departures <ArrowUpRight size={15} /></a>
+      <a className="text-button" href={NJT_SCHEDULES_URL} target="_blank" rel="noreferrer">Light rail schedules <ArrowUpRight size={15} /></a>
+      <a className="text-button" href={NJT_ALERTS_URL} target="_blank" rel="noreferrer">Service alerts <ArrowUpRight size={15} /></a>
+    </div>
+  </div>;
 }
 
 function RouteFilters({ availableRoutes, routes, setRoutes }: { availableRoutes: string[]; routes: string[]; setRoutes: React.Dispatch<React.SetStateAction<string[]>> }) {

@@ -152,9 +152,9 @@ export function buildBoard(station: Station, trains: Iterable<Train>, states: So
   }
   departures.forEach(d => feedIds.add(d.feed));
   const stationStops = new Set(station.parts.map(p => p.id));
-  return { station, generatedAt: now, departures, sources: states.filter(s => feedIds.has(s.id) || (!station.id.startsWith('path-') && (s.id === 'subway-alerts' || s.id === 'helium'))),
+  return { station, generatedAt: now, departures, sources: states.filter(s => feedIds.has(s.id) || (!station.id.startsWith('path-') && station.departureMode !== 'external' && (s.id === 'subway-alerts' || s.id === 'helium'))),
     alerts: alerts.filter(a => {
-      if (station.id.startsWith('path-')) return false;
+      if (station.id.startsWith('path-') || station.departureMode === 'external') return false;
       if (!alertActive(a, now)) return false;
       // Selectors are ORed; constraints inside one selector must all match.
       // Agency-wide notices have no narrower selector and still belong here.

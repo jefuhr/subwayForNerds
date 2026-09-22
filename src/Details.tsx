@@ -87,6 +87,12 @@ export function ContextDetail({ board, close, now }: { board: Board; close: () =
     void refresh(); const timer = setInterval(() => { if (!document.hidden) void refresh(); }, 60000);
     return () => { controller.abort(); clearInterval(timer); };
   }, [board.station.id]);
+  if (board.station.departureMode === 'external') return <Modal title={board.station.name} eyebrow="STATION FIELD NOTES" close={close}>
+    <p>{board.station.parts[0].line}</p>
+    <p className="muted">{board.station.municipality} · NJ Transit station {board.station.parts[0].stationId}</p>
+    <p className="notice">Live equipment status and entrance details are not connected for this station.</p>
+    <a className="text-button" href="https://www.njtransit.com/ride-lightrail" target="_blank" rel="noreferrer">NJ Transit light rail accessibility and travel information <ArrowUpRight size={15} /></a>
+  </Modal>;
   const outageState = context?.sources.find(s => s.id === 'outages');
   const equipmentState = context?.sources.find(s => s.id === 'equipment');
   const outageFresh = !!outageState?.timestamp && !outageState.error && now - (outageState.fetchedAt || 0) <= 120;

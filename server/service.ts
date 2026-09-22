@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { Worker } from 'node:worker_threads';
-import { bundledCatalog, fromSocrata, makeCatalog } from './catalog';
+import { bundledCatalog, regionalCatalog, fromSocrata, makeCatalog } from './catalog';
 import { decode } from './decode';
 import { FEED_ROUTES, normalizeFeed, normalizeAlerts, buildBoard, nowSeconds } from './transit';
 import type { Board, ServiceAlert, SourceState, StationContext, Train } from '../shared/types';
@@ -11,7 +11,7 @@ import { HELIUM_URL, normalizeConsists, enrichConsist, type ConsistTrip } from '
 import { FleetService, fleetSnapshot } from './fleet';
 import { ChangeDetector } from './changes';
 
-import { PATH_URL, pathCatalog, normalizePath } from './path';
+import { PATH_URL, normalizePath } from './path';
 
 const upstream = 'https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/';
 export interface FeedSlot { state: SourceState; raw?: any; trains: Map<string, Train>; digest?: string }
@@ -179,7 +179,7 @@ export class TransitService {
     const jobs: { id: string; url: string; interval: number; apply: (r: any) => void }[] = [
       { id: 'stations', url: 'https://data.ny.gov/resource/39hk-dx4f.json?$limit=1000', interval: 86400000, apply: r => {
         const next = makeCatalog(r.map(fromSocrata)); if (next.length < 400) throw new Error('Incomplete station catalog');
-        next.push(...pathCatalog);
+        next.push(...regionalCatalog);
         this.catalog = next;
         for (const [id, slot] of this.slots) if (slot.raw && id !== 'subway-alerts') {
           slot.trains = id === 'path' ? normalizePath(slot.raw) : normalizeFeed(id, slot.raw, next);
@@ -239,7 +239,7 @@ export class TransitService {
   }
   context(id: string): StationContext | undefined {
     const station = this.catalog.find(s => s.id === id); if (!station) return;
-    if (id.startsWith('path-')) return { entrances: [], equipment: [], outages: [], sources: [] };
+    if (id.startsWith('path-') || station.departureMode === 'external') return { entrances: [], equipment: [], outages: [], sources: [] };
     const equipment = this.equipment.filter(e => String(e.stationcomplexid) === id || station.parts.some(p => e.elevatorsgtfsstopid?.split(/[ ,/]+/).includes(p.id)));
     const ids = new Set(equipment.map(e => e.equipmentno));
     return { entrances: this.entrances.filter(e => String(e.complex_id) === id), equipment,

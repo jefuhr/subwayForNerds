@@ -92,3 +92,5 @@
 @media(max-width:560px){.board-title{gap:6px}.view-trigger{font-size:10px;padding:5px 6px;min-height:40px}.board-actions{margin-left:auto}.view-menu{position:fixed;top:auto;right:15px;margin-top:5px}.train-boarding{font-size:9px}}
 
 .route-bullet.path-route,.train-identity>.route-bullet.path-route,.station-result .route-bullet.path-route.small{width:auto;max-width:110px;height:auto;min-height:25px;border-radius:4px;padding:5px;font-size:10px;letter-spacing:0;text-align:center;color:#111;text-shadow:0 0 3px #fff;line-height:1.2}.route-bullet.path-route.small{font-size:9px;min-height:20px}
+
+.route-bullet.njt-route,.station-result .route-bullet.njt-route.small{width:auto;height:auto;min-height:25px;border-radius:4px;padding:5px 7px;font-size:11px;letter-spacing:0;line-height:1.2;white-space:nowrap;color:#fff}.route-bullet.njt-route.small{min-height:20px;font-size:10px}.njt-station-info{padding:24px 0;max-width:640px}.njt-station-info h2{font-size:21px}.njt-station-info p{color:var(--muted);line-height:1.6;margin:12px 0}.njt-links{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:20px}.njt-links a{display:inline-flex;gap:6px;align-items:center}

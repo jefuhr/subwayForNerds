@@ -1,3 +1,4 @@
+import { njtCatalog } from './njt';
 import { pathCatalog } from './path';
 import rows from '../data/stations.json';
 import type { Station, StationPart } from '../shared/types';
@@ -17,7 +18,8 @@ export function makeCatalog(records: CatalogRow[]): Station[] {
   }
   return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
-export const bundledCatalog = [...makeCatalog(rows), ...pathCatalog];
+export const regionalCatalog = [...pathCatalog, ...njtCatalog];
+export const bundledCatalog = [...makeCatalog(rows), ...regionalCatalog];
 export function fromSocrata(r: Record<string, string>): CatalogRow {
   return { id: r.gtfs_stop_id, stationId: r.station_id, complexId: r.complex_id,
     name: r.stop_name, line: r.line, routes: r.daytime_routes.split(' '), lat: +r.gtfs_latitude,

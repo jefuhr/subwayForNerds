@@ -224,3 +224,25 @@ Arrival times use each estimate's upstream `lastUpdated`, never the time fetched
 PATH estimates are station-specific: the source does not link journeys or supply
 tracks, car assignments, positions, onward stop predictions, or service alerts.
 PATH boards do not display MTA alerts or MTA equipment status as PATH data.
+
+### NJ Transit light rail
+
+The catalog includes 62 distinct NJ Transit light rail stations: Hudson–Bergen
+Light Rail (24), Newark Light Rail (17), and River LINE (21). Search by system
+name, HBLR/NLR, municipality, or the published station ID; favorites, station
+paging and nearby sorting work as usual. Names distinguish these stations from
+nearby PATH stations. The route badges represent the three systems, not individual
+branch service patterns.
+
+This is station-directory support: NJ Transit live arrivals, schedules and alerts
+are not ingested. These station pages say so explicitly and link to NJ Transit's
+DepartureVision, light rail schedules and alerts rather than showing an empty
+live board or MTA data.
+
+Station IDs, system membership and coordinates were imported on 2026-09-21 from
+[NJ TRANSIT GIS's light rail station layer](https://services6.arcgis.com/M0t0HPE53pFK525U/arcgis/rest/services/NJTransit_Light_Rail_Stations/FeatureServer/0).
+The bundled file is `data/njt-light-rail-stations.json`; coordinates are station
+vicinity points, not entrances. Display names expand abbreviations and use
+Harsimus Cove, Warren Street/NJIT and Trenton Transit Center. No live accessibility
+claim is inferred from this dataset. The daily MTA catalog refresh preserves these
+stations and PATH stations.

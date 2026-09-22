@@ -8,6 +8,7 @@ test('PATH stations are searchable and support distinct direction filters on mob
   await active.getByRole('button', { name: 'To New Jersey', exact: true }).click();
   await expect(active.getByRole('button', { name: 'To New Jersey', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await active.locator('.station-name-button').click();
+  await expect(page.locator('dialog[open]')).toBeVisible();
   await page.getByRole('textbox', { name: 'Search stations' }).fill('PATH New Jersey');
   await expect(page.locator('.station-result')).toHaveCount(7);
   await page.getByRole('textbox', { name: 'Search stations' }).fill('PATH');

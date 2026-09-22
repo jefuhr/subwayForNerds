@@ -3,6 +3,7 @@ export interface StationPart {
   lat: number; lon: number; ada: string; adaNotes: string; north: string; south: string;
 }
 export interface Station {
+  municipality?: string; departureMode?: 'external';
   id: string; name: string; borough: string; routes: string[]; lat: number; lon: number; parts: StationPart[];
 }
 export interface SourceState {

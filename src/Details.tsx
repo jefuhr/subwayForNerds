@@ -91,7 +91,7 @@ export function ContextDetail({ board, close, now }: { board: Board; close: () =
   const equipmentState = context?.sources.find(s => s.id === 'equipment');
   const outageFresh = !!outageState?.timestamp && !outageState.error && now - (outageState.fetchedAt || 0) <= 120;
   return <Modal title={board.station.name} eyebrow="STATION FIELD NOTES" close={close}>
-    {board.station.parts.map(p => <section className="context-section" key={p.id}><h3>{p.line}</h3><p><Accessibility size={16} /> {p.ada === '1' ? 'ADA accessible' : p.ada === '2' ? 'Partially accessible' : 'Not ADA accessible'}{p.adaNotes ? ` · ${p.adaNotes}` : ''}</p><div className="muted">{p.id} · {p.north} / {p.south}</div></section>)}
+    {board.station.parts.map(p => <section className="context-section" key={p.id}><h3>{p.line}</h3><p><Accessibility size={16} /> {p.ada === '1' ? 'ADA accessible' : p.ada === '2' ? 'Partially accessible' : p.ada === '0' ? 'Not ADA accessible' : 'Accessibility information unavailable'}{p.adaNotes ? ` · ${p.adaNotes}` : ''}</p><div className="muted">{p.id} · {p.north} / {p.south}</div></section>)}
     {error && <p className="notice">{error}</p>}
     {!context && !error && <p className="empty">Loading station context…</p>}
     {context && <>

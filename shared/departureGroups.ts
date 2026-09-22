@@ -9,10 +9,10 @@ export const departureViews = [
 ] as const;
 export type DepartureView = typeof departureViews[number]['id'];
 export const validView = (value: unknown): DepartureView => departureViews.some(v => v.id === value) ? value as DepartureView : 'track';
-export const directionLabel = (direction: string) => direction === 'NORTH' ? 'Northbound' : direction === 'SOUTH' ? 'Southbound' : 'Direction unknown';
-const directionKey = (d: Departure) => ['NORTH', 'SOUTH'].includes(d.direction) ? d.direction : 'UNKNOWN';
+export const directionLabel = (direction: string) => direction === 'NORTH' ? 'Northbound' : direction === 'SOUTH' ? 'Southbound' : direction === 'TO_NY' ? 'To New York' : direction === 'TO_NJ' ? 'To New Jersey' : 'Direction unknown';
+const directionKey = (d: Departure) => ['NORTH', 'SOUTH', 'TO_NY', 'TO_NJ'].includes(d.direction) ? d.direction : 'UNKNOWN';
 const natural = (a: string, b: string) => a.localeCompare(b, 'en', { numeric: true });
-const directionOrder = (direction: string) => ['NORTH', 'SOUTH', 'UNKNOWN'].indexOf(direction);
+const directionOrder = (direction: string) => ['NORTH', 'SOUTH', 'TO_NY', 'TO_NJ', 'UNKNOWN'].indexOf(direction);
 export function routeFamily(route: string) {
   if (/^[123]$/.test(route)) return '1 / 2 / 3';
   if (/^[456]X?$/.test(route)) return '4 / 5 / 6';

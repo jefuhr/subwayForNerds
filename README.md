@@ -212,3 +212,15 @@ offline. Nonfavorite snapshots are evicted first when storage fills.
 
 Future native shells can reuse the API/UI and replace `src/platform.ts` adapters
 for native storage and geolocation.
+
+### PATH
+
+The station picker includes all 13 PATH stations, separately labeled `(PATH)`, with
+New Jersey search, favorites, nearby sorting, and the four regular routes plus
+JSQ–33 via Hoboken. Coordinates come from the [PATH GTFS feed](https://rapid.nationalrtap.org/GTFSFileManagement/UserUploadFiles/14843/PATHGTFS.zip).
+The server polls the [Port Authority RidePATH feed](https://www.panynj.gov/bin/portauthority/ridepath.json)
+every 15 seconds with the same cache, backoff and stale-data handling as subway feeds.
+Arrival times use each estimate's upstream `lastUpdated`, never the time fetched.
+PATH estimates are station-specific: the source does not link journeys or supply
+tracks, car assignments, positions, onward stop predictions, or service alerts.
+PATH boards do not display MTA alerts or MTA equipment status as PATH data.

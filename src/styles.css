@@ -90,3 +90,5 @@
 .train-boarding{display:block;margin-top:5px;font-size:10px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
 .service-section{min-width:0}.service-heading{display:flex;align-items:center;gap:10px;font-size:15px;margin:0 0 12px}.service-directions{display:grid;gap:14px}
 @media(max-width:560px){.board-title{gap:6px}.view-trigger{font-size:10px;padding:5px 6px;min-height:40px}.board-actions{margin-left:auto}.view-menu{position:fixed;top:auto;right:15px;margin-top:5px}.train-boarding{font-size:9px}}
+
+.route-bullet.path-route,.train-identity>.route-bullet.path-route,.station-result .route-bullet.path-route.small{width:auto;max-width:110px;height:auto;min-height:25px;border-radius:4px;padding:5px;font-size:10px;letter-spacing:0;text-align:center;color:#111;text-shadow:0 0 3px #fff;line-height:1.2}.route-bullet.path-route.small{font-size:9px;min-height:20px}

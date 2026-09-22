@@ -11,6 +11,8 @@ import { HELIUM_URL, normalizeConsists, enrichConsist, type ConsistTrip } from '
 import { FleetService, fleetSnapshot } from './fleet';
 import { ChangeDetector } from './changes';
 
+import { PATH_URL, pathCatalog, normalizePath } from './path';
+
 const upstream = 'https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/';
 export interface FeedSlot { state: SourceState; raw?: any; trains: Map<string, Train>; digest?: string }
 export class TransitService {
@@ -35,7 +37,7 @@ export class TransitService {
   readonly cacheDir: string;
   constructor(readonly options: { fixtureDir?: string; cacheDir?: string; fetcher?: typeof fetch } = {}) {
     this.cacheDir = options.cacheDir || process.env.STATE_DIR || 'state';
-    for (const id of [...Object.keys(FEED_ROUTES), 'subway-alerts']) this.slots.set(id, { state: { id, timestamp: null, fetchedAt: null, error: null }, trains: new Map() });
+    for (const id of [...Object.keys(FEED_ROUTES), 'subway-alerts', 'path']) this.slots.set(id, { state: { id, timestamp: null, fetchedAt: null, error: null }, trains: new Map() });
   }
   async request(url: string) {
     const result = await (this.options.fetcher || fetch)(url, { signal: AbortSignal.timeout(12000), headers: { 'User-Agent': 'SubwaysForNerds/0.1' } });
@@ -95,17 +97,18 @@ export class TransitService {
   }
   accept(id: string, raw: any, fetchedAt: number) {
     const slot = this.slots.get(id)!;
-    const timestamp = Number(raw.header?.timestamp);
+    const pathTrains = id === 'path' ? normalizePath(raw) : undefined;
+    const timestamp = pathTrains ? Math.max(0, ...[...pathTrains.values()].map(t => t.timestamp)) || fetchedAt : Number(raw.header?.timestamp);
     if (!Number.isFinite(timestamp) || timestamp <= 0) throw new Error('Feed missing a valid timestamp');
     if (slot.state.timestamp != null && timestamp < slot.state.timestamp) throw new Error('Feed timestamp regressed');
     const changed = timestamp !== slot.state.timestamp;
     const recovered = !!slot.state.error;
     slot.state = { id, timestamp, fetchedAt, error: null };
-    if (!changed && !recovered) return;
+    if (!changed && !recovered && id !== 'path') return;
     slot.raw = raw;
     if (id === 'subway-alerts') this.alerts = normalizeAlerts(raw);
     else {
-      slot.trains = normalizeFeed(id, raw, this.catalog);
+      slot.trains = pathTrains || normalizeFeed(id, raw, this.catalog);
       for (const train of slot.trains.values()) enrichSchedule(train, this.schedules);
     }
     this.refreshBoards();
@@ -142,7 +145,7 @@ export class TransitService {
     for (const id of this.slots.keys()) this.schedule(async () => {
       const slot = this.slots.get(id)!;
       try {
-        const url = upstream + (id === 'subway-alerts' ? 'camsys%2Fsubway-alerts' : `nyct%2F${id}`);
+        const url = id === 'path' ? PATH_URL + '?timeStamp=' + Date.now() : upstream + (id === 'subway-alerts' ? 'camsys%2Fsubway-alerts' : `nyct%2F${id}`);
         const response = await this.request(url), bytes = new Uint8Array(await response.arrayBuffer());
         const digest = createHash('sha256').update(bytes).digest('hex');
         if (digest === slot.digest) {
@@ -151,7 +154,7 @@ export class TransitService {
           if (recovering) this.refreshBoards();
           return;
         }
-        const raw = decode(bytes, id === 'subway-alerts');
+        const raw = id === 'path' ? JSON.parse(new TextDecoder().decode(bytes)) : decode(bytes, id === 'subway-alerts');
         this.accept(id, raw, nowSeconds()); slot.digest = digest;
         await this.persist(id, { raw, fetchedAt: slot.state.fetchedAt });
       } catch (error) { slot.state.error = String(error); this.refreshBoards(); throw error; }
@@ -176,9 +179,10 @@ export class TransitService {
     const jobs: { id: string; url: string; interval: number; apply: (r: any) => void }[] = [
       { id: 'stations', url: 'https://data.ny.gov/resource/39hk-dx4f.json?$limit=1000', interval: 86400000, apply: r => {
         const next = makeCatalog(r.map(fromSocrata)); if (next.length < 400) throw new Error('Incomplete station catalog');
+        next.push(...pathCatalog);
         this.catalog = next;
         for (const [id, slot] of this.slots) if (slot.raw && id !== 'subway-alerts') {
-          slot.trains = normalizeFeed(id, slot.raw, next);
+          slot.trains = id === 'path' ? normalizePath(slot.raw) : normalizeFeed(id, slot.raw, next);
           for (const train of slot.trains.values()) enrichSchedule(train, this.schedules);
         }
         this.refreshBoards();
@@ -235,6 +239,7 @@ export class TransitService {
   }
   context(id: string): StationContext | undefined {
     const station = this.catalog.find(s => s.id === id); if (!station) return;
+    if (id.startsWith('path-')) return { entrances: [], equipment: [], outages: [], sources: [] };
     const equipment = this.equipment.filter(e => String(e.stationcomplexid) === id || station.parts.some(p => e.elevatorsgtfsstopid?.split(/[ ,/]+/).includes(p.id)));
     const ids = new Set(equipment.map(e => e.equipmentno));
     return { entrances: this.entrances.filter(e => String(e.complex_id) === id), equipment,

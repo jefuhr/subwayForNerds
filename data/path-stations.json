@@ -1,0 +1,80 @@
+[
+  {
+    "code": "09S",
+    "name": "9th Street",
+    "lat": 40.734267,
+    "lon": -73.999006
+  },
+  {
+    "code": "14S",
+    "name": "14th Street",
+    "lat": 40.7373,
+    "lon": -73.996858
+  },
+  {
+    "code": "23S",
+    "name": "23rd Street",
+    "lat": 40.74286,
+    "lon": -73.992792
+  },
+  {
+    "code": "33S",
+    "name": "33rd Street",
+    "lat": 40.748591,
+    "lon": -73.988633
+  },
+  {
+    "code": "CHR",
+    "name": "Christopher Street",
+    "lat": 40.732942,
+    "lon": -74.007081
+  },
+  {
+    "code": "EXP",
+    "name": "Exchange Place",
+    "lat": 40.716798,
+    "lon": -74.032451
+  },
+  {
+    "code": "GRV",
+    "name": "Grove Street",
+    "lat": 40.719264,
+    "lon": -74.04257
+  },
+  {
+    "code": "HAR",
+    "name": "Harrison",
+    "lat": 40.739382,
+    "lon": -74.15561
+  },
+  {
+    "code": "HOB",
+    "name": "Hoboken",
+    "lat": 40.735331,
+    "lon": -74.029005
+  },
+  {
+    "code": "JSQ",
+    "name": "Journal Square",
+    "lat": 40.73199,
+    "lon": -74.062854
+  },
+  {
+    "code": "NEW",
+    "name": "Newport",
+    "lat": 40.727091,
+    "lon": -74.034645
+  },
+  {
+    "code": "NWK",
+    "name": "Newark",
+    "lat": 40.734435,
+    "lon": -74.164059
+  },
+  {
+    "code": "WTC",
+    "name": "World Trade Center",
+    "lat": 40.71224,
+    "lon": -74.012522
+  }
+]

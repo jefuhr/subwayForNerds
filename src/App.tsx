@@ -1,3 +1,4 @@
+import { PATH_ROUTES } from '../shared/path';
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, MoveVertical, ArrowRight, ArrowUp, ArrowUpRight, ArrowLeftRight, Check, ChevronLeft, ChevronDown, ChevronRight, Clock3, Crosshair, ExternalLink, Info, MapPin, Palette, Radio, RefreshCw, Search, Star, TrainFront, TriangleAlert, X } from 'lucide-react';
 import type { Board, Station } from '../shared/types';
@@ -18,11 +19,12 @@ import { ChangeLabels } from './Changes';
 const TrainDetail = lazy(() => import('./Details').then(m => ({ default: m.TrainDetail })));
 const Fleet = lazy(() => import('./Fleet'));
 const ContextDetail = lazy(() => import('./Details').then(m => ({ default: m.ContextDetail })));
-const boroughs: Record<string, string> = { M: 'Manhattan', B: 'Brooklyn', Bk: 'Brooklyn', Bx: 'Bronx', Q: 'Queens', SI: 'Staten Island' };
+const boroughs: Record<string, string> = { NJ: 'New Jersey', M: 'Manhattan', B: 'Brooklyn', Bk: 'Brooklyn', Bx: 'Bronx', Q: 'Queens', SI: 'Staten Island' };
 const quickStations = ['602', '617', '611', '607'];
 const displayRoute = (route: string) => ({ GS: 'S', FS: 'S', H: 'S', SI: 'SIR' })[route] || route;
 const routeColor = (route: string) => /^[123]$/.test(route) ? 'red' : /^[456]/.test(route) ? 'green' : /^7/.test(route) ? 'purple' : /^[ACE]$/.test(route) ? 'blue' : /^(B|D|F|FX|M)$/.test(route) ? 'orange' : /^[NQRW]$/.test(route) ? 'yellow' : route === 'G' ? 'lime' : /^[JZ]$/.test(route) ? 'brown' : 'gray';
 export function Bullet({ route, small = false }: { route: string; small?: boolean }) {
+  if (route.startsWith('PATH')) return <span className={`route-bullet path-route ${small ? 'small' : ''}`} style={{ background: PATH_ROUTES[route]?.color }} title={'PATH ' + (PATH_ROUTES[route]?.label || '')}>{PATH_ROUTES[route]?.label || 'PATH'}</span>;
   return <span className={`route-bullet ${routeColor(route)} ${small ? 'small' : ''}`} title={route}>{displayRoute(route)}</span>;
 }
 function readStation() {
@@ -184,7 +186,7 @@ function StationPage({ stationId, station, board, cached, error, active, now, fa
         <section id={active ? 'departures' : undefined} className="departure-board" tabIndex={-1}>
           <div className="board-toolbar"><div className="board-title"><h2>Departures</h2><span className="count-badge">{visible.length}</span><DepartureViewMenu key={stationId} value={view} onChange={value => savePreference({ view: value })} /></div><div className="board-actions"><button className="text-button" onClick={() => setPanel('alerts')}><TriangleAlert size={14} />Alerts{alerts.length ? ` (${alerts.length})` : ''}</button><button className="icon-button" onClick={refresh} aria-label="Refresh departures"><RefreshCw size={15} /></button></div></div>
           <div className="departure-filters">
-            <div className="direction-filters" role="group" aria-label="Direction filters">{[['ALL', 'All directions'], ['NORTH', 'Northbound'], ['SOUTH', 'Southbound']].map(([id, name]) => <button key={id} aria-label={name} title={name} aria-pressed={direction === id} onClick={() => setDirection(id)}>{id === 'ALL' ? <MoveVertical size={19} /> : id === 'NORTH' ? <ArrowUp size={19} /> : <ArrowDown size={19} />}</button>)}</div>
+            <div className="direction-filters" role="group" aria-label="Direction filters">{(station?.id.startsWith('path-') ? [['ALL', 'All directions'], ['TO_NY', 'To New York'], ['TO_NJ', 'To New Jersey']] : [['ALL', 'All directions'], ['NORTH', 'Northbound'], ['SOUTH', 'Southbound']]).map(([id, name]) => <button key={id} aria-label={name} title={name} aria-pressed={direction === id} onClick={() => setDirection(id)}>{id === 'ALL' ? <MoveVertical size={19} /> : (id === 'NORTH' || id === 'TO_NY') ? <ArrowUp size={19} /> : <ArrowDown size={19} />}</button>)}</div>
             <RouteFilters availableRoutes={availableRoutes} routes={routes} setRoutes={setRoutes} />
           </div>
           {!board && <div className="loading-board"><span className="loading-line" /><span className="loading-line" /><span className="loading-line" /><p>{error || 'Connecting to your station…'}</p>{error && <button onClick={() => setPanel('stations')} className="text-button">Choose a station</button>}</div>}
@@ -232,7 +234,7 @@ function PlatformGroup({ group, view, board, now, cached, open }: { group: Depar
   const track = first.actualTrack || first.scheduledTrack;
   const direction = view === 'track' ? (first.direction === 'NORTH' ? part?.north : first.direction === 'SOUTH' ? part?.south : undefined) || directionLabel(group.direction) : directionLabel(group.direction);
   const rows = expanded ? departures : departures.slice(0, 5);
-  return <section className="platform-card"><header className="platform-heading"><div className="platform-direction">{group.direction === 'NORTH' ? <ArrowUp size={17} /> : group.direction === 'SOUTH' ? <ArrowDown size={17} /> : <MoveVertical size={17} />}<h3>{direction}</h3></div>{view === 'track' && <span className="platform-track">{track ? `TRACK ${track}` : 'TRACK UNKNOWN'}<span>{first.actualTrack ? 'reported' : track ? 'scheduled' : 'direction group'}</span></span>}<div className="platform-subheading"><span>{view === 'track' ? part?.line || first.partId : view === 'direction' ? 'All platforms' : view === 'service' ? `Service ${group.service}` : group.label}</span><span>{first.direction === 'NORTH' ? 'NORTHBOUND' : first.direction === 'SOUTH' ? 'SOUTHBOUND' : 'UNKNOWN DIRECTION'}</span></div></header>
+  return <section className="platform-card"><header className="platform-heading"><div className="platform-direction">{group.direction === 'NORTH' ? <ArrowUp size={17} /> : group.direction === 'SOUTH' ? <ArrowDown size={17} /> : <MoveVertical size={17} />}<h3>{direction}</h3></div>{view === 'track' && <span className="platform-track">{track ? `TRACK ${track}` : 'TRACK UNKNOWN'}<span>{first.actualTrack ? 'reported' : track ? 'scheduled' : 'direction group'}</span></span>}<div className="platform-subheading"><span>{view === 'track' ? part?.line || first.partId : view === 'direction' ? 'All platforms' : view === 'service' ? `Service ${group.service}` : group.label}</span><span>{first.direction === 'NORTH' ? 'NORTHBOUND' : first.direction === 'SOUTH' ? 'SOUTHBOUND' : directionLabel(first.direction).toUpperCase()}</span></div></header>
     <div className="column-labels"><span>TRAIN / DESTINATION</span><span>CURRENT POSITION</span><span>ARRIVES IN</span></div>
     <div>{rows.map((d, index) => {
       const time = countdown(d.time, d.timestamp, now, cached);

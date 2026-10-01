@@ -1,6 +1,6 @@
-# Validation — September 6, 2026
+# Validation
 
-## Completed
+## September 6, 2026 — initial validation
 
 - Production TypeScript/Vite build passes.
 - 17 data/API regression tests pass, including all nine recorded protobuf feeds,
@@ -73,3 +73,97 @@ For the host's 2GB RAM budget, schedule archives are now parsed sequentially and
 CSV input is chunked into 64KiB blocks. A live refresh of both archives completed
 in 9.9 seconds at 377MB process peak RSS in the isolated local worker check,
 producing 257 regular and 258 supplemented patterns.
+
+## September 28, 2026 — native iPhone and web support
+
+### Verified locally
+
+- TypeScript checks and the production Vite web build pass. The web application
+  source and existing static assets remain unchanged.
+- All 54 backend tests pass, including consistent full-history gzip exports,
+  concurrent board requests and WAL writes, byte ranges, checksums, failed export
+  recovery, retention limits, and low-space failures during export/compression.
+  Evidence: `artifacts/validation-backend-gzip.log`.
+- The production-preserving overlay passes all 67 tests under Node 22, including
+  its existing analytics, PATH, and NJ Transit coverage. Its web build also passes.
+  Evidence: `artifacts/deploy-native-fleet/validation-node22-gzip.log` and
+  `validation-build-gzip.log` in the same directory.
+- TransitCore passes 20 tests, including backend-generated JSON contracts,
+  regional station behavior, ETags, opaque identifiers, stale-source display,
+  persistence, and raw/gzip manifests above 2 GB.
+- FleetOffline passes 16 enabled tests. Coverage includes bounded gzip inflation,
+  truncation and trailing bytes, checksums, disk budgets, cancellation during SQLite
+  work, interrupted installation cleanup, indexed history pagination, and restoring
+  a real backend-generated 8,442-car snapshot. One HTTP-only test is skipped in
+  this final run because local listener access is restricted. That HTTP scenario
+  passed against the earlier raw-snapshot fixture before the transport changed.
+  Evidence: `artifacts/TransitCore-tests.log` and `FleetOffline-gzip-tests.log`.
+- The latest TransitCore and FleetOffline modules compile against iPhoneOS 27 with
+  an iOS 26 deployment target. The complete SwiftUI application typechecks in
+  Debug and Release with Swift 6 strict concurrency. Exact commands and output:
+  `artifacts/ios-typecheck/verify.sh` and `verification.log`.
+- Complete unsigned device and simulator test-bundle builds succeeded before the
+  final gzip changes. These are compile results, not simulator/device acceptance.
+- The last full browser run reached 36 of 45 cases: 33 passed and three expected
+  platform skips before interruption. A separate focused run passed four cases,
+  including WebKit offline recovery and narrow views, with two platform skips.
+  This is not a complete final browser-suite pass. Logs are retained under
+  `artifacts/browser-regressions/`.
+
+The native package tests used workspace cache paths and SwiftPM's
+`--disable-sandbox` option to avoid its redundant nested macOS sandbox. The outer
+workspace restrictions remained active. No third-party packages or system dependencies were added.
+
+### Remaining acceptance and release work
+
+- Phone installation is not verified. Xcode recognizes the trusted phone and the
+  Personal Team was configured locally. The last signed rebuild reached Apple's
+  keychain-controlled codesign step; the user deferred local approval. The source
+  has changed since that build, so build the latest project before installing.
+- Native UI tests compile but have not run. The iOS simulator runtime download
+  failed during registration with a missing personalization manifest, and current
+  execution permissions deny CoreSimulator access. The final full `xcodebuild`
+  retry is also blocked from writing its protected SwiftPM diagnostics cache.
+- Final browser and actual HTTP download reruns cannot start a local listener
+  under the current execution restrictions. The final attempted browser log is
+  `artifacts/browser-regressions/final-audit.log`.
+- Test the phone's location allowance/denial, keyboard, background/resume,
+  preferences after relaunch, fleet download, airplane-mode relaunch, and deletion.
+  Simulator checks do not replace this acceptance.
+- Production was inspected read-only. It is newer than this checkout, so a release
+  must preserve its web/analytics/PATH/NJT changes. The reviewed eight-source-file
+  overlay, baseline checksums, and rollback helper are prepared under
+  `artifacts/deploy-native-fleet/release/`. No production deployment occurred.
+- The production database was about 12 GB with about 22 GB free. The first real
+  export still needs a size/duration/space check after deployment approval. The
+  8.8 MB fixture compressing to 1.1 MB does not predict production behavior.
+
+Normal-machine commands remain `npm run check`, `RUN_WEBKIT=1 npm run test:browser`,
+`npm run test:native`, and `npm run test:ios`. See [iPhone setup](ios.md) for signing
+and simulator configuration.
+
+## September 28, 2026 — compact board and departure views
+
+- Replaced the large Board title with inline navigation, combined station actions,
+  reduced secondary text and spacing, and emphasized departure countdowns. Route
+  buttons retain 44-point hit areas; station controls adapt for larger text.
+- Added the production web board's five views: track, direction/all platforms,
+  route families, station corridors, and service. Views persist per station and
+  migrate existing preferences without resetting favorites or filters. Combined
+  views show each train's boarding context, without duplicate track labels.
+- All 31 TransitCore tests pass, including 11 new grouping, ordering, preference,
+  and boarding-label cases. Evidence: `artifacts/board-ordering-tests.log`.
+- Full app source typechecking passes for Debug and Release against the iPhone SDK;
+  the UI tests also typecheck against the simulator SDK. Logs:
+  `artifacts/board-compact-typecheck.log` and
+  `artifacts/board-compact-uitests-typecheck.log`.
+- Added a UI scenario for initial departure visibility, all five menu choices,
+  per-station persistence, and screenshots. It has not executed: this session
+  still cannot connect to CoreSimulator.
+- The user's phone screenshot and earlier install log confirm the prior app is
+  installed. This compact-board update has not been installed from this session:
+  the build fails when Xcode writes its protected SwiftPM diagnostics cache.
+  Evidence: `artifacts/board-compact-device-build.log`. Run the latest project
+  in Xcode to install and visually verify this update.
+- This follow-up changes native UI/contracts only; web and backend source remain
+  unchanged from the preceding implementation.

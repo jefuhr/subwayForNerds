@@ -10,6 +10,9 @@
     "start": "tsx server/index.ts",
     "test": "tsx --test test/*.test.ts",
     "test:browser": "playwright test",
+    "test:native": "bash scripts/test-native.sh",
+    "test:ios": "bash scripts/test-ios.sh",
+    "fixtures:native": "tsx scripts/export-native-fixtures.ts",
     "check": "npm run build && npm test",
     "fleet:db": "node scripts/fleet-db.mjs"
   },

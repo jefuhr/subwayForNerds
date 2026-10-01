@@ -103,6 +103,49 @@ for existing clients; the comparison UI and ranking logic are removed.
 
 No deployment is part of this change.
 
+## Native offline snapshots
+
+The iPhone app can download a public, versioned SQLite snapshot. The operational
+`fleet.sqlite` and WAL files remain private server state and are never served directly.
+
+- `GET fleet/offline/manifest` returns schema version, snapshot ID, generation time,
+  history bounds, record counts, and an origin-relative download URL. `id`, `byteLength`,
+  and `sha256` describe the expanded SQLite file; `compression: "gzip"`,
+  `compressedByteLength`, and `compressedSha256` describe the transfer file.
+- `GET fleet/offline/snapshots/:id.sqlite.gz` streams an immutable `application/gzip`
+  file with a compressed-file ETag, Content-Length, and byte-range/If-Range support.
+  No `Content-Encoding` is added: the app verifies and expands the archive itself.
+  The legacy raw `.sqlite` route remains available for retained raw artifacts.
+  Requests before the first successful
+  export receive a retryable 503 manifest response.
+- A dedicated worker establishes one read-only transaction and exports the full roster,
+  provenance, last reports, consists, and retained events, independently of the live
+  fleet request worker. Every downloaded car has `reporting: false`.
+- Exports run after fleet initialization and hourly thereafter. Files and manifests are
+  published atomically under `STATE_DIR/fleet-offline/`. At most two artifacts are
+  retained, with 24-hour retention best effort for older files. Space pressure can
+  remove the previous generation earlier. The current valid snapshot remains even
+  if regeneration fails; downloads already opened remain readable after pruning.
+- Exporting and gzip compression use bounded buffers and preserve a 2 GiB disk
+  reserve. Preflight budgets live SQLite pages, up to 2 GiB compression headroom,
+  and 16 MiB working space beyond that reserve. Space is checked while inserting
+  rows and writing compressed chunks. Failure removes staging files and keeps the
+  current manifest; history is never shortened to make an export fit.
+- Snapshot schema version 1 uses `PRAGMA user_version=1`, with `meta`, `cars`,
+  `assertions`, `consists`, `events`, and `event_cars`. `meta.snapshot` records the
+  generation time, history bounds, counts, and latest processed observation time.
+  This format is versioned independently from the operational schema.
+
+Deploy these additive routes to enable production iPhone downloads. Existing web
+clients and transit routes continue to work. No web download interface is added.
+`GET fleet/health` includes an additive `offline` object with snapshot availability,
+publication time, and the last export error, so an operator can distinguish a failed
+export from the initial preparation period.
+The September 28 read-only inspection found a roughly 12 GB operational database
+and 22 GB free disk. Fixture compression results do not establish production size,
+duration, or peak space use. Measure the first full export before enabling downloads
+for device acceptance; deployment remains subject to approval.
+
 ## Local validation
 
 Run `npm run check` and `npm run test:browser`. The browser suite uses recorded

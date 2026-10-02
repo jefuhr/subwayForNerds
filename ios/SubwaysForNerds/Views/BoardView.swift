@@ -42,7 +42,7 @@ struct BoardView: View {
 	@Binding var selection: BoardDetail?
 	/// Shows a detail that has no row of its own, such as station info.
 	let show: (BoardDetail) -> Void
-	@State private var showStations = false
+	@State private var stationPicker: StationPickerMode?
 	@State private var showAlerts = false
 	private var groups: [DepartureGroup] {
 		guard let board = app.board else { return [] }
@@ -78,7 +78,7 @@ struct BoardView: View {
 				if app.board == nil {
 					Section {
 						if app.boardError == nil { ProgressView("Connecting to your station…") }
-						Button("Find a station") { showStations = true }.actionStyle()
+						Button("Find a station") { stationPicker = .search }.actionStyle()
 					}
 				} else if groups.isEmpty {
 					Section {
@@ -102,9 +102,13 @@ struct BoardView: View {
 		.navigationBarTitleDisplayMode(.inline)
 		.toolbar {
 			ToolbarItem(placement: .topBarLeading) {
-				Button { showStations = true } label: { Label("Find a station", systemImage: "magnifyingglass") }
+				Button { stationPicker = .search } label: { Label("Find a station", systemImage: "magnifyingglass") }
 					.keyboardShortcut("f", modifiers: .command)
 					.accessibilityIdentifier("findStation")
+			}
+			ToolbarItem(placement: .topBarLeading) {
+				Button { stationPicker = .nearby } label: { Label("Stations near me", systemImage: "location") }
+					.accessibilityIdentifier("nearbyFromBoard")
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				Button { Task { await app.refreshBoard() } } label: { Label("Refresh departures", systemImage: "arrow.clockwise") }
@@ -114,14 +118,14 @@ struct BoardView: View {
 		}
 		.refreshable { await app.refreshBoard() }
 		.task(id: app.stationID) { await app.refreshBoard() }
-		.sheet(isPresented: $showStations) { NavigationStack { StationPickerView() } }
+		.sheet(item: $stationPicker) { mode in NavigationStack { StationPickerView(mode: mode) } }
 		.sheet(isPresented: $showAlerts) { NavigationStack { AlertsView(alerts: app.board?.alerts ?? [], sources: app.board?.sources ?? [], cached: app.boardIsCached) } }
 	}
 
 	private var stationHeading: some View {
 		VStack(alignment: .leading, spacing: 0) {
 			HStack(alignment: .center, spacing: 4) {
-				Button { showStations = true } label: {
+				Button { stationPicker = .search } label: {
 					// Inline so the chevron follows the last line of a wrapped name.
 					Text("\(app.station?.name ?? "Your next train") \(Text(Image(systemName: "chevron.down")).font(.caption.bold()).foregroundStyle(.secondary))")
 						.font(.headline).multilineTextAlignment(.leading)

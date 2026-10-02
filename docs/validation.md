@@ -1,5 +1,79 @@
 # Validation
 
+## October 1, 2026 — nearby station simulator QA and correction
+
+- Reproduced the Board location button opening ordinary search on an iPhone 17
+  simulator running iOS 27.0. The initial distance-order regression failed because
+  the boolean sheet presentation captured the old search mode. Evidence:
+  `artifacts/nearby-qa-before.log` and `artifacts/nearby-qa-before.xcresult`.
+- Replaced the presentation with an identified search/nearby mode. Nearby requests
+  location on opening; ordinary search keeps favorites-first ordering. Queries
+  and sorting do not carry between sheet presentations.
+- Six targeted simulator UI tests passed with zero failures: all 445 station
+  complexes sorted by distance with a nonfavorite first, selecting the nearest
+  station, repeated search/nearby openings, unavailable location, closest favorite
+  across offline launch/background return, and actual Core Location granted and
+  denied paths. These scenarios are covered by four deterministic tests and two
+  system-permission tests. Logs and result bundles:
+  `artifacts/nearby-qa-final.log` / `.xcresult`,
+  `artifacts/nearby-qa-system-location.log` / `.xcresult`, and
+  `artifacts/nearby-qa-system-denied.log` / `.xcresult`.
+- Visually reviewed exported screenshots in `artifacts/nearby-qa-final-screens`,
+  `artifacts/nearby-qa-system-location-screens`, and
+  `artifacts/nearby-qa-system-denied-screens`. Nearby shows distances and closest
+  first; search shows its quick switches and favorites first. Denied permission
+  shows an explanatory error while station search and selection still work.
+  Simulator location/permission overrides were reset and the fixture server stopped.
+- The corrected signed device build and installation on Juliet's iPhone 17e
+  succeeded. Evidence: `artifacts/phone-nearby-fix-build.log` and
+  `artifacts/phone-nearby-fix-install.json`. Launch was rejected because the phone
+  was locked (`artifacts/phone-nearby-fix-launch.json`); this update's interactions
+  were verified in the simulator, not on the physical device.
+
+## October 1, 2026 — signed iPhone installation
+
+- After workspace permissions were updated, the signed Debug device build succeeded
+  with `xcodebuild` using the `SubwaysForNerds` scheme and
+  `ios/DerivedData/Phone`. Output: `artifacts/phone-rebuild-latest.log`.
+- `devicectl device install app` successfully installed the latest app on Juliet's
+  physical iPhone 17e, including the closest-favorite lifecycle fix and the Board
+  location button. Receipt: `artifacts/phone-install-latest.json`.
+- After the phone was unlocked, the app launched successfully. A console launch
+  (PID 66155) remained running across subsequent process inspections, and no
+  matching app crash report was returned by the available diagnostic listing.
+  Evidence: `artifacts/phone-console-latest.log`, `artifacts/phone-processes-all.json`,
+  and `artifacts/phone-process-filter-check.json`. This is launch verification;
+  nearest-station and other physical-device interaction acceptance remain manual.
+- Launch attempts while the device was locked were rejected with
+  `FBSOpenApplicationErrorDomain`, code 7, `Locked`. The phone locked again before
+  a final standalone relaunch; that request terminated the console-monitored app
+  before its launch was rejected. The installed update remains available to open
+  from the phone. Latest receipt: `artifacts/phone-launch-latest.json`.
+
+## October 1, 2026 — native closest favorite startup and nearby button
+
+- `bash scripts/test-native-startup.sh` passes seven checks using the actual
+  `AppModel`: closest of two favorites while the catalog request is stalled,
+  manual choice preserved through temporary inactivity, closest favorite selected
+  again after backgrounding, last station retained without favorites, and last
+  station retained with location disabled, nearby search obtaining location while
+  keeping the full catalog including nonfavorites, and unavailable nearby search
+  keeping the catalog with an explanatory error. The test uses a temporary state directory,
+  Debug-only coordinates, and a URL protocol that stalls network requests.
+  Output: `artifacts/closest-favorite-model-tests.log`.
+- The app typechecks for iOS in Debug and Release. The UI regression typechecks
+  against the simulator SDK. Outputs: `artifacts/closest-favorite-typecheck.log`
+  and `artifacts/closest-favorite-uitests-typecheck.log`.
+- The UI regression `testBoardLocationButtonListsAllStationsByDistance` covers
+  opening nearby search directly from the board, a nonfavorite station ranking
+  before a farther favorite, and choosing that station. The permission fallback
+  regression also enters the catalog from the board's location button.
+- The simulator regression could not run: Xcode package resolution cannot write
+  SwiftPM diagnostics under `~/Library/Caches/org.swift.swiftpm`. The exact attempt
+  is recorded in `artifacts/closest-favorite-ui.log`. These checks do not establish
+  simulator or physical-device acceptance. This initial check preceded the signed
+  iPhone installation recorded above.
+
 ## September 6, 2026 — initial validation
 
 - Production TypeScript/Vite build passes.

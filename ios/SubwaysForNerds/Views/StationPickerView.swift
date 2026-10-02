@@ -2,19 +2,33 @@ import CoreLocation
 import SwiftUI
 import TransitCore
 
+enum StationPickerMode: String, Identifiable {
+	case search, nearby
+	var id: String { rawValue }
+}
+
 struct StationPickerView: View {
+	let mode: StationPickerMode
 	@Environment(AppModel.self) private var app
 	@Environment(\.dismiss) private var dismiss
 	@State private var query = ""
+	@State private var nearbySort: Bool
+
+	init(mode: StationPickerMode = .search) {
+		self.mode = mode
+		_nearbySort = State(initialValue: mode == .nearby)
+	}
+
+	private var nearbyLocation: CLLocation? { nearbySort ? app.nearbyLocation : nil }
 
 	private func distance(_ station: Station) -> Double? {
-		guard let location = app.nearbyLocation else { return nil }
+		guard let location = nearbyLocation else { return nil }
 		return station.parts.map { location.distance(from: CLLocation(latitude: $0.lat, longitude: $0.lon)) }.min()
 			?? location.distance(from: CLLocation(latitude: station.lat, longitude: station.lon))
 	}
 	private var matches: [Station] {
 		return app.stations.filter { Display.stationMatches($0, query: query) }.sorted {
-			if app.nearbyLocation != nil { return (distance($0) ?? .infinity) < (distance($1) ?? .infinity) }
+			if nearbyLocation != nil { return (distance($0) ?? .infinity) < (distance($1) ?? .infinity) }
 			let a = app.favorites.contains($0.id), b = app.favorites.contains($1.id)
 			return a == b ? $0.name.localizedStandardCompare($1.name) == .orderedAscending : a
 		}
@@ -24,7 +38,7 @@ struct StationPickerView: View {
 		List {
 			Section {
 				HStack {
-					Button { Task { await app.locateNearby() } } label: {
+					Button { nearbySort = true; Task { await app.locateNearby() } } label: {
 						HStack(spacing: 6) {
 							Image(systemName: "location")
 							Text(app.locating ? "Finding your location…" : "Stations near me")
@@ -32,14 +46,14 @@ struct StationPickerView: View {
 					}
 					.disabled(app.locating).accessibilityIdentifier("nearbyStations")
 					Spacer()
-					if app.nearbyLocation != nil { Button("Clear nearby sort") { app.nearbyLocation = nil } }
+					if nearbyLocation != nil { Button("Clear nearby sort") { nearbySort = false } }
 				}
 				.buttonStyle(.borderless).actionStyle().font(.subheadline).frame(minHeight: 44)
 				.listRowInsets(.vertical, 0)
 				if let error = app.locationError { Notice(text: error) }
 				if let error = app.catalogError { Notice(text: error) }
 			}
-			if query.isEmpty && app.nearbyLocation == nil {
+			if query.isEmpty && !nearbySort {
 				Section {
 					ForEach(["602", "617", "611", "607"].compactMap { id in app.stations.first { $0.id == id } }) { station in
 						Button(station.name) { choose(station) }
@@ -71,13 +85,21 @@ struct StationPickerView: View {
 					.listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 6))
 				}
 				if matches.isEmpty { ContentUnavailableView.search(text: query) }
-			} header: { ListHeader(app.nearbyLocation != nil ? "Closest station first" : "\(matches.count) station \(matches.count == 1 ? "complex" : "complexes") · favorites first") }
+			} header: {
+				ListHeader("\(matches.count) station \(matches.count == 1 ? "complex" : "complexes") · \(nearbyLocation != nil ? "closest first" : nearbySort && app.locating ? "finding your location" : "favorites first")")
+					.accessibilityIdentifier("nearbyStationSummary")
+			} footer: {
+				if nearbyLocation != nil { Text("Straight-line distance to the closest station in each complex.") }
+			}
 		}
-		.themedList().navigationTitle("Find a station").navigationBarTitleDisplayMode(.inline)
+		.themedList().navigationTitle(nearbySort ? "Stations near you" : "Find a station").navigationBarTitleDisplayMode(.inline)
 		.searchable(text: $query, prompt: "Station, line, or borough")
 		.autocorrectionDisabled().textInputAutocapitalization(.never)
 		.toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
 		.refreshable { await app.refreshCatalog() }
+		.task {
+			if mode == .nearby { await app.locateNearby() }
+		}
 	}
 	private func choose(_ station: Station) { app.selectStation(station.id); dismiss() }
 }

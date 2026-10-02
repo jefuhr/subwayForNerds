@@ -143,9 +143,50 @@ Stop the fixture server afterward. Restricted environments can instead point
 `SFN_FIXTURE_SNAPSHOT_DIRECTORY` at a backend-generated directory containing
 `manifest.json` and its `.sqlite.gz` file to check the same import/query/reopen path.
 
+On launch and after returning from the background, the app opens the closest favorite
+using device location. A saved catalog works without waiting for a network refresh.
+A manual station choice remains selected for that foreground visit; permission prompts
+and other temporary inactive transitions do not reset it. If location is unavailable,
+the last station remains selected and location is retried on the next foreground visit.
+
+The Board toolbar's location button opens the whole station catalog and requests
+your location. All station complexes, including nonfavorites, appear closest first
+with straight-line distances. Search can narrow this list, and choosing a station
+opens its board. If location is unavailable, the complete searchable catalog and
+the location error remain visible.
+The location sheet is titled “Stations near you”; ordinary search opens “Find a
+station” with favorites first. Each presentation starts with an empty query and
+its own sorting mode, so switching between the buttons does not carry either over.
+
+Run `bash scripts/test-native-startup.sh` on a Mac with Xcode to check the actual
+startup model against a stalled API and deterministic location, without a simulator.
+The UI regression `testClosestFavoriteOnOfflineLaunchAndForegroundReturn` checks the
+same foreground behavior through the station controls and Home button.
+
 Debug UI tests use launch environment keys `SFN_API_BASE_URL`, `SFN_RESET_STATE`,
-`SFN_DISABLE_LOCATION`, and `SFN_TEST_NOW`. Reset affects only this app's local
+`SFN_DISABLE_LOCATION`, `SFN_TEST_LOCATION` (latitude,longitude), and `SFN_TEST_NOW`.
+The injected location is Debug-only. Reset affects only this app's local
 application-support folder. Preserve state for offline relaunch scenarios.
+
+Two additional UI tests exercise actual simulator Core Location. After installing
+the simulator app, set `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`
+and use your simulator ID for these commands:
+
+```sh
+xcrun simctl location "$SFN_SIMULATOR_ID" set 40.730953,-73.981628
+xcrun simctl privacy "$SFN_SIMULATOR_ID" grant location nyc.juliet.subwaysfornerds
+TEST_RUNNER_SFN_SYSTEM_LOCATION_QA=granted xcodebuild test \
+  -project ios/SubwaysForNerds.xcodeproj -scheme SubwaysForNerds \
+  -destination "platform=iOS Simulator,id=$SFN_SIMULATOR_ID" \
+  -only-testing:SubwaysForNerdsUITests/SubwaysForNerdsUITests/testNearbyUsesSimulatorLocationService \
+  CODE_SIGNING_ALLOWED=NO
+```
+
+Keep the fixture server on port 8092 running during these tests. For denial,
+revoke location with `simctl privacy`, set `TEST_RUNNER_SFN_SYSTEM_LOCATION_QA=denied`,
+and select `testNearbySystemLocationDeniedKeepsSearchAvailable`. Both tests skip
+without their explicit setup. Afterward, run `simctl privacy` with `reset location`
+for this bundle and `simctl location` with `clear` to remove the QA overrides.
 
 Physical-device acceptance still requires a paired phone: location allowance and
 denial, keyboard/search, background/resume, themes and filters after relaunch,

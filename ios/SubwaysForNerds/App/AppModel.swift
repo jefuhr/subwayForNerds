@@ -55,15 +55,22 @@ final class AppModel {
 	@ObservationIgnored private var lastCatalogAttempt: TimeInterval = 0
 	@ObservationIgnored private let fixedNow: TimeInterval?
 	@ObservationIgnored private let locationDisabled: Bool
+	#if DEBUG
+	@ObservationIgnored private let testLocation: CLLocation?
+	#endif
 
-	init() {
-		directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+	init(stateDirectory: URL? = nil) {
+		directory = stateDirectory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
 			.appendingPathComponent("SubwaysForNerds", isDirectory: true)
 		#if DEBUG
 		let environment = ProcessInfo.processInfo.environment
 		if environment["SFN_RESET_STATE"] == "1" { try? FileManager.default.removeItem(at: directory) }
 		fixedNow = environment["SFN_TEST_NOW"].flatMap(Double.init)
 		locationDisabled = environment["SFN_DISABLE_LOCATION"] == "1"
+		let coordinates = environment["SFN_TEST_LOCATION"]?.split(separator: ",").compactMap { Double($0) } ?? []
+		if coordinates.count == 2, CLLocationCoordinate2DIsValid(CLLocationCoordinate2D(latitude: coordinates[0], longitude: coordinates[1])) {
+			testLocation = CLLocation(latitude: coordinates[0], longitude: coordinates[1])
+		} else { testLocation = nil }
 		#else
 		fixedNow = nil
 		locationDisabled = false
@@ -156,9 +163,17 @@ final class AppModel {
 		Task { await refreshCatalog(); await refreshBoard() }
 	}
 
-	func suspend() {
+	func suspend(background: Bool) {
 		active = false
 		activeGeneration += 1
+		if background {
+			// A new foreground visit should start at the nearest favorite again.
+			// Inactive transitions (including the location prompt) are still the same visit.
+			favoriteStartupAttempted = false
+			closestFavoriteTask?.cancel()
+			closestFavoriteTask = nil
+			locator.cancel()
+		}
 	}
 
 	func runWhileActive() async {
@@ -202,8 +217,10 @@ final class AppModel {
 		}
 	}
 	private func loadInitialCatalog() async {
-		await refreshCatalog()
+		async let catalog: Void = refreshCatalog()
+		// Cached favorites can be selected without waiting for the network.
 		await openClosestFavoriteOnce()
+		await catalog
 	}
 	private func boardLoop() async {
 		while !Task.isCancelled {
@@ -232,6 +249,8 @@ final class AppModel {
 			stations = value
 			Self.write(value, at: directory.appendingPathComponent("stations.json"))
 			catalogError = nil
+			// Favorites without a saved catalog become resolvable after this refresh.
+			if active { await openClosestFavoriteOnce() }
 		} catch {
 			if !Task.isCancelled, generation == catalogGeneration, requestedEndpoint == endpoint { catalogError = "Station catalog unavailable. Saved stations remain available; reconnect to load every station." }
 		}
@@ -277,19 +296,33 @@ final class AppModel {
 		locating = true
 		locationError = nil
 		defer { locating = false }
-		do { nearbyLocation = try await locator.locate() }
+		do { nearbyLocation = try await currentLocation() }
 		catch { locationError = error.localizedDescription }
 	}
 
+	private func currentLocation() async throws -> CLLocation {
+		#if DEBUG
+		if let testLocation { return testLocation }
+		#endif
+		return try await locator.locate()
+	}
+
 	private func openClosestFavoriteOnce() async {
-		guard !locationDisabled, !favoriteStartupAttempted, !favoriteStations.isEmpty else { return }
+		guard active, !Task.isCancelled, !locationDisabled, !favoriteStartupAttempted, !favoriteStations.isEmpty else { return }
 		let initialStation = stationID
 		// A permission sheet briefly deactivates the scene. Reuse the same one-shot
 		// request after activation, while canceled polling tasks never navigate.
-		if closestFavoriteTask == nil { closestFavoriteTask = Task { try? await locator.locate() } }
+		if closestFavoriteTask == nil {
+			closestFavoriteTask = Task {
+				do { return try await currentLocation() }
+				catch {
+					if !Task.isCancelled { locationError = error.localizedDescription }
+					return nil
+				}
+			}
+		}
 		let location = await closestFavoriteTask?.value
-		guard !Task.isCancelled, !favoriteStartupAttempted else { return }
-		favoriteStartupAttempted = true
+		guard active, !Task.isCancelled, !favoriteStartupAttempted else { return }
 		closestFavoriteTask = nil
 		guard let location, initialStation == stationID else { return }
 		if let closest = favoriteStations.min(by: { location.distance(from: CLLocation(latitude: $0.lat, longitude: $0.lon)) < location.distance(from: CLLocation(latitude: $1.lat, longitude: $1.lon)) }) {
@@ -392,6 +425,8 @@ private final class LocationProvider: NSObject, @preconcurrency CLLocationManage
 			}
 		}
 	}
+
+	func cancel() { finish(.failure(CancellationError())) }
 
 	func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
 		guard continuation != nil else { return }

@@ -19,9 +19,12 @@ struct AppRootView: View {
 			Tab("Fleet", systemImage: "train.side.front.car", value: 1) { FleetSplitView() }
 			Tab("Settings", systemImage: "gearshape", value: 2) { NavigationStack { SettingsView() } }
 		}
+		.onChange(of: phase) { _, phase in
+			if phase != .active { app.suspend(background: phase == .background) }
+		}
 		.task(id: phase) {
-			guard !Task.isCancelled else { return }
-			if phase == .active { await app.runWhileActive() } else { app.suspend() }
+			guard phase == .active, !Task.isCancelled else { return }
+			await app.runWhileActive()
 		}
 	}
 }

@@ -1,0 +1,238 @@
+{
+  "station": {
+    "id": "602",
+    "name": "14 St-Union Sq",
+    "borough": "M",
+    "routes": [
+      "4",
+      "5",
+      "6",
+      "L",
+      "N",
+      "Q",
+      "R",
+      "W"
+    ],
+    "lat": 40.735736,
+    "lon": -73.990568,
+    "parts": [
+      {
+        "id": "R20",
+        "stationId": "15",
+        "complexId": "602",
+        "name": "14 St-Union Sq",
+        "line": "Broadway - Brighton",
+        "routes": [
+          "N",
+          "Q",
+          "R",
+          "W"
+        ],
+        "lat": 40.735736,
+        "lon": -73.990568,
+        "ada": "1",
+        "adaNotes": "",
+        "north": "Uptown",
+        "south": "Downtown",
+        "borough": "M"
+      },
+      {
+        "id": "L03",
+        "stationId": "117",
+        "complexId": "602",
+        "name": "14 St-Union Sq",
+        "line": "Canarsie",
+        "routes": [
+          "L"
+        ],
+        "lat": 40.734789,
+        "lon": -73.99073,
+        "ada": "1",
+        "adaNotes": "",
+        "north": "West Side",
+        "south": "Brooklyn",
+        "borough": "M"
+      },
+      {
+        "id": "635",
+        "stationId": "406",
+        "complexId": "602",
+        "name": "14 St-Union Sq",
+        "line": "Lexington Av",
+        "routes": [
+          "4",
+          "5",
+          "6"
+        ],
+        "lat": 40.734673,
+        "lon": -73.989951,
+        "ada": "0",
+        "adaNotes": "",
+        "north": "Uptown",
+        "south": "Downtown",
+        "borough": "M"
+      }
+    ]
+  },
+  "generatedAt": 1788656380,
+  "departures": [
+    {
+      "key": "gtfs|20260905|fixture|repeated /?=#|25:00:00|635N|1",
+      "tripKey": "gtfs|20260905|fixture|repeated /?=#|25:00:00",
+      "route": "4",
+      "destination": "unknownN",
+      "direction": "NORTH",
+      "stopId": "635N",
+      "partId": "635",
+      "area": "Lexington Av · Uptown · Track 4",
+      "time": 1788656450,
+      "arrival": 1788656440,
+      "departure": 1788656450,
+      "scheduledTrack": "0",
+      "actualTrack": "4",
+      "pattern": "Lex local",
+      "patternSource": "inferred",
+      "location": "Reported near 14 St-Union Sq",
+      "locationTimestamp": 0,
+      "stopsAway": 1,
+      "assigned": false,
+      "feed": "gtfs",
+      "timestamp": 1788656380,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "track:1",
+          "kind": "track",
+          "classification": "unknown",
+          "stopIndices": [
+            1
+          ],
+          "location": "14 St-Union Sq",
+          "label": "track 4 · scheduled 0",
+          "before": "0",
+          "after": "4",
+          "evidence": [
+            {
+              "source": "gtfs",
+              "timestamp": 1788656380,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ],
+          "affectedStops": [
+            "635N"
+          ],
+          "alertIds": []
+        },
+        {
+          "id": "skip:2",
+          "kind": "skip",
+          "classification": "unknown",
+          "label": "skips Grand Central-42 St",
+          "stopIndices": [
+            2
+          ],
+          "evidence": [
+            {
+              "source": "gtfs",
+              "timestamp": 1788656380,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ],
+          "affectedStops": [
+            "631N"
+          ],
+          "alertIds": []
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "602",
+          "stopId": "635N",
+          "name": "14 St-Union Sq",
+          "time": 1788656980
+        }
+      ]
+    },
+    {
+      "key": "gtfs|20260905|fixture absent||635N|0",
+      "tripKey": "gtfs|20260905|fixture absent|",
+      "route": "4",
+      "destination": "14 St-Union Sq",
+      "direction": "NORTH",
+      "stopId": "635N",
+      "partId": "635",
+      "area": "Lexington Av · Uptown",
+      "time": 1788656500,
+      "arrival": null,
+      "departure": 1788656500,
+      "pattern": "Lex",
+      "patternSource": "static",
+      "location": "Next reported stop · 14 St-Union Sq",
+      "stopsAway": null,
+      "feed": "gtfs",
+      "timestamp": 1788656380,
+      "alerts": [],
+      "changes": [],
+      "onward": []
+    },
+    {
+      "key": "gtfs|20260905|fixture|repeated /?=#|25:00:00|635N|3",
+      "tripKey": "gtfs|20260905|fixture|repeated /?=#|25:00:00",
+      "route": "4",
+      "destination": "unknownN",
+      "direction": "NORTH",
+      "stopId": "635N",
+      "partId": "635",
+      "area": "Lexington Av · Uptown",
+      "time": 1788656990,
+      "arrival": 1788656980,
+      "departure": 1788656990,
+      "pattern": "Lex local",
+      "patternSource": "inferred",
+      "location": "Reported near 14 St-Union Sq",
+      "locationTimestamp": 0,
+      "stopsAway": 3,
+      "assigned": false,
+      "feed": "gtfs",
+      "timestamp": 1788656380,
+      "alerts": [],
+      "changes": [],
+      "onward": []
+    }
+  ],
+  "sources": [
+    {
+      "id": "gtfs",
+      "timestamp": 1788656380,
+      "fetchedAt": 1788656380,
+      "error": null
+    },
+    {
+      "id": "gtfs-l",
+      "timestamp": null,
+      "fetchedAt": null,
+      "error": null
+    },
+    {
+      "id": "gtfs-nqrw",
+      "timestamp": null,
+      "fetchedAt": null,
+      "error": null
+    },
+    {
+      "id": "subway-alerts",
+      "timestamp": null,
+      "fetchedAt": null,
+      "error": null
+    },
+    {
+      "id": "helium",
+      "timestamp": null,
+      "fetchedAt": null,
+      "error": null
+    }
+  ],
+  "alerts": []
+}

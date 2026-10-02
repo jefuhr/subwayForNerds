@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type { FleetCar, FleetDetail, FleetPage, FleetSnapshot } from '../shared/fleet';
+export function readFleetCars(db: DatabaseSync, now: number, current?: Map<string, string>): FleetCar[];
 export class FleetStore {
   constructor(file: string);
   db: DatabaseSync;

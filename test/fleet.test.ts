@@ -93,3 +93,18 @@ test('next stop skips the current platform, skipped and passed predictions', () 
   train.stops = []; assert.equal(fleetSnapshot(train, now)!.observation.next, undefined);
   train.assigned = false; assert.equal(fleetSnapshot(train, now), undefined);
 });
+
+test('fleet ordering keeps numeric car names, tied identities and documented members stable', () => {
+  const db = new FleetStore(':memory:');
+  try {
+    const numbers = ['100', '02', '2', '10', '1', '0L912', '0L91', '11A', '11'];
+    db.importRoster([...numbers.map(number => raw(number)), raw('2', 'R32')], '2026-09-06', 1);
+    const expected = db.all(now).sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }) || a.id.localeCompare(b.id));
+    assert.deepEqual(db.list({ view: 'cars' }, now).rows.map(row => row.id), expected.map(car => car.id));
+    const linked = numbers.map(number => ({ id: `nyct:R160:${number}`, number, equipment: 'R160', category: 'passenger' as const,
+      lifecycle: 'In-Service', aliases: [], fixedSet: 'set:ordering-fixture', evidence: [{ url: 'https://example.org', date: '2026-09-06', note: 'Ordering fixture' }] }));
+    db.importSupplement({ cars: linked, sources: [] });
+    assert.deepEqual(db.list({}, now).rows.find(row => row.id === 'set:ordering-fixture')!.cars.map(car => car.number),
+      [...numbers].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })));
+  } finally { db.close(); }
+});

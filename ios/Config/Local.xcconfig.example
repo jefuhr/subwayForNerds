@@ -1,0 +1,4 @@
+// Copy to Local.xcconfig and set the Personal Team ID shown by Xcode.
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+// Override only if this identifier is already registered to a different team.
+PRODUCT_BUNDLE_IDENTIFIER = nyc.juliet.subwaysfornerds

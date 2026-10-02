@@ -1,10 +1,20 @@
 import { test, expect } from '@playwright/test';
+import { startOriginFixture, unusedLoopbackPort } from './origin-fixture';
+
+// A controlling service worker can bypass Playwright request interception.
+// Keep synthetic API responses deterministic; the installed-shell test uses the real worker.
+const mockedTest = test.extend({ serviceWorkers: 'block' });
 
 test.beforeEach(async ({ page }) => {
   // Recorded feed clock: prevents replayed fixtures from impersonating live data.
   await page.clock.install({ time: new Date('2026-09-06T00:59:40Z') });
 });
-test('service changes stay compact, explain their source, and become last-known', async ({ page }) => {
+test.afterEach(async ({ page }) => {
+	// Fast-forwarded polling may still have route.fetch responses being decoded.
+	// Finish those handlers before Playwright disposes their request context.
+	await page.unrouteAll({ behavior: 'wait' });
+});
+mockedTest('service changes stay compact, explain their source, and become last-known', async ({ page }) => {
   const timestamp = Date.parse('2026-09-06T00:59:40Z') / 1000;
   const changes = [
     { id:'track', kind:'track', classification:'unknown', label:'track 4 · scheduled 3', description:'Reported track assignment differs from the schedule.', stopIndices:[0], affectedStops:[], alertIds:[], evidence:[{source:'gtfs',timestamp,staleAfter:90}] },
@@ -49,7 +59,7 @@ test('station board loads, has no horizontal overflow, and opens complete train 
   await expect(page.locator('dialog')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
-test('departures show car ranges and details show each car, then expire old reports', async ({ page }) => {
+mockedTest('departures show car ranges and details show each car, then expire old reports', async ({ page }) => {
   // Synthetic enrichment of recorded departures; no live Helium dependency.
   const consist = { source: 'helium', updatedAt: Date.parse('2026-09-06T00:59:40Z') / 1000,
     fetchedAt: Date.parse('2026-09-06T00:59:40Z') / 1000,
@@ -122,12 +132,21 @@ test('future stops open arrival-relative transfers and return to the train', asy
 test('fleet is lazy, searchable, grouped, and exposes car history without overflow', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', r => { if (r.url().includes('/api/v1/fleet')) requests.push(r.url()); });
+	const fleetResponse = (q: string, view: string) => page.waitForResponse(response => {
+		const url = new URL(response.url());
+		return url.pathname.endsWith('/api/v1/fleet') && url.searchParams.get('q') === q && url.searchParams.get('view') === view;
+	});
   await page.goto('./?station=602');
   await expect(page.locator('.train-row').first()).toBeVisible();
   expect(requests).toHaveLength(0);
+	// Keep the render assertions independent of a complete roster query's latency.
+	let response = fleetResponse('', 'groups');
   await page.locator('button[aria-label="Open fleet"]:visible, .sidebar button:has-text("Fleet browser"):visible').click();
+	expect((await response).ok()).toBe(true);
   await expect(page.locator('.fleet-row').first()).toBeVisible();
+	response = fleetResponse('4149', 'groups');
   await page.getByRole('textbox', { name: 'Search fleet', exact: true }).fill('4149');
+	expect((await response).ok()).toBe(true);
   await expect(page.locator('.fleet-row')).toHaveCount(1);
   await expect(page.locator('.fleet-row')).toContainText('5 cars');
   await page.locator('.fleet-row').click();
@@ -135,9 +154,13 @@ test('fleet is lazy, searchable, grouped, and exposes car history without overfl
   await expect(page.locator('.fleet-next')).toContainText('Next stop:');
   expect(await page.locator('dialog').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
   await page.getByRole('button', { name: 'Back to fleet', exact: true }).click();
+	response = fleetResponse('4149', 'cars');
   await page.getByRole('combobox', { name: 'Fleet grouping' }).selectOption('cars');
+	expect((await response).ok()).toBe(true);
   await expect(page.locator('.fleet-row')).toContainText('1 car');
+	response = fleetResponse('OL912', 'cars');
   await page.getByRole('textbox', { name: 'Search fleet', exact: true }).fill('OL912');
+	expect((await response).ok()).toBe(true);
   await expect(page.locator('.fleet-row')).toContainText('0L912');
   await expect(page.locator('.fleet-row')).toContainText('Never observed');
 });
@@ -168,7 +191,8 @@ test('all themes and station context render without overflow', async ({ page }) 
   await expect(page.getByText('STATION FIELD NOTES')).toBeVisible();
   await expect(page.getByText('Current equipment status is unavailable or stale')).toBeVisible();
 });
-test('installed shell and recent board recover offline without live countdowns', async ({ page, context }) => {
+test('installed shell and recent board recover from network-offline emulation without live countdowns', async ({ page, context, browserName }) => {
+	test.skip(browserName === 'webkit', 'WebKit uses the real-origin outage scenario: https://github.com/microsoft/playwright/issues/42775');
   await page.goto('./?station=602');
   await expect(page.locator('.train-row').first()).toBeVisible();
   await page.evaluate(() => navigator.serviceWorker.ready);
@@ -183,7 +207,41 @@ test('installed shell and recent board recover offline without live countdowns',
   await expect(page.getByText('LIVE FEED', { exact: true })).toBeVisible();
 });
 
-test('direct filters combine, toggle, reset, and persist', async ({ page }) => {
+test('WebKit installed shell and recent board recover after the origin stops and restarts', async ({ page, browserName }, testInfo) => {
+	test.skip(browserName !== 'webkit', 'Chromium exercises network-offline emulation above');
+	test.setTimeout(150000); // Two isolated starts import the complete roster and build its snapshot.
+	// The fixture API's clock stays fixed across restarts; setup latency must not age its feed bytes.
+	await page.clock.setFixedTime(new Date('2026-09-06T00:59:40Z'));
+	const port = await unusedLoopbackPort();
+	let fixture: Awaited<ReturnType<typeof startOriginFixture>> | undefined;
+	const logs: string[] = [];
+	try {
+		fixture = await startOriginFixture(port);
+		await page.goto(fixture.origin + '/subwaysForNerds/?station=602');
+		await expect(page.locator('.train-row').first()).toBeVisible();
+		await page.evaluate(() => navigator.serviceWorker.ready);
+		await page.reload();
+		await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+		await expect(page.getByText('LIVE FEED', { exact: true })).toBeVisible();
+		await fixture.stop();
+		logs.push(fixture.output());
+		fixture = undefined;
+		await expect(page.request.get(`http://127.0.0.1:${port}/healthz`, { timeout: 2000 })).rejects.toThrow();
+		const response = await page.reload();
+		expect(response?.fromServiceWorker()).toBe(true);
+		await expect(page.locator('h1')).toHaveText('14 St-Union Sq');
+		await expect(page.getByText('CACHED BOARD', { exact: true })).toBeVisible();
+		await expect(page.locator('.train-time').first()).toContainText('last estimate');
+		fixture = await startOriginFixture(port);
+		await page.getByRole('button', { name: 'Refresh departures' }).click();
+		await expect(page.getByText('LIVE FEED', { exact: true })).toBeVisible();
+	} finally {
+		if (fixture) { await fixture.stop(); logs.push(fixture.output()); }
+		await testInfo.attach('isolated-origin-processes', { body: logs.join('\n'), contentType: 'text/plain' });
+	}
+});
+
+mockedTest('direct filters combine, toggle, reset, and persist', async ({ page }) => {
   await page.route('**/api/v1/stations/602/board', async route => {
     const response = await route.fetch(), board = await response.json();
     const seed = board.departures[0];

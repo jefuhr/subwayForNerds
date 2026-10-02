@@ -1,0 +1,77 @@
+{
+  "cars": [
+    {
+      "id": "nyct:R211A:4149",
+      "number": "4149",
+      "equipment": "R211A",
+      "category": "passenger",
+      "aliases": [],
+      "lifecycle": "In-Service",
+      "facts": {
+        "object_description": "R211A A2 Car",
+        "controller": "AL",
+        "division": "B",
+        "in_service_date": "2024-02-13T00:00:00.000",
+        "object_year_built": "2024.0"
+      },
+      "evidence": [
+        {
+          "url": "https://data.ny.gov/d/kir5-i9xt",
+          "date": "2026-09-06",
+          "note": "Published inventory status is not a live service assignment."
+        }
+      ],
+      "conflicts": [],
+      "last": {
+        "timestamp": 1788656332,
+        "locationTimestamp": 1788656307,
+        "location": "At 14 St-Union Sq",
+        "route": "L",
+        "tripKey": "gtfs-l|20260905|122300_L..N|",
+        "next": {
+          "stationId": "601",
+          "name": "6 Av",
+          "time": 1788656412
+        },
+        "cars": [
+          "nyct:R211A:4149",
+          "nyct:R211A:4148",
+          "nyct:R211A:4147",
+          "nyct:R211A:4146",
+          "nyct:R211A:4145"
+        ],
+        "consistId": "observed:c62a7140da6b23a4138f26dd"
+      },
+      "reporting": true,
+      "estimatedYard": {
+        "name": "East New York",
+        "url": "https://en.wikipedia.org/wiki/List_of_New_York_City_Subway_yards",
+        "date": "2026-09-06",
+        "note": "Estimated from last observed L route; not a yard location report. Published route-based maintenance assignment, reviewed on this date. Temporary swaps and alternate storage yards are not modeled."
+      }
+    }
+  ],
+  "history": [
+    {
+      "timestamp": 1788656332,
+      "locationTimestamp": 1788656307,
+      "location": "At 14 St-Union Sq",
+      "route": "L",
+      "tripKey": "gtfs-l|20260905|122300_L..N|",
+      "next": {
+        "stationId": "601",
+        "name": "6 Av",
+        "time": 1788656412
+      },
+      "cars": [
+        "nyct:R211A:4149",
+        "nyct:R211A:4148",
+        "nyct:R211A:4147",
+        "nyct:R211A:4146",
+        "nyct:R211A:4145"
+      ],
+      "consistId": "observed:c62a7140da6b23a4138f26dd"
+    }
+  ],
+  "generatedAt": 1788656380
+}

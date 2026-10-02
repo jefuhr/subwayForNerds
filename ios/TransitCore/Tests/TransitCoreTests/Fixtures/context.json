@@ -1,0 +1,52 @@
+{
+  "entrances": [
+    {
+      "complex_id": "602",
+      "constituent_station_name": "14 St-Union Sq",
+      "entrance_type": "Stair",
+      "entry_allowed": "YES",
+      "exit_allowed": "YES",
+      "entrance_latitude": "40.7357",
+      "entrance_longitude": "-73.9906"
+    }
+  ],
+  "equipment": [
+    {
+      "stationcomplexid": "602",
+      "equipmentno": "EL-fixture-1",
+      "shortdescription": "Fixture elevator",
+      "serving": "Street to mezzanine",
+      "isactive": "Y",
+      "alternativeroute": "Use the published accessible travel alternative."
+    }
+  ],
+  "outages": [
+    {
+      "equipment": "EL-fixture-1",
+      "reason": "Synthetic maintenance fixture",
+      "isupcomingoutage": "N",
+      "outagedate": "09/05/2026 08:00 PM",
+      "estimatedreturntoservice": "09/06/2026 06:00 AM"
+    }
+  ],
+  "sources": [
+    {
+      "id": "entrances",
+      "timestamp": 1788656380,
+      "fetchedAt": 1788656380,
+      "error": null
+    },
+    {
+      "id": "equipment",
+      "timestamp": 1788656380,
+      "fetchedAt": 1788656380,
+      "error": null
+    },
+    {
+      "id": "outages",
+      "timestamp": 1788656380,
+      "fetchedAt": 1788656380,
+      "error": null
+    }
+  ]
+}

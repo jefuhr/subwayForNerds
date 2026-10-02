@@ -5,3 +5,10 @@ test-results/
 artifacts/
 .env
 *.log
+ios/**/.build/
+ios/**/.swiftpm/
+ios/**/xcuserdata/
+ios/Config/Local.xcconfig
+ios/DerivedData/
+*.xcresult
+.claude/settings.local.json

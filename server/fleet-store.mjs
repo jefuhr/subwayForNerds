@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 24);
 const family = type => /^R160[AB]?$/.test(type || '') ? 'R160' : type;
 const source = 'https://data.ny.gov/d/kir5-i9xt';
+const carNumberOrder = new Intl.Collator(undefined, { numeric: true });
 export class FleetStore {
   constructor(file) {
     this.current = new Map();
@@ -121,20 +122,7 @@ export class FleetStore {
     });
     this.current = current;
   }
-  all(now) {
-    const yardRules = JSON.parse(this.db.prepare("SELECT data FROM meta WHERE key='yardRules'").get()?.data || '[]');
-    const cars = this.db.prepare('SELECT data,last FROM cars').all().map(row => {
-      const car = JSON.parse(row.data), last = row.last ? JSON.parse(row.last) : undefined;
-      const reporting = !!last && this.current.get(car.id) === last.consistId && now >= last.timestamp - 60 && now - last.timestamp <= 90;
-      const candidates = yardRules.filter(r => r.rosterAssignment ? r.equipment?.includes(car.equipment) : last && now - last.timestamp <= 30 * 86400 && r.routes.includes(last.route) && (!r.equipment || r.equipment.includes(car.equipment)));
-      const inferred = new Set(candidates.map(r => r.name)).size === 1 ? candidates[0] : undefined;
-      return { ...car, last, reporting, estimatedYard: car.yard || (inferred ? { name: inferred.name, url: inferred.url, date: inferred.date, note: `Estimated from ${inferred.rosterAssignment ? `documented ${car.equipment} fleet assignment` : `last observed ${last.route} route`}; not a yard location report. ${inferred.note}` } : undefined) };
-    });
-    const numbers = new Map();
-    for (const car of cars) { const key = car.id.split(':')[0] + ':' + car.number; numbers.set(key, (numbers.get(key) || 0) + 1); }
-    for (const car of cars) if (numbers.get(car.id.split(':')[0] + ':' + car.number) > 1) car.conflicts = [...(car.conflicts || []), 'Number reused or conflicting roster identity; equipment identities kept separate.'];
-    return cars;
-  }
+  all(now) { return readFleetCars(this.db, now, this.current); }
   list(query, now) {
     const cars = this.all(now), groups = new Map();
     for (const car of cars) {
@@ -145,7 +133,7 @@ export class FleetStore {
     const terms = String(query.q || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
     const rows = [...groups].map(([id, members]) => {
       const order = members.find(c => c.reporting)?.last.cars;
-      members.sort((a, b) => order ? order.indexOf(a.id) - order.indexOf(b.id) : a.number.localeCompare(b.number, undefined, { numeric: true }));
+      members.sort((a, b) => order ? order.indexOf(a.id) - order.indexOf(b.id) : carNumberOrder.compare(a.number, b.number));
       return { id, cars: members, kind: id.startsWith('observed:') || id.startsWith('set:') ? 'consist' : 'car', reporting: members.some(c => c.reporting) };
     }).filter(row => row.cars.some(c =>
       (!query.category || c.category === query.category) && (!query.equipment || (query.equipment === 'unknown' ? !c.equipment : c.equipment.toLowerCase().includes(query.equipment.toLowerCase()))) &&
@@ -153,7 +141,7 @@ export class FleetStore {
       (query.retired === 'true' || c.reporting || !/retired|scrapped|^\d{2}\/\d{2}\/\d{4}$/.test(c.lifecycle.toLowerCase())) &&
       (query.status !== 'reporting' || c.reporting) && (query.status !== 'unreported' || !c.reporting) &&
       terms.every(t => `${c.number} ${c.aliases.join(' ')} ${c.equipment} ${c.last?.location || ''} ${c.estimatedYard?.name || ''}`.toLowerCase().includes(t))))
-      .sort((a, b) => Number(b.reporting) - Number(a.reporting) || a.cars[0].number.localeCompare(b.cars[0].number, undefined, { numeric: true }) || a.id.localeCompare(b.id));
+      .sort((a, b) => Number(b.reporting) - Number(a.reporting) || carNumberOrder.compare(a.cars[0].number, b.cars[0].number) || a.id.localeCompare(b.id));
     const pages = Math.max(1, Math.ceil(rows.length / 100));
     const page = Math.min(pages, Math.max(1, Number(query.page) || 1));
     return { rows: rows.slice((page - 1) * 100, page * 100), page, pages, total: rows.length, generatedAt: now,
@@ -177,4 +165,20 @@ export class FleetStore {
   cleanup(now) { this.db.prepare('DELETE FROM events WHERE timestamp<?').run(now - 30 * 86400); }
   backup(destination) { this.db.prepare('VACUUM INTO ?').run(destination); }
   close() { this.db.close(); }
+}
+
+// Shared materialization keeps public snapshots aligned with the live fleet model.
+export function readFleetCars(db, now, current = new Map()) {
+  const yardRules = JSON.parse(db.prepare("SELECT data FROM meta WHERE key='yardRules'").get()?.data || '[]');
+  const cars = db.prepare('SELECT data,last FROM cars').all().map(row => {
+    const car = JSON.parse(row.data), last = row.last ? JSON.parse(row.last) : undefined;
+    const reporting = !!last && current.get(car.id) === last.consistId && now >= last.timestamp - 60 && now - last.timestamp <= 90;
+    const candidates = yardRules.filter(r => r.rosterAssignment ? r.equipment?.includes(car.equipment) : last && now - last.timestamp <= 30 * 86400 && r.routes.includes(last.route) && (!r.equipment || r.equipment.includes(car.equipment)));
+    const inferred = new Set(candidates.map(r => r.name)).size === 1 ? candidates[0] : undefined;
+    return { ...car, last, reporting, estimatedYard: car.yard || (inferred ? { name: inferred.name, url: inferred.url, date: inferred.date, note: `Estimated from ${inferred.rosterAssignment ? `documented ${car.equipment} fleet assignment` : `last observed ${last.route} route`}; not a yard location report. ${inferred.note}` } : undefined) };
+  });
+  const numbers = new Map();
+  for (const car of cars) { const key = car.id.split(':')[0] + ':' + car.number; numbers.set(key, (numbers.get(key) || 0) + 1); }
+  for (const car of cars) if (numbers.get(car.id.split(':')[0] + ':' + car.number) > 1) car.conflicts = [...(car.conflicts || []), 'Number reused or conflicting roster identity; equipment identities kept separate.'];
+  return cars;
 }

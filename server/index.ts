@@ -9,6 +9,7 @@ import { pathToFileURL } from 'node:url';
 import { TransitService } from './service';
 import { nowSeconds } from './transit';
 import { transfers } from './transfers';
+import { registerFleetOfflineRoutes } from './fleet-offline-routes';
 
 export async function createServer(service = new TransitService({ fixtureDir: process.env.FIXTURE_DIR })) {
   const app = Fastify({ logger: process.env.NODE_ENV === 'production' });
@@ -65,7 +66,11 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
     try { const data = await service.fleet.detail(req.params.id, nowSeconds()); return data ? send(req, reply, data) : reply.code(404).send({ error: 'Car or consist has not been recorded' }); }
     catch { return reply.code(503).send({ error: 'Fleet database unavailable; departures are unaffected' }); }
   });
-  app.get(api + '/fleet/health', () => ({ available: !!service.fleet?.initialized && !service.fleet.error, error: service.fleet?.error || null }));
+  app.get(api + '/fleet/health', () => ({
+    available: !!service.fleet?.initialized && !service.fleet.error, error: service.fleet?.error || null,
+    offline: { available: !!service.offline?.manifest, generatedAt: service.offline?.manifest?.generatedAt ?? null, error: service.offline?.error || null },
+  }));
+  registerFleetOfflineRoutes(app, service, api);
   app.get(api + '/health', () => ({ status: [...service.slots.values()].every(s => s.state.timestamp && nowSeconds() - s.state.timestamp <= 90 && !s.state.error) ? 'ok' : 'degraded', feeds: [...service.slots.values()].map(s => ({ ...s.state, age: s.state.timestamp ? nowSeconds() - s.state.timestamp : null })), stationCount: service.catalog.length }));
   app.get('/healthz', () => ({ status: 'ok' }));
   if (base !== '/') app.get(base.slice(0, -1), (_req, reply) => reply.redirect(base));

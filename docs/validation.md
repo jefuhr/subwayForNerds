@@ -1,6 +1,80 @@
-# Validation — September 6, 2026
+# Validation
 
-## Completed
+## October 1, 2026 — nearby station simulator QA and correction
+
+- Reproduced the Board location button opening ordinary search on an iPhone 17
+  simulator running iOS 27.0. The initial distance-order regression failed because
+  the boolean sheet presentation captured the old search mode. Evidence:
+  `artifacts/nearby-qa-before.log` and `artifacts/nearby-qa-before.xcresult`.
+- Replaced the presentation with an identified search/nearby mode. Nearby requests
+  location on opening; ordinary search keeps favorites-first ordering. Queries
+  and sorting do not carry between sheet presentations.
+- Six targeted simulator UI tests passed with zero failures: all 445 station
+  complexes sorted by distance with a nonfavorite first, selecting the nearest
+  station, repeated search/nearby openings, unavailable location, closest favorite
+  across offline launch/background return, and actual Core Location granted and
+  denied paths. These scenarios are covered by four deterministic tests and two
+  system-permission tests. Logs and result bundles:
+  `artifacts/nearby-qa-final.log` / `.xcresult`,
+  `artifacts/nearby-qa-system-location.log` / `.xcresult`, and
+  `artifacts/nearby-qa-system-denied.log` / `.xcresult`.
+- Visually reviewed exported screenshots in `artifacts/nearby-qa-final-screens`,
+  `artifacts/nearby-qa-system-location-screens`, and
+  `artifacts/nearby-qa-system-denied-screens`. Nearby shows distances and closest
+  first; search shows its quick switches and favorites first. Denied permission
+  shows an explanatory error while station search and selection still work.
+  Simulator location/permission overrides were reset and the fixture server stopped.
+- The corrected signed device build and installation on Juliet's iPhone 17e
+  succeeded. Evidence: `artifacts/phone-nearby-fix-build.log` and
+  `artifacts/phone-nearby-fix-install.json`. Launch was rejected because the phone
+  was locked (`artifacts/phone-nearby-fix-launch.json`); this update's interactions
+  were verified in the simulator, not on the physical device.
+
+## October 1, 2026 — signed iPhone installation
+
+- After workspace permissions were updated, the signed Debug device build succeeded
+  with `xcodebuild` using the `SubwaysForNerds` scheme and
+  `ios/DerivedData/Phone`. Output: `artifacts/phone-rebuild-latest.log`.
+- `devicectl device install app` successfully installed the latest app on Juliet's
+  physical iPhone 17e, including the closest-favorite lifecycle fix and the Board
+  location button. Receipt: `artifacts/phone-install-latest.json`.
+- After the phone was unlocked, the app launched successfully. A console launch
+  (PID 66155) remained running across subsequent process inspections, and no
+  matching app crash report was returned by the available diagnostic listing.
+  Evidence: `artifacts/phone-console-latest.log`, `artifacts/phone-processes-all.json`,
+  and `artifacts/phone-process-filter-check.json`. This is launch verification;
+  nearest-station and other physical-device interaction acceptance remain manual.
+- Launch attempts while the device was locked were rejected with
+  `FBSOpenApplicationErrorDomain`, code 7, `Locked`. The phone locked again before
+  a final standalone relaunch; that request terminated the console-monitored app
+  before its launch was rejected. The installed update remains available to open
+  from the phone. Latest receipt: `artifacts/phone-launch-latest.json`.
+
+## October 1, 2026 — native closest favorite startup and nearby button
+
+- `bash scripts/test-native-startup.sh` passes seven checks using the actual
+  `AppModel`: closest of two favorites while the catalog request is stalled,
+  manual choice preserved through temporary inactivity, closest favorite selected
+  again after backgrounding, last station retained without favorites, and last
+  station retained with location disabled, nearby search obtaining location while
+  keeping the full catalog including nonfavorites, and unavailable nearby search
+  keeping the catalog with an explanatory error. The test uses a temporary state directory,
+  Debug-only coordinates, and a URL protocol that stalls network requests.
+  Output: `artifacts/closest-favorite-model-tests.log`.
+- The app typechecks for iOS in Debug and Release. The UI regression typechecks
+  against the simulator SDK. Outputs: `artifacts/closest-favorite-typecheck.log`
+  and `artifacts/closest-favorite-uitests-typecheck.log`.
+- The UI regression `testBoardLocationButtonListsAllStationsByDistance` covers
+  opening nearby search directly from the board, a nonfavorite station ranking
+  before a farther favorite, and choosing that station. The permission fallback
+  regression also enters the catalog from the board's location button.
+- The simulator regression could not run: Xcode package resolution cannot write
+  SwiftPM diagnostics under `~/Library/Caches/org.swift.swiftpm`. The exact attempt
+  is recorded in `artifacts/closest-favorite-ui.log`. These checks do not establish
+  simulator or physical-device acceptance. This initial check preceded the signed
+  iPhone installation recorded above.
+
+## September 6, 2026 — initial validation
 
 - Production TypeScript/Vite build passes.
 - 17 data/API regression tests pass, including all nine recorded protobuf feeds,
@@ -73,3 +147,97 @@ For the host's 2GB RAM budget, schedule archives are now parsed sequentially and
 CSV input is chunked into 64KiB blocks. A live refresh of both archives completed
 in 9.9 seconds at 377MB process peak RSS in the isolated local worker check,
 producing 257 regular and 258 supplemented patterns.
+
+## September 28, 2026 — native iPhone and web support
+
+### Verified locally
+
+- TypeScript checks and the production Vite web build pass. The web application
+  source and existing static assets remain unchanged.
+- All 54 backend tests pass, including consistent full-history gzip exports,
+  concurrent board requests and WAL writes, byte ranges, checksums, failed export
+  recovery, retention limits, and low-space failures during export/compression.
+  Evidence: `artifacts/validation-backend-gzip.log`.
+- The production-preserving overlay passes all 67 tests under Node 22, including
+  its existing analytics, PATH, and NJ Transit coverage. Its web build also passes.
+  Evidence: `artifacts/deploy-native-fleet/validation-node22-gzip.log` and
+  `validation-build-gzip.log` in the same directory.
+- TransitCore passes 20 tests, including backend-generated JSON contracts,
+  regional station behavior, ETags, opaque identifiers, stale-source display,
+  persistence, and raw/gzip manifests above 2 GB.
+- FleetOffline passes 16 enabled tests. Coverage includes bounded gzip inflation,
+  truncation and trailing bytes, checksums, disk budgets, cancellation during SQLite
+  work, interrupted installation cleanup, indexed history pagination, and restoring
+  a real backend-generated 8,442-car snapshot. One HTTP-only test is skipped in
+  this final run because local listener access is restricted. That HTTP scenario
+  passed against the earlier raw-snapshot fixture before the transport changed.
+  Evidence: `artifacts/TransitCore-tests.log` and `FleetOffline-gzip-tests.log`.
+- The latest TransitCore and FleetOffline modules compile against iPhoneOS 27 with
+  an iOS 26 deployment target. The complete SwiftUI application typechecks in
+  Debug and Release with Swift 6 strict concurrency. Exact commands and output:
+  `artifacts/ios-typecheck/verify.sh` and `verification.log`.
+- Complete unsigned device and simulator test-bundle builds succeeded before the
+  final gzip changes. These are compile results, not simulator/device acceptance.
+- The last full browser run reached 36 of 45 cases: 33 passed and three expected
+  platform skips before interruption. A separate focused run passed four cases,
+  including WebKit offline recovery and narrow views, with two platform skips.
+  This is not a complete final browser-suite pass. Logs are retained under
+  `artifacts/browser-regressions/`.
+
+The native package tests used workspace cache paths and SwiftPM's
+`--disable-sandbox` option to avoid its redundant nested macOS sandbox. The outer
+workspace restrictions remained active. No third-party packages or system dependencies were added.
+
+### Remaining acceptance and release work
+
+- Phone installation is not verified. Xcode recognizes the trusted phone and the
+  Personal Team was configured locally. The last signed rebuild reached Apple's
+  keychain-controlled codesign step; the user deferred local approval. The source
+  has changed since that build, so build the latest project before installing.
+- Native UI tests compile but have not run. The iOS simulator runtime download
+  failed during registration with a missing personalization manifest, and current
+  execution permissions deny CoreSimulator access. The final full `xcodebuild`
+  retry is also blocked from writing its protected SwiftPM diagnostics cache.
+- Final browser and actual HTTP download reruns cannot start a local listener
+  under the current execution restrictions. The final attempted browser log is
+  `artifacts/browser-regressions/final-audit.log`.
+- Test the phone's location allowance/denial, keyboard, background/resume,
+  preferences after relaunch, fleet download, airplane-mode relaunch, and deletion.
+  Simulator checks do not replace this acceptance.
+- Production was inspected read-only. It is newer than this checkout, so a release
+  must preserve its web/analytics/PATH/NJT changes. The reviewed eight-source-file
+  overlay, baseline checksums, and rollback helper are prepared under
+  `artifacts/deploy-native-fleet/release/`. No production deployment occurred.
+- The production database was about 12 GB with about 22 GB free. The first real
+  export still needs a size/duration/space check after deployment approval. The
+  8.8 MB fixture compressing to 1.1 MB does not predict production behavior.
+
+Normal-machine commands remain `npm run check`, `RUN_WEBKIT=1 npm run test:browser`,
+`npm run test:native`, and `npm run test:ios`. See [iPhone setup](ios.md) for signing
+and simulator configuration.
+
+## September 28, 2026 — compact board and departure views
+
+- Replaced the large Board title with inline navigation, combined station actions,
+  reduced secondary text and spacing, and emphasized departure countdowns. Route
+  buttons retain 44-point hit areas; station controls adapt for larger text.
+- Added the production web board's five views: track, direction/all platforms,
+  route families, station corridors, and service. Views persist per station and
+  migrate existing preferences without resetting favorites or filters. Combined
+  views show each train's boarding context, without duplicate track labels.
+- All 31 TransitCore tests pass, including 11 new grouping, ordering, preference,
+  and boarding-label cases. Evidence: `artifacts/board-ordering-tests.log`.
+- Full app source typechecking passes for Debug and Release against the iPhone SDK;
+  the UI tests also typecheck against the simulator SDK. Logs:
+  `artifacts/board-compact-typecheck.log` and
+  `artifacts/board-compact-uitests-typecheck.log`.
+- Added a UI scenario for initial departure visibility, all five menu choices,
+  per-station persistence, and screenshots. It has not executed: this session
+  still cannot connect to CoreSimulator.
+- The user's phone screenshot and earlier install log confirm the prior app is
+  installed. This compact-board update has not been installed from this session:
+  the build fails when Xcode writes its protected SwiftPM diagnostics cache.
+  Evidence: `artifacts/board-compact-device-build.log`. Run the latest project
+  in Xcode to install and visually verify this update.
+- This follow-up changes native UI/contracts only; web and backend source remain
+  unchanged from the preceding implementation.

@@ -2,8 +2,9 @@
 
 A station-first NYC subway console for people who already know the map. Live
 departures, stop-relative train positions, reported tracks, stopping patterns,
-operations IDs, physical car numbers when reported, future-stop connections, and a persistent fleet browser. Web first, with a future Capacitor
-wrapper in mind.
+operations IDs, physical car numbers when reported, future-stop connections, and a persistent fleet browser.
+The React web app and a separate SwiftUI iPhone and iPad app share the same transit API.
+The native app supports iOS 26 and newer and adds optional offline fleet downloads.
 
 ## Run locally
 
@@ -16,6 +17,8 @@ npm run dev
 ```
 
 Open `http://localhost:5173/subwaysForNerds/`. The API runs on port 8091.
+For the iPhone and iPad app, open `ios/SubwaysForNerds.xcodeproj` in Xcode and follow
+[native development and device setup](docs/ios.md). The web app remains independently buildable.
 For the production build, including offline installation:
 
 ```sh
@@ -186,5 +189,6 @@ below 200ms. Actual results and platform limitations belong in `docs/validation.
 
 No accounts or analytics are included. Location stays on-device. Browser storage
 holds preferences, a station catalog, and up to eight recent station snapshots.
-Future native shells can reuse the API/UI and replace `src/platform.ts` adapters
-for native storage and geolocation.
+The native SwiftUI client uses the same HTTP contracts, with on-device location,
+preferences, cached boards, and an optional downloaded fleet snapshot. It has no
+third-party runtime dependencies. See [the native feature and validation matrix](docs/ios.md).

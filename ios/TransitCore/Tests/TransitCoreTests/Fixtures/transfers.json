@@ -1,0 +1,4482 @@
+{
+  "arrival": 1788656412,
+  "basis": "arrival",
+  "connections": [
+    {
+      "key": "gtfs|20260905|120700_2..S01R||132S|2",
+      "tripKey": "gtfs|20260905|120700_2..S01R|",
+      "route": "2",
+      "destination": "Flatbush Av-Brooklyn College",
+      "direction": "SOUTH",
+      "stopId": "132S",
+      "partId": "132",
+      "area": "Broadway - 7Av · Downtown · Track 2",
+      "time": 1788656520,
+      "arrival": 1788656520,
+      "departure": 1788656520,
+      "scheduledTrack": "2",
+      "pattern": "Broadway–7 Av express",
+      "patternSource": "inferred",
+      "location": "At Times Sq-42 St",
+      "locationTimestamp": 1788656280,
+      "stopsAway": 2,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:alert:266236:26",
+          "kind": "advisory",
+          "classification": "unknown",
+          "advisory": true,
+          "label": "advisory · delays",
+          "stopIndices": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "affectedStops": [],
+          "alertIds": [
+            "lmm:alert:266236:26"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "327",
+          "stopId": "137S",
+          "name": "Chambers St",
+          "time": 1788656790
+        },
+        {
+          "stationId": "624",
+          "stopId": "228S",
+          "name": "Park Place",
+          "time": 1788656850
+        },
+        {
+          "stationId": "628",
+          "stopId": "229S",
+          "name": "Fulton St",
+          "time": 1788656970
+        },
+        {
+          "stationId": "333",
+          "stopId": "230S",
+          "name": "Wall St",
+          "time": 1788657030
+        },
+        {
+          "stationId": "334",
+          "stopId": "231S",
+          "name": "Clark St",
+          "time": 1788657300
+        },
+        {
+          "stationId": "620",
+          "stopId": "232S",
+          "name": "Borough Hall",
+          "time": 1788657360
+        },
+        {
+          "stationId": "336",
+          "stopId": "233S",
+          "name": "Hoyt St",
+          "time": 1788657450
+        },
+        {
+          "stationId": "337",
+          "stopId": "234S",
+          "name": "Nevins St",
+          "time": 1788657510
+        },
+        {
+          "stationId": "617",
+          "stopId": "235S",
+          "name": "Atlantic Av-Barclays Ctr",
+          "time": 1788657600
+        },
+        {
+          "stationId": "339",
+          "stopId": "236S",
+          "name": "Bergen St",
+          "time": 1788657660
+        },
+        {
+          "stationId": "340",
+          "stopId": "237S",
+          "name": "Grand Army Plaza",
+          "time": 1788657750
+        },
+        {
+          "stationId": "341",
+          "stopId": "238S",
+          "name": "Eastern Pkwy-Brooklyn Museum",
+          "time": 1788657840
+        },
+        {
+          "stationId": "626",
+          "stopId": "239S",
+          "name": "Franklin Av-Medgar Evers College",
+          "time": 1788657930
+        },
+        {
+          "stationId": "353",
+          "stopId": "241S",
+          "name": "President St-Medgar Evers College",
+          "time": 1788658110
+        },
+        {
+          "stationId": "354",
+          "stopId": "242S",
+          "name": "Sterling St",
+          "time": 1788658170
+        },
+        {
+          "stationId": "355",
+          "stopId": "243S",
+          "name": "Winthrop St",
+          "time": 1788658260
+        },
+        {
+          "stationId": "356",
+          "stopId": "244S",
+          "name": "Church Av",
+          "time": 1788658350
+        },
+        {
+          "stationId": "357",
+          "stopId": "245S",
+          "name": "Beverly Rd",
+          "time": 1788658440
+        },
+        {
+          "stationId": "358",
+          "stopId": "246S",
+          "name": "Newkirk Av-Little Haiti",
+          "time": 1788658530
+        },
+        {
+          "stationId": "359",
+          "stopId": "247S",
+          "name": "Flatbush Av-Brooklyn College",
+          "time": 1788658650
+        }
+      ],
+      "gap": 108,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|122500_3..N01R||132N|2",
+      "tripKey": "gtfs|20260905|122500_3..N01R|",
+      "route": "3",
+      "destination": "Harlem-148 St",
+      "direction": "NORTH",
+      "stopId": "132N",
+      "partId": "132",
+      "area": "Broadway - 7Av · Uptown · Track 3",
+      "time": 1788656631,
+      "arrival": 1788656631,
+      "departure": 1788656631,
+      "scheduledTrack": "3",
+      "pattern": "Broadway–7 Av express",
+      "patternSource": "inferred",
+      "location": "At Park Place",
+      "locationTimestamp": 1788656301,
+      "stopsAway": 2,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:alert:266236:26",
+          "kind": "advisory",
+          "classification": "unknown",
+          "advisory": true,
+          "label": "advisory · delays",
+          "stopIndices": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "affectedStops": [],
+          "alertIds": [
+            "lmm:alert:266236:26"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "318",
+          "stopId": "128N",
+          "name": "34 St-Penn Station",
+          "time": 1788656781
+        },
+        {
+          "stationId": "611",
+          "stopId": "127N",
+          "name": "Times Sq-42 St",
+          "time": 1788656841
+        },
+        {
+          "stationId": "313",
+          "stopId": "123N",
+          "name": "72 St",
+          "time": 1788657081
+        },
+        {
+          "stationId": "310",
+          "stopId": "120N",
+          "name": "96 St",
+          "time": 1788657231
+        },
+        {
+          "stationId": "441",
+          "stopId": "227N",
+          "name": "110 St-Malcolm X Plaza",
+          "time": 1788657471
+        },
+        {
+          "stationId": "440",
+          "stopId": "226N",
+          "name": "116 St",
+          "time": 1788657531
+        },
+        {
+          "stationId": "439",
+          "stopId": "225N",
+          "name": "125 St",
+          "time": 1788657621
+        },
+        {
+          "stationId": "438",
+          "stopId": "224N",
+          "name": "135 St",
+          "time": 1788657711
+        },
+        {
+          "stationId": "437",
+          "stopId": "302N",
+          "name": "145 St",
+          "time": 1788657831
+        },
+        {
+          "stationId": "436",
+          "stopId": "301N",
+          "name": "Harlem-148 St",
+          "time": 1788657951
+        }
+      ],
+      "gap": 219,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-l|20260905|126300_L..S||L02S|1",
+      "tripKey": "gtfs-l|20260905|126300_L..S|",
+      "route": "L",
+      "destination": "Canarsie-Rockaway Pkwy",
+      "direction": "SOUTH",
+      "stopId": "L02S",
+      "partId": "L02",
+      "area": "Canarsie · Brooklyn · Track 1",
+      "time": 1788656670,
+      "arrival": 1788656640,
+      "departure": 1788656670,
+      "scheduledTrack": "1",
+      "actualTrack": "1",
+      "pattern": "Canarsie",
+      "patternSource": "static",
+      "location": "At 8 Av",
+      "locationTimestamp": 1788656325,
+      "stopsAway": 1,
+      "assigned": true,
+      "feed": "gtfs-l",
+      "timestamp": 1788656332,
+      "relationship": "SCHEDULED",
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "602",
+          "stopId": "L03S",
+          "name": "14 St-Union Sq",
+          "time": 1788656730
+        },
+        {
+          "stationId": "118",
+          "stopId": "L05S",
+          "name": "3 Av",
+          "time": 1788656790
+        },
+        {
+          "stationId": "119",
+          "stopId": "L06S",
+          "name": "1 Av",
+          "time": 1788656850
+        },
+        {
+          "stationId": "120",
+          "stopId": "L08S",
+          "name": "Bedford Av",
+          "time": 1788657090
+        },
+        {
+          "stationId": "629",
+          "stopId": "L10S",
+          "name": "Lorimer St",
+          "time": 1788657210
+        },
+        {
+          "stationId": "122",
+          "stopId": "L11S",
+          "name": "Graham Av",
+          "time": 1788657270
+        },
+        {
+          "stationId": "123",
+          "stopId": "L12S",
+          "name": "Grand St",
+          "time": 1788657360
+        },
+        {
+          "stationId": "124",
+          "stopId": "L13S",
+          "name": "Montrose Av",
+          "time": 1788657420
+        },
+        {
+          "stationId": "125",
+          "stopId": "L14S",
+          "name": "Morgan Av",
+          "time": 1788657540
+        },
+        {
+          "stationId": "126",
+          "stopId": "L15S",
+          "name": "Jefferson St",
+          "time": 1788657660
+        },
+        {
+          "stationId": "127",
+          "stopId": "L16S",
+          "name": "DeKalb Av",
+          "time": 1788657750
+        },
+        {
+          "stationId": "630",
+          "stopId": "L17S",
+          "name": "Myrtle-Wyckoff Avs",
+          "time": 1788657840
+        },
+        {
+          "stationId": "129",
+          "stopId": "L19S",
+          "name": "Halsey St",
+          "time": 1788657930
+        },
+        {
+          "stationId": "130",
+          "stopId": "L20S",
+          "name": "Wilson Av",
+          "time": 1788658080
+        },
+        {
+          "stationId": "131",
+          "stopId": "L21S",
+          "name": "Bushwick Av-Aberdeen St",
+          "time": 1788658170
+        },
+        {
+          "stationId": "621",
+          "stopId": "L22S",
+          "name": "Broadway Junction",
+          "time": 1788658230
+        },
+        {
+          "stationId": "133",
+          "stopId": "L24S",
+          "name": "Atlantic Av",
+          "time": 1788658320
+        },
+        {
+          "stationId": "134",
+          "stopId": "L25S",
+          "name": "Sutter Av",
+          "time": 1788658410
+        },
+        {
+          "stationId": "135",
+          "stopId": "L26S",
+          "name": "Livonia Av",
+          "time": 1788658470
+        },
+        {
+          "stationId": "136",
+          "stopId": "L27S",
+          "name": "New Lots Av",
+          "time": 1788658560
+        },
+        {
+          "stationId": "137",
+          "stopId": "L28S",
+          "name": "East 105 St",
+          "time": 1788658680
+        },
+        {
+          "stationId": "138",
+          "stopId": "L29S",
+          "name": "Canarsie-Rockaway Pkwy",
+          "time": 1788658740
+        }
+      ],
+      "gap": 258,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-bdfm|20260905|122550_F..S|20:25:30|D19S|5",
+      "tripKey": "gtfs-bdfm|20260905|122550_F..S|20:25:30",
+      "route": "F",
+      "destination": "Coney Island-Stillwell Av",
+      "direction": "SOUTH",
+      "stopId": "D19S",
+      "partId": "D19",
+      "area": "6th Av - Culver · Downtown · Track B1",
+      "time": 1788656743,
+      "arrival": 1788656743,
+      "departure": 1788656743,
+      "scheduledTrack": "B1",
+      "actualTrack": "B1",
+      "pattern": "6 Av–Culver",
+      "patternSource": "static",
+      "location": "At 57 St",
+      "locationTimestamp": 1788656317,
+      "stopsAway": 5,
+      "assigned": true,
+      "feed": "gtfs-bdfm",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:planned_work:33714",
+          "kind": "skip",
+          "classification": "planned",
+          "advisory": true,
+          "label": "planned · stops skipped",
+          "stopIndices": [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "affectedStops": [
+            "F23",
+            "F25",
+            "F26",
+            "F29",
+            "F31",
+            "F32",
+            "F33",
+            "F34",
+            "F20",
+            "F21",
+            "F22",
+            "F24",
+            "F27",
+            "F30"
+          ],
+          "alertIds": [
+            "lmm:planned_work:33714"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs-bdfm",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "167",
+          "stopId": "D20S",
+          "name": "W 4 St-Wash Sq",
+          "time": 1788656833
+        },
+        {
+          "stationId": "619",
+          "stopId": "D21S",
+          "name": "Broadway-Lafayette St",
+          "time": 1788656983
+        },
+        {
+          "stationId": "232",
+          "stopId": "F14S",
+          "name": "2 Av",
+          "time": 1788657073
+        },
+        {
+          "stationId": "625",
+          "stopId": "F15S",
+          "name": "Delancey St-Essex St",
+          "time": 1788657163
+        },
+        {
+          "stationId": "234",
+          "stopId": "F16S",
+          "name": "East Broadway",
+          "time": 1788657253
+        },
+        {
+          "stationId": "235",
+          "stopId": "F18S",
+          "name": "York St",
+          "time": 1788657403
+        },
+        {
+          "stationId": "636",
+          "stopId": "A41S",
+          "name": "Jay St-MetroTech",
+          "time": 1788657553
+        },
+        {
+          "stationId": "236",
+          "stopId": "F20S",
+          "name": "Bergen St",
+          "time": 1788657793
+        },
+        {
+          "stationId": "237",
+          "stopId": "F21S",
+          "name": "Carroll St",
+          "time": 1788657883
+        },
+        {
+          "stationId": "238",
+          "stopId": "F22S",
+          "name": "Smith-9 Sts",
+          "time": 1788657973
+        },
+        {
+          "stationId": "240",
+          "stopId": "F24S",
+          "name": "7 Av",
+          "time": 1788658217
+        },
+        {
+          "stationId": "243",
+          "stopId": "F27S",
+          "name": "Church Av",
+          "time": 1788658329
+        },
+        {
+          "stationId": "245",
+          "stopId": "F30S",
+          "name": "18 Av",
+          "time": 1788658437
+        },
+        {
+          "stationId": "250",
+          "stopId": "F35S",
+          "name": "Kings Hwy",
+          "time": 1788658773
+        },
+        {
+          "stationId": "251",
+          "stopId": "F36S",
+          "name": "Avenue U",
+          "time": 1788659111
+        },
+        {
+          "stationId": "252",
+          "stopId": "F38S",
+          "name": "Avenue X",
+          "time": 1788659366
+        },
+        {
+          "stationId": "253",
+          "stopId": "F39S",
+          "name": "Neptune Av",
+          "time": 1788659621
+        },
+        {
+          "stationId": "57",
+          "stopId": "D42S",
+          "name": "W 8 St-NY Aquarium",
+          "time": 1788659711
+        },
+        {
+          "stationId": "58",
+          "stopId": "D43S",
+          "name": "Coney Island-Stillwell Av",
+          "time": 1788659801
+        }
+      ],
+      "gap": 331,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|124400_3..S01R||132S|3",
+      "tripKey": "gtfs|20260905|124400_3..S01R|",
+      "route": "3",
+      "destination": "New Lots Av",
+      "direction": "SOUTH",
+      "stopId": "132S",
+      "partId": "132",
+      "area": "Broadway - 7Av · Downtown · Track 2",
+      "time": 1788656774,
+      "arrival": 1788656774,
+      "departure": 1788656774,
+      "scheduledTrack": "2",
+      "pattern": "Broadway–7 Av express",
+      "patternSource": "inferred",
+      "location": "At 72 St",
+      "locationTimestamp": 1788656294,
+      "stopsAway": 3,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:alert:266236:26",
+          "kind": "advisory",
+          "classification": "unknown",
+          "advisory": true,
+          "label": "advisory · delays",
+          "stopIndices": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ],
+          "affectedStops": [],
+          "alertIds": [
+            "lmm:alert:266236:26"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "327",
+          "stopId": "137S",
+          "name": "Chambers St",
+          "time": 1788657044
+        },
+        {
+          "stationId": "624",
+          "stopId": "228S",
+          "name": "Park Place",
+          "time": 1788657104
+        },
+        {
+          "stationId": "628",
+          "stopId": "229S",
+          "name": "Fulton St",
+          "time": 1788657224
+        },
+        {
+          "stationId": "333",
+          "stopId": "230S",
+          "name": "Wall St",
+          "time": 1788657284
+        },
+        {
+          "stationId": "334",
+          "stopId": "231S",
+          "name": "Clark St",
+          "time": 1788657554
+        },
+        {
+          "stationId": "620",
+          "stopId": "232S",
+          "name": "Borough Hall",
+          "time": 1788657614
+        },
+        {
+          "stationId": "336",
+          "stopId": "233S",
+          "name": "Hoyt St",
+          "time": 1788657704
+        },
+        {
+          "stationId": "337",
+          "stopId": "234S",
+          "name": "Nevins St",
+          "time": 1788657764
+        },
+        {
+          "stationId": "617",
+          "stopId": "235S",
+          "name": "Atlantic Av-Barclays Ctr",
+          "time": 1788657914
+        },
+        {
+          "stationId": "339",
+          "stopId": "236S",
+          "name": "Bergen St",
+          "time": 1788657974
+        },
+        {
+          "stationId": "340",
+          "stopId": "237S",
+          "name": "Grand Army Plaza",
+          "time": 1788658064
+        },
+        {
+          "stationId": "341",
+          "stopId": "238S",
+          "name": "Eastern Pkwy-Brooklyn Museum",
+          "time": 1788658154
+        },
+        {
+          "stationId": "626",
+          "stopId": "239S",
+          "name": "Franklin Av-Medgar Evers College",
+          "time": 1788658244
+        },
+        {
+          "stationId": "343",
+          "stopId": "248S",
+          "name": "Nostrand Av",
+          "time": 1788658334
+        },
+        {
+          "stationId": "344",
+          "stopId": "249S",
+          "name": "Kingston Av",
+          "time": 1788658424
+        },
+        {
+          "stationId": "345",
+          "stopId": "250S",
+          "name": "Crown Hts-Utica Av",
+          "time": 1788658544
+        },
+        {
+          "stationId": "346",
+          "stopId": "251S",
+          "name": "Sutter Av-Rutland Rd",
+          "time": 1788658814
+        },
+        {
+          "stationId": "347",
+          "stopId": "252S",
+          "name": "Saratoga Av",
+          "time": 1788658904
+        },
+        {
+          "stationId": "348",
+          "stopId": "253S",
+          "name": "Rockaway Av",
+          "time": 1788658994
+        },
+        {
+          "stationId": "349",
+          "stopId": "254S",
+          "name": "Junius St",
+          "time": 1788659054
+        },
+        {
+          "stationId": "350",
+          "stopId": "255S",
+          "name": "Pennsylvania Av",
+          "time": 1788659144
+        },
+        {
+          "stationId": "351",
+          "stopId": "256S",
+          "name": "Van Siclen Av",
+          "time": 1788659234
+        },
+        {
+          "stationId": "352",
+          "stopId": "257S",
+          "name": "New Lots Av",
+          "time": 1788659294
+        }
+      ],
+      "gap": 362,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|125500_1..N10R||132N|5",
+      "tripKey": "gtfs|20260905|125500_1..N10R|",
+      "route": "1",
+      "destination": "137 St-City College",
+      "direction": "NORTH",
+      "stopId": "132N",
+      "partId": "132",
+      "area": "Broadway - 7Av · Uptown · Track 4",
+      "time": 1788656798,
+      "arrival": 1788656798,
+      "departure": 1788656798,
+      "scheduledTrack": "4",
+      "pattern": "Broadway–7 Av local",
+      "patternSource": "inferred",
+      "location": "Approaching Chambers St",
+      "locationTimestamp": 1788656330,
+      "stopsAway": 5,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:planned_work:33695",
+          "kind": "advisory",
+          "classification": "planned",
+          "advisory": true,
+          "label": "planned · part suspended",
+          "stopIndices": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "affectedStops": [
+            "112",
+            "113",
+            "114",
+            "115",
+            "132",
+            "131",
+            "130",
+            "129",
+            "128",
+            "127",
+            "126",
+            "125",
+            "124",
+            "123",
+            "122",
+            "121",
+            "120",
+            "119",
+            "118",
+            "117",
+            "116"
+          ],
+          "alertIds": [
+            "lmm:planned_work:33695"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "321",
+          "stopId": "131N",
+          "name": "18 St",
+          "time": 1788656858
+        },
+        {
+          "stationId": "320",
+          "stopId": "130N",
+          "name": "23 St",
+          "time": 1788656918
+        },
+        {
+          "stationId": "319",
+          "stopId": "129N",
+          "name": "28 St",
+          "time": 1788656978
+        },
+        {
+          "stationId": "318",
+          "stopId": "128N",
+          "name": "34 St-Penn Station",
+          "time": 1788657068
+        },
+        {
+          "stationId": "611",
+          "stopId": "127N",
+          "name": "Times Sq-42 St",
+          "time": 1788657158
+        },
+        {
+          "stationId": "316",
+          "stopId": "126N",
+          "name": "50 St",
+          "time": 1788657278
+        },
+        {
+          "stationId": "614",
+          "stopId": "125N",
+          "name": "59 St-Columbus Circle",
+          "time": 1788657398
+        },
+        {
+          "stationId": "314",
+          "stopId": "124N",
+          "name": "66 St-Lincoln Center",
+          "time": 1788657488
+        },
+        {
+          "stationId": "313",
+          "stopId": "123N",
+          "name": "72 St",
+          "time": 1788657548
+        },
+        {
+          "stationId": "312",
+          "stopId": "122N",
+          "name": "79 St",
+          "time": 1788657668
+        },
+        {
+          "stationId": "311",
+          "stopId": "121N",
+          "name": "86 St",
+          "time": 1788657728
+        },
+        {
+          "stationId": "310",
+          "stopId": "120N",
+          "name": "96 St",
+          "time": 1788657848
+        },
+        {
+          "stationId": "309",
+          "stopId": "119N",
+          "name": "103 St",
+          "time": 1788657938
+        },
+        {
+          "stationId": "308",
+          "stopId": "118N",
+          "name": "Cathedral Pkwy (110 St)",
+          "time": 1788658028
+        },
+        {
+          "stationId": "307",
+          "stopId": "117N",
+          "name": "116 St-Columbia University",
+          "time": 1788658088
+        },
+        {
+          "stationId": "306",
+          "stopId": "116N",
+          "name": "125 St",
+          "time": 1788658238
+        },
+        {
+          "stationId": "305",
+          "stopId": "115N",
+          "name": "137 St-City College",
+          "time": 1788658358
+        }
+      ],
+      "gap": 386,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-bdfm|20260905|121200_F..N69R|20:12:09|D19N|5",
+      "tripKey": "gtfs-bdfm|20260905|121200_F..N69R|20:12:09",
+      "route": "F",
+      "destination": "Jamaica-179 St",
+      "direction": "NORTH",
+      "stopId": "D19N",
+      "partId": "D19",
+      "area": "6th Av - Culver · Uptown · Track B2",
+      "time": 1788656803,
+      "arrival": 1788656803,
+      "departure": 1788656803,
+      "scheduledTrack": "B2",
+      "actualTrack": "B2",
+      "pattern": "6 Av–Culver",
+      "patternSource": "static",
+      "location": "At East Broadway",
+      "locationTimestamp": 1788656315,
+      "stopsAway": 5,
+      "assigned": true,
+      "feed": "gtfs-bdfm",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "228",
+          "stopId": "D18N",
+          "name": "23 St",
+          "time": 1788656893
+        },
+        {
+          "stationId": "607",
+          "stopId": "D17N",
+          "name": "34 St-Herald Sq",
+          "time": 1788656983
+        },
+        {
+          "stationId": "609",
+          "stopId": "D16N",
+          "name": "42 St-Bryant Pk",
+          "time": 1788657073
+        },
+        {
+          "stationId": "225",
+          "stopId": "D15N",
+          "name": "47-50 Sts-Rockefeller Ctr",
+          "time": 1788657163
+        },
+        {
+          "stationId": "224",
+          "stopId": "B10N",
+          "name": "57 St",
+          "time": 1788657253
+        },
+        {
+          "stationId": "223",
+          "stopId": "B08N",
+          "name": "Lexington Av/63 St",
+          "time": 1788657403
+        },
+        {
+          "stationId": "222",
+          "stopId": "B06N",
+          "name": "Roosevelt Island",
+          "time": 1788657553
+        },
+        {
+          "stationId": "221",
+          "stopId": "B04N",
+          "name": "21 St-Queensbridge",
+          "time": 1788657673
+        },
+        {
+          "stationId": "616",
+          "stopId": "G14N",
+          "name": "Jackson Hts-Roosevelt Av",
+          "time": 1788658033
+        },
+        {
+          "stationId": "261",
+          "stopId": "G08N",
+          "name": "Forest Hills-71 Av",
+          "time": 1788658453
+        },
+        {
+          "stationId": "260",
+          "stopId": "F07N",
+          "name": "75 Av",
+          "time": 1788658573
+        },
+        {
+          "stationId": "259",
+          "stopId": "F06N",
+          "name": "Kew Gardens-Union Tpke",
+          "time": 1788658663
+        },
+        {
+          "stationId": "258",
+          "stopId": "F05N",
+          "name": "Briarwood",
+          "time": 1788658783
+        },
+        {
+          "stationId": "257",
+          "stopId": "F04N",
+          "name": "Sutphin Blvd",
+          "time": 1788658843
+        },
+        {
+          "stationId": "256",
+          "stopId": "F03N",
+          "name": "Parsons Blvd",
+          "time": 1788659038
+        },
+        {
+          "stationId": "255",
+          "stopId": "F02N",
+          "name": "169 St",
+          "time": 1788659428
+        },
+        {
+          "stationId": "254",
+          "stopId": "F01N",
+          "name": "Jamaica-179 St",
+          "time": 1788659683
+        }
+      ],
+      "gap": 391,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|123200_2..N01R||132N|4",
+      "tripKey": "gtfs|20260905|123200_2..N01R|",
+      "route": "2",
+      "destination": "Wakefield-241 St",
+      "direction": "NORTH",
+      "stopId": "132N",
+      "partId": "132",
+      "area": "Broadway - 7Av · Uptown · Track 3",
+      "time": 1788656807,
+      "arrival": 1788656807,
+      "departure": 1788656807,
+      "scheduledTrack": "3",
+      "pattern": "Broadway–7 Av express",
+      "patternSource": "inferred",
+      "location": "At Wall St",
+      "locationTimestamp": 1788656297,
+      "stopsAway": 4,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:alert:266236:26",
+          "kind": "advisory",
+          "classification": "unknown",
+          "advisory": true,
+          "label": "advisory · delays",
+          "stopIndices": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32
+          ],
+          "affectedStops": [],
+          "alertIds": [
+            "lmm:alert:266236:26"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "318",
+          "stopId": "128N",
+          "name": "34 St-Penn Station",
+          "time": 1788656957
+        },
+        {
+          "stationId": "611",
+          "stopId": "127N",
+          "name": "Times Sq-42 St",
+          "time": 1788657017
+        },
+        {
+          "stationId": "313",
+          "stopId": "123N",
+          "name": "72 St",
+          "time": 1788657257
+        },
+        {
+          "stationId": "310",
+          "stopId": "120N",
+          "name": "96 St",
+          "time": 1788657407
+        },
+        {
+          "stationId": "441",
+          "stopId": "227N",
+          "name": "110 St-Malcolm X Plaza",
+          "time": 1788657647
+        },
+        {
+          "stationId": "440",
+          "stopId": "226N",
+          "name": "116 St",
+          "time": 1788657707
+        },
+        {
+          "stationId": "439",
+          "stopId": "225N",
+          "name": "125 St",
+          "time": 1788657797
+        },
+        {
+          "stationId": "438",
+          "stopId": "224N",
+          "name": "135 St",
+          "time": 1788657887
+        },
+        {
+          "stationId": "603",
+          "stopId": "222N",
+          "name": "149 St-Hostos",
+          "time": 1788658067
+        },
+        {
+          "stationId": "434",
+          "stopId": "221N",
+          "name": "3 Av-149 St",
+          "time": 1788658187
+        },
+        {
+          "stationId": "433",
+          "stopId": "220N",
+          "name": "Jackson Av",
+          "time": 1788658307
+        },
+        {
+          "stationId": "432",
+          "stopId": "219N",
+          "name": "Prospect Av",
+          "time": 1788658397
+        },
+        {
+          "stationId": "431",
+          "stopId": "218N",
+          "name": "Intervale Av",
+          "time": 1788658457
+        },
+        {
+          "stationId": "430",
+          "stopId": "217N",
+          "name": "Simpson St",
+          "time": 1788658517
+        },
+        {
+          "stationId": "429",
+          "stopId": "216N",
+          "name": "Freeman St",
+          "time": 1788658607
+        },
+        {
+          "stationId": "428",
+          "stopId": "215N",
+          "name": "174 St",
+          "time": 1788658727
+        },
+        {
+          "stationId": "427",
+          "stopId": "214N",
+          "name": "West Farms Sq-E Tremont Av",
+          "time": 1788658817
+        },
+        {
+          "stationId": "426",
+          "stopId": "213N",
+          "name": "E 180 St",
+          "time": 1788658907
+        },
+        {
+          "stationId": "425",
+          "stopId": "212N",
+          "name": "Bronx Park East",
+          "time": 1788659027
+        },
+        {
+          "stationId": "424",
+          "stopId": "211N",
+          "name": "Pelham Pkwy",
+          "time": 1788659147
+        },
+        {
+          "stationId": "423",
+          "stopId": "210N",
+          "name": "Allerton Av",
+          "time": 1788659267
+        },
+        {
+          "stationId": "422",
+          "stopId": "209N",
+          "name": "Burke Av",
+          "time": 1788659357
+        },
+        {
+          "stationId": "421",
+          "stopId": "208N",
+          "name": "Gun Hill Rd",
+          "time": 1788659477
+        },
+        {
+          "stationId": "420",
+          "stopId": "207N",
+          "name": "219 St",
+          "time": 1788659567
+        },
+        {
+          "stationId": "419",
+          "stopId": "206N",
+          "name": "225 St",
+          "time": 1788659627
+        },
+        {
+          "stationId": "418",
+          "stopId": "205N",
+          "name": "233 St",
+          "time": 1788659717
+        },
+        {
+          "stationId": "417",
+          "stopId": "204N",
+          "name": "Nereid Av",
+          "time": 1788659807
+        },
+        {
+          "stationId": "416",
+          "stopId": "201N",
+          "name": "Wakefield-241 St",
+          "time": 1788659927
+        }
+      ],
+      "gap": 395,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|124000_1..S12X001||132S|6",
+      "tripKey": "gtfs|20260905|124000_1..S12X001|",
+      "route": "1",
+      "destination": "South Ferry",
+      "direction": "SOUTH",
+      "stopId": "132S",
+      "partId": "132",
+      "area": "Broadway - 7Av · Downtown · Track 1",
+      "time": 1788656809,
+      "arrival": 1788656809,
+      "departure": 1788656809,
+      "scheduledTrack": "1",
+      "pattern": "Broadway–7 Av local",
+      "patternSource": "inferred",
+      "location": "At 50 St",
+      "locationTimestamp": 1788656329,
+      "stopsAway": 6,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "323",
+          "stopId": "133S",
+          "name": "Christopher St-Stonewall",
+          "time": 1788656899
+        },
+        {
+          "stationId": "324",
+          "stopId": "134S",
+          "name": "Houston St",
+          "time": 1788656989
+        },
+        {
+          "stationId": "325",
+          "stopId": "135S",
+          "name": "Canal St",
+          "time": 1788657079
+        },
+        {
+          "stationId": "326",
+          "stopId": "136S",
+          "name": "Franklin St",
+          "time": 1788657139
+        },
+        {
+          "stationId": "327",
+          "stopId": "137S",
+          "name": "Chambers St",
+          "time": 1788657229
+        },
+        {
+          "stationId": "328",
+          "stopId": "138S",
+          "name": "WTC Cortlandt",
+          "time": 1788657439
+        },
+        {
+          "stationId": "329",
+          "stopId": "139S",
+          "name": "Rector St",
+          "time": 1788657529
+        },
+        {
+          "stationId": "635",
+          "stopId": "142S",
+          "name": "South Ferry",
+          "time": 1788657649
+        }
+      ],
+      "gap": 397,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-l|20260905|122800_L..N||L02N|4",
+      "tripKey": "gtfs-l|20260905|122800_L..N|",
+      "route": "L",
+      "destination": "8 Av",
+      "direction": "NORTH",
+      "stopId": "L02N",
+      "partId": "L02",
+      "area": "Canarsie · West Side · Track 2",
+      "time": 1788656887,
+      "arrival": 1788656857,
+      "departure": 1788656887,
+      "scheduledTrack": "2",
+      "actualTrack": "2",
+      "pattern": "Canarsie",
+      "patternSource": "static",
+      "location": "In transit to Bedford Av",
+      "locationTimestamp": 1788656322,
+      "stopsAway": 4,
+      "assigned": true,
+      "feed": "gtfs-l",
+      "timestamp": 1788656332,
+      "relationship": "SCHEDULED",
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "618",
+          "stopId": "L01N",
+          "name": "8 Av",
+          "time": 1788657007
+        }
+      ],
+      "gap": 475,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-l|20260905|123300_L..N||L02N|6",
+      "tripKey": "gtfs-l|20260905|123300_L..N|",
+      "route": "L",
+      "destination": "8 Av",
+      "direction": "NORTH",
+      "stopId": "L02N",
+      "partId": "L02",
+      "area": "Canarsie · West Side · Track 2",
+      "time": 1788656979,
+      "arrival": 1788656949,
+      "departure": 1788656979,
+      "scheduledTrack": "2",
+      "actualTrack": "2",
+      "pattern": "Canarsie",
+      "patternSource": "static",
+      "location": "At Graham Av",
+      "locationTimestamp": 1788656307,
+      "stopsAway": 6,
+      "assigned": true,
+      "feed": "gtfs-l",
+      "timestamp": 1788656332,
+      "relationship": "SCHEDULED",
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "618",
+          "stopId": "L01N",
+          "name": "8 Av",
+          "time": 1788657099
+        }
+      ],
+      "gap": 567,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|121900_2..S01R||132S|4",
+      "tripKey": "gtfs|20260905|121900_2..S01R|",
+      "route": "2",
+      "destination": "Flatbush Av-Brooklyn College",
+      "direction": "SOUTH",
+      "stopId": "132S",
+      "partId": "132",
+      "area": "Broadway - 7Av · Downtown · Track 2",
+      "time": 1788657098,
+      "arrival": 1788657098,
+      "departure": 1788657098,
+      "scheduledTrack": "2",
+      "pattern": "Broadway–7 Av express",
+      "patternSource": "inferred",
+      "location": "Reported near 96 St",
+      "locationTimestamp": 1788656330,
+      "stopsAway": 4,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:alert:266236:26",
+          "kind": "advisory",
+          "classification": "unknown",
+          "advisory": true,
+          "label": "advisory · delays",
+          "stopIndices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "affectedStops": [],
+          "alertIds": [
+            "lmm:alert:266236:26"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "327",
+          "stopId": "137S",
+          "name": "Chambers St",
+          "time": 1788657368
+        },
+        {
+          "stationId": "624",
+          "stopId": "228S",
+          "name": "Park Place",
+          "time": 1788657428
+        },
+        {
+          "stationId": "628",
+          "stopId": "229S",
+          "name": "Fulton St",
+          "time": 1788657548
+        },
+        {
+          "stationId": "333",
+          "stopId": "230S",
+          "name": "Wall St",
+          "time": 1788657608
+        },
+        {
+          "stationId": "334",
+          "stopId": "231S",
+          "name": "Clark St",
+          "time": 1788657878
+        },
+        {
+          "stationId": "620",
+          "stopId": "232S",
+          "name": "Borough Hall",
+          "time": 1788657938
+        },
+        {
+          "stationId": "336",
+          "stopId": "233S",
+          "name": "Hoyt St",
+          "time": 1788658028
+        },
+        {
+          "stationId": "337",
+          "stopId": "234S",
+          "name": "Nevins St",
+          "time": 1788658088
+        },
+        {
+          "stationId": "617",
+          "stopId": "235S",
+          "name": "Atlantic Av-Barclays Ctr",
+          "time": 1788658178
+        },
+        {
+          "stationId": "339",
+          "stopId": "236S",
+          "name": "Bergen St",
+          "time": 1788658238
+        },
+        {
+          "stationId": "340",
+          "stopId": "237S",
+          "name": "Grand Army Plaza",
+          "time": 1788658328
+        },
+        {
+          "stationId": "341",
+          "stopId": "238S",
+          "name": "Eastern Pkwy-Brooklyn Museum",
+          "time": 1788658418
+        },
+        {
+          "stationId": "626",
+          "stopId": "239S",
+          "name": "Franklin Av-Medgar Evers College",
+          "time": 1788658508
+        },
+        {
+          "stationId": "353",
+          "stopId": "241S",
+          "name": "President St-Medgar Evers College",
+          "time": 1788658688
+        },
+        {
+          "stationId": "354",
+          "stopId": "242S",
+          "name": "Sterling St",
+          "time": 1788658748
+        },
+        {
+          "stationId": "355",
+          "stopId": "243S",
+          "name": "Winthrop St",
+          "time": 1788658838
+        },
+        {
+          "stationId": "356",
+          "stopId": "244S",
+          "name": "Church Av",
+          "time": 1788658928
+        },
+        {
+          "stationId": "357",
+          "stopId": "245S",
+          "name": "Beverly Rd",
+          "time": 1788659018
+        },
+        {
+          "stationId": "358",
+          "stopId": "246S",
+          "name": "Newkirk Av-Little Haiti",
+          "time": 1788659108
+        },
+        {
+          "stationId": "359",
+          "stopId": "247S",
+          "name": "Flatbush Av-Brooklyn College",
+          "time": 1788659228
+        }
+      ],
+      "gap": 686,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-l|20260905|123800_L..N||L02N|8",
+      "tripKey": "gtfs-l|20260905|123800_L..N|",
+      "route": "L",
+      "destination": "8 Av",
+      "direction": "NORTH",
+      "stopId": "L02N",
+      "partId": "L02",
+      "area": "Canarsie · West Side · Track 2",
+      "time": 1788657127,
+      "arrival": 1788657097,
+      "departure": 1788657127,
+      "scheduledTrack": "2",
+      "actualTrack": "2",
+      "pattern": "Canarsie",
+      "patternSource": "static",
+      "location": "At Montrose Av",
+      "locationTimestamp": 1788656296,
+      "stopsAway": 8,
+      "assigned": true,
+      "feed": "gtfs-l",
+      "timestamp": 1788656332,
+      "relationship": "SCHEDULED",
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "618",
+          "stopId": "L01N",
+          "name": "8 Av",
+          "time": 1788657247
+        }
+      ],
+      "gap": 715,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|124800_1..S12X001||132S|11",
+      "tripKey": "gtfs|20260905|124800_1..S12X001|",
+      "route": "1",
+      "destination": "South Ferry",
+      "direction": "SOUTH",
+      "stopId": "132S",
+      "partId": "132",
+      "area": "Broadway - 7Av · Downtown · Track 1",
+      "time": 1788657259,
+      "arrival": 1788657259,
+      "departure": 1788657259,
+      "scheduledTrack": "1",
+      "pattern": "Broadway–7 Av local",
+      "patternSource": "inferred",
+      "location": "At 86 St",
+      "locationTimestamp": 1788656329,
+      "stopsAway": 11,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "323",
+          "stopId": "133S",
+          "name": "Christopher St-Stonewall",
+          "time": 1788657349
+        },
+        {
+          "stationId": "324",
+          "stopId": "134S",
+          "name": "Houston St",
+          "time": 1788657439
+        },
+        {
+          "stationId": "325",
+          "stopId": "135S",
+          "name": "Canal St",
+          "time": 1788657529
+        },
+        {
+          "stationId": "326",
+          "stopId": "136S",
+          "name": "Franklin St",
+          "time": 1788657589
+        },
+        {
+          "stationId": "327",
+          "stopId": "137S",
+          "name": "Chambers St",
+          "time": 1788657679
+        },
+        {
+          "stationId": "328",
+          "stopId": "138S",
+          "name": "WTC Cortlandt",
+          "time": 1788657889
+        },
+        {
+          "stationId": "329",
+          "stopId": "139S",
+          "name": "Rector St",
+          "time": 1788657979
+        },
+        {
+          "stationId": "635",
+          "stopId": "142S",
+          "name": "South Ferry",
+          "time": 1788658099
+        }
+      ],
+      "gap": 847,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|126300_1..N10R||132N|8",
+      "tripKey": "gtfs|20260905|126300_1..N10R|",
+      "route": "1",
+      "destination": "137 St-City College",
+      "direction": "NORTH",
+      "stopId": "132N",
+      "partId": "132",
+      "area": "Broadway - 7Av · Uptown · Track 4",
+      "time": 1788657270,
+      "arrival": 1788657270,
+      "departure": 1788657270,
+      "scheduledTrack": "4",
+      "pattern": "Broadway–7 Av local",
+      "patternSource": "inferred",
+      "location": "Next reported stop · South Ferry",
+      "stopsAway": null,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:planned_work:33695",
+          "kind": "advisory",
+          "classification": "planned",
+          "advisory": true,
+          "label": "planned · part suspended",
+          "stopIndices": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "affectedStops": [
+            "112",
+            "113",
+            "114",
+            "115",
+            "132",
+            "131",
+            "130",
+            "129",
+            "128",
+            "127",
+            "126",
+            "125",
+            "124",
+            "123",
+            "122",
+            "121",
+            "120",
+            "119",
+            "118",
+            "117",
+            "116"
+          ],
+          "alertIds": [
+            "lmm:planned_work:33695"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "321",
+          "stopId": "131N",
+          "name": "18 St",
+          "time": 1788657330
+        },
+        {
+          "stationId": "320",
+          "stopId": "130N",
+          "name": "23 St",
+          "time": 1788657390
+        },
+        {
+          "stationId": "319",
+          "stopId": "129N",
+          "name": "28 St",
+          "time": 1788657450
+        },
+        {
+          "stationId": "318",
+          "stopId": "128N",
+          "name": "34 St-Penn Station",
+          "time": 1788657540
+        },
+        {
+          "stationId": "611",
+          "stopId": "127N",
+          "name": "Times Sq-42 St",
+          "time": 1788657630
+        },
+        {
+          "stationId": "316",
+          "stopId": "126N",
+          "name": "50 St",
+          "time": 1788657750
+        },
+        {
+          "stationId": "614",
+          "stopId": "125N",
+          "name": "59 St-Columbus Circle",
+          "time": 1788657870
+        },
+        {
+          "stationId": "314",
+          "stopId": "124N",
+          "name": "66 St-Lincoln Center",
+          "time": 1788657960
+        },
+        {
+          "stationId": "313",
+          "stopId": "123N",
+          "name": "72 St",
+          "time": 1788658020
+        },
+        {
+          "stationId": "312",
+          "stopId": "122N",
+          "name": "79 St",
+          "time": 1788658140
+        },
+        {
+          "stationId": "311",
+          "stopId": "121N",
+          "name": "86 St",
+          "time": 1788658200
+        },
+        {
+          "stationId": "310",
+          "stopId": "120N",
+          "name": "96 St",
+          "time": 1788658320
+        },
+        {
+          "stationId": "309",
+          "stopId": "119N",
+          "name": "103 St",
+          "time": 1788658410
+        },
+        {
+          "stationId": "308",
+          "stopId": "118N",
+          "name": "Cathedral Pkwy (110 St)",
+          "time": 1788658500
+        },
+        {
+          "stationId": "307",
+          "stopId": "117N",
+          "name": "116 St-Columbia University",
+          "time": 1788658560
+        },
+        {
+          "stationId": "306",
+          "stopId": "116N",
+          "name": "125 St",
+          "time": 1788658710
+        },
+        {
+          "stationId": "305",
+          "stopId": "115N",
+          "name": "137 St-City College",
+          "time": 1788658830
+        }
+      ],
+      "gap": 858,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|125400_3..S01R||132S|7",
+      "tripKey": "gtfs|20260905|125400_3..S01R|",
+      "route": "3",
+      "destination": "New Lots Av",
+      "direction": "SOUTH",
+      "stopId": "132S",
+      "partId": "132",
+      "area": "Broadway - 7Av · Downtown · Track 2",
+      "time": 1788657382,
+      "arrival": 1788657382,
+      "departure": 1788657382,
+      "scheduledTrack": "2",
+      "pattern": "Broadway–7 Av express",
+      "patternSource": "inferred",
+      "location": "Reported near 125 St",
+      "locationTimestamp": 1788656330,
+      "stopsAway": 7,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:alert:266236:26",
+          "kind": "advisory",
+          "classification": "unknown",
+          "advisory": true,
+          "label": "advisory · delays",
+          "stopIndices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30
+          ],
+          "affectedStops": [],
+          "alertIds": [
+            "lmm:alert:266236:26"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "327",
+          "stopId": "137S",
+          "name": "Chambers St",
+          "time": 1788657652
+        },
+        {
+          "stationId": "624",
+          "stopId": "228S",
+          "name": "Park Place",
+          "time": 1788657712
+        },
+        {
+          "stationId": "628",
+          "stopId": "229S",
+          "name": "Fulton St",
+          "time": 1788657832
+        },
+        {
+          "stationId": "333",
+          "stopId": "230S",
+          "name": "Wall St",
+          "time": 1788657892
+        },
+        {
+          "stationId": "334",
+          "stopId": "231S",
+          "name": "Clark St",
+          "time": 1788658162
+        },
+        {
+          "stationId": "620",
+          "stopId": "232S",
+          "name": "Borough Hall",
+          "time": 1788658222
+        },
+        {
+          "stationId": "336",
+          "stopId": "233S",
+          "name": "Hoyt St",
+          "time": 1788658312
+        },
+        {
+          "stationId": "337",
+          "stopId": "234S",
+          "name": "Nevins St",
+          "time": 1788658372
+        },
+        {
+          "stationId": "617",
+          "stopId": "235S",
+          "name": "Atlantic Av-Barclays Ctr",
+          "time": 1788658522
+        },
+        {
+          "stationId": "339",
+          "stopId": "236S",
+          "name": "Bergen St",
+          "time": 1788658582
+        },
+        {
+          "stationId": "340",
+          "stopId": "237S",
+          "name": "Grand Army Plaza",
+          "time": 1788658672
+        },
+        {
+          "stationId": "341",
+          "stopId": "238S",
+          "name": "Eastern Pkwy-Brooklyn Museum",
+          "time": 1788658762
+        },
+        {
+          "stationId": "626",
+          "stopId": "239S",
+          "name": "Franklin Av-Medgar Evers College",
+          "time": 1788658852
+        },
+        {
+          "stationId": "343",
+          "stopId": "248S",
+          "name": "Nostrand Av",
+          "time": 1788658942
+        },
+        {
+          "stationId": "344",
+          "stopId": "249S",
+          "name": "Kingston Av",
+          "time": 1788659032
+        },
+        {
+          "stationId": "345",
+          "stopId": "250S",
+          "name": "Crown Hts-Utica Av",
+          "time": 1788659152
+        },
+        {
+          "stationId": "346",
+          "stopId": "251S",
+          "name": "Sutter Av-Rutland Rd",
+          "time": 1788659422
+        },
+        {
+          "stationId": "347",
+          "stopId": "252S",
+          "name": "Saratoga Av",
+          "time": 1788659512
+        },
+        {
+          "stationId": "348",
+          "stopId": "253S",
+          "name": "Rockaway Av",
+          "time": 1788659602
+        },
+        {
+          "stationId": "349",
+          "stopId": "254S",
+          "name": "Junius St",
+          "time": 1788659662
+        },
+        {
+          "stationId": "350",
+          "stopId": "255S",
+          "name": "Pennsylvania Av",
+          "time": 1788659752
+        },
+        {
+          "stationId": "351",
+          "stopId": "256S",
+          "name": "Van Siclen Av",
+          "time": 1788659842
+        },
+        {
+          "stationId": "352",
+          "stopId": "257S",
+          "name": "New Lots Av",
+          "time": 1788659902
+        }
+      ],
+      "gap": 970,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-bdfm|20260905|123750_F..S|20:37:30|D19S|9",
+      "tripKey": "gtfs-bdfm|20260905|123750_F..S|20:37:30",
+      "route": "F",
+      "destination": "Coney Island-Stillwell Av",
+      "direction": "SOUTH",
+      "stopId": "D19S",
+      "partId": "D19",
+      "area": "6th Av - Culver · Downtown · Track B1",
+      "time": 1788657425,
+      "arrival": 1788657425,
+      "departure": 1788657425,
+      "scheduledTrack": "B1",
+      "actualTrack": "B1",
+      "pattern": "6 Av–Culver",
+      "patternSource": "static",
+      "location": "At Jackson Hts-Roosevelt Av",
+      "locationTimestamp": 1788656317,
+      "stopsAway": 9,
+      "assigned": true,
+      "feed": "gtfs-bdfm",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:planned_work:33714",
+          "kind": "skip",
+          "classification": "planned",
+          "advisory": true,
+          "label": "planned · stops skipped",
+          "stopIndices": [
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "affectedStops": [
+            "F23",
+            "F25",
+            "F26",
+            "F29",
+            "F31",
+            "F32",
+            "F33",
+            "F34",
+            "F20",
+            "F21",
+            "F22",
+            "F24",
+            "F27",
+            "F30"
+          ],
+          "alertIds": [
+            "lmm:planned_work:33714"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs-bdfm",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "167",
+          "stopId": "D20S",
+          "name": "W 4 St-Wash Sq",
+          "time": 1788657515
+        },
+        {
+          "stationId": "619",
+          "stopId": "D21S",
+          "name": "Broadway-Lafayette St",
+          "time": 1788657665
+        },
+        {
+          "stationId": "232",
+          "stopId": "F14S",
+          "name": "2 Av",
+          "time": 1788657755
+        },
+        {
+          "stationId": "625",
+          "stopId": "F15S",
+          "name": "Delancey St-Essex St",
+          "time": 1788657845
+        },
+        {
+          "stationId": "234",
+          "stopId": "F16S",
+          "name": "East Broadway",
+          "time": 1788657935
+        },
+        {
+          "stationId": "235",
+          "stopId": "F18S",
+          "name": "York St",
+          "time": 1788658085
+        },
+        {
+          "stationId": "636",
+          "stopId": "A41S",
+          "name": "Jay St-MetroTech",
+          "time": 1788658235
+        },
+        {
+          "stationId": "236",
+          "stopId": "F20S",
+          "name": "Bergen St",
+          "time": 1788658475
+        },
+        {
+          "stationId": "237",
+          "stopId": "F21S",
+          "name": "Carroll St",
+          "time": 1788658565
+        },
+        {
+          "stationId": "238",
+          "stopId": "F22S",
+          "name": "Smith-9 Sts",
+          "time": 1788658655
+        },
+        {
+          "stationId": "240",
+          "stopId": "F24S",
+          "name": "7 Av",
+          "time": 1788658899
+        },
+        {
+          "stationId": "243",
+          "stopId": "F27S",
+          "name": "Church Av",
+          "time": 1788659011
+        },
+        {
+          "stationId": "245",
+          "stopId": "F30S",
+          "name": "18 Av",
+          "time": 1788659119
+        },
+        {
+          "stationId": "250",
+          "stopId": "F35S",
+          "name": "Kings Hwy",
+          "time": 1788659455
+        },
+        {
+          "stationId": "251",
+          "stopId": "F36S",
+          "name": "Avenue U",
+          "time": 1788659793
+        },
+        {
+          "stationId": "252",
+          "stopId": "F38S",
+          "name": "Avenue X",
+          "time": 1788660048
+        },
+        {
+          "stationId": "253",
+          "stopId": "F39S",
+          "name": "Neptune Av",
+          "time": 1788660303
+        },
+        {
+          "stationId": "57",
+          "stopId": "D42S",
+          "name": "W 8 St-NY Aquarium",
+          "time": 1788660393
+        },
+        {
+          "stationId": "58",
+          "stopId": "D43S",
+          "name": "Coney Island-Stillwell Av",
+          "time": 1788660483
+        }
+      ],
+      "gap": 1013,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|123600_3..N01R||132N|10",
+      "tripKey": "gtfs|20260905|123600_3..N01R|",
+      "route": "3",
+      "destination": "Harlem-148 St",
+      "direction": "NORTH",
+      "stopId": "132N",
+      "partId": "132",
+      "area": "Broadway - 7Av · Uptown · Track 3",
+      "time": 1788657449,
+      "arrival": 1788657449,
+      "departure": 1788657449,
+      "scheduledTrack": "3",
+      "pattern": "Broadway–7 Av express",
+      "patternSource": "inferred",
+      "location": "Approaching Bergen St",
+      "locationTimestamp": 1788656329,
+      "stopsAway": 10,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:alert:266236:26",
+          "kind": "advisory",
+          "classification": "unknown",
+          "advisory": true,
+          "label": "advisory · delays",
+          "stopIndices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "affectedStops": [],
+          "alertIds": [
+            "lmm:alert:266236:26"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "318",
+          "stopId": "128N",
+          "name": "34 St-Penn Station",
+          "time": 1788657599
+        },
+        {
+          "stationId": "611",
+          "stopId": "127N",
+          "name": "Times Sq-42 St",
+          "time": 1788657659
+        },
+        {
+          "stationId": "313",
+          "stopId": "123N",
+          "name": "72 St",
+          "time": 1788657899
+        },
+        {
+          "stationId": "310",
+          "stopId": "120N",
+          "name": "96 St",
+          "time": 1788658049
+        },
+        {
+          "stationId": "441",
+          "stopId": "227N",
+          "name": "110 St-Malcolm X Plaza",
+          "time": 1788658289
+        },
+        {
+          "stationId": "440",
+          "stopId": "226N",
+          "name": "116 St",
+          "time": 1788658349
+        },
+        {
+          "stationId": "439",
+          "stopId": "225N",
+          "name": "125 St",
+          "time": 1788658439
+        },
+        {
+          "stationId": "438",
+          "stopId": "224N",
+          "name": "135 St",
+          "time": 1788658529
+        },
+        {
+          "stationId": "437",
+          "stopId": "302N",
+          "name": "145 St",
+          "time": 1788658649
+        },
+        {
+          "stationId": "436",
+          "stopId": "301N",
+          "name": "Harlem-148 St",
+          "time": 1788658769
+        }
+      ],
+      "gap": 1037,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-bdfm|20260905|122400_F..N69R|20:23:53|D19N|11",
+      "tripKey": "gtfs-bdfm|20260905|122400_F..N69R|20:23:53",
+      "route": "F",
+      "destination": "Jamaica-179 St",
+      "direction": "NORTH",
+      "stopId": "D19N",
+      "partId": "D19",
+      "area": "6th Av - Culver · Uptown · Track B2",
+      "time": 1788657463,
+      "arrival": 1788657463,
+      "departure": 1788657463,
+      "scheduledTrack": "B2",
+      "actualTrack": "B2",
+      "pattern": "6 Av–Culver",
+      "patternSource": "static",
+      "location": "At 4 Av-9 St",
+      "locationTimestamp": 1788656317,
+      "stopsAway": 11,
+      "assigned": true,
+      "feed": "gtfs-bdfm",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "228",
+          "stopId": "D18N",
+          "name": "23 St",
+          "time": 1788657553
+        },
+        {
+          "stationId": "607",
+          "stopId": "D17N",
+          "name": "34 St-Herald Sq",
+          "time": 1788657643
+        },
+        {
+          "stationId": "609",
+          "stopId": "D16N",
+          "name": "42 St-Bryant Pk",
+          "time": 1788657733
+        },
+        {
+          "stationId": "225",
+          "stopId": "D15N",
+          "name": "47-50 Sts-Rockefeller Ctr",
+          "time": 1788657823
+        },
+        {
+          "stationId": "224",
+          "stopId": "B10N",
+          "name": "57 St",
+          "time": 1788657913
+        },
+        {
+          "stationId": "223",
+          "stopId": "B08N",
+          "name": "Lexington Av/63 St",
+          "time": 1788658063
+        },
+        {
+          "stationId": "222",
+          "stopId": "B06N",
+          "name": "Roosevelt Island",
+          "time": 1788658213
+        },
+        {
+          "stationId": "221",
+          "stopId": "B04N",
+          "name": "21 St-Queensbridge",
+          "time": 1788658333
+        },
+        {
+          "stationId": "616",
+          "stopId": "G14N",
+          "name": "Jackson Hts-Roosevelt Av",
+          "time": 1788658693
+        },
+        {
+          "stationId": "261",
+          "stopId": "G08N",
+          "name": "Forest Hills-71 Av",
+          "time": 1788659113
+        },
+        {
+          "stationId": "260",
+          "stopId": "F07N",
+          "name": "75 Av",
+          "time": 1788659233
+        },
+        {
+          "stationId": "259",
+          "stopId": "F06N",
+          "name": "Kew Gardens-Union Tpke",
+          "time": 1788659323
+        },
+        {
+          "stationId": "258",
+          "stopId": "F05N",
+          "name": "Briarwood",
+          "time": 1788659443
+        },
+        {
+          "stationId": "257",
+          "stopId": "F04N",
+          "name": "Sutphin Blvd",
+          "time": 1788659503
+        },
+        {
+          "stationId": "256",
+          "stopId": "F03N",
+          "name": "Parsons Blvd",
+          "time": 1788659698
+        },
+        {
+          "stationId": "255",
+          "stopId": "F02N",
+          "name": "169 St",
+          "time": 1788660088
+        },
+        {
+          "stationId": "254",
+          "stopId": "F01N",
+          "name": "Jamaica-179 St",
+          "time": 1788660343
+        }
+      ],
+      "gap": 1051,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-l|20260905|124300_L..N||L02N|11",
+      "tripKey": "gtfs-l|20260905|124300_L..N|",
+      "route": "L",
+      "destination": "8 Av",
+      "direction": "NORTH",
+      "stopId": "L02N",
+      "partId": "L02",
+      "area": "Canarsie · West Side · Track 2",
+      "time": 1788657506,
+      "arrival": 1788657476,
+      "departure": 1788657506,
+      "scheduledTrack": "2",
+      "actualTrack": "2",
+      "pattern": "Canarsie",
+      "patternSource": "static",
+      "location": "In transit to DeKalb Av",
+      "locationTimestamp": 1788656322,
+      "stopsAway": 11,
+      "assigned": true,
+      "feed": "gtfs-l",
+      "timestamp": 1788656332,
+      "relationship": "SCHEDULED",
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "618",
+          "stopId": "L01N",
+          "name": "8 Av",
+          "time": 1788657626
+        }
+      ],
+      "gap": 1094,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|124400_2..N01R||132N|11",
+      "tripKey": "gtfs|20260905|124400_2..N01R|",
+      "route": "2",
+      "destination": "Wakefield-241 St",
+      "direction": "NORTH",
+      "stopId": "132N",
+      "partId": "132",
+      "area": "Broadway - 7Av · Uptown · Track 3",
+      "time": 1788657558,
+      "arrival": 1788657558,
+      "departure": 1788657558,
+      "scheduledTrack": "3",
+      "pattern": "Broadway–7 Av express",
+      "patternSource": "inferred",
+      "location": "At Grand Army Plaza",
+      "locationTimestamp": 1788656328,
+      "stopsAway": 11,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:alert:266236:26",
+          "kind": "advisory",
+          "classification": "unknown",
+          "advisory": true,
+          "label": "advisory · delays",
+          "stopIndices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "affectedStops": [],
+          "alertIds": [
+            "lmm:alert:266236:26"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "318",
+          "stopId": "128N",
+          "name": "34 St-Penn Station",
+          "time": 1788657708
+        },
+        {
+          "stationId": "611",
+          "stopId": "127N",
+          "name": "Times Sq-42 St",
+          "time": 1788657768
+        },
+        {
+          "stationId": "313",
+          "stopId": "123N",
+          "name": "72 St",
+          "time": 1788658008
+        },
+        {
+          "stationId": "310",
+          "stopId": "120N",
+          "name": "96 St",
+          "time": 1788658158
+        },
+        {
+          "stationId": "441",
+          "stopId": "227N",
+          "name": "110 St-Malcolm X Plaza",
+          "time": 1788658398
+        },
+        {
+          "stationId": "440",
+          "stopId": "226N",
+          "name": "116 St",
+          "time": 1788658458
+        },
+        {
+          "stationId": "439",
+          "stopId": "225N",
+          "name": "125 St",
+          "time": 1788658548
+        },
+        {
+          "stationId": "438",
+          "stopId": "224N",
+          "name": "135 St",
+          "time": 1788658638
+        },
+        {
+          "stationId": "603",
+          "stopId": "222N",
+          "name": "149 St-Hostos",
+          "time": 1788658818
+        },
+        {
+          "stationId": "434",
+          "stopId": "221N",
+          "name": "3 Av-149 St",
+          "time": 1788658938
+        },
+        {
+          "stationId": "433",
+          "stopId": "220N",
+          "name": "Jackson Av",
+          "time": 1788659058
+        },
+        {
+          "stationId": "432",
+          "stopId": "219N",
+          "name": "Prospect Av",
+          "time": 1788659148
+        },
+        {
+          "stationId": "431",
+          "stopId": "218N",
+          "name": "Intervale Av",
+          "time": 1788659208
+        },
+        {
+          "stationId": "430",
+          "stopId": "217N",
+          "name": "Simpson St",
+          "time": 1788659268
+        },
+        {
+          "stationId": "429",
+          "stopId": "216N",
+          "name": "Freeman St",
+          "time": 1788659358
+        },
+        {
+          "stationId": "428",
+          "stopId": "215N",
+          "name": "174 St",
+          "time": 1788659478
+        },
+        {
+          "stationId": "427",
+          "stopId": "214N",
+          "name": "West Farms Sq-E Tremont Av",
+          "time": 1788659568
+        },
+        {
+          "stationId": "426",
+          "stopId": "213N",
+          "name": "E 180 St",
+          "time": 1788659658
+        },
+        {
+          "stationId": "425",
+          "stopId": "212N",
+          "name": "Bronx Park East",
+          "time": 1788659778
+        },
+        {
+          "stationId": "424",
+          "stopId": "211N",
+          "name": "Pelham Pkwy",
+          "time": 1788659898
+        },
+        {
+          "stationId": "423",
+          "stopId": "210N",
+          "name": "Allerton Av",
+          "time": 1788660018
+        },
+        {
+          "stationId": "422",
+          "stopId": "209N",
+          "name": "Burke Av",
+          "time": 1788660108
+        },
+        {
+          "stationId": "421",
+          "stopId": "208N",
+          "name": "Gun Hill Rd",
+          "time": 1788660228
+        },
+        {
+          "stationId": "420",
+          "stopId": "207N",
+          "name": "219 St",
+          "time": 1788660318
+        },
+        {
+          "stationId": "419",
+          "stopId": "206N",
+          "name": "225 St",
+          "time": 1788660378
+        },
+        {
+          "stationId": "418",
+          "stopId": "205N",
+          "name": "233 St",
+          "time": 1788660468
+        },
+        {
+          "stationId": "417",
+          "stopId": "204N",
+          "name": "Nereid Av",
+          "time": 1788660558
+        },
+        {
+          "stationId": "416",
+          "stopId": "201N",
+          "name": "Wakefield-241 St",
+          "time": 1788660678
+        }
+      ],
+      "gap": 1146,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|125600_1..S12X001||132S|15",
+      "tripKey": "gtfs|20260905|125600_1..S12X001|",
+      "route": "1",
+      "destination": "South Ferry",
+      "direction": "SOUTH",
+      "stopId": "132S",
+      "partId": "132",
+      "area": "Broadway - 7Av · Downtown · Track 1",
+      "time": 1788657702,
+      "arrival": 1788657702,
+      "departure": 1788657702,
+      "scheduledTrack": "1",
+      "pattern": "Broadway–7 Av local",
+      "patternSource": "inferred",
+      "location": "At 116 St-Columbia University",
+      "locationTimestamp": 1788656292,
+      "stopsAway": 15,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "323",
+          "stopId": "133S",
+          "name": "Christopher St-Stonewall",
+          "time": 1788657792
+        },
+        {
+          "stationId": "324",
+          "stopId": "134S",
+          "name": "Houston St",
+          "time": 1788657882
+        },
+        {
+          "stationId": "325",
+          "stopId": "135S",
+          "name": "Canal St",
+          "time": 1788657972
+        },
+        {
+          "stationId": "326",
+          "stopId": "136S",
+          "name": "Franklin St",
+          "time": 1788658032
+        },
+        {
+          "stationId": "327",
+          "stopId": "137S",
+          "name": "Chambers St",
+          "time": 1788658122
+        },
+        {
+          "stationId": "328",
+          "stopId": "138S",
+          "name": "WTC Cortlandt",
+          "time": 1788658332
+        },
+        {
+          "stationId": "329",
+          "stopId": "139S",
+          "name": "Rector St",
+          "time": 1788658422
+        },
+        {
+          "stationId": "635",
+          "stopId": "142S",
+          "name": "South Ferry",
+          "time": 1788658542
+        }
+      ],
+      "gap": 1290,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|127100_1..N10R||132N|8",
+      "tripKey": "gtfs|20260905|127100_1..N10R|",
+      "route": "1",
+      "destination": "137 St-City College",
+      "direction": "NORTH",
+      "stopId": "132N",
+      "partId": "132",
+      "area": "Broadway - 7Av · Uptown · Track 4",
+      "time": 1788657750,
+      "arrival": 1788657750,
+      "departure": 1788657750,
+      "scheduledTrack": "4",
+      "pattern": "Broadway–7 Av local",
+      "patternSource": "inferred",
+      "location": "Next reported stop · South Ferry",
+      "stopsAway": null,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:planned_work:33695",
+          "kind": "advisory",
+          "classification": "planned",
+          "advisory": true,
+          "label": "planned · part suspended",
+          "stopIndices": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "affectedStops": [
+            "112",
+            "113",
+            "114",
+            "115",
+            "132",
+            "131",
+            "130",
+            "129",
+            "128",
+            "127",
+            "126",
+            "125",
+            "124",
+            "123",
+            "122",
+            "121",
+            "120",
+            "119",
+            "118",
+            "117",
+            "116"
+          ],
+          "alertIds": [
+            "lmm:planned_work:33695"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "321",
+          "stopId": "131N",
+          "name": "18 St",
+          "time": 1788657810
+        },
+        {
+          "stationId": "320",
+          "stopId": "130N",
+          "name": "23 St",
+          "time": 1788657870
+        },
+        {
+          "stationId": "319",
+          "stopId": "129N",
+          "name": "28 St",
+          "time": 1788657930
+        },
+        {
+          "stationId": "318",
+          "stopId": "128N",
+          "name": "34 St-Penn Station",
+          "time": 1788658020
+        },
+        {
+          "stationId": "611",
+          "stopId": "127N",
+          "name": "Times Sq-42 St",
+          "time": 1788658110
+        },
+        {
+          "stationId": "316",
+          "stopId": "126N",
+          "name": "50 St",
+          "time": 1788658230
+        },
+        {
+          "stationId": "614",
+          "stopId": "125N",
+          "name": "59 St-Columbus Circle",
+          "time": 1788658350
+        },
+        {
+          "stationId": "314",
+          "stopId": "124N",
+          "name": "66 St-Lincoln Center",
+          "time": 1788658440
+        },
+        {
+          "stationId": "313",
+          "stopId": "123N",
+          "name": "72 St",
+          "time": 1788658500
+        },
+        {
+          "stationId": "312",
+          "stopId": "122N",
+          "name": "79 St",
+          "time": 1788658620
+        },
+        {
+          "stationId": "311",
+          "stopId": "121N",
+          "name": "86 St",
+          "time": 1788658680
+        },
+        {
+          "stationId": "310",
+          "stopId": "120N",
+          "name": "96 St",
+          "time": 1788658800
+        },
+        {
+          "stationId": "309",
+          "stopId": "119N",
+          "name": "103 St",
+          "time": 1788658890
+        },
+        {
+          "stationId": "308",
+          "stopId": "118N",
+          "name": "Cathedral Pkwy (110 St)",
+          "time": 1788658980
+        },
+        {
+          "stationId": "307",
+          "stopId": "117N",
+          "name": "116 St-Columbia University",
+          "time": 1788659040
+        },
+        {
+          "stationId": "306",
+          "stopId": "116N",
+          "name": "125 St",
+          "time": 1788659190
+        },
+        {
+          "stationId": "305",
+          "stopId": "115N",
+          "name": "137 St-City College",
+          "time": 1788659310
+        }
+      ],
+      "gap": 1338,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-bdfm|20260905|123600_F..N69R|20:34:49|D19N|14",
+      "tripKey": "gtfs-bdfm|20260905|123600_F..N69R|20:34:49",
+      "route": "F",
+      "destination": "Jamaica-179 St",
+      "direction": "NORTH",
+      "stopId": "D19N",
+      "partId": "D19",
+      "area": "6th Av - Culver · Uptown · Track B2",
+      "time": 1788657775,
+      "arrival": 1788657775,
+      "departure": 1788657775,
+      "scheduledTrack": "B2",
+      "actualTrack": "B2",
+      "pattern": "6 Av–Culver",
+      "patternSource": "static",
+      "location": "At Fort Hamilton Pkwy",
+      "locationTimestamp": 1788656317,
+      "stopsAway": 14,
+      "assigned": true,
+      "feed": "gtfs-bdfm",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "228",
+          "stopId": "D18N",
+          "name": "23 St",
+          "time": 1788657865
+        },
+        {
+          "stationId": "607",
+          "stopId": "D17N",
+          "name": "34 St-Herald Sq",
+          "time": 1788657955
+        },
+        {
+          "stationId": "609",
+          "stopId": "D16N",
+          "name": "42 St-Bryant Pk",
+          "time": 1788658045
+        },
+        {
+          "stationId": "225",
+          "stopId": "D15N",
+          "name": "47-50 Sts-Rockefeller Ctr",
+          "time": 1788658135
+        },
+        {
+          "stationId": "224",
+          "stopId": "B10N",
+          "name": "57 St",
+          "time": 1788658225
+        },
+        {
+          "stationId": "223",
+          "stopId": "B08N",
+          "name": "Lexington Av/63 St",
+          "time": 1788658375
+        },
+        {
+          "stationId": "222",
+          "stopId": "B06N",
+          "name": "Roosevelt Island",
+          "time": 1788658525
+        },
+        {
+          "stationId": "221",
+          "stopId": "B04N",
+          "name": "21 St-Queensbridge",
+          "time": 1788658645
+        },
+        {
+          "stationId": "616",
+          "stopId": "G14N",
+          "name": "Jackson Hts-Roosevelt Av",
+          "time": 1788659005
+        },
+        {
+          "stationId": "261",
+          "stopId": "G08N",
+          "name": "Forest Hills-71 Av",
+          "time": 1788659425
+        },
+        {
+          "stationId": "260",
+          "stopId": "F07N",
+          "name": "75 Av",
+          "time": 1788659545
+        },
+        {
+          "stationId": "259",
+          "stopId": "F06N",
+          "name": "Kew Gardens-Union Tpke",
+          "time": 1788659635
+        },
+        {
+          "stationId": "258",
+          "stopId": "F05N",
+          "name": "Briarwood",
+          "time": 1788659755
+        },
+        {
+          "stationId": "257",
+          "stopId": "F04N",
+          "name": "Sutphin Blvd",
+          "time": 1788659815
+        },
+        {
+          "stationId": "256",
+          "stopId": "F03N",
+          "name": "Parsons Blvd",
+          "time": 1788660010
+        },
+        {
+          "stationId": "255",
+          "stopId": "F02N",
+          "name": "169 St",
+          "time": 1788660400
+        },
+        {
+          "stationId": "254",
+          "stopId": "F01N",
+          "name": "Jamaica-179 St",
+          "time": 1788660655
+        }
+      ],
+      "gap": 1363,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-l|20260905|124802_L..N||L02N|14",
+      "tripKey": "gtfs-l|20260905|124802_L..N|",
+      "route": "L",
+      "destination": "8 Av",
+      "direction": "NORTH",
+      "stopId": "L02N",
+      "partId": "L02",
+      "area": "Canarsie · West Side · Track 2",
+      "time": 1788657810,
+      "arrival": 1788657780,
+      "departure": 1788657810,
+      "scheduledTrack": "2",
+      "actualTrack": "2",
+      "pattern": "Canarsie",
+      "patternSource": "static",
+      "location": "At Wilson Av",
+      "locationTimestamp": 1788656322,
+      "stopsAway": 14,
+      "assigned": true,
+      "feed": "gtfs-l",
+      "timestamp": 1788656332,
+      "relationship": "SCHEDULED",
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "618",
+          "stopId": "L01N",
+          "name": "8 Av",
+          "time": 1788657930
+        }
+      ],
+      "gap": 1398,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|123150_2..S01R||132S|11",
+      "tripKey": "gtfs|20260905|123150_2..S01R|",
+      "route": "2",
+      "destination": "Flatbush Av-Brooklyn College",
+      "direction": "SOUTH",
+      "stopId": "132S",
+      "partId": "132",
+      "area": "Broadway - 7Av · Downtown · Track 2",
+      "time": 1788657868,
+      "arrival": 1788657868,
+      "departure": 1788657868,
+      "scheduledTrack": "2",
+      "pattern": "Broadway–7 Av express",
+      "patternSource": "inferred",
+      "location": "Approaching Jackson Av",
+      "locationTimestamp": 1788656328,
+      "stopsAway": 11,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:alert:266236:26",
+          "kind": "advisory",
+          "classification": "unknown",
+          "advisory": true,
+          "label": "advisory · delays",
+          "stopIndices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31
+          ],
+          "affectedStops": [],
+          "alertIds": [
+            "lmm:alert:266236:26"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "327",
+          "stopId": "137S",
+          "name": "Chambers St",
+          "time": 1788658138
+        },
+        {
+          "stationId": "624",
+          "stopId": "228S",
+          "name": "Park Place",
+          "time": 1788658198
+        },
+        {
+          "stationId": "628",
+          "stopId": "229S",
+          "name": "Fulton St",
+          "time": 1788658318
+        },
+        {
+          "stationId": "333",
+          "stopId": "230S",
+          "name": "Wall St",
+          "time": 1788658378
+        },
+        {
+          "stationId": "334",
+          "stopId": "231S",
+          "name": "Clark St",
+          "time": 1788658648
+        },
+        {
+          "stationId": "620",
+          "stopId": "232S",
+          "name": "Borough Hall",
+          "time": 1788658708
+        },
+        {
+          "stationId": "336",
+          "stopId": "233S",
+          "name": "Hoyt St",
+          "time": 1788658798
+        },
+        {
+          "stationId": "337",
+          "stopId": "234S",
+          "name": "Nevins St",
+          "time": 1788658858
+        },
+        {
+          "stationId": "617",
+          "stopId": "235S",
+          "name": "Atlantic Av-Barclays Ctr",
+          "time": 1788658948
+        },
+        {
+          "stationId": "339",
+          "stopId": "236S",
+          "name": "Bergen St",
+          "time": 1788659008
+        },
+        {
+          "stationId": "340",
+          "stopId": "237S",
+          "name": "Grand Army Plaza",
+          "time": 1788659098
+        },
+        {
+          "stationId": "341",
+          "stopId": "238S",
+          "name": "Eastern Pkwy-Brooklyn Museum",
+          "time": 1788659188
+        },
+        {
+          "stationId": "626",
+          "stopId": "239S",
+          "name": "Franklin Av-Medgar Evers College",
+          "time": 1788659278
+        },
+        {
+          "stationId": "353",
+          "stopId": "241S",
+          "name": "President St-Medgar Evers College",
+          "time": 1788659458
+        },
+        {
+          "stationId": "354",
+          "stopId": "242S",
+          "name": "Sterling St",
+          "time": 1788659518
+        },
+        {
+          "stationId": "355",
+          "stopId": "243S",
+          "name": "Winthrop St",
+          "time": 1788659608
+        },
+        {
+          "stationId": "356",
+          "stopId": "244S",
+          "name": "Church Av",
+          "time": 1788659698
+        },
+        {
+          "stationId": "357",
+          "stopId": "245S",
+          "name": "Beverly Rd",
+          "time": 1788659788
+        },
+        {
+          "stationId": "358",
+          "stopId": "246S",
+          "name": "Newkirk Av-Little Haiti",
+          "time": 1788659878
+        },
+        {
+          "stationId": "359",
+          "stopId": "247S",
+          "name": "Flatbush Av-Brooklyn College",
+          "time": 1788659998
+        }
+      ],
+      "gap": 1456,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|124600_3..N01R||132N|15",
+      "tripKey": "gtfs|20260905|124600_3..N01R|",
+      "route": "3",
+      "destination": "Harlem-148 St",
+      "direction": "NORTH",
+      "stopId": "132N",
+      "partId": "132",
+      "area": "Broadway - 7Av · Uptown · Track 3",
+      "time": 1788657962,
+      "arrival": 1788657962,
+      "departure": 1788657962,
+      "scheduledTrack": "3",
+      "pattern": "Broadway–7 Av express",
+      "patternSource": "inferred",
+      "location": "Approaching Kingston Av",
+      "locationTimestamp": 1788656312,
+      "stopsAway": 15,
+      "assigned": true,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:alert:266236:26",
+          "kind": "advisory",
+          "classification": "unknown",
+          "advisory": true,
+          "label": "advisory · delays",
+          "stopIndices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "affectedStops": [],
+          "alertIds": [
+            "lmm:alert:266236:26"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "318",
+          "stopId": "128N",
+          "name": "34 St-Penn Station",
+          "time": 1788658112
+        },
+        {
+          "stationId": "611",
+          "stopId": "127N",
+          "name": "Times Sq-42 St",
+          "time": 1788658172
+        },
+        {
+          "stationId": "313",
+          "stopId": "123N",
+          "name": "72 St",
+          "time": 1788658412
+        },
+        {
+          "stationId": "310",
+          "stopId": "120N",
+          "name": "96 St",
+          "time": 1788658562
+        },
+        {
+          "stationId": "441",
+          "stopId": "227N",
+          "name": "110 St-Malcolm X Plaza",
+          "time": 1788658802
+        },
+        {
+          "stationId": "440",
+          "stopId": "226N",
+          "name": "116 St",
+          "time": 1788658862
+        },
+        {
+          "stationId": "439",
+          "stopId": "225N",
+          "name": "125 St",
+          "time": 1788658952
+        },
+        {
+          "stationId": "438",
+          "stopId": "224N",
+          "name": "135 St",
+          "time": 1788659042
+        },
+        {
+          "stationId": "437",
+          "stopId": "302N",
+          "name": "145 St",
+          "time": 1788659162
+        },
+        {
+          "stationId": "436",
+          "stopId": "301N",
+          "name": "Harlem-148 St",
+          "time": 1788659282
+        }
+      ],
+      "gap": 1550,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs|20260905|126550_3..S01R||132S|10",
+      "tripKey": "gtfs|20260905|126550_3..S01R|",
+      "route": "3",
+      "destination": "New Lots Av",
+      "direction": "SOUTH",
+      "stopId": "132S",
+      "partId": "132",
+      "area": "Broadway - 7Av · Downtown · Track 2",
+      "time": 1788658020,
+      "arrival": 1788658020,
+      "departure": 1788658020,
+      "scheduledTrack": "2",
+      "pattern": "Broadway–7 Av express",
+      "patternSource": "inferred",
+      "location": "Next reported stop · Harlem-148 St",
+      "stopsAway": null,
+      "feed": "gtfs",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:alert:266236:26",
+          "kind": "advisory",
+          "classification": "unknown",
+          "advisory": true,
+          "label": "advisory · delays",
+          "stopIndices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33
+          ],
+          "affectedStops": [],
+          "alertIds": [
+            "lmm:alert:266236:26"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "327",
+          "stopId": "137S",
+          "name": "Chambers St",
+          "time": 1788658290
+        },
+        {
+          "stationId": "624",
+          "stopId": "228S",
+          "name": "Park Place",
+          "time": 1788658350
+        },
+        {
+          "stationId": "628",
+          "stopId": "229S",
+          "name": "Fulton St",
+          "time": 1788658470
+        },
+        {
+          "stationId": "333",
+          "stopId": "230S",
+          "name": "Wall St",
+          "time": 1788658530
+        },
+        {
+          "stationId": "334",
+          "stopId": "231S",
+          "name": "Clark St",
+          "time": 1788658800
+        },
+        {
+          "stationId": "620",
+          "stopId": "232S",
+          "name": "Borough Hall",
+          "time": 1788658860
+        },
+        {
+          "stationId": "336",
+          "stopId": "233S",
+          "name": "Hoyt St",
+          "time": 1788658950
+        },
+        {
+          "stationId": "337",
+          "stopId": "234S",
+          "name": "Nevins St",
+          "time": 1788659010
+        },
+        {
+          "stationId": "617",
+          "stopId": "235S",
+          "name": "Atlantic Av-Barclays Ctr",
+          "time": 1788659160
+        },
+        {
+          "stationId": "339",
+          "stopId": "236S",
+          "name": "Bergen St",
+          "time": 1788659220
+        },
+        {
+          "stationId": "340",
+          "stopId": "237S",
+          "name": "Grand Army Plaza",
+          "time": 1788659310
+        },
+        {
+          "stationId": "341",
+          "stopId": "238S",
+          "name": "Eastern Pkwy-Brooklyn Museum",
+          "time": 1788659400
+        },
+        {
+          "stationId": "626",
+          "stopId": "239S",
+          "name": "Franklin Av-Medgar Evers College",
+          "time": 1788659490
+        },
+        {
+          "stationId": "343",
+          "stopId": "248S",
+          "name": "Nostrand Av",
+          "time": 1788659580
+        },
+        {
+          "stationId": "344",
+          "stopId": "249S",
+          "name": "Kingston Av",
+          "time": 1788659670
+        },
+        {
+          "stationId": "345",
+          "stopId": "250S",
+          "name": "Crown Hts-Utica Av",
+          "time": 1788659790
+        },
+        {
+          "stationId": "346",
+          "stopId": "251S",
+          "name": "Sutter Av-Rutland Rd",
+          "time": 1788660060
+        },
+        {
+          "stationId": "347",
+          "stopId": "252S",
+          "name": "Saratoga Av",
+          "time": 1788660150
+        },
+        {
+          "stationId": "348",
+          "stopId": "253S",
+          "name": "Rockaway Av",
+          "time": 1788660240
+        },
+        {
+          "stationId": "349",
+          "stopId": "254S",
+          "name": "Junius St",
+          "time": 1788660300
+        },
+        {
+          "stationId": "350",
+          "stopId": "255S",
+          "name": "Pennsylvania Av",
+          "time": 1788660390
+        },
+        {
+          "stationId": "351",
+          "stopId": "256S",
+          "name": "Van Siclen Av",
+          "time": 1788660480
+        },
+        {
+          "stationId": "352",
+          "stopId": "257S",
+          "name": "New Lots Av",
+          "time": 1788660540
+        }
+      ],
+      "gap": 1608,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-l|20260905|125302_L..N||L02N|17",
+      "tripKey": "gtfs-l|20260905|125302_L..N|",
+      "route": "L",
+      "destination": "8 Av",
+      "direction": "NORTH",
+      "stopId": "L02N",
+      "partId": "L02",
+      "area": "Canarsie · West Side · Track 2",
+      "time": 1788658028,
+      "arrival": 1788657998,
+      "departure": 1788658028,
+      "scheduledTrack": "2",
+      "actualTrack": "2",
+      "pattern": "Canarsie",
+      "patternSource": "static",
+      "location": "In transit to Atlantic Av",
+      "locationTimestamp": 1788656322,
+      "stopsAway": 17,
+      "assigned": true,
+      "feed": "gtfs-l",
+      "timestamp": 1788656332,
+      "relationship": "SCHEDULED",
+      "alerts": [],
+      "changes": [],
+      "onward": [
+        {
+          "stationId": "618",
+          "stopId": "L01N",
+          "name": "8 Av",
+          "time": 1788658148
+        }
+      ],
+      "gap": 1616,
+      "basis": "departure"
+    },
+    {
+      "key": "gtfs-bdfm|20260905|125000_F..S|20:50:00|D19S|12",
+      "tripKey": "gtfs-bdfm|20260905|125000_F..S|20:50:00",
+      "route": "F",
+      "destination": "Coney Island-Stillwell Av",
+      "direction": "SOUTH",
+      "stopId": "D19S",
+      "partId": "D19",
+      "area": "6th Av - Culver · Downtown · Track B1",
+      "time": 1788658183,
+      "arrival": 1788658183,
+      "departure": 1788658183,
+      "scheduledTrack": "B1",
+      "actualTrack": "B1",
+      "pattern": "6 Av–Culver",
+      "patternSource": "static",
+      "location": "At Kew Gardens-Union Tpke",
+      "locationTimestamp": 1788656317,
+      "stopsAway": 12,
+      "assigned": true,
+      "feed": "gtfs-bdfm",
+      "timestamp": 1788656333,
+      "alerts": [],
+      "changes": [
+        {
+          "id": "alert:lmm:planned_work:33714",
+          "kind": "skip",
+          "classification": "planned",
+          "advisory": true,
+          "label": "planned · stops skipped",
+          "stopIndices": [
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "affectedStops": [
+            "F23",
+            "F25",
+            "F26",
+            "F29",
+            "F31",
+            "F32",
+            "F33",
+            "F34",
+            "F20",
+            "F21",
+            "F22",
+            "F24",
+            "F27",
+            "F30"
+          ],
+          "alertIds": [
+            "lmm:planned_work:33714"
+          ],
+          "evidence": [
+            {
+              "source": "subway-alerts",
+              "timestamp": 1788654197,
+              "staleAfter": 90,
+              "unavailable": false
+            },
+            {
+              "source": "gtfs-bdfm",
+              "timestamp": 1788656333,
+              "staleAfter": 90,
+              "unavailable": false
+            }
+          ]
+        }
+      ],
+      "onward": [
+        {
+          "stationId": "167",
+          "stopId": "D20S",
+          "name": "W 4 St-Wash Sq",
+          "time": 1788658273
+        },
+        {
+          "stationId": "619",
+          "stopId": "D21S",
+          "name": "Broadway-Lafayette St",
+          "time": 1788658423
+        },
+        {
+          "stationId": "232",
+          "stopId": "F14S",
+          "name": "2 Av",
+          "time": 1788658513
+        },
+        {
+          "stationId": "625",
+          "stopId": "F15S",
+          "name": "Delancey St-Essex St",
+          "time": 1788658603
+        },
+        {
+          "stationId": "234",
+          "stopId": "F16S",
+          "name": "East Broadway",
+          "time": 1788658693
+        },
+        {
+          "stationId": "235",
+          "stopId": "F18S",
+          "name": "York St",
+          "time": 1788658843
+        },
+        {
+          "stationId": "636",
+          "stopId": "A41S",
+          "name": "Jay St-MetroTech",
+          "time": 1788658963
+        },
+        {
+          "stationId": "236",
+          "stopId": "F20S",
+          "name": "Bergen St",
+          "time": 1788659173
+        },
+        {
+          "stationId": "237",
+          "stopId": "F21S",
+          "name": "Carroll St",
+          "time": 1788659263
+        },
+        {
+          "stationId": "238",
+          "stopId": "F22S",
+          "name": "Smith-9 Sts",
+          "time": 1788659353
+        },
+        {
+          "stationId": "240",
+          "stopId": "F24S",
+          "name": "7 Av",
+          "time": 1788659597
+        },
+        {
+          "stationId": "243",
+          "stopId": "F27S",
+          "name": "Church Av",
+          "time": 1788659709
+        },
+        {
+          "stationId": "245",
+          "stopId": "F30S",
+          "name": "18 Av",
+          "time": 1788659817
+        },
+        {
+          "stationId": "250",
+          "stopId": "F35S",
+          "name": "Kings Hwy",
+          "time": 1788660153
+        },
+        {
+          "stationId": "251",
+          "stopId": "F36S",
+          "name": "Avenue U",
+          "time": 1788660491
+        },
+        {
+          "stationId": "252",
+          "stopId": "F38S",
+          "name": "Avenue X",
+          "time": 1788660746
+        },
+        {
+          "stationId": "253",
+          "stopId": "F39S",
+          "name": "Neptune Av",
+          "time": 1788661001
+        },
+        {
+          "stationId": "57",
+          "stopId": "D42S",
+          "name": "W 8 St-NY Aquarium",
+          "time": 1788661091
+        },
+        {
+          "stationId": "58",
+          "stopId": "D43S",
+          "name": "Coney Island-Stillwell Av",
+          "time": 1788661181
+        }
+      ],
+      "gap": 1771,
+      "basis": "departure"
+    }
+  ],
+  "sources": [
+    {
+      "id": "gtfs",
+      "timestamp": 1788656333,
+      "fetchedAt": 1788656333,
+      "error": null
+    },
+    {
+      "id": "gtfs-bdfm",
+      "timestamp": 1788656333,
+      "fetchedAt": 1788656333,
+      "error": null
+    },
+    {
+      "id": "gtfs-l",
+      "timestamp": 1788656332,
+      "fetchedAt": 1788656332,
+      "error": null
+    },
+    {
+      "id": "subway-alerts",
+      "timestamp": 1788654197,
+      "fetchedAt": 1788654197,
+      "error": null
+    },
+    {
+      "id": "helium",
+      "timestamp": 1788656380,
+      "fetchedAt": 1788656380,
+      "error": null
+    }
+  ],
+  "originTimestamp": 1788656332,
+  "station": {
+    "id": "601",
+    "name": "6 Av / 14 St",
+    "borough": "M",
+    "routes": [
+      "1",
+      "2",
+      "3",
+      "F",
+      "L",
+      "M"
+    ],
+    "lat": 40.737335,
+    "lon": -73.996786,
+    "parts": [
+      {
+        "id": "L02",
+        "stationId": "116",
+        "complexId": "601",
+        "name": "6 Av",
+        "line": "Canarsie",
+        "routes": [
+          "L"
+        ],
+        "lat": 40.737335,
+        "lon": -73.996786,
+        "ada": "1",
+        "adaNotes": "",
+        "north": "West Side",
+        "south": "Brooklyn",
+        "borough": "M"
+      },
+      {
+        "id": "D19",
+        "stationId": "229",
+        "complexId": "601",
+        "name": "14 St",
+        "line": "6th Av - Culver",
+        "routes": [
+          "F",
+          "M"
+        ],
+        "lat": 40.738228,
+        "lon": -73.996209,
+        "ada": "1",
+        "adaNotes": "",
+        "north": "Uptown",
+        "south": "Downtown",
+        "borough": "M"
+      },
+      {
+        "id": "132",
+        "stationId": "322",
+        "complexId": "601",
+        "name": "14 St",
+        "line": "Broadway - 7Av",
+        "routes": [
+          "1",
+          "2",
+          "3"
+        ],
+        "lat": 40.737826,
+        "lon": -74.000201,
+        "ada": "1",
+        "adaNotes": "",
+        "north": "Uptown",
+        "south": "Downtown",
+        "borough": "M"
+      }
+    ]
+  }
+}

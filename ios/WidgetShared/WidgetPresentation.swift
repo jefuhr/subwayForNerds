@@ -19,6 +19,7 @@ struct SubwayWidgetView: View {
 	private var options: WidgetDisplayOptions { entry.display }
 	private func shows(_ field: WidgetField) -> Bool { options.fields.contains(field) }
 	private var count: Int {
+		if accessory { return 2 }
 		if typeSize.isAccessibilitySize { return 1 }
 		let capacity: Int
 		switch family { case .systemSmall: capacity = options.compact ? 2 : 1; case .systemMedium: capacity = options.compact ? 3 : 2; case .systemLarge: capacity = options.compact ? 6 : 4; case .systemExtraLarge: capacity = options.compact ? 8 : 6; default: capacity = 1 }
@@ -91,54 +92,62 @@ struct SubwayWidgetView: View {
 		.accessibilityLabel("\(Display.displayRoute(departure.route)) to \(departure.destination), \(Display.countdown(departure.time, timestamp: departure.timestamp, now: entry.date.timeIntervalSince1970, cached: entry.cached).value), \(estimated ? "last estimate" : "estimated arrival"), \(widgetTrainDetails(departure, options: options, now: entry.date.timeIntervalSince1970, cached: entry.cached))")
 	}
 
-	private func compactRow(_ direction: String, showName: Bool) -> some View {
-		HStack(spacing: 4) {
-			Text(arrow(direction)).font(.caption.weight(.bold)).foregroundStyle(accent)
-			if showName { Text(shortTitle(direction)).font(.system(size: 10)).lineLimit(1) }
-			if let departure = next(direction) {
-				Text(routeName(departure.route)).font(.caption.weight(.heavy)).lineLimit(1).minimumScaleFactor(0.65).widgetAccentable()
-				Spacer(minLength: 0)
-				time(departure).font(.callout.weight(.semibold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.65)
-			} else { Spacer(minLength: 0); Text("—").font(.callout) }
-		}
-		.accessibilityLabel("\(title(direction)), \(next(direction).map { Display.displayRoute($0.route) + ", " + Display.countdown($0.time, timestamp: $0.timestamp, now: entry.date.timeIntervalSince1970, cached: entry.cached).value } ?? "no matching trains")")
-	}
-
 	@ViewBuilder private var accessoryContent: some View {
 		if entry.station == nil || entry.board == nil {
 			Label(entry.message ?? "Open Subway Nerds", systemImage: "tram.fill").font(.caption).lineLimit(2)
 		} else if family == .accessoryInline {
-			Text("\(inline(directions[0]))  \(inline(directions[1]))\(estimated ? " · est." : "")").font(.caption)
-		} else if family == .accessoryCircular {
-			VStack(spacing: 2) {
-				ForEach(directions, id: \.self) { direction in
-					VStack(spacing: 0) {
-						Text(inline(direction, shortClock: true)).font(.system(size: estimated ? 9 : 11, weight: .semibold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
-						if let row = next(direction) { let details = accessoryDetails(row); if !details.isEmpty { Text(details).font(.system(size: 7)).lineLimit(1).minimumScaleFactor(0.7) } }
-					}
-				}
-				if estimated { Text("last est.").font(.system(size: 8)) }
-			}
+			Text("\(inline(directions[0]))  \(inline(directions[1]))\(estimated ? " · est." : "")")
+				.font(.caption).lineLimit(1).minimumScaleFactor(0.7).accessibilityIdentifier("widgetInlineDepartures")
 		} else {
-			VStack(alignment: family == .accessoryCircular ? .center : .leading, spacing: 2) {
-				if family == .accessoryRectangular, shows(.stationName) { Text(entry.station?.name ?? "").font(.caption.weight(.semibold)).lineLimit(1) }
-				ForEach(directions, id: \.self) { direction in
-					VStack(alignment: .leading, spacing: 0) {
-						compactRow(direction, showName: false)
-						if let row = next(direction) { let details = accessoryDetails(row); if !details.isEmpty { Text(details).font(.system(size: 8)).lineLimit(1) } }
-					}
-				}
-				if estimated { Text("last est.").font(.system(size: 8)) }
+			VStack(alignment: .leading, spacing: 1) {
+				if family == .accessoryRectangular, shows(.stationName) { Text(entry.station?.name ?? "").font(.system(size: 10, weight: .semibold)).lineLimit(1) }
+				ForEach(directions, id: \.self) { direction in accessoryDirection(direction) }
+				if estimated { Text("last est.").font(.system(size: 7)) }
 			}
 		}
+	}
+	private func accessoryDirection(_ direction: String) -> some View {
+		let rows = nextTwo(direction)
+		return HStack(alignment: .top, spacing: family == .accessoryCircular ? 2 : 4) {
+			Text(arrow(direction)).font(.system(size: 10, weight: .bold))
+			ForEach(0..<2, id: \.self) { index in
+				VStack(alignment: .leading, spacing: 0) {
+					if index < rows.count {
+						let row = rows[index]
+						if family == .accessoryCircular {
+							Text(compactArrival(row)).font(.system(size: estimated ? 7 : 9, weight: .semibold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+						} else {
+							HStack(spacing: 2) {
+								Text(routeName(row.route)).font(.system(size: 10, weight: .heavy))
+								time(row).font(.system(size: 11, weight: .semibold)).monospacedDigit()
+							}.lineLimit(1).minimumScaleFactor(0.65)
+						}
+						let details = accessoryDetails(row)
+						if !details.isEmpty { Text(details).font(.system(size: family == .accessoryCircular ? 6 : 7)).lineLimit(1).minimumScaleFactor(0.7) }
+					} else { Text("—").font(.system(size: 10)) }
+				}
+				.frame(maxWidth: .infinity, alignment: .leading)
+				.accessibilityElement(children: .combine)
+				.accessibilityIdentifier("widgetDeparture_\(direction)_\(index)")
+			}
+		}
+	}
+	private func nextTwo(_ direction: String) -> [Departure] {
+		Array(groups.filter { $0.direction == direction }.flatMap(\.departures).sorted {
+			let a = $0.time ?? .infinity, b = $1.time ?? .infinity
+			return a == b ? $0.key < $1.key : a < b
+		}.prefix(2))
+	}
+	private func compactArrival(_ row: Departure) -> String {
+		let countdown = Display.countdown(row.time, timestamp: row.timestamp, now: entry.date.timeIntervalSince1970, cached: entry.cached)
+		let clock = options.timeStyle == .clock || countdown.unit != "min"
+		let value = clock ? Display.clockTime(row.time).replacingOccurrences(of: " AM", with: "").replacingOccurrences(of: " PM", with: "") : countdown.value + "m"
+		return routeName(row.route) + value
 	}
 	private func accessoryDetails(_ row: Departure) -> String {
 		var selected = options
 		selected.fields = options.fields.intersection([.carType, .carCount])
 		return widgetTrainDetails(row, options: selected, now: entry.date.timeIntervalSince1970, cached: entry.cached)
-	}
-	private func next(_ direction: String) -> Departure? {
-		groups.filter { $0.direction == direction }.flatMap(\.departures).min { ($0.time ?? .infinity) < ($1.time ?? .infinity) }
 	}
 	@ViewBuilder private func time(_ departure: Departure) -> some View {
 		let countdown = Display.countdown(departure.time, timestamp: departure.timestamp, now: entry.date.timeIntervalSince1970, cached: entry.cached)
@@ -148,16 +157,12 @@ struct SubwayWidgetView: View {
 			Text(timerInterval: entry.date...Date(timeIntervalSince1970: arrival), countsDown: true, showsHours: false)
 		} else { Text(countdown.value) }
 	}
-	private func inline(_ direction: String, shortClock: Bool = false) -> String {
-		guard let departure = next(direction) else { return "\(arrow(direction)) —" }
-		let countdown = Display.countdown(departure.time, timestamp: departure.timestamp, now: entry.date.timeIntervalSince1970, cached: entry.cached)
-		let value = shortClock ? countdown.value.replacingOccurrences(of: " AM", with: "").replacingOccurrences(of: " PM", with: "") : countdown.value
-		return "\(arrow(direction))\(routeName(departure.route)) \(value)\(countdown.unit == "min" ? "m" : "")"
+	private func inline(_ direction: String) -> String {
+		let rows = nextTwo(direction)
+		return arrow(direction) + (rows.isEmpty ? "— —" : rows.map(compactArrival).joined(separator: " "))
 	}
 	private func routeName(_ route: String) -> String { Display.regionalRoute(route)?.label ?? Display.displayRoute(route) }
 	private func arrow(_ direction: String) -> String { direction == "NORTH" ? "↑" : direction == "SOUTH" ? "↓" : direction == "TO_NY" ? "→" : "←" }
-	private func shortTitle(_ direction: String) -> String { direction == "NORTH" ? "Uptown" : direction == "SOUTH" ? "Downtown" : direction == "TO_NY" ? "NY" : "NJ" }
-	private func title(_ direction: String) -> String { direction == "NORTH" ? "↑ Uptown / North" : direction == "SOUTH" ? "↓ Downtown / South" : Display.directionLabel(direction) }
 	private func groupLabel(_ group: DepartureGroup) -> String {
 		switch entry.preference.view { case .track: return "Track \(group.track ?? "?") · \(group.partId)"; default: return group.label }
 	}

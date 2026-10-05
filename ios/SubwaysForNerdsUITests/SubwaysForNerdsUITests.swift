@@ -109,6 +109,31 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		XCTAssertEqual(app.switches["widgetField_carCount"].value as? String, "1")
 	}
 
+	func testLockScreenWidgetsShowTwoDeparturesInEachDirection() {
+		let app = launch()
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["widgetPreviews"], in: app)
+		app.buttons["widgetPreviews"].tap()
+		for family in ["Inline", "Circular", "Rectangular"] {
+			app.buttons["widgetPreviewFamily"].tap()
+			app.buttons[family].tap()
+			if family == "Inline" {
+				XCTAssertEqual(app.staticTexts["widgetInlineDepartures"].label, "↑B2m Q4m  ↓Q3m B5m")
+			} else {
+				for direction in ["NORTH", "SOUTH"] {
+					for index in 0..<2 {
+						let slot = app.descendants(matching: .any)["widgetDeparture_\(direction)_\(index)"]
+						XCTAssertTrue(slot.isHittable, "Both departures must fit in each direction")
+					}
+				}
+			}
+			screenshot("widget-two-departures-\(family)", app: app)
+		}
+		app.buttons["widgetPreviewScenario"].tap(); app.buttons["Saved"].tap()
+		XCTAssertTrue(app.staticTexts["last est."].exists)
+		screenshot("widget-two-departures-saved", app: app)
+	}
+
 	func testEveryWidgetFamilyAndFailureStateRenders() {
 		let app = launch()
 		app.tab("Settings").tap()

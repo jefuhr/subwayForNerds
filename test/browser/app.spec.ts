@@ -21,10 +21,12 @@ mockedTest('service changes stay compact, explain their source, and become last-
     { id:'night', kind:'pattern', classification:'scheduled', label:'overnight · extra stops', description:'Matches the published overnight pattern, different from weekday daytime service.', stopIndices:[1], affectedStops:[], alertIds:[], evidence:[{source:'schedules',timestamp,staleAfter:7200}] },
     { id:'work', kind:'advisory', classification:'planned', label:'planned · boarding change', description:'Published maintenance notice.', stopIndices:[1], affectedStops:[], alertIds:['work'], advisory:true, evidence:[{source:'subway-alerts',timestamp,staleAfter:90}] }
   ];
-  await page.route('**/api/v1/stations/602/board', async route => {
-    const response=await route.fetch(), board=await response.json(); board.departures.forEach((d:any)=>{d.changes=changes;});
-    await route.fulfill({response,json:board});
-  });
+  // Polling can abort the previous request during clock.fastForward. Prepare
+  // the recorded response once so interception never races a route.fetch.
+  const boardResponse = await page.request.get('./api/v1/stations/602/board');
+  const board = await boardResponse.json();
+  board.departures.forEach((d: any) => { d.changes = changes; });
+  await page.route('**/api/v1/stations/602/board', route => route.fulfill({ json: board }));
   await page.route('**/api/v1/trips?*', async route => {
     const response=await route.fetch(), detail=await response.json(); detail.train.changes=changes;
     detail.train.stops[0].changes=[changes[0]];
@@ -43,7 +45,9 @@ mockedTest('service changes stay compact, explain their source, and become last-
   await expect(page.getByText('Reported track assignment differs from the schedule.',{exact:true})).toBeVisible();
   await expect(page.locator('.stop-link .change-label').first()).toBeVisible();
   expect(await page.locator('dialog').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
-  await page.clock.fastForward(91000);
+  // Advance report age without firing a burst of competing poll requests.
+  await page.clock.setSystemTime(new Date('2026-09-06T01:01:11Z'));
+  await page.clock.runFor(1000);
   await expect(page.locator('.change-explanation').first()).toContainText('last known');
 });
 test('station board loads, has no horizontal overflow, and opens complete train details', async ({ page }) => {

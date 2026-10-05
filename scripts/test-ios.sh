@@ -32,5 +32,6 @@ done
 [[ "$ready" == true ]] || { echo 'Fixture server did not start.' >&2; exit 1; }
 result="artifacts/native-ui-$(date +%Y%m%d-%H%M%S).xcresult"
 xcodebuild test -project ios/SubwaysForNerds.xcodeproj -scheme SubwaysForNerds \
-	-destination "platform=iOS Simulator,id=$simulator_id" -resultBundlePath "$result" \
+	-destination "platform=iOS Simulator,id=$simulator_id" -destination-timeout 120 \
+	-resultBundlePath "$result" -collect-test-diagnostics never \
 	-derivedDataPath ios/DerivedData/Simulator -jobs "${SFN_BUILD_JOBS:-2}" CODE_SIGNING_ALLOWED=NO 2>&1 | tee artifacts/native-ui-tests.log

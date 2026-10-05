@@ -7,7 +7,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		let app = XCUIApplication()
 		app.launchEnvironment["SFN_API_BASE_URL"] = offline
 			? "http://127.0.0.1:1/subwaysForNerds/api/v1/"
-			: "http://127.0.0.1:8092/subwaysForNerds/api/v1/"
+			: (ProcessInfo.processInfo.environment["SFN_WIDGET_QA_API"] ?? "http://127.0.0.1:8092/subwaysForNerds/api/v1/")
 		app.launchEnvironment["SFN_RESET_STATE"] = reset ? "1" : "0"
 		app.launchEnvironment["SFN_DISABLE_LOCATION"] = location == nil && !systemLocation ? "1" : "0"
 		app.launchEnvironment["SFN_TEST_LOCATION"] = location
@@ -46,6 +46,109 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		app.activate()
 		XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: nearest, object: app.buttons["selectedStation"])], timeout: 5), .completed)
 		screenshot("closest-favorite-foreground", app: app)
+	}
+
+	func testWidgetSettingsPreserveIndependentFiltersAcrossToggleAndRelaunch() {
+		var app = launch()
+		app.buttons["toggleFavorite"].tap()
+		app.tab("Settings").tap()
+		let match = app.switches["widgetMatchAppFilters"]
+		scrollTo(match, in: app)
+		XCTAssertEqual(match.value as? String, "0")
+		app.buttons["widgetFilters_602"].tap()
+		let route = app.switches.matching(NSPredicate(format: "identifier BEGINSWITH 'widgetRoute_'" )).firstMatch
+		XCTAssertTrue(route.waitForExistence(timeout: 5))
+		let routeID = route.identifier
+		route.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+		let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == '1'"), object: route)
+		XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed)
+		screenshot("widget-independent-filters", app: app)
+		app.navigationBars.buttons.firstMatch.tap()
+		match.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+		XCTAssertFalse(app.buttons["widgetFilters_602"].exists)
+		match.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+		app.buttons["widgetFilters_602"].tap()
+		XCTAssertEqual(app.switches[routeID].value as? String, "1")
+		app.terminate()
+		app = launch(reset: false)
+		app.tab("Settings").tap()
+		scrollTo(app.switches["widgetMatchAppFilters"], in: app)
+		app.buttons["widgetFilters_602"].tap()
+		XCTAssertEqual(app.switches[routeID].value as? String, "1")
+		screenshot("widget-filters-after-relaunch", app: app)
+	}
+
+	func testWidgetDisplaySettingsHideInformationAndSurviveRelaunch() {
+		var app = launch()
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["widgetDisplaySettings"], in: app)
+		app.buttons["widgetDisplaySettings"].tap()
+		let station = app.switches["widgetField_stationName"]
+		scrollTo(station, in: app)
+		station.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+		XCTAssertEqual(station.value as? String, "0")
+		let cars = app.switches["widgetField_carCount"]
+		scrollTo(cars, in: app)
+		cars.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+		XCTAssertEqual(cars.value as? String, "1")
+		screenshot("widget-display-settings", app: app)
+		app.navigationBars.buttons.firstMatch.tap()
+		scrollTo(app.buttons["widgetPreviews"], in: app)
+		app.buttons["widgetPreviews"].tap()
+		XCTAssertFalse(app.staticTexts["widgetStationName"].exists)
+		XCTAssertFalse(app.staticTexts["↑ Uptown / North"].exists)
+		screenshot("widget-hidden-heading-and-car-counts", app: app)
+		app.terminate()
+		app = launch(reset: false)
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["widgetDisplaySettings"], in: app)
+		app.buttons["widgetDisplaySettings"].tap()
+		scrollTo(app.switches["widgetField_stationName"], in: app)
+		XCTAssertEqual(app.switches["widgetField_stationName"].value as? String, "0")
+		scrollTo(app.switches["widgetField_carCount"], in: app)
+		XCTAssertEqual(app.switches["widgetField_carCount"].value as? String, "1")
+	}
+
+	func testEveryWidgetFamilyAndFailureStateRenders() {
+		let app = launch()
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["widgetPreviews"], in: app)
+		app.buttons["widgetPreviews"].tap()
+		XCTAssertTrue(app.buttons["widgetPreviewFamily"].waitForExistence(timeout: 5))
+		for family in ["Small", "Medium", "Large", "Extra large", "Inline", "Circular", "Rectangular"] {
+			app.buttons["widgetPreviewFamily"].tap()
+			app.buttons[family].tap()
+			XCTAssertTrue(app.staticTexts["widgetPreviewDescription"].label.contains(family))
+			if ["Small", "Medium", "Large", "Extra large"].contains(family) {
+				XCTAssertTrue(app.staticTexts["widgetStationName"].isHittable, "Every Home Screen size must retain its station heading")
+			}
+			screenshot("widget-family-\(family)", app: app)
+		}
+		for scenario in ["Saved", "No favorites", "No matches", "Long name", "Regional", "Location unavailable"] {
+			app.buttons["widgetPreviewScenario"].tap()
+			app.buttons[scenario].tap()
+			XCTAssertTrue(app.staticTexts["widgetPreviewDescription"].label.contains(scenario))
+			screenshot("widget-state-\(scenario)", app: app)
+		}
+		app.switches["widgetPreviewTinted"].tap()
+		screenshot("widget-tinted", app: app)
+	}
+
+	func testWidgetDeepLinkWinsOverClosestFavoriteStartup() {
+		let app = launch(location: "40.755290,-73.987495")
+		app.buttons["toggleFavorite"].tap()
+		app.buttons["findStation"].tap()
+		let search = app.searchFields.firstMatch
+		search.tap(); search.typeText("Times Sq")
+		XCTAssertTrue(app.buttons["station_611"].waitForExistence(timeout: 10))
+		app.buttons["station_611"].tap()
+		app.buttons["toggleFavorite"].tap()
+		XCUIDevice.shared.press(.home)
+		app.open(URL(string: "subwaynerds://board?station=602")!)
+		XCTAssertTrue(app.buttons["selectedStation"].waitForExistence(timeout: 10))
+		let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS[c] 'Union'"), object: app.buttons["selectedStation"])
+		XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed)
+		screenshot("widget-deep-link-displayed-station", app: app)
 	}
 
 	func testBoardLocationButtonListsAllStationsByDistance() {

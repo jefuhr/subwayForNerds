@@ -279,3 +279,24 @@ and simulator configuration.
   remote gallery accessibility gaps and the widget location consent prompt.
   Home Screen sharing and navigation still need an end-to-end pass; view previews
   and the successful device launch do not establish that result.
+
+## Pull request CI
+
+`.github/workflows/pr-checks.yml` runs on every pull request (including drafts),
+main-branch pushes, and manual dispatch. `Web E2E (Chromium and WebKit)` builds
+and runs server tests, then executes desktop Chromium, mobile Chromium, and mobile
+WebKit against the recorded fixture server. CI rejects focused `.only` tests and
+publishes the Playwright HTML report, failure screenshots, and traces.
+
+`iOS simulator E2E` uses GitHub's `macos-26` runner and its selected Xcode, runs
+Swift package/startup integration tests, then the normal iPhone simulator suite.
+This includes widget view families, display/filter persistence, and deep links.
+The SpringBoard widget-placement and manually configured system-location tests
+remain opt-in and are not covered by the required suite. No Apple signing secrets
+or physical device are needed for these unsigned app-view tests.
+
+Both jobs preserve reports for 14 days, including on failure. New commits cancel
+older runs for the same pull request. To enforce them before merging, configure
+branch protection to require the two job names; this workflow does not change
+repository branch-protection settings. GitHub's current runner inventory is
+[documented here](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md).

@@ -4,7 +4,9 @@ export default defineConfig({
   fullyParallel: true,
   workers: 2,
   timeout: 30000,
-  use: { baseURL: 'http://127.0.0.1:8092/subwaysForNerds/', trace: 'retain-on-failure' },
+  forbidOnly: !!process.env.CI,
+  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
+  use: { baseURL: 'http://127.0.0.1:8092/subwaysForNerds/', trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 1000 } } },
     { name: 'mobile', use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 } } },

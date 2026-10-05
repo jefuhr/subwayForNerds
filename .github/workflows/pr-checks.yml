@@ -1,0 +1,84 @@
+name: PR checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-e2e:
+    name: Web E2E (Chromium and WebKit)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      RUN_WEBKIT: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Build and server tests
+        run: npm run check
+      - name: Install pinned Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+      - name: Browser E2E tests
+        run: npm run test:browser
+      - name: Save browser reports and failure traces
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: web-e2e-results
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  ios-e2e:
+    name: iOS simulator E2E
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      SFN_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Use the runner's Xcode
+        run: |
+          echo "DEVELOPER_DIR=$(xcode-select -p)" >> "$GITHUB_ENV"
+          xcodebuild -version
+          xcrun --sdk iphonesimulator --show-sdk-version
+      - run: npm ci
+      - name: Build web assets for the fixture server
+        run: npm run build
+      - name: Native logic and startup integration tests
+        run: |
+          npm run test:native
+          bash scripts/test-native-startup.sh
+      - name: App and widget simulator E2E tests
+        run: npm run test:ios
+      - name: Save simulator results and fixture logs
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-e2e-results
+          path: |
+            artifacts/*.log
+            artifacts/*.xcresult
+          if-no-files-found: ignore
+          retention-days: 14

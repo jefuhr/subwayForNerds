@@ -19,6 +19,7 @@ struct AppRootView: View {
 			Tab("Fleet", systemImage: "train.side.front.car", value: 1) { FleetSplitView() }
 			Tab("Settings", systemImage: "gearshape", value: 2) { NavigationStack { SettingsView() } }
 		}
+		.onOpenURL { app.openWidgetURL($0) }
 		.onChange(of: phase) { _, phase in
 			if phase != .active { app.suspend(background: phase == .background) }
 		}

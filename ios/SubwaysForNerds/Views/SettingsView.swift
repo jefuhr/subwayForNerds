@@ -26,8 +26,24 @@ struct SettingsView: View {
 				}
 				.listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
 			} header: { ListHeader("Theme") }
+			Section {
+				NavigationLink("Display and information") { WidgetDisplaySettingsView() }.accessibilityIdentifier("widgetDisplaySettings")
+				Toggle("Match app filters", isOn: Binding(get: { app.widgetPreferences.matchAppFilters }, set: { app.setWidgetMatchApp($0) }))
+					.accessibilityIdentifier("widgetMatchAppFilters")
+				if !app.widgetPreferences.matchAppFilters {
+					ForEach(app.favoriteStations) { station in
+						NavigationLink(station.name) { WidgetFiltersView(station: station) }
+							.accessibilityIdentifier("widgetFilters_\(station.id)")
+					}
+				}
+				if app.favorites.isEmpty { Text("Favorite a station on the Board to set up your widgets.").font(.footnote).foregroundStyle(.secondary) }
+				if app.widgetStore == nil { Notice(text: "Widget sharing is unavailable. Build both targets with the same App Group enabled.") }
+			} header: { ListHeader("Widgets") } footer: {
+				Text("All widget sizes show both directions at your closest favorite. Match app filters uses that station’s lines and grouping. Turn it off to keep separate filters per station. iOS schedules updates; use the widget’s refresh button for a new report.")
+			}
 			offlineSection
 			#if DEBUG
+			Section { NavigationLink("Widget previews") { WidgetPreviewView() }.accessibilityIdentifier("widgetPreviews") }
 			Section {
 				TextField("API URL", text: $endpoint).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
 					.font(.subheadline).accessibilityIdentifier("apiEndpoint")
@@ -54,7 +70,7 @@ struct SettingsView: View {
 					Link("A juliet.nyc project", destination: URL(string: "https://juliet.nyc")!)
 				}
 				.font(.subheadline).actionStyle()
-				Text("Times are predictions, not promises. The app uses foreground location only to find nearby or favorite stations. Location and station search text stay on this device.").font(.caption).foregroundStyle(.secondary)
+				Text("Times are predictions, not promises. Location finds nearby and favorite stations in the app and, when allowed, widgets. Location and station search text stay on this device.").font(.caption).foregroundStyle(.secondary)
 			} header: { ListHeader("About") }
 		}.themedList().navigationTitle("Settings").navigationBarTitleDisplayMode(.inline)
 			.task { endpoint = app.endpoint; await app.checkDownload() }

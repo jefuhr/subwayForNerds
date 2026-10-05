@@ -2,3 +2,7 @@
 DEVELOPMENT_TEAM = YOUR_TEAM_ID
 // Override only if this identifier is already registered to a different team.
 PRODUCT_BUNDLE_IDENTIFIER = nyc.juliet.subwaysfornerds
+// If overriding the host identifier, also set a matching extension identifier
+// and an App Group registered to this team. Both targets use the same group.
+SFN_WIDGET_BUNDLE_IDENTIFIER = nyc.juliet.subwaysfornerds.widgets
+SFN_APP_GROUP_IDENTIFIER = group.nyc.juliet.subwaysfornerds

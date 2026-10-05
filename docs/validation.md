@@ -241,3 +241,41 @@ and simulator configuration.
   in Xcode to install and visually verify this update.
 - This follow-up changes native UI/contracts only; web and backend source remain
   unchanged from the preceding implementation.
+
+## October 5, 2026 — closest-favorite widgets
+
+- Added Home Screen small, medium, large, and extra-large widgets and Lock Screen
+  inline, circular, and rectangular widgets. Both directions remain visible;
+  nearest-favorite selection, per-station filters, and global display settings
+  share an App Group with the native app. Existing app preferences retain their
+  storage and decode defaults for new widget settings.
+- TransitCore: 39 tests passed, including eight widget cases for filter modes,
+  nearest-favorite fallback, balanced directions, cache isolation, car-report
+  freshness, setting migration, deep links, and local timeline transitions.
+  Evidence: `artifacts/widgets/core-dense-final.log`.
+- FleetOffline: all 17 tests passed. Native startup integration checks passed,
+  including independent filter persistence and widget navigation taking priority
+  over closest-favorite startup. Evidence: `artifacts/widgets/native-dense.log`
+  and `artifacts/widgets/startup-dense.log`.
+- Four focused simulator UI tests passed: all seven view families and fallback
+  states, independent filters across mode changes and relaunch, display-setting
+  persistence and hidden fields, and widget deep links. Evidence:
+  `artifacts/widgets/ui-20261005-111133.xcresult` and `ui-latest.log`.
+  Initial iPad family layout checks also passed (`ipad-layout.xcresult`); the
+  final denser extra-large layout has not been rerun on iPad.
+- Web build and 54 server tests passed. The final browser regression run passed
+  41 tests with four intentional project-specific skips. The service-change
+  freshness test now prepares its mock board once and advances report age without
+  firing competing polling requests. Evidence: `web-check.log` and
+  `web-fixed-final.log` under `artifacts/widgets/`.
+- Signed Debug and Release device builds passed. The final Debug app, including
+  the widget extension and matching App Group entitlements, was installed and
+  launched on the user's iPhone. Evidence: `phone-complete-build.log`,
+  `phone-complete-install.log`, and `phone-complete-launch.log`.
+- Remaining QA: the opt-in SpringBoard integration test has not passed. Unsigned
+  simulator builds omit App Group entitlements; local signing is required. The
+  latest locally signed attempt stopped because its app-icon query also matched
+  an existing widget (`home-verified.log`, line 55). Earlier attempts exposed
+  remote gallery accessibility gaps and the widget location consent prompt.
+  Home Screen sharing and navigation still need an end-to-end pass; view previews
+  and the successful device launch do not establish that result.

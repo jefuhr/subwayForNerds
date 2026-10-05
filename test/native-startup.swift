@@ -48,6 +48,17 @@ struct NativeStartupTests {
 		var foreground = Task { await app.runWhileActive() }
 		try await waitForStation("near", in: app)
 		print("PASS: cold launch selects the nearest of two saved favorites while the catalog request is stalled")
+		try expect(app.favorites == ["far", "near"] && !app.widgetPreferences.matchAppFilters, "Adding widget defaults must preserve legacy favorites")
+		app.setWidgetView(.family, stationID: "far")
+		app.toggleWidgetRoute("Q", stationID: "far")
+		app.setWidgetMatchApp(true)
+		app.setWidgetMatchApp(false)
+		let restoredWidgets = AppModel(stateDirectory: directory)
+		try expect(restoredWidgets.widgetPreferences.stations["far"] == StationPreference(routes: ["Q"], view: .family), "Independent widget filters must survive toggles and relaunch")
+		try expect(restoredWidgets.favorites == ["far", "near"], "Widget settings must not change favorites")
+		let sharedWidgets = try restoredWidgets.widgetStore!.load()
+		try expect(sharedWidgets.widgets == restoredWidgets.widgetPreferences && sharedWidgets.favorites.count == 2, "The extension must see the saved widget settings and favorites")
+		print("PASS: legacy favorites and independent widget filters survive toggle, relaunch, and shared snapshot persistence")
 		await app.locateNearby()
 		try expect(app.nearbyLocation?.coordinate.latitude == 40.755290, "Nearby search must obtain location")
 		try expect(app.stations.count == 3, "Nearby search must retain all stations, including nonfavorites")
@@ -64,6 +75,12 @@ struct NativeStartupTests {
 		foreground = Task { await app.runWhileActive() }
 		try await waitForStation("near", in: app)
 		print("PASS: returning from the background selects the closest favorite again")
+		await stop(app, task: foreground, background: true)
+		app.openWidgetURL(WidgetLink.board(stationID: "far"))
+		foreground = Task { await app.runWhileActive() }
+		try await Task.sleep(for: .milliseconds(200))
+		try expect(app.stationID == "far", "A widget deep link must win over automatic closest-favorite startup")
+		print("PASS: widget navigation opens its displayed station without closest-favorite redirection")
 		await stop(app, task: foreground, background: true)
 
 		app.favorites = []

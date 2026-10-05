@@ -83,6 +83,63 @@ fill the right column. Station info shows until a train is chosen. Narrow window
 View, Slide Over, and every iPhone) push the same screens instead. All four orientations are
 supported. Command-F opens station search and Command-R refreshes departures.
 
+## Widgets
+
+Add **Closest favorite trains** from the iOS widget gallery after opening the app
+once and saving at least one favorite. Home Screen widgets support small, medium,
+and large sizes, plus extra-large on iPad. Lock Screen widgets support inline,
+circular, and rectangular formats. Every size reserves space for both directions.
+Regional stations use their appropriate direction labels; stations with external
+departure boards link back to the station in the app.
+
+**Settings > Widgets > Match app filters** chooses the filter source. It starts off.
+Independent line filters and Track, Direction, Families, Corridors, or Service
+grouping are saved separately for each favorite and shared across widget sizes.
+Enabling the toggle uses that station's app line filters and grouping, while
+preserving both directions. Switching back restores the independent settings.
+The smallest widgets show the next matching train in each direction; larger
+widgets show more trains and grouping context. Tapping opens the displayed
+station, without automatic closest-favorite startup redirecting the app.
+
+Allow location **While Using the App or Widgets** when iOS asks to extend the app's
+location authorization. The widget requests a short location fix when eligible
+and selects the closest favorite. Without a current fix, it retains a saved
+favorite and displays a location-unavailable label. Without any favorites, it
+asks you to add one in the app. Coordinates stay on the device.
+
+Widgets request new data after five minutes, but iOS controls the actual schedule
+and commonly refreshes widgets every 15–60 minutes. Home Screen widgets have a
+refresh button. Feed timestamps retain their existing 90-second freshness limit;
+old or offline predictions display labeled last-estimate clock times rather than
+continuing to imply fresh arrival predictions. See Apple's
+[refresh guidance](https://developer.apple.com/documentation/widgetkit/keeping-a-widget-up-to-date)
+and [widget location guidance](https://developer.apple.com/documentation/widgetkit/accessing-location-information-in-widgets).
+
+The app embeds the `SubwayWidgets` extension and shares an App Group with it.
+Automatic signing provisions both targets. Defaults are
+`nyc.juliet.subwaysfornerds.widgets` and `group.nyc.juliet.subwaysfornerds`;
+override `SFN_WIDGET_BUNDLE_IDENTIFIER` and `SFN_APP_GROUP_IDENTIFIER` in the
+ignored local configuration if needed. Both targets must use the same team and
+group. Existing app preferences and fleet downloads retain their original storage.
+
+**Settings > Widgets > Display and information** controls compact rows, a
+per-direction train limit, and minutes/seconds, minutes, or arrival clock times.
+Direction headings use arrows. Eleven switches control station names,
+destinations, tracks, service patterns, car types, car counts, car numbers, train
+locations, report times, refresh controls, and grouping labels. Display settings
+apply across widgets and remain separate from the app-filter matching toggle.
+Car reports follow the existing 90-second last-reported and 300-second expiry
+rules; offline boards do not show car reports as current. Home Screen widgets
+show the selected details, shortened to fit. Lock Screen widgets prioritize the
+next train in each direction; circular and rectangular widgets can also show car
+types and counts. Stale predictions always retain their last-estimate label,
+even when report-time display is switched off.
+
+Debug builds include **Settings > Widget previews**, which renders the extension's
+actual view in every family with live, saved, empty, regional, long-name, and
+location-unavailable examples. This layout harness complements testing actual
+widgets in SpringBoard; it does not simulate WidgetKit's refresh budget.
+
 ## Offline fleet
 
 Settings > Offline fleet shows compressed download size, saved size, and publication time before downloading.
@@ -192,3 +249,18 @@ Physical-device acceptance still requires a paired phone: location allowance and
 denial, keyboard/search, background/resume, themes and filters after relaunch,
 fleet download, airplane-mode relaunch, and deletion/re-download. Keep device
 results separate from simulator and package results in `docs/validation.md`.
+
+### Repeatable widget QA
+
+Run `bash scripts/test-widgets.sh` for filter persistence, widget deep links, and
+screenshots of all seven families and fallback states. Set `SFN_FIXTURE_PORT` to choose an isolated fixture port. Set `SFN_SIMULATOR_ID` to
+an iOS 26+ simulator to choose a device. Logs, screenshots, and result bundles are
+saved under `artifacts/widgets/`. Do not run another fixture-server test suite on
+port 8092 at the same time.
+
+`WidgetHomeScreenTests` is opt-in (`TEST_RUNNER_SFN_WIDGET_HOME_QA=1` when running
+`xcodebuild test -only-testing:SubwaysForNerdsUITests/WidgetHomeScreenTests`). Use local simulator signing (`CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-`)
+so App Group entitlements are present. It
+places a widget on the simulator Home Screen and verifies shared favorites and
+navigation. Run it on the iPhone 17 simulator; the iOS 27 widget gallery fallback
+uses its screen dimensions because the remote gallery omits accessible controls.

@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>WidgetAppGroupIdentifier</key>
+	<string>$(SFN_APP_GROUP_IDENTIFIER)</string>
+	<key>CFBundleURLTypes</key>
+	<array><dict><key>CFBundleURLSchemes</key><array><string>subwaynerds</string></array></dict></array>
 	<key>CFBundleDisplayName</key>
 	<string>Subway Nerds</string>
 	<key>CFBundleExecutable</key>
@@ -26,7 +30,7 @@
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Connect to a development transit server on your local network when you choose a custom API address.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Find nearby subway stations and open your closest favorite. Your location stays on this device.</string>
+	<string>Find nearby stations and show your closest favorite in the app and widgets. Your location stays on this device.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

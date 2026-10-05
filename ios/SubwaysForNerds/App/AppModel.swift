@@ -4,6 +4,7 @@ import Network
 import Observation
 import TransitCore
 import FleetOffline
+import WidgetKit
 
 private struct SavedPreferences: Codable {
 	var stationID = "602"
@@ -21,6 +22,11 @@ final class AppModel {
 	var favorites: [String]
 	var themeID: String
 	var stationPreferences: [String: StationPreference]
+	var widgetPreferences: WidgetPreferences
+	@ObservationIgnored let widgetStore: WidgetSharedStore?
+	@ObservationIgnored private var lastWidgetReload: TimeInterval = 0
+	@ObservationIgnored private var widgetLocation: WidgetCoordinate?
+	@ObservationIgnored private let widgetReloadEnabled: Bool
 	var board: Board?
 	var boardIsCached = true
 	var boardError: String?
@@ -62,9 +68,12 @@ final class AppModel {
 	init(stateDirectory: URL? = nil) {
 		directory = stateDirectory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
 			.appendingPathComponent("SubwaysForNerds", isDirectory: true)
+		widgetStore = stateDirectory.map { WidgetSharedStore(directory: $0.appendingPathComponent("Widgets")) } ?? WidgetSharedStore.configured()
+		widgetReloadEnabled = stateDirectory == nil
 		#if DEBUG
 		let environment = ProcessInfo.processInfo.environment
 		if environment["SFN_RESET_STATE"] == "1" { try? FileManager.default.removeItem(at: directory) }
+		if environment["SFN_RESET_STATE"] == "1", let widgetStore { try? FileManager.default.removeItem(at: widgetStore.directory) }
 		fixedNow = environment["SFN_TEST_NOW"].flatMap(Double.init)
 		locationDisabled = environment["SFN_DISABLE_LOCATION"] == "1"
 		let coordinates = environment["SFN_TEST_LOCATION"]?.split(separator: ",").compactMap { Double($0) } ?? []
@@ -84,6 +93,7 @@ final class AppModel {
 		recent = saved.recent
 		themeID = AppTheme.all.contains(where: { $0.id == saved.theme }) ? saved.theme : "subway"
 		stationPreferences = saved.stations
+		widgetPreferences = Self.read(WidgetPreferences.self, at: directory.appendingPathComponent("widgets.json")) ?? WidgetPreferences()
 		#if DEBUG
 		let base = environment["SFN_API_BASE_URL"].flatMap(URL.init(string:)) ?? saved.endpoint.flatMap(URL.init(string:)) ?? TransitAPI.productionBaseURL
 		#else
@@ -94,6 +104,11 @@ final class AppModel {
 		offlineStore = try? OfflineFleetStore(directory: directory.appendingPathComponent("FleetDownload", isDirectory: true))
 		stations = Self.read([Station].self, at: directory.appendingPathComponent("stations.json")) ?? []
 		board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: saved.stationID))
+		widgetLocation = (try? widgetStore?.load())?.appLocation
+		for id in favorites {
+			if let board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id)) { try? widgetStore?.saveBoard(board, endpoint: endpoint) }
+		}
+		syncWidgets(reload: true)
 	}
 
 	var station: Station? { board?.station ?? stations.first { $0.id == stationID } }
@@ -145,6 +160,42 @@ final class AppModel {
 	func resetFilters() { stationPreferences[stationID] = StationPreference(view: preference.view); persist() }
 	func clearRoutes() { var value = preference; value.routes = []; stationPreferences[stationID] = value; persist() }
 	func setTheme(_ id: String) { themeID = id; persist() }
+	func setWidgetDisplay(_ value: WidgetDisplayOptions) { widgetPreferences.display = value; persistWidgetPreferences() }
+	func setWidgetMatchApp(_ value: Bool) {
+		widgetPreferences.matchAppFilters = value
+		persistWidgetPreferences()
+	}
+	func setWidgetView(_ view: BoardSortOrder, stationID: String) {
+		var value = widgetPreferences.stations[stationID] ?? StationPreference(view: .direction)
+		value.view = view
+		widgetPreferences.stations[stationID] = value
+		persistWidgetPreferences()
+	}
+	func toggleWidgetRoute(_ route: String, stationID: String) {
+		let value = widgetPreferences.stations[stationID] ?? StationPreference(view: .direction)
+		setWidgetRoute(route, enabled: !value.routes.contains(route), stationID: stationID)
+	}
+	func setWidgetRoute(_ route: String, enabled: Bool, stationID: String) {
+		var value = widgetPreferences.stations[stationID] ?? StationPreference(view: .direction)
+		guard value.routes.contains(route) != enabled else { return }
+		if enabled { value.routes.append(route) } else { value.routes.removeAll { $0 == route } }
+		widgetPreferences.stations[stationID] = value
+		persistWidgetPreferences()
+	}
+	func clearWidgetRoutes(stationID: String) {
+		var value = widgetPreferences.stations[stationID] ?? StationPreference(view: .direction)
+		value.routes = []
+		widgetPreferences.stations[stationID] = value
+		persistWidgetPreferences()
+	}
+	private func persistWidgetPreferences() {
+		Self.write(widgetPreferences, at: directory.appendingPathComponent("widgets.json"))
+		syncWidgets(reload: true)
+	}
+	func openWidgetURL(_ url: URL) {
+		guard let id = WidgetLink.stationID(from: url), stations.contains(where: { $0.id == id }) else { return }
+		selectStation(id)
+	}
 
 	func setEndpoint(_ value: String) throws {
 		let cleaned = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -248,6 +299,7 @@ final class AppModel {
 			guard generation == catalogGeneration, requestedEndpoint == endpoint else { return }
 			stations = value
 			Self.write(value, at: directory.appendingPathComponent("stations.json"))
+			syncWidgets(reload: true)
 			catalogError = nil
 			// Favorites without a saved catalog become resolvable after this refresh.
 			if active { await openClosestFavoriteOnce() }
@@ -267,6 +319,7 @@ final class AppModel {
 			try Task.checkCancellation()
 			guard generation == boardGeneration, requestedEndpoint == endpoint, id == stationID else { return }
 			Self.write(value, at: Self.boardURL(directory: directory, id: id))
+			if favorites.contains(id) { try? widgetStore?.saveBoard(value, endpoint: requestedEndpoint) }
 			board = value
 			boardIsCached = !connected
 			boardError = nil
@@ -286,7 +339,11 @@ final class AppModel {
 		let client = api
 		for id in favorites where id != stationID && stations.first(where: { $0.id == id })?.departureMode != "external" {
 			guard !Task.isCancelled else { return }
-			if let value = try? await client.board(stationID: id), requestedEndpoint == endpoint, favorites.contains(id), !Task.isCancelled { Self.write(value, at: Self.boardURL(directory: directory, id: id)) }
+			if let value = try? await client.board(stationID: id), requestedEndpoint == endpoint, favorites.contains(id), !Task.isCancelled {
+				Self.write(value, at: Self.boardURL(directory: directory, id: id))
+				try? widgetStore?.saveBoard(value, endpoint: requestedEndpoint)
+				syncWidgets(reload: false)
+			}
 		}
 	}
 
@@ -301,10 +358,15 @@ final class AppModel {
 	}
 
 	private func currentLocation() async throws -> CLLocation {
+		let location: CLLocation
 		#if DEBUG
-		if let testLocation { return testLocation }
+		if let testLocation { location = testLocation } else { location = try await locator.locate() }
+		#else
+		location = try await locator.locate()
 		#endif
-		return try await locator.locate()
+		widgetLocation = WidgetCoordinate(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, timestamp: location.timestamp.timeIntervalSince1970)
+		syncWidgets(reload: true)
+		return location
 	}
 
 	private func openClosestFavoriteOnce() async {
@@ -380,6 +442,19 @@ final class AppModel {
 	private func persist() {
 		let saved = SavedPreferences(stationID: stationID, favorites: favorites, recent: recent, theme: themeID, stations: stationPreferences, endpoint: endpoint)
 		Self.write(saved, at: directory.appendingPathComponent("preferences.json"))
+		syncWidgets(reload: false)
+	}
+	private func syncWidgets(reload: Bool) {
+		guard let widgetStore else { return }
+		let state = WidgetSharedState(favorites: favorites, stations: favoriteStations, appFilters: stationPreferences, widgets: widgetPreferences, themeID: themeID, endpoint: endpoint, appLocation: widgetLocation)
+		let previous = try? widgetStore.load()
+		try? widgetStore.save(state)
+		let changed = previous?.favorites != state.favorites || previous?.appFilters != state.appFilters || previous?.themeID != state.themeID || previous?.endpoint != state.endpoint
+		let time = Date().timeIntervalSince1970
+		if reload || changed || time - lastWidgetReload >= 60 {
+			lastWidgetReload = time
+			if widgetReloadEnabled { WidgetCenter.shared.reloadTimelines(ofKind: WidgetSharedStore.kind) }
+		}
 	}
 	private func pruneBoards() {
 		let keep = Set((favorites + recent + [stationID]).map { Self.boardURL(directory: directory, id: $0).lastPathComponent })

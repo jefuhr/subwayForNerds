@@ -41,6 +41,8 @@ struct SettingsView: View {
 			} header: { ListHeader("Widgets") } footer: {
 				Text("All widget sizes show both directions at your closest favorite. Match app filters uses that station’s lines and grouping. Turn it off to keep separate filters per station. iOS schedules updates; use the widget’s refresh button for a new report.")
 			}
+			SettingsTransferSection()
+			AccountSettingsSection()
 			offlineSection
 			#if DEBUG
 			Section { NavigationLink("Widget previews") { WidgetPreviewView() }.accessibilityIdentifier("widgetPreviews") }

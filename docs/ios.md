@@ -7,8 +7,8 @@ continue to run on the server. The minimum deployment target is iOS 26.0 (iPadOS
 ## Build and install
 
 Use full Xcode with the iOS SDK and simulator installed. This project uses Swift 6,
-automatic signing, and Apple frameworks only. No CocoaPods or remote Swift packages
-are required.
+automatic signing, Apple frameworks, and the pinned Google Sign-In Swift package.
+Xcode resolves its dependencies from the shared Package.resolved file.
 
 1. Open `ios/SubwaysForNerds.xcodeproj` and select the `SubwaysForNerds` scheme.
 2. In Xcode Settings > Accounts, sign in with your Apple Account.
@@ -48,8 +48,9 @@ HTTP/ETag handling, display rules, and testable persistence utilities.
 `ios/FleetOffline` owns download integrity, atomic activation, and SQLite queries.
 
 The web and native clients remain separately buildable. Existing HTTP routes and
-web base paths retain their contracts. Preferences are local to each client;
-there is no account or cross-device synchronization.
+web base paths retain their contracts. Preferences work locally and transfer between clients through `.nerds` files.
+Optional Apple/Google accounts synchronize settings when the server is configured.
+See [portable settings and account setup](accounts.md).
 
 | Capability | Web | iPhone and iPad |
 | --- | --- | --- |

@@ -22,6 +22,10 @@ final class AppModel {
 	var favorites: [String]
 	var themeID: String
 	var stationPreferences: [String: StationPreference]
+	var settingsError: String?
+	var pendingSettingsImport: NerdsSettingsFile?
+	var settingsSync: SettingsSyncState?
+	@ObservationIgnored var settingsDidChange: (() -> Void)?
 	var widgetPreferences: WidgetPreferences
 	@ObservationIgnored let widgetStore: WidgetSharedStore?
 	@ObservationIgnored private var lastWidgetReload: TimeInterval = 0
@@ -88,14 +92,16 @@ final class AppModel {
 		try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 		let preferencesURL = directory.appendingPathComponent("preferences.json")
 		let saved = (try? Data(contentsOf: preferencesURL)).flatMap { try? JSONDecoder().decode(SavedPreferences.self, from: $0) } ?? SavedPreferences()
-		stationID = saved.stationID
-		favorites = saved.favorites
-		recent = saved.recent
-		themeID = AppTheme.all.contains(where: { $0.id == saved.theme }) ? saved.theme : "subway"
-		stationPreferences = saved.stations
-		widgetPreferences = Self.read(WidgetPreferences.self, at: directory.appendingPathComponent("widgets.json")) ?? WidgetPreferences()
+		let portable = try? DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json")).load()
+		stationID = portable?.lastStation ?? saved.stationID
+		favorites = portable?.settings.favorites ?? saved.favorites
+		recent = portable?.recent ?? saved.recent
+		themeID = portable?.settings.theme ?? (AppTheme.all.contains(where: { $0.id == saved.theme }) ? saved.theme : "subway")
+		stationPreferences = portable?.settings.stations ?? saved.stations
+		widgetPreferences = portable?.settings.widgets ?? Self.read(WidgetPreferences.self, at: directory.appendingPathComponent("widgets.json")) ?? WidgetPreferences()
+		settingsSync = portable?.sync
 		#if DEBUG
-		let base = environment["SFN_API_BASE_URL"].flatMap(URL.init(string:)) ?? saved.endpoint.flatMap(URL.init(string:)) ?? TransitAPI.productionBaseURL
+		let base = environment["SFN_API_BASE_URL"].flatMap(URL.init(string:)) ?? (portable?.endpoint ?? saved.endpoint).flatMap(URL.init(string:)) ?? TransitAPI.productionBaseURL
 		#else
 		let base = TransitAPI.productionBaseURL
 		#endif
@@ -103,11 +109,20 @@ final class AppModel {
 		api = TransitAPI(baseURL: base)
 		offlineStore = try? OfflineFleetStore(directory: directory.appendingPathComponent("FleetDownload", isDirectory: true))
 		stations = Self.read([Station].self, at: directory.appendingPathComponent("stations.json")) ?? []
-		board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: saved.stationID))
+		board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: stationID))
 		widgetLocation = (try? widgetStore?.load())?.appLocation
 		for id in favorites {
 			if let board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id)) { try? widgetStore?.saveBoard(board, endpoint: endpoint) }
 		}
+		if !FileManager.default.fileExists(atPath: directory.appendingPathComponent("settings.json").path) { persist() }
+		else if portable == nil { settingsError = "Saved settings could not be read. Restore a .nerds backup to recover your preferences." }
+		#if DEBUG
+		if let encoded = environment["SFN_TEST_SETTINGS_FILE"], let data = Data(base64Encoded: encoded) {
+			let url = directory.appendingPathComponent("test-settings.nerds")
+			do { try data.write(to: url, options: .atomic); previewSettingsFile(url) }
+			catch { settingsError = error.localizedDescription }
+		}
+		#endif
 		syncWidgets(reload: true)
 	}
 
@@ -189,7 +204,7 @@ final class AppModel {
 		persistWidgetPreferences()
 	}
 	private func persistWidgetPreferences() {
-		Self.write(widgetPreferences, at: directory.appendingPathComponent("widgets.json"))
+		persist()
 		syncWidgets(reload: true)
 	}
 	func openWidgetURL(_ url: URL) {
@@ -439,10 +454,47 @@ final class AppModel {
 	}
 
 	private func recordRecent(_ id: String) { recent.removeAll { $0 == id }; recent.insert(id, at: 0); recent = Array(recent.prefix(8)) }
+	var portableSettings: PortableSettings {
+		var value = PortableSettings(); value.favorites = favorites; value.theme = themeID
+		value.stations = stationPreferences; value.widgets = widgetPreferences; return value
+	}
+	private var settingsStore: DeviceSettingsStore { DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json")) }
+	private func record(settings: PortableSettings, lastStation: String, sync: SettingsSyncState?) -> DeviceSettings {
+		var record = DeviceSettings(settings: settings, lastStation: lastStation)
+		record.recent = recent; record.endpoint = endpoint; record.sync = sync; return record
+	}
 	private func persist() {
-		let saved = SavedPreferences(stationID: stationID, favorites: favorites, recent: recent, theme: themeID, stations: stationPreferences, endpoint: endpoint)
-		Self.write(saved, at: directory.appendingPathComponent("preferences.json"))
-		syncWidgets(reload: false)
+		do {
+			try settingsStore.save(record(settings: portableSettings, lastStation: stationID, sync: settingsSync))
+			settingsError = nil; settingsDidChange?(); syncWidgets(reload: false)
+		} catch { settingsError = "Settings could not be saved on this device. " + error.localizedDescription }
+	}
+	func acceptSettings(_ settings: PortableSettings, lastStation: String? = nil, sync: SettingsSyncState?, notify: Bool = false) throws {
+		let selected = lastStation ?? stationID
+		try settingsStore.save(record(settings: settings, lastStation: selected, sync: sync))
+		favorites = settings.favorites; themeID = settings.theme; stationPreferences = settings.stations; widgetPreferences = settings.widgets; settingsSync = sync; settingsError = nil
+		if selected != stationID {
+			stationID = selected; favoriteStartupAttempted = true; boardGeneration += 1
+			board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: selected)); boardIsCached = true; boardError = nil
+		}
+		for id in favorites {
+			if let board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id)) { try? widgetStore?.saveBoard(board, endpoint: endpoint) }
+		}
+		syncWidgets(reload: true)
+		if notify { settingsDidChange?() }
+	}
+	func previewSettingsFile(_ url: URL) {
+		guard url.isFileURL, url.pathExtension.lowercased() == "nerds" else { settingsError = "Choose a .nerds settings file."; return }
+		let scoped = url.startAccessingSecurityScopedResource(); defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+		do {
+			let handle = try FileHandle(forReadingFrom: url); defer { try? handle.close() }
+			let data = try handle.read(upToCount: NerdsSettingsFile.maxBytes + 1) ?? Data()
+			pendingSettingsImport = try NerdsSettingsFile.decode(data); settingsError = nil; selectedTab = 2
+		} catch { settingsError = (error as? SettingsError)?.localizedDescription ?? "This settings file could not be read. Choose a valid .nerds file."; selectedTab = 2 }
+	}
+	func importSettings(_ file: NerdsSettingsFile) throws {
+		try acceptSettings(file.settings, lastStation: file.lastStation, sync: settingsSync, notify: true)
+		pendingSettingsImport = nil
 	}
 	private func syncWidgets(reload: Bool) {
 		guard let widgetStore else { return }

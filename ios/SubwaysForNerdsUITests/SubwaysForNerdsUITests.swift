@@ -2,18 +2,20 @@ import XCTest
 
 @MainActor
 final class SubwaysForNerdsUITests: XCTestCase {
-	private func launch(reset: Bool = true, offline: Bool = false, location: String? = nil, systemLocation: Bool = false) -> XCUIApplication {
+	private func launch(reset: Bool = true, offline: Bool = false, location: String? = nil, systemLocation: Bool = false, settingsFile: String? = nil) -> XCUIApplication {
 		continueAfterFailure = false
 		let app = XCUIApplication()
 		app.launchEnvironment["SFN_API_BASE_URL"] = offline
 			? "http://127.0.0.1:1/subwaysForNerds/api/v1/"
 			: (ProcessInfo.processInfo.environment["SFN_WIDGET_QA_API"] ?? "http://127.0.0.1:8092/subwaysForNerds/api/v1/")
+		app.launchEnvironment["SFN_TEST_SETTINGS_FILE"] = settingsFile
 		app.launchEnvironment["SFN_RESET_STATE"] = reset ? "1" : "0"
 		app.launchEnvironment["SFN_DISABLE_LOCATION"] = location == nil && !systemLocation ? "1" : "0"
 		app.launchEnvironment["SFN_TEST_LOCATION"] = location
 		app.launchEnvironment["SFN_TEST_NOW"] = String(ISO8601DateFormatter().date(from: "2026-09-06T00:59:40Z")!.timeIntervalSince1970)
 		app.launch()
-		XCTAssertTrue(app.buttons["selectedStation"].waitForExistence(timeout: 20))
+		if settingsFile == nil { XCTAssertTrue(app.buttons["selectedStation"].waitForExistence(timeout: 20)) }
+		else { XCTAssertTrue(app.navigationBars["Import settings"].waitForExistence(timeout: 20)) }
 		return app
 	}
 
@@ -85,12 +87,13 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		app.buttons["widgetDisplaySettings"].tap()
 		let station = app.switches["widgetField_stationName"]
 		scrollTo(station, in: app)
-		station.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
-		XCTAssertEqual(station.value as? String, "0")
+		XCTAssertTrue(app.navigationBars["Widget display"].waitForExistence(timeout: 15))
+		station.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
+		XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "0"), object: station)], timeout: 10), .completed)
 		let cars = app.switches["widgetField_carCount"]
 		scrollTo(cars, in: app)
-		cars.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
-		XCTAssertEqual(cars.value as? String, "1")
+		cars.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
+		XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: cars)], timeout: 10), .completed)
 		screenshot("widget-display-settings", app: app)
 		app.navigationBars.buttons.firstMatch.tap()
 		scrollTo(app.buttons["widgetPreviews"], in: app)
@@ -269,7 +272,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		search.tap(); search.typeText("Times Sq")
 		let station = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'station_' AND label CONTAINS[c] 'Times'")).firstMatch
 		XCTAssertTrue(station.waitForExistence(timeout: 5))
-		station.tap()
+		station.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
 		XCTAssertTrue(app.buttons["selectedStation"].label.contains("Times"))
 		app.tab("Settings").tap()
 		scrollTo(app.buttons["theme_hacker"], in: app)
@@ -313,7 +316,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		search.tap(); search.typeText("Times Sq")
 		let station = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'station_' AND label CONTAINS[c] 'Times'")).firstMatch
 		XCTAssertTrue(station.waitForExistence(timeout: 5))
-		station.tap()
+		station.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
 		XCTAssertTrue(app.buttons["boardView_track"].waitForExistence(timeout: 5))
 		XCTAssertTrue(app.buttons["boardView_track"].isSelected, "A different station retains its own board view")
 	}
@@ -359,6 +362,49 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		XCTAssertTrue(app.descendants(matching: .any)["fleetDetails"].firstMatch.waitForExistence(timeout: 10))
 		XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'currently reporting'")).firstMatch.exists)
 		screenshot("native-offline-fleet", app: app)
+	}
+
+	func testSettingsImportPreviewCancelAndRestore() {
+		let encoded = Data("""
+{
+	"format": "subways-for-nerds",
+	"version": 1,
+	"exportedAt": "2026-10-06T12:00:00Z",
+	"lastStation": "602",
+	"settings": {
+		"favorites": ["602", "future:station"],
+		"theme": "hello-kitty",
+		"stations": {"602": {"direction": "SOUTH", "routes": ["4", "6"], "view": "family"}},
+		"widgets": {
+			"matchAppFilters": false,
+			"stations": {"future:station": {"direction": "ALL", "routes": ["Q"], "view": "corridor"}},
+			"display": {"fields": ["carCount", "destination", "stationName"], "compact": false, "trainsPerDirection": 4, "timeStyle": "clock"}
+		}
+	}
+}
+""".utf8).base64EncodedString()
+		let app = launch(settingsFile: encoded)
+		XCTAssertTrue(app.navigationBars["Import settings"].waitForExistence(timeout: 10))
+		app.buttons["Cancel"].tap()
+		XCTAssertTrue(app.buttons["theme_subway"].waitForExistence(timeout: 5))
+		XCTAssertTrue(app.buttons["theme_subway"].isSelected)
+		app.terminate()
+		let restored = launch(reset: false, settingsFile: encoded)
+		XCTAssertTrue(restored.navigationBars["Import settings"].waitForExistence(timeout: 10))
+		let confirm = restored.buttons["confirmSettingsImport"]
+		scrollTo(confirm, in: restored); confirm.tap()
+		XCTAssertTrue(restored.buttons["theme_hello-kitty"].waitForExistence(timeout: 5))
+		XCTAssertTrue(restored.buttons["theme_hello-kitty"].isSelected)
+		screenshot("settings-imported", app: restored)
+		restored.terminate()
+		let relaunched = launch(reset: false)
+		relaunched.tab("Settings").tap()
+		XCTAssertTrue(relaunched.buttons["theme_hello-kitty"].waitForExistence(timeout: 5))
+		XCTAssertTrue(relaunched.buttons["theme_hello-kitty"].isSelected)
+		let export = relaunched.buttons["exportSettings"]
+		scrollTo(export, in: relaunched); export.tap()
+		XCTAssertTrue(relaunched.buttons["Save"].waitForExistence(timeout: 45) || relaunched.navigationBars["Export"].exists)
+		screenshot("settings-export", app: relaunched)
 	}
 
 	private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {

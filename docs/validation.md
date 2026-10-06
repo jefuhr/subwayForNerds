@@ -315,3 +315,39 @@ repository branch-protection settings. GitHub's current runner inventory is
   `lock-screens/`. This checks the shared widget views, not placement on the
   system Lock Screen. The test is included in the normal PR iOS suite and the
   focused widget QA script.
+
+
+## October 6, 2026 — portable settings and optional accounts
+
+- `npm run check` passed the production web build and all 64 backend/shared tests.
+  Account coverage includes signed-token validation, replay and browser binding,
+  CSRF, explicit linking, revision checks, session invalidation, deletion, durable
+  encrypted grants, and rejection of an incorrect encryption key. The focused
+  account suite also passed after the final database-permissions adjustment.
+- `npm run test:native` passed 43 TransitCore and 17 FleetOffline tests.
+  `bash scripts/test-native-startup.sh` passed, including bounded `.nerds` reading,
+  preview without mutation, atomic replacement, widget sharing, relaunch, and
+  failed-write recovery. Shared TypeScript and Swift `.nerds` fixtures match.
+- The full browser run passed 46 tests with four expected skips and one WebKit
+  offline file-injection failure. The test now selects the file before taking
+  the browser offline and commits the import while disconnected. All 15 focused
+  settings tests then passed across desktop Chromium, mobile Chromium, and mobile
+  WebKit, including conflict resolution, account-switch isolation, storage failure,
+  and the standalone privacy page under the installed service worker.
+- The native `.nerds` UI test passed after allowing the simulator’s Files picker
+  time to initialize. It checks cancellation, replacement, relaunch persistence,
+  and presentation of the export picker; the export screenshot was visually
+  reviewed. Evidence: `artifacts/accounts/ios-focused-3.xcresult` and
+  `artifacts/accounts/ios-focused-attachments/`. The initial full native run
+  passed 12 tests, skipped three opt-in tests, and failed the initial export-picker
+  wait and a widget-toggle assertion. The final focused widget test passed with
+  a settled-navigation wait and a tap on the switch thumb, verifying display
+  changes and relaunch persistence. That run rebuilt the final app successfully:
+  `artifacts/accounts/ios-widget-final.xcresult` and `ios-widget-final.log`.
+- Evidence is retained in `artifacts/accounts/`, `playwright-report/`, and
+  `test-results/`. Native simulator results are in `.xcresult` bundles, with
+  screenshots and recordings exported under `artifacts/accounts/ios-attachments/`.
+- Real Apple/Google authorization, signed-device callbacks, and provider revocation
+  still require owner enrollment and credentials. Authentication defaults to off;
+  setup and rollout instructions are in `docs/accounts.md`. Mocked backend/browser
+  checks do not establish a live-provider pass.

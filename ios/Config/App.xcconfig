@@ -12,4 +12,5 @@ ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
 ENABLE_USER_SCRIPT_SANDBOXING = YES
 SFN_WIDGET_BUNDLE_IDENTIFIER = nyc.juliet.subwaysfornerds.widgets
 SFN_APP_GROUP_IDENTIFIER = group.nyc.juliet.subwaysfornerds
+SFN_GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.unconfigured
 #include? "Local.xcconfig"

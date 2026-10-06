@@ -1,10 +1,13 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ArrowDown, MoveVertical, ArrowRight, ArrowUp, ArrowUpRight, ArrowLeftRight, Check, ChevronLeft, ChevronDown, ChevronRight, Clock3, Crosshair, ExternalLink, Info, MapPin, Palette, Radio, RefreshCw, Search, Star, TrainFront, TriangleAlert, X } from 'lucide-react';
 import type { Board, Departure, Station } from '../shared/types';
 import { ageLabel, boardable, clockTime, countdown, distanceMeters, freshness } from '../shared/display';
 import { api, locate, storage } from './platform';
 import { useBoard } from './useBoard';
-import { readPreferences, type Preference } from './preferences';
+import type { StationSettings as Preference } from '../shared/settings';
+import { getDeviceSettings, subscribeSettings, updateSettings, saveLastStation } from './settings-store';
+import { accounts } from './accounts';
+import SettingsPanel from './SettingsPanel';
 import { track, stationView } from './analytics';
 import { themes } from './themes';
 import { consistSummary, currentConsist } from '../shared/consist';
@@ -22,26 +25,31 @@ export function Bullet({ route, small = false }: { route: string; small?: boolea
   return <span className={`route-bullet ${routeColor(route)} ${small ? 'small' : ''}`} title={route}>{displayRoute(route)}</span>;
 }
 function readStation() {
-  return new URLSearchParams(location.search).get('station') || storage.get('station', '602');
+  return new URLSearchParams(location.search).get('station') || getDeviceSettings().lastStation;
 }
 export default function App() {
   const [stationId, setStationId] = useState(readStation);
   const [stations, setStations] = useState<Station[]>(() => storage.get('stations', []));
   const [catalogError, setCatalogError] = useState('');
-  const [favorites, setFavorites] = useState<string[]>(() => storage.get('favorites', []));
-  const [theme, setTheme] = useState(() => storage.get('theme', 'subway'));
-  const [panel, setPanel] = useState<'stations' | 'themes' | 'alerts' | 'context' | 'fleet' | null>(null);
+  const deviceSettings = useSyncExternalStore(subscribeSettings, getDeviceSettings);
+  const { favorites, theme, stations: preferences } = deviceSettings.settings;
+  const setFavorites = (update: (value: string[]) => string[]) => updateSettings(s => ({ ...s, favorites: update(s.favorites) }));
+  const setTheme = (theme: string) => updateSettings(s => ({ ...s, theme }));
+  useEffect(() => accounts.start(), []);
+  const previousStation = useRef(deviceSettings.lastStation);
+  useEffect(() => {
+    if (previousStation.current === deviceSettings.lastStation) return;
+    previousStation.current = deviceSettings.lastStation; setStationId(deviceSettings.lastStation);
+    const url = new URL(location.href); url.searchParams.set('station', deviceSettings.lastStation); history.replaceState({}, '', url);
+  }, [deviceSettings.lastStation]);
+  const [panel, setPanel] = useState<'stations' | 'themes' | 'alerts' | 'context' | 'fleet' | 'settings' | null>(() => new URLSearchParams(location.search).has('account') ? 'settings' : null);
   const [tripKey, setTripKey] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [nearby, setNearby] = useState<{ latitude: number; longitude: number }>();
   const [locationState, setLocationState] = useState('');
   const [locating, setLocating] = useState(false);
-  const [preferences, setPreferences] = useState(readPreferences);
   const { direction, routes } = preferences[stationId] || { direction: 'ALL', routes: [] };
-  const savePreference = (patch: Partial<Preference>) => setPreferences(previous => {
-    const next = { ...previous, [stationId]: { direction, routes, ...patch } };
-    storage.set('preferences', { version: 1, stations: next }); return next;
-  });
+  const savePreference = (patch: Partial<Preference>) => updateSettings(s => ({ ...s, stations: { ...s.stations, [stationId]: { ...(s.stations[stationId] || { direction, routes, view: 'track' }), ...patch } } }));
   const setDirection = (value: string) => { track('direction', stationId); savePreference({ direction: value }); };
   const setRoutes: React.Dispatch<React.SetStateAction<string[]>> = value => { track('line', stationId); savePreference({ routes: typeof value === 'function' ? value(routes) : value }); };
   const openTrip = (key: string) => { track('train_open', stationId); setTripKey(key); };
@@ -62,12 +70,11 @@ export default function App() {
     return () => { controller.abort(); window.removeEventListener('online', load); };
   }, []);
   useEffect(() => { const pop = () => { setStationId(readStation()); }; window.addEventListener('popstate', pop); return () => window.removeEventListener('popstate', pop); }, []);
-  useEffect(() => { const selected = themes.some(t => t.id === theme) ? theme : 'subway'; document.documentElement.dataset.theme = selected; storage.set('theme', selected); }, [theme]);
-  useEffect(() => { storage.set('favorites', favorites); }, [favorites]);
+  useEffect(() => { const selected = themes.some(t => t.id === theme) ? theme : 'subway'; document.documentElement.dataset.theme = selected; }, [theme]);
   useEffect(() => { if (board) stationView(stationId); }, [board, stationId]);
   useEffect(() => { document.title = station ? `${station.name} · Subways for Nerds` : 'Subways for Nerds'; }, [station?.name]);
   const selectStation = (id: string) => {
-    setStationId(id); storage.set('station', id); setTripKey(null); setPanel(null);
+    setStationId(id); saveLastStation(id); setTripKey(null); setPanel(null);
     const url = new URL(location.href); url.searchParams.set('station', id); history.pushState({}, '', url);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
@@ -83,7 +90,7 @@ export default function App() {
       const closest = favoriteStations.reduce((best, candidate) => distanceMeters(coords.latitude, coords.longitude, candidate.lat, candidate.lon) < distanceMeters(coords.latitude, coords.longitude, best.lat, best.lon) ? candidate : best);
       if (closest.id === stationId) return;
       setStationId(closest.id);
-      storage.set('station', closest.id);
+      saveLastStation(closest.id);
       setTripKey(null);
       const url = new URL(location.href); url.searchParams.set('station', closest.id); history.replaceState({}, '', url);
     }).catch(() => { /* location is optional; keep the saved station */ });
@@ -128,7 +135,7 @@ export default function App() {
       <div className="sidebar-bottom"><div className="small-diagram" aria-hidden="true"><i /><i /><i /><i /><i /></div><p>A little more signal.<br />A lot less guesswork.</p><button className="theme-trigger" onClick={() => setPanel('themes')}><Palette size={17} /><span>{themes.find(t => t.id === theme)?.name || 'Subway console'}</span><ChevronRight size={14} /></button><a href="https://juliet.nyc" target="_blank" rel="noreferrer">a juliet.nyc project <ExternalLink size={12} /></a></div>
     </aside>
     <main className="main-panel">
-      <header className="topbar"><div className="mobile-brand"><img src={import.meta.env.BASE_URL + 'kitty.png'} alt="" width={128} height={128} />subways for nerds<span>.</span></div><div className="desktop-breadcrumb"><span>THE SYSTEM</span><ChevronRight size={12} /><span>STATION BOARD</span></div><div className="topbar-right"><button className="text-button mobile-only" onClick={() => openFleet()} aria-label="Open fleet"><TrainFront size={16} />Fleet</button><span className="system-clock"><Clock3 size={13} />{clockTime(now)}<span> NYC</span></span><button className="icon-button mobile-only" onClick={() => setPanel('themes')} aria-label="Choose theme"><Palette size={18} /></button><a className="ferry-link" href="https://juliet.nyc/ferryTimesMobile/" target="_blank" rel="noreferrer">Taking the ferry? <ArrowUpRight size={13} /></a></div></header>
+      <header className="topbar"><div className="mobile-brand"><img src={import.meta.env.BASE_URL + 'kitty.png'} alt="" width={128} height={128} />subways for nerds<span>.</span></div><div className="desktop-breadcrumb"><span>THE SYSTEM</span><ChevronRight size={12} /><span>STATION BOARD</span></div><div className="topbar-right"><button className="text-button" onClick={() => setPanel('settings')} aria-label="Open settings">Settings</button><button className="text-button mobile-only" onClick={() => openFleet()} aria-label="Open fleet"><TrainFront size={16} />Fleet</button><span className="system-clock"><Clock3 size={13} />{clockTime(now)}<span> NYC</span></span><button className="icon-button mobile-only" onClick={() => setPanel('themes')} aria-label="Choose theme"><Palette size={18} /></button><a className="ferry-link" href="https://juliet.nyc/ferryTimesMobile/" target="_blank" rel="noreferrer">Taking the ferry? <ArrowUpRight size={13} /></a></div></header>
       <div className="board-content">
         <section className="station-heading"><div className="station-kicker"><span className="eyebrow">{boroughs[station?.borough || ''] || 'NEW YORK CITY'} / STATION {stationId}</span><span className={'status-pill ' + (live ? 'live' : 'stale')}><i />{live ? degraded ? 'PARTIAL LIVE DATA' : 'LIVE FEED' : cached && board ? 'CACHED BOARD' : board ? 'AWAITING LIVE DATA' : 'CONNECTING'}</span></div>
           <div className="station-title-row"><button className="station-name-button" onClick={() => { setPanel('stations'); setNearby(undefined); }}><h1>{station?.name || 'Your next train'}</h1><ChevronDown size={24} /></button><button className={'icon-button favorite-button ' + (favorites.includes(stationId) ? 'active' : '')} onClick={() => toggleFavorite(stationId)} aria-label={favorites.includes(stationId) ? 'Remove favorite station' : 'Favorite this station'} aria-pressed={favorites.includes(stationId)}><Star size={22} fill={favorites.includes(stationId) ? 'currentColor' : 'none'} /></button></div>
@@ -151,6 +158,8 @@ export default function App() {
       </div>
     </main>
     {panel === 'stations' && <Modal fullscreen title={nearby ? 'Stations near you' : 'Find your station'} eyebrow="THE WHOLE SYSTEM" close={() => setPanel(null)}><div className="station-search-input"><Search size={18} /><input autoFocus autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="Station, line, or borough…" value={query} onChange={e => setQuery(e.target.value)} aria-label="Search stations" />{query && <button className="icon-button" onClick={() => setQuery('')} aria-label="Clear search"><X size={16} /></button>}</div><div className="search-tools"><button className="text-button" onClick={getNearby} disabled={locating}><Crosshair size={16} />{locating ? 'Finding your location…' : 'Use my location'}</button>{nearby && <button className="text-button" onClick={() => setNearby(undefined)}>Clear nearby sort</button>}</div>{locationState && <p className="notice">{locationState}</p>}{catalogError && <p className="notice">{catalogError}</p>}<p className="fine-print">{nearby ? 'Sorted by straight-line distance to the closest station in each complex.' : `${stations.length} station complexes · favorites first`}</p><div className="station-results">{matchingStations.map(({ station: s, distance }) => <div className="station-result" key={s.id}><button onClick={() => selectStation(s.id)}><div><strong>{s.name}</strong><small>{boroughs[s.borough] || s.borough}{distance != null ? ` · ${distance < 1000 ? Math.round(distance) + ' m' : (distance / 1000).toFixed(1) + ' km'} away` : ''}</small></div><div className="route-list">{s.routes.map(r => <Bullet route={r} small key={r} />)}</div></button><button className="icon-button" onClick={() => toggleFavorite(s.id)} aria-label={favorites.includes(s.id) ? `Unfavorite ${s.name}` : `Favorite ${s.name}`}><Star size={16} fill={favorites.includes(s.id) ? 'currentColor' : 'none'} /></button></div>)}</div>{!matchingStations.length && <p className="empty">No stations found. Try another name or line.</p>}</Modal>}
+    {deviceSettings.error && <p role="alert" className="notice">{deviceSettings.error}</p>}
+    {panel === 'settings' && <Modal title="Settings" eyebrow="MAKE IT YOURS" close={() => setPanel(null)}><SettingsPanel stationNames={Object.fromEntries(stations.map(s => [s.id, s.name]))} onTheme={() => setPanel('themes')} /></Modal>}
     {panel === 'themes' && <Modal title="Make it yours" eyebrow="SAME SIGNAL. DIFFERENT FREQUENCY." close={() => setPanel(null)}><p className="muted">A subway original, with a few friends from the ferry.</p><div className="theme-grid">{themes.map(t => <button key={t.id} className={'theme-option ' + (theme === t.id ? 'chosen' : '')} onClick={() => setTheme(t.id)} aria-pressed={theme === t.id}><span className="theme-swatch" style={{ background: t.color }} /><span><strong>{t.name}</strong><small>{t.note}</small></span>{theme === t.id && <Check size={17} />}</button>)}</div></Modal>}
     {panel === 'alerts' && <Modal title="Service notes" eyebrow="WHAT CHANGED" close={() => setPanel(null)}><p className="fine-print">Alert feed updated {ageLabel(alertSource?.timestamp, now)}{alertSource?.error ? ' · connection unavailable' : ''}</p>{(cached || freshness(alertSource?.timestamp, now) !== 'live') && <p className="notice">Alert information is stale or unavailable. This is not confirmation of normal service.</p>}{!alerts.length && <p className="empty">No active alerts matched this station in the last feed.</p>}{alerts.map(a => <article className="alert-detail" key={a.id}><div className="route-list">{a.routes.map(r => <Bullet key={r} route={r} small />)}</div><h3>{a.title}</h3><p>{a.description.replace(/<[^>]*>/g, '')}</p><details className="raw-details"><summary>Alert source details</summary><pre>{JSON.stringify(a.raw, null, 2)}</pre></details></article>)}</Modal>}
     <Suspense fallback={<div className="panel-loading" role="status">Opening details…</div>}>{panel === 'fleet' && <Fleet close={() => setPanel(null)} now={now} initialId={fleetId} station={selectStation} trip={key => { setPanel(null); openTrip(key); }} />}{tripKey && <TrainDetail tripKey={tripKey} close={() => setTripKey(null)} now={now} openFleet={openFleet} />}{panel === 'context' && board && <ContextDetail board={board} close={() => setPanel(null)} now={now} />}</Suspense>

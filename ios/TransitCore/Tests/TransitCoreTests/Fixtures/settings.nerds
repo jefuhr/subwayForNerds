@@ -1,0 +1,16 @@
+{
+	"format": "subways-for-nerds",
+	"version": 1,
+	"exportedAt": "2026-10-06T12:00:00Z",
+	"lastStation": "602",
+	"settings": {
+		"favorites": ["602", "future:station"],
+		"theme": "hello-kitty",
+		"stations": {"602": {"direction": "SOUTH", "routes": ["4", "6"], "view": "family"}},
+		"widgets": {
+			"matchAppFilters": false,
+			"stations": {"future:station": {"direction": "ALL", "routes": ["Q"], "view": "corridor"}},
+			"display": {"fields": ["carCount", "destination", "stationName"], "compact": false, "trainsPerDirection": 4, "timeStyle": "clock"}
+		}
+	}
+}

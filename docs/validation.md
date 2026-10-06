@@ -452,3 +452,45 @@ WebKit. The native app and UI test bundle compiled with `build-for-testing` for
 the generic iOS Simulator destination. The earlier native UI results above
 predate this merge; the merged UI suite is left to PR CI. Logs are retained as
 `artifacts/accounts/merge-*.log`.
+## October 6, 2026 — widget review and independent refresh intervals
+
+- Reviewed Claude's widget spacing and density change (`0c896f5`) and the shared
+  rendering code. No functional blocker was found; removed an unnecessary
+  `nonisolated(unsafe)` annotation from the cached, Sendable DateFormatter.
+- Added separate preferred refresh intervals to Home Screen and Lock Screen
+  display settings: 1, 2, 5, 10, 15, 30, and 60 minutes. The timeline provider
+  uses the Lock Screen choice for all three accessory families and the Home
+  Screen choice for system families. Missing or unsupported interval values
+  default to five minutes without discarding existing display settings. Local
+  countdown/source-expiry entries and manual refresh remain available.
+- TransitCore passed 46 tests, including legacy-display migration, independent
+  App Group persistence, and round trips for every interval. Evidence:
+  `artifacts/widgets/refresh-core.log`; the test-before-implementation failure
+  is retained in `refresh-core-red.log`.
+- Nine actual AppModel startup checks passed, including independent intervals
+  through filter-mode toggles, relaunch, and shared snapshot persistence.
+  Evidence: `artifacts/widgets/refresh-startup-final.log`.
+- The isolated widget review passed seven of eight UI tests on an iPhone 17e
+  simulator with iOS 27. The first information-toggle tap failed to change its
+  value; that case passed on the new settings layout without a test change.
+  An earlier run was interrupted by concurrent app installation. Preserved
+  results: `artifacts/widgets/review-isolated-20261006-072502.xcresult`, its
+  exported screens, and `review-termination-reasons.log`.
+- All three focused UI cases passed on the refresh build: independent refresh
+  persistence/reset, hidden-information persistence, and Lock Screen maximum
+  density. Evidence: `artifacts/widgets/refresh-ui-20261006-074327.xcresult`.
+  The final strengthened reset test also passed, verifying that resetting Lock
+  Screen settings retains a different Home Screen interval. Evidence:
+  `artifacts/widgets/refresh-final-20261006-074847.xcresult`, exported screens,
+  and repeatable `verify-refresh-final.sh`. These inspect the app settings and
+  shared widget views; they do not establish iOS's background refresh cadence.
+- The reviewed spacing build was installed wirelessly on the iPhone 17e and
+  launched; subsequent inspection confirmed the app still running. Evidence:
+  `artifacts/widgets/phone-review-install.json`, `phone-review-launch.json`, and
+  `phone-review-processes-final.json`.
+- The build including refresh settings passed signed device compilation and
+  strict signature verification; app and extension have matching App Groups.
+  Evidence: `artifacts/widgets/phone-refresh-generic-build.log` and
+  `phone-refresh-signature.log`. Its installation remains pending: the phone
+  became unavailable, and CoreDevice rejected installation with error 4016.
+  Evidence: `phone-refresh-install.log` and `phone-refresh-device-final.json`.

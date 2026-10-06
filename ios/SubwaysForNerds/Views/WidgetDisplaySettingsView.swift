@@ -19,6 +19,13 @@ struct WidgetDisplaySettingsView: View {
 	var body: some View {
 		List {
 			Section {
+				Picker("Refresh interval", selection: binding(\.refreshInterval)) {
+					ForEach(WidgetRefreshInterval.allCases) { Text($0.title).tag($0) }
+				}.accessibilityIdentifier("\(prefix)RefreshInterval")
+			} header: { ListHeader("Refresh") } footer: {
+				Text("Requests new train data for \(lockScreen ? "Lock Screen" : "Home Screen") widgets. iOS controls the timing and may refresh less often. Countdown timers update between data refreshes.")
+			}
+			Section {
 				Toggle("Compact rows", isOn: binding(\.compact)).accessibilityIdentifier("\(prefix)Compact")
 				Picker("Trains per direction", selection: binding(\.trainsPerDirection)) {
 					Text(lockScreen ? "Fit as many as possible" : "Fit automatically").tag(0)

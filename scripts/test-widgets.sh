@@ -35,5 +35,6 @@ TEST_RUNNER_SFN_WIDGET_QA_API="http://127.0.0.1:$fixture_port/subwaysForNerds/ap
 	-only-testing:SubwaysForNerdsUITests/SubwaysForNerdsUITests/testEveryWidgetFamilyAndFailureStateRenders \
 	-only-testing:SubwaysForNerdsUITests/SubwaysForNerdsUITests/testHomeScreenWidgetsKeepMarginsSeparateColumnsAndFillTheirHeight \
 	-only-testing:SubwaysForNerdsUITests/SubwaysForNerdsUITests/testWidgetDeepLinkWinsOverClosestFavoriteStartup \
+	-only-testing:SubwaysForNerdsUITests/WidgetRefreshTests \
 	CODE_SIGNING_ALLOWED=NO > artifacts/widgets/ui-latest.log 2>&1
 xcrun xcresulttool export attachments --path "$result" --output-path "${result%.xcresult}-screens"

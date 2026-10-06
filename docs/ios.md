@@ -108,8 +108,14 @@ and selects the closest favorite. Without a current fix, it retains a saved
 favorite and displays a location-unavailable label. Without any favorites, it
 asks you to add one in the app. Coordinates stay on the device.
 
-Widgets request new data after five minutes, but iOS controls the actual schedule
-and commonly refreshes widgets every 15–60 minutes. Home Screen widgets have a
+**Refresh interval** in **Home Screen display** and **Lock Screen display** sets
+each widget type's preferred data reload independently: 1, 2, 5, 10, 15, 30, or
+60 minutes. Both default to five minutes, including after upgrading from older
+settings. Choices survive relaunch, work with either filter mode, and reset only
+with their own display settings. iOS controls the actual schedule and commonly
+refreshes widgets every 15–60 minutes; a shorter selection does not guarantee
+that frequency. Countdown timers and source-expiry transitions continue between
+data reloads. Home Screen widgets have a
 refresh button. Feed timestamps retain their existing 90-second freshness limit;
 old or offline predictions display labeled last-estimate clock times rather than
 continuing to imply fresh arrival predictions. See Apple's
@@ -298,7 +304,8 @@ results separate from simulator and package results in `docs/validation.md`.
 ### Repeatable widget QA
 
 Run `bash scripts/test-widgets.sh` for filter persistence, widget deep links,
-Home Screen margins, column separation and height use, and screenshots of all seven
+independent refresh choices through relaunch and reset, Home Screen margins,
+column separation and height use, and screenshots of all seven
 families and fallback states. Set `SFN_FIXTURE_PORT` to choose an isolated fixture port. Set `SFN_SIMULATOR_ID` to
 an iOS 26+ simulator to choose a device. Logs, screenshots, and result bundles are
 saved under `artifacts/widgets/`. Do not run another fixture-server test suite on

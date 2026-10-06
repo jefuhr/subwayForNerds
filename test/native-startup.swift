@@ -53,19 +53,27 @@ struct NativeStartupTests {
 		app.toggleWidgetRoute("Q", stationID: "far")
 		app.setWidgetMatchApp(true)
 		app.setWidgetMatchApp(false)
+		var homeScreen = app.widgetPreferences.display
+		homeScreen.refreshInterval = .tenMinutes
+		app.setWidgetDisplay(homeScreen)
 		var lockScreen = app.widgetPreferences.lockScreen
 		lockScreen.display.trainsPerDirection = 0
 		lockScreen.display.fields = [.track, .carType]
 		lockScreen.directionOrder = .uptownLeft
 		lockScreen.showService = false
+		lockScreen.display.refreshInterval = .oneMinute
 		app.setWidgetLockScreen(lockScreen)
+		for matchApp in [true, false] {
+			app.setWidgetMatchApp(matchApp)
+			try expect(app.widgetPreferences.display == homeScreen && app.widgetPreferences.lockScreen == lockScreen, "Changing the filter source must preserve both widget refresh intervals and display choices")
+		}
 		let restoredWidgets = AppModel(stateDirectory: directory)
 		try expect(restoredWidgets.widgetPreferences.stations["far"] == StationPreference(routes: ["Q"], view: .family), "Independent widget filters must survive toggles and relaunch")
 		try expect(restoredWidgets.favorites == ["far", "near"], "Widget settings must not change favorites")
-		try expect(restoredWidgets.widgetPreferences.lockScreen == lockScreen && restoredWidgets.widgetPreferences.display == WidgetDisplayOptions(), "Lock Screen customization must persist independently of Home Screen display")
+		try expect(restoredWidgets.widgetPreferences.lockScreen == lockScreen && restoredWidgets.widgetPreferences.display == homeScreen, "Lock Screen customization and both refresh intervals must persist independently of Home Screen display")
 		let sharedWidgets = try restoredWidgets.widgetStore!.load()
 		try expect(sharedWidgets.widgets == restoredWidgets.widgetPreferences && sharedWidgets.favorites.count == 2, "The extension must see the saved widget settings and favorites")
-		print("PASS: legacy favorites, independent filters, and Lock Screen display survive relaunch and shared snapshot persistence")
+		print("PASS: legacy favorites, independent filters, Lock Screen display, and separate refresh intervals survive relaunch and shared snapshot persistence")
 		await app.locateNearby()
 		try expect(app.nearbyLocation?.coordinate.latitude == 40.755290, "Nearby search must obtain location")
 		try expect(app.stations.count == 3, "Nearby search must retain all stations, including nonfavorites")

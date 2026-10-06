@@ -161,6 +161,7 @@ final class AppModel {
 	func clearRoutes() { var value = preference; value.routes = []; stationPreferences[stationID] = value; persist() }
 	func setTheme(_ id: String) { themeID = id; persist() }
 	func setWidgetDisplay(_ value: WidgetDisplayOptions) { widgetPreferences.display = value; persistWidgetPreferences() }
+	func setWidgetLockScreen(_ value: LockScreenWidgetOptions) { widgetPreferences.lockScreen = value; persistWidgetPreferences() }
 	func setWidgetMatchApp(_ value: Bool) {
 		widgetPreferences.matchAppFilters = value
 		persistWidgetPreferences()

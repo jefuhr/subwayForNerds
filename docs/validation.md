@@ -315,3 +315,44 @@ repository branch-protection settings. GitHub's current runner inventory is
   `lock-screens/`. This checks the shared widget views, not placement on the
   system Lock Screen. The test is included in the normal PR iOS suite and the
   focused widget QA script.
+
+## October 5, 2026 — independent Lock Screen customization and service icons
+
+- Lock Screen display now has independent spacing, arrival format, train count,
+  direction order, and information settings. Downtown defaults to the left and
+  uptown to the right. Automatic density measures the available space and tries
+  up to six departures per direction; fixed counts are also reduced when needed
+  to fit. Very large text retains both directions and the last-estimate label.
+- Service icons are enabled by default. Compact circular, rectangular, and inline
+  views use small B/Q-style circular badges beside arrivals. The icon toggle is
+  independent of the local/express service-detail toggle. Older preferences
+  migrate without resetting Home Screen display or saved route filters.
+- All 42 TransitCore tests and nine native startup integration checks passed.
+  Coverage includes migration, direction order, density limits, independent
+  persistence through relaunch and the shared App Group snapshot, hidden service
+  details, and inferred-pattern estimate labels. Evidence:
+  `artifacts/widgets/core-service.log` and `startup-service.log`.
+- All seven focused widget simulator E2E tests passed with zero failures.
+  They cover every widget family and fallback state, Home Screen and Lock Screen
+  independence, more than two departures per direction, both direction orders,
+  arrival formats, large text and row bounds, compact service icons, hiding icons,
+  persistence, filters, and deep links. Evidence:
+  `artifacts/widgets/ui-20261005-195457.xcresult` and `ui-latest.log`.
+  Exported screenshots in `ui-20261005-195457-screens/` were visually reviewed for
+  compact icons, default counts, maximum density, clocks, and large text.
+  A final run of the three Lock Screen cases also passed against the final source:
+  `lock-service-final-20261005-200141.xcresult` and `lock-service-final-ui.log`.
+  Its exported inline screenshots were visually reviewed with two and three
+  arrivals per direction. The repeatable command is saved in
+  `artifacts/widgets/verify-lock-final.sh`.
+- The final signed Debug app and widget extension built successfully and were
+  installed wirelessly on the user's iPhone. Launch succeeded; both the app and
+  widget extension appeared in the subsequent process inspection. CoreDevice
+  reported `localNetwork` transport. Evidence under `artifacts/widgets/`:
+  `phone-lock-custom-build.log`, `phone-lock-custom-install.json`,
+  `phone-lock-custom-launch.json`, `phone-lock-custom-processes.json`,
+  `phone-lock-custom-processes-final.json`, and `phone-lock-custom-device.json`.
+
+The simulator checks exercise the extension's shared view through the Debug
+preview harness. They do not establish widget placement or interactions on the
+system Lock Screen; the device check establishes installation and launch.

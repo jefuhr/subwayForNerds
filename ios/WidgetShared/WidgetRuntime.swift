@@ -10,6 +10,7 @@ struct SubwayWidgetEntry: TimelineEntry, Sendable {
 	var board: Board?
 	var preference = StationPreference(view: .direction)
 	var display = WidgetDisplayOptions()
+	var lockScreen = LockScreenWidgetOptions()
 	var themeID = "subway"
 	var cached = false
 	var locationNotice: String?
@@ -37,7 +38,7 @@ struct SubwayTimelineProvider: TimelineProvider {
 			if !entry.cached, let board = entry.board {
 				let dates = widgetTimelineDates(board, now: entry.date.timeIntervalSince1970)
 				for date in dates {
-					let saved = SubwayWidgetEntry(date: Date(timeIntervalSince1970: date), station: entry.station, board: board, preference: entry.preference, display: entry.display, themeID: entry.themeID, cached: date == dates.last, locationNotice: entry.locationNotice, message: entry.message)
+					let saved = SubwayWidgetEntry(date: Date(timeIntervalSince1970: date), station: entry.station, board: board, preference: entry.preference, display: entry.display, lockScreen: entry.lockScreen, themeID: entry.themeID, cached: date == dates.last, locationNotice: entry.locationNotice, message: entry.message)
 					entries.append(saved)
 				}
 			}
@@ -55,6 +56,7 @@ enum WidgetBoardLoader {
 		}
 		entry.themeID = state.themeID
 		entry.display = state.widgets.display
+		entry.lockScreen = state.widgets.lockScreen
 		guard !state.favorites.isEmpty else { entry.message = "Add a favorite in the app."; return entry }
 		let locator = await WidgetLocator()
 		let location = await locator.locate()

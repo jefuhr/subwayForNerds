@@ -118,7 +118,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 			app.buttons["widgetPreviewFamily"].tap()
 			app.buttons[family].tap()
 			if family == "Inline" {
-				XCTAssertEqual(app.staticTexts["widgetInlineDepartures"].label, "↑B2m Q4m  ↓Q3m B5m")
+				XCTAssertEqual(app.staticTexts["widgetInlineDepartures"].label, "↓Q3m B5m  ↑B2m Q4m")
 			} else {
 				for direction in ["NORTH", "SOUTH"] {
 					for index in 0..<2 {
@@ -126,12 +126,156 @@ final class SubwaysForNerdsUITests: XCTestCase {
 						XCTAssertTrue(slot.isHittable, "Both departures must fit in each direction")
 					}
 				}
+				let downtown = app.descendants(matching: .any)["widgetDeparture_SOUTH_0"]
+				let uptown = app.descendants(matching: .any)["widgetDeparture_NORTH_0"]
+				XCTAssertLessThan(downtown.frame.midX, uptown.frame.midX)
+				assertLockScreenDeparturesFit(in: app, minimumPerDirection: 2)
 			}
 			screenshot("widget-two-departures-\(family)", app: app)
 		}
 		app.buttons["widgetPreviewScenario"].tap(); app.buttons["Saved"].tap()
 		XCTAssertTrue(app.staticTexts["last est."].exists)
+		assertLockScreenDeparturesFit(in: app, minimumPerDirection: 2)
 		screenshot("widget-two-departures-saved", app: app)
+		app.navigationBars.buttons.firstMatch.tap()
+		for style in ["Minutes and seconds", "Arrival clock time"] {
+			for _ in 0..<3 { app.swipeDown() }
+			scrollTo(app.buttons["widgetLockScreenSettings"], in: app)
+			app.buttons["widgetLockScreenSettings"].tap()
+			app.buttons["widgetLockTimeStyle"].tap(); app.buttons[style].tap()
+			app.navigationBars.buttons.firstMatch.tap()
+			scrollTo(app.buttons["widgetPreviews"], in: app)
+			app.buttons["widgetPreviews"].tap()
+			app.buttons["widgetPreviewFamily"].tap(); app.buttons["Rectangular"].tap()
+			assertLockScreenDeparturesFit(in: app, minimumPerDirection: 2)
+			screenshot("lock-arrival-format-\(style)", app: app)
+			app.navigationBars.buttons.firstMatch.tap()
+		}
+	}
+
+	func testLockScreenCustomizationFitsMoreTrainsAndStaysIndependent() {
+		var app = launch()
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["widgetLockScreenSettings"], in: app)
+		app.buttons["widgetLockScreenSettings"].tap()
+		app.buttons["widgetLockTrainCount"].tap(); app.buttons["Fit as many as possible"].tap()
+		app.buttons["widgetLockDirectionOrder"].tap(); app.buttons["Uptown left, downtown right"].tap()
+		for field in ["stationName", "carType"] {
+			let toggle = app.switches["widgetLockField_\(field)"]
+			scrollTo(toggle, in: app)
+			toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+			XCTAssertEqual(toggle.value as? String, "0")
+		}
+		screenshot("lock-customization-settings", app: app)
+		app.navigationBars.buttons.firstMatch.tap()
+		scrollTo(app.buttons["widgetDisplaySettings"], in: app)
+		app.buttons["widgetDisplaySettings"].tap()
+		scrollTo(app.switches["widgetField_stationName"], in: app)
+		XCTAssertEqual(app.switches["widgetField_stationName"].value as? String, "1", "Lock Screen display must not change Home Screen settings")
+		scrollTo(app.switches["widgetField_carType"], in: app)
+		XCTAssertEqual(app.switches["widgetField_carType"].value as? String, "1")
+		app.terminate()
+		app = launch(reset: false)
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["widgetLockScreenSettings"], in: app)
+		app.buttons["widgetLockScreenSettings"].tap()
+		XCTAssertTrue(app.buttons["widgetLockTrainCount"].label.contains("Fit as many as possible"))
+		XCTAssertTrue(app.buttons["widgetLockDirectionOrder"].label.contains("Uptown left"))
+		scrollTo(app.switches["widgetLockField_carType"], in: app)
+		XCTAssertEqual(app.switches["widgetLockField_carType"].value as? String, "0")
+		app.navigationBars.buttons.firstMatch.tap()
+		scrollTo(app.buttons["widgetPreviews"], in: app)
+		app.buttons["widgetPreviews"].tap()
+		for family in ["Circular", "Rectangular"] {
+			app.buttons["widgetPreviewFamily"].tap(); app.buttons[family].tap()
+			for direction in ["NORTH", "SOUTH"] {
+				let third = app.descendants(matching: .any)["widgetDeparture_\(direction)_2"]
+				XCTAssertTrue(third.isHittable, "Maximum density must fit more than two trains in each direction")
+			}
+			XCTAssertLessThan(app.descendants(matching: .any)["widgetDeparture_NORTH_0"].frame.midX, app.descendants(matching: .any)["widgetDeparture_SOUTH_0"].frame.midX)
+			XCTAssertFalse(app.staticTexts["widgetStationName"].exists)
+			assertLockScreenDeparturesFit(in: app, minimumPerDirection: 3)
+			screenshot("lock-maximum-density-\(family)", app: app)
+		}
+		app.buttons["widgetPreviewFamily"].tap(); app.buttons["Inline"].tap()
+		let inline = app.staticTexts["widgetInlineDepartures"].label
+		XCTAssertTrue(inline.hasPrefix("↑"))
+		XCTAssertTrue(inline.contains("Q6m") && inline.contains("Q7m"), "Inline maximum density should include a third train in both directions when space allows")
+		screenshot("lock-maximum-density-Inline", app: app)
+		app.buttons["widgetPreviewFamily"].tap(); app.buttons["Rectangular"].tap()
+		app.buttons["widgetPreviewScenario"].tap(); app.buttons["Saved"].tap()
+		XCTAssertTrue(app.staticTexts["last est."].isHittable, "Saved predictions must retain their freshness label at maximum density")
+		assertLockScreenDeparturesFit(in: app, minimumPerDirection: 1)
+		screenshot("lock-maximum-density-saved", app: app)
+		app.switches["widgetPreviewLargeText"].tap()
+		for family in ["Rectangular", "Circular"] {
+			app.buttons["widgetPreviewFamily"].tap(); app.buttons[family].tap()
+			assertLockScreenDeparturesFit(in: app, minimumPerDirection: 1)
+			XCTAssertTrue(app.staticTexts["last est."].isHittable)
+			screenshot("lock-large-text-\(family)", app: app)
+		}
+	}
+
+	private func assertLockScreenDeparturesFit(in app: XCUIApplication, minimumPerDirection: Int) {
+		let canvas = app.otherElements["widgetPreviewCanvas"]
+		XCTAssertTrue(canvas.exists)
+		XCTAssertEqual(canvas.frame.height, 76, accuracy: 1, "The accessibility container must match the fixed widget size")
+		let bounds = canvas.frame.insetBy(dx: 11, dy: 11)
+		for direction in ["NORTH", "SOUTH"] {
+			let rows = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "widgetDeparture_\(direction)_")).allElementsBoundByIndex
+			XCTAssertGreaterThanOrEqual(rows.count, minimumPerDirection)
+			for row in rows {
+				XCTAssertTrue(row.isHittable)
+				XCTAssertGreaterThanOrEqual(row.frame.minY, bounds.minY)
+				XCTAssertLessThanOrEqual(row.frame.maxY, bounds.maxY, "Departure rows must stay inside the widget")
+				XCTAssertGreaterThanOrEqual(row.frame.minX, bounds.minX)
+				XCTAssertLessThanOrEqual(row.frame.maxX, bounds.maxX)
+			}
+		}
+	}
+
+	func testLockScreenServiceIconsFitCompactWidgetsAndCanBeHidden() {
+		var app = launch()
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["widgetPreviews"], in: app)
+		app.buttons["widgetPreviews"].tap()
+		for family in ["Circular", "Rectangular"] {
+			app.buttons["widgetPreviewFamily"].tap(); app.buttons[family].tap()
+			assertLockScreenDeparturesFit(in: app, minimumPerDirection: 2)
+			for direction in ["NORTH", "SOUTH"] {
+				for index in 0..<2 { XCTAssertTrue(app.images["widgetServiceIcon_\(direction)_\(index)"].isHittable, "Compact mode must retain a service icon for every departure") }
+			}
+			screenshot("lock-compact-service-icons-\(family)", app: app)
+		}
+		app.navigationBars.buttons.firstMatch.tap()
+		for _ in 0..<3 { app.swipeDown() }
+		scrollTo(app.buttons["widgetLockScreenSettings"], in: app)
+		app.buttons["widgetLockScreenSettings"].tap()
+		let service = app.switches["widgetLockShowService"]
+		scrollTo(service, in: app)
+		XCTAssertEqual(service.value as? String, "1")
+		service.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+		let details = app.switches["widgetLockField_service"]
+		scrollTo(details, in: app)
+		details.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+		app.navigationBars.buttons.firstMatch.tap()
+		scrollTo(app.buttons["widgetPreviews"], in: app)
+		app.buttons["widgetPreviews"].tap()
+		app.buttons["widgetPreviewFamily"].tap(); app.buttons["Rectangular"].tap()
+		XCTAssertFalse(app.images.matching(NSPredicate(format: "identifier BEGINSWITH 'widgetServiceIcon_'" )).firstMatch.exists)
+		XCTAssertTrue(app.descendants(matching: .any)["widgetDeparture_NORTH_0"].label.contains("Local"))
+		screenshot("lock-service-details-without-icons", app: app)
+		app.buttons["widgetPreviewFamily"].tap(); app.buttons["Inline"].tap()
+		XCTAssertEqual(app.staticTexts["widgetInlineDepartures"].label, "↓3m 5m  ↑2m 4m")
+		app.terminate()
+		app = launch(reset: false)
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["widgetLockScreenSettings"], in: app)
+		app.buttons["widgetLockScreenSettings"].tap()
+		XCTAssertEqual(app.switches["widgetLockShowService"].value as? String, "0")
+		scrollTo(app.switches["widgetLockField_service"], in: app)
+		XCTAssertEqual(app.switches["widgetLockField_service"].value as? String, "1")
+		screenshot("lock-service-settings-after-relaunch", app: app)
 	}
 
 	func testEveryWidgetFamilyAndFailureStateRenders() {

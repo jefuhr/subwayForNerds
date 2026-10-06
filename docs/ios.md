@@ -97,8 +97,8 @@ Independent line filters and Track, Direction, Families, Corridors, or Service
 grouping are saved separately for each favorite and shared across widget sizes.
 Enabling the toggle uses that station's app line filters and grouping, while
 preserving both directions. Switching back restores the independent settings.
-The smallest widgets show the next matching train in each direction; larger
-widgets show more trains and grouping context. Tapping opens the displayed
+Home Screen counts adapt to size; Lock Screen widgets start with up to two
+matching trains per direction and have their own density settings. Tapping opens the displayed
 station, without automatic closest-favorite startup redirecting the app.
 
 Allow location **While Using the App or Widgets** when iOS asks to extend the app's
@@ -122,18 +122,41 @@ override `SFN_WIDGET_BUNDLE_IDENTIFIER` and `SFN_APP_GROUP_IDENTIFIER` in the
 ignored local configuration if needed. Both targets must use the same team and
 group. Existing app preferences and fleet downloads retain their original storage.
 
-**Settings > Widgets > Display and information** controls compact rows, a
+**Settings > Widgets > Home Screen display** controls compact rows, a
 per-direction train limit, and minutes/seconds, minutes, or arrival clock times.
 Direction headings use arrows. Eleven switches control station names,
 destinations, tracks, service patterns, car types, car counts, car numbers, train
 locations, report times, refresh controls, and grouping labels. Display settings
-apply across widgets and remain separate from the app-filter matching toggle.
+apply to Home Screen widgets and remain separate from the app-filter matching toggle.
 Car reports follow the existing 90-second last-reported and 300-second expiry
 rules; offline boards do not show car reports as current. Home Screen widgets
-show the selected details, shortened to fit. Lock Screen widgets prioritize the
-next two trains in each direction; circular and rectangular widgets can also show car
-types and counts. Stale predictions always retain their last-estimate label,
-even when report-time display is switched off.
+show the selected details, shortened to fit.
+
+**Settings > Widgets > Lock Screen display** has independent compact spacing,
+train count, arrival format, direction order, and information switches. **Show
+service icons** is on by default and keeps a small circular B/Q-style line badge
+beside each arrival, including compact mode. It can be switched off to leave more
+room for times. **Service details (local / express)** separately controls service
+pattern text; inferred patterns retain their estimate label. Downtown
+is on the left and uptown on the right by default; the order can be reversed.
+PATH defaults to New Jersey left and New York right. Circular and rectangular
+widgets use two columns; inline widgets list the directions in the selected order.
+Choose **Fit as many as possible** to measure the available space and show up to
+six trains per direction. The layout uses SwiftUI's
+[ViewThatFits](https://developer.apple.com/documentation/swiftui/viewthatfits)
+to choose the largest candidate that fits. Fixed counts are upper limits too: the view reduces
+them when details or larger text need more room. Hiding information leaves more
+room for departures. The rectangular widget can show the station heading;
+circular and rectangular widgets can show destinations, tracks, service patterns,
+car types/counts/numbers, train locations, and report time. Inline widgets show
+arrivals and optional service icons; inline and circular countdowns use rounded minutes.
+Compact rectangular widgets put short car and track details beside arrivals.
+Compact Lock Screen clocks omit AM/PM to leave room for train information.
+Very large text falls back to one arrival per direction without optional details
+when needed to retain both directions and the last-estimate label.
+Settings migrate from the previously visible Lock Screen fields and are persisted
+independently of Home Screen display. Stale predictions always retain their
+last-estimate label, even when report-time display is switched off.
 
 Debug builds include **Settings > Widget previews**, which renders the extension's
 actual view in every family with live, saved, empty, regional, long-name, and

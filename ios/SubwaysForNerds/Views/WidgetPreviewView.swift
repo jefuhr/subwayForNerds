@@ -10,6 +10,7 @@ struct WidgetPreviewView: View {
 	@State private var family: WidgetFamily = .systemSmall
 	@State private var scenario = "Live"
 	@State private var tinted = false
+	@State private var largeText = false
 	private let families: [WidgetFamily] = [.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge, .accessoryInline, .accessoryCircular, .accessoryRectangular]
 	private func name(_ family: WidgetFamily) -> String {
 		switch family { case .systemSmall: "Small"; case .systemMedium: "Medium"; case .systemLarge: "Large"; case .systemExtraLarge: "Extra large"; case .accessoryInline: "Inline"; case .accessoryCircular: "Circular"; default: "Rectangular" }
@@ -28,6 +29,7 @@ struct WidgetPreviewView: View {
 	private var entry: SubwayWidgetEntry {
 		var value = SubwayWidgetEntry.example()
 		value.display = app.widgetPreferences.display
+		value.lockScreen = app.widgetPreferences.lockScreen
 		if scenario == "Saved", var board = value.board { value.cached = true; board.departures = board.departures.map { var row = $0; row.timestamp -= 600; return row }; value.board = board }
 		if scenario == "No favorites" { value.station = nil; value.board = nil; value.message = "Add a favorite in the app." }
 		if scenario == "No matches" { value.preference.routes = ["A"] }
@@ -47,11 +49,14 @@ struct WidgetPreviewView: View {
 				Picker("Scenario", selection: $scenario) { ForEach(["Live", "Saved", "No favorites", "No matches", "Long name", "Regional", "Location unavailable"], id: \.self) { Text($0).tag($0) } }
 					.accessibilityIdentifier("widgetPreviewScenario")
 				Toggle("Tinted", isOn: $tinted).accessibilityIdentifier("widgetPreviewTinted")
+				Toggle("Large text", isOn: $largeText).accessibilityIdentifier("widgetPreviewLargeText")
 				ScrollView(.horizontal) {
 					SubwayWidgetView(entry: entry, previewFamily: family, previewRenderingMode: tinted ? .accented : .fullColor)
+						.dynamicTypeSize(largeText ? .accessibility3 : .large)
 						.padding(family == .accessoryInline ? 0 : 12)
 						.frame(width: size.width, height: size.height)
 						.background(Color(hex: 0x111610), in: RoundedRectangle(cornerRadius: 20))
+						.accessibilityElement(children: .contain).accessibilityIdentifier("widgetPreviewCanvas")
 						.preferredColorScheme(.dark)
 				}
 				Text("Widget view preview · \(name(family)) · \(scenario)").font(.caption).accessibilityIdentifier("widgetPreviewDescription")

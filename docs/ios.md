@@ -97,8 +97,8 @@ Independent line filters and Track, Direction, Families, Corridors, or Service
 grouping are saved separately for each favorite and shared across widget sizes.
 Enabling the toggle uses that station's app line filters and grouping, while
 preserving both directions. Switching back restores the independent settings.
-The smallest widgets show the next matching train in each direction; larger
-widgets show more trains and grouping context. Tapping opens the displayed
+Home Screen counts adapt to size; Lock Screen widgets start with up to two
+matching trains per direction and have their own density settings. Tapping opens the displayed
 station, without automatic closest-favorite startup redirecting the app.
 
 Allow location **While Using the App or Widgets** when iOS asks to extend the app's
@@ -122,23 +122,67 @@ override `SFN_WIDGET_BUNDLE_IDENTIFIER` and `SFN_APP_GROUP_IDENTIFIER` in the
 ignored local configuration if needed. Both targets must use the same team and
 group. Existing app preferences and fleet downloads retain their original storage.
 
-**Settings > Widgets > Display and information** controls compact rows, a
+**Settings > Widgets > Home Screen display** controls compact rows, a
 per-direction train limit, and minutes/seconds, minutes, or arrival clock times.
-Direction headings use arrows. Eleven switches control station names,
-destinations, tracks, service patterns, car types, car counts, car numbers, train
-locations, report times, refresh controls, and grouping labels. Display settings
-apply across widgets and remain separate from the app-filter matching toggle.
+Direction arrows sit beside their columns rather than on a row of their own. Eleven
+switches control station names, destinations, tracks, service patterns, car types, car
+counts, car numbers, train locations, report times, refresh controls, and grouping labels. Display settings
+apply to Home Screen widgets and remain separate from the app-filter matching toggle.
 Car reports follow the existing 90-second last-reported and 300-second expiry
 rules; offline boards do not show car reports as current. Home Screen widgets
-show the selected details, shortened to fit. Lock Screen widgets prioritize the
-next two trains in each direction; circular and rectangular widgets can also show car
-types and counts. Stale predictions always retain their last-estimate label,
-even when report-time display is switched off.
+show the selected details, shortened to fit.
+
+**Fit automatically** uses the same ViewThatFits measurement as the Lock Screen to
+show as many trains per direction as each widget holds, so large widgets fill their
+height; a fixed count is an upper limit. Arrivals keep to a right-aligned column, with
+"min" set smaller than the value; clock times omit AM/PM, which the report time
+carries, to leave room for destinations. Medium and larger widgets put the report
+time beside the refresh button; small widgets put it below the trains. Its dot uses the
+theme accent for live predictions and orange for last estimates. When location is
+unavailable, small and medium widgets mark the station name with a location-off icon,
+and large widgets also spell out the notice. Long station names stay on one line in
+small and medium widgets. In medium and larger sizes, text follows Dynamic Type up to
+135 percent and fewer trains fit; small widgets keep their size. Extra-large widgets
+keep train details on the arrival line. Tinted and clear Home Screens cut route letters
+out of their bullets so they remain legible in one color. Where a PATH or light rail
+name does not fit beside an arrival, its badge keeps only the line color.
+
+**Settings > Widgets > Lock Screen display** has independent compact spacing,
+train count, arrival format, direction order, and information switches. **Show
+service icons** is on by default and keeps a small circular B/Q-style line badge
+beside each arrival, including compact mode. It can be switched off to leave more
+room for times. **Service details (local / express)** separately controls service
+pattern text; inferred patterns retain their estimate label. Downtown
+is on the left and uptown on the right by default; the order can be reversed.
+PATH defaults to New Jersey left and New York right. Circular and rectangular
+widgets use two columns; inline widgets list the directions in the selected order.
+Circular widgets use the system's circular background and keep their rows inside the
+circle; long car details shorten before a train is dropped. Inline PATH and light rail
+names are separated from their arrivals by a space.
+Choose **Fit as many as possible** to measure the available space and show up to
+six trains per direction. The layout uses SwiftUI's
+[ViewThatFits](https://developer.apple.com/documentation/swiftui/viewthatfits)
+to choose the largest candidate that fits. Fixed counts are upper limits too: the view reduces
+them when details or larger text need more room. Hiding information leaves more
+room for departures. The rectangular widget can show the station heading;
+circular and rectangular widgets can show destinations, tracks, service patterns,
+car types/counts/numbers, train locations, and report time. Inline widgets show
+arrivals and optional service icons; inline and circular countdowns use rounded minutes.
+Compact rectangular widgets put short car and track details beside arrivals.
+Compact Lock Screen clocks omit AM/PM to leave room for train information.
+Very large text falls back to one arrival per direction without optional details
+when needed to retain both directions and the last-estimate label.
+Settings migrate from the previously visible Lock Screen fields and are persisted
+independently of Home Screen display. Stale predictions always retain their
+last-estimate label, even when report-time display is switched off.
 
 Debug builds include **Settings > Widget previews**, which renders the extension's
 actual view in every family with live, saved, empty, regional, long-name, and
-location-unavailable examples. This layout harness complements testing actual
-widgets in SpringBoard; it does not simulate WidgetKit's refresh budget.
+location-unavailable examples, plus track grouping. Home Screen previews use the
+selected app theme and WidgetKit's default 16-point content margins; circular previews
+are drawn as circles.
+This layout harness complements testing actual widgets in SpringBoard; it does not
+simulate WidgetKit's refresh budget, timer layout, or tinted rendering.
 
 ## Offline fleet
 
@@ -252,8 +296,9 @@ results separate from simulator and package results in `docs/validation.md`.
 
 ### Repeatable widget QA
 
-Run `bash scripts/test-widgets.sh` for filter persistence, widget deep links, and
-screenshots of all seven families and fallback states. Set `SFN_FIXTURE_PORT` to choose an isolated fixture port. Set `SFN_SIMULATOR_ID` to
+Run `bash scripts/test-widgets.sh` for filter persistence, widget deep links,
+Home Screen margins, column separation and height use, and screenshots of all seven
+families and fallback states. Set `SFN_FIXTURE_PORT` to choose an isolated fixture port. Set `SFN_SIMULATOR_ID` to
 an iOS 26+ simulator to choose a device. Logs, screenshots, and result bundles are
 saved under `artifacts/widgets/`. Do not run another fixture-server test suite on
 port 8092 at the same time.
@@ -264,3 +309,19 @@ so App Group entitlements are present. It
 places a widget on the simulator Home Screen and verifies shared favorites and
 navigation. Run it on the iPhone 17 simulator; the iOS 27 widget gallery fallback
 uses its screen dimensions because the remote gallery omits accessible controls.
+
+For spacing reviews, the opt-in `WidgetUXPassTests` (`TEST_RUNNER_SFN_WIDGET_UX_PASS=1`)
+save screenshots in the result bundle. `testCapturePreviewGallery` captures the preview
+canvas for each family, state, and theme; `SFN_WIDGET_UX_THEMES`, `SFN_WIDGET_UX_FAMILIES`,
+and `SFN_WIDGET_UX_SCENARIOS` take comma-separated lists, and `SFN_WIDGET_UX_MODES=0`
+skips the tinted and large-text captures. `testRealHomeScreenWidgets` adds each Home
+Screen size from the widget gallery with live production departures, captures it, and
+removes it unless `SFN_WIDGET_UX_KEEP=1`. With widgets kept,
+`testPlacedWidgetsInEachAppearance` captures them under Tinted, Clear, and then
+Default, which restores the simulator. `testRealLockScreenWidgets` adds the circular and
+rectangular widgets in the Lock Screen editor, captures them, and cancels; the editor
+can show a render from an earlier build. Like `WidgetHomeScreenTests`, these need local
+simulator signing and the iPhone 17 simulator, and `xcrun simctl install` the new build
+first, because `test-without-building` does not always replace an installed app.
+Countdown timers can keep SpringBoard from becoming idle, so allow several minutes per
+widget size.

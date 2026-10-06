@@ -27,7 +27,8 @@ struct SettingsView: View {
 				.listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
 			} header: { ListHeader("Theme") }
 			Section {
-				NavigationLink("Display and information") { WidgetDisplaySettingsView() }.accessibilityIdentifier("widgetDisplaySettings")
+				NavigationLink("Home Screen display") { WidgetDisplaySettingsView() }.accessibilityIdentifier("widgetDisplaySettings")
+				NavigationLink("Lock Screen display") { WidgetDisplaySettingsView(lockScreen: true) }.accessibilityIdentifier("widgetLockScreenSettings")
 				Toggle("Match app filters", isOn: Binding(get: { app.widgetPreferences.matchAppFilters }, set: { app.setWidgetMatchApp($0) }))
 					.accessibilityIdentifier("widgetMatchAppFilters")
 				if !app.widgetPreferences.matchAppFilters {

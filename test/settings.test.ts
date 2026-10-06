@@ -6,6 +6,7 @@ import { defaults, encodeNerds, decodeNerds, validateSettings, mergeSettings } f
 test('nerds files round trip native-only preferences and unknown station references', () => {
 	const file = decodeNerds(readFileSync(new URL('./fixtures/settings.nerds', import.meta.url), 'utf8'));
 	assert.equal(file.settings.widgets.stations['future:station'].view, 'corridor');
+	assert.equal(file.settings.widgets.lockScreen.directionOrder, 'uptownLeft');
 	assert.deepEqual(decodeNerds(encodeNerds(file.settings, file.lastStation)).settings, file.settings);
 });
 test('invalid, oversized and unsupported imports fail before replacement', () => {
@@ -29,4 +30,14 @@ test('same-setting conflicts retain both choices and can be resolved explicitly'
 	assert.equal(result.conflicts[0].path, '/theme');
 	assert.equal(mergeSettings(base, local, remote, { '/theme': 'remote' }).settings.theme, 'hacker');
 	assert.deepEqual(mergeSettings(base, local, local).conflicts, []);
+});
+
+test('older files migrate Lock Screen settings and reject invalid new settings', () => {
+	const legacy: any = defaults(); delete legacy.widgets.lockScreen;
+	legacy.widgets.display.timeStyle = 'clock';
+	const migrated = validateSettings(legacy);
+	assert.deepEqual(migrated.widgets.lockScreen.display.fields, ['carType', 'stationName']);
+	assert.equal(migrated.widgets.lockScreen.display.timeStyle, 'clock');
+	assert.equal(migrated.widgets.lockScreen.display.trainsPerDirection, 2);
+	assert.throws(() => validateSettings({ ...migrated, widgets: { ...migrated.widgets, lockScreen: { ...migrated.widgets.lockScreen, showService: 'false' } } }));
 });

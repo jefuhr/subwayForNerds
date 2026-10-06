@@ -7,7 +7,20 @@ struct SettingsTests {
 		let url = Bundle.module.url(forResource: "settings", withExtension: "nerds", subdirectory: "Fixtures")!
 		let file = try NerdsSettingsFile.decode(Data(contentsOf: url))
 		#expect(file.settings.widgets.stations["future:station"]?.view == .corridor)
+		#expect(file.settings.widgets.lockScreen.directionOrder == .uptownLeft)
+		#expect(file.settings.widgets.lockScreen.display.trainsPerDirection == 5)
 		#expect(try NerdsSettingsFile.decode(file.data()).settings == file.settings)
+	}
+	@Test func olderFilesMigrateLockScreenSettings() throws {
+		let file = NerdsSettingsFile(settings: PortableSettings(), lastStation: "602")
+		var root = try JSONSerialization.jsonObject(with: file.data()) as! [String: Any]
+		var settings = root["settings"] as! [String: Any]
+		var widgets = settings["widgets"] as! [String: Any]
+		widgets.removeValue(forKey: "lockScreen"); settings["widgets"] = widgets; root["settings"] = settings
+		let restored = try NerdsSettingsFile.decode(JSONSerialization.data(withJSONObject: root))
+		#expect(restored.settings.widgets.lockScreen.display.fields == [.stationName, .carType])
+		#expect(restored.settings.widgets.lockScreen.display.timeStyle == .countdown)
+		#expect(restored.settings.widgets.lockScreen.display.trainsPerDirection == 2)
 	}
 	@Test func invalidFilesNeverReachPersistence() throws {
 		for data in [Data("{}".utf8), Data("null".utf8), Data(repeating: 32, count: 1_048_577)] {

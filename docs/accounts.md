@@ -9,7 +9,9 @@ are optional. File transfer works offline and before provider configuration.
 `exportedAt` timestamp, `lastStation`, and `settings`. The latter contains ordered
 favorites, theme ID, station preferences, and widget preferences. Station
 preferences contain direction, route IDs, and board grouping. Widget settings
-include independent station filters, the match-app toggle, and display options.
+include independent station filters, the match-app toggle, and separate Home Screen
+and Lock Screen display options, including direction order and service icons.
+Older v1 files without Lock Screen settings use the native legacy-display migration.
 The TypeScript/Swift fixtures in `test/fixtures/settings.nerds` and
 `ios/TransitCore/Tests/TransitCoreTests/Fixtures/settings.nerds` must remain identical.
 

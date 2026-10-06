@@ -20,6 +20,10 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 		if case .object(var root) = value, case .object(var widgets) = root["widgets"], case .object(var display) = widgets["display"] {
 			display["fields"] = .array(self.widgets.display.fields.map(\.rawValue).sorted().map(JSONValue.string))
 			widgets["display"] = .object(display)
+			if case .object(var lock) = widgets["lockScreen"], case .object(var lockDisplay) = lock["display"] {
+				lockDisplay["fields"] = .array(self.widgets.lockScreen.display.fields.map(\.rawValue).sorted().map(JSONValue.string))
+				lock["display"] = .object(lockDisplay); widgets["lockScreen"] = .object(lock)
+			}
 			root["widgets"] = .object(widgets); value = .object(root)
 		}
 		return value
@@ -84,9 +88,19 @@ private enum SettingsValidation {
 	static func settings(_ value: JSONValue?) throws {
 		let root = try object(value, keys: ["favorites", "theme", "stations", "widgets"])
 		_ = try strings(root["favorites"]); _ = try string(root["theme"]); try stations(root["stations"])
-		let widgets = try object(root["widgets"], keys: ["display", "matchAppFilters", "stations"])
+		let rawWidgets = try object(root["widgets"])
+		let widgetKeys: Set<String> = rawWidgets["lockScreen"] == nil ? ["display", "matchAppFilters", "stations"] : ["display", "matchAppFilters", "stations", "lockScreen"]
+		let widgets = try object(root["widgets"], keys: widgetKeys)
 		try boolean(widgets["matchAppFilters"]); try stations(widgets["stations"])
-		let display = try object(widgets["display"], keys: ["fields", "compact", "trainsPerDirection", "timeStyle"])
+		try display(widgets["display"])
+		if let value = widgets["lockScreen"] {
+			let lock = try object(value, keys: ["display", "directionOrder", "showService"])
+			try display(lock["display"]); try boolean(lock["showService"])
+			guard LockScreenDirectionOrder(rawValue: try string(lock["directionOrder"])) != nil else { throw SettingsError.invalid }
+		}
+	}
+	static func display(_ value: JSONValue?) throws {
+		let display = try object(value, keys: ["fields", "compact", "trainsPerDirection", "timeStyle"])
 		try boolean(display["compact"])
 		guard case .number(let count) = display["trainsPerDirection"], (0...8).contains(count), count.rounded() == count, WidgetTimeStyle(rawValue: try string(display["timeStyle"])) != nil else { throw SettingsError.invalid }
 		guard try strings(display["fields"], limit: WidgetField.allCases.count).allSatisfy({ WidgetField(rawValue: $0) != nil }) else { throw SettingsError.invalid }

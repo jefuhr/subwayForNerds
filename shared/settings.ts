@@ -1,11 +1,10 @@
 /** The public .nerds v1 contract. Keep Swift and the shared fixture in lockstep. */
 export const MAX_SETTINGS_BYTES = 1024 * 1024;
 export type StationSettings = { direction: string; routes: string[]; view: 'track' | 'direction' | 'family' | 'corridor' | 'service' };
+export type WidgetDisplay = { fields: string[]; compact: boolean; trainsPerDirection: number; timeStyle: 'countdown' | 'minutes' | 'clock' };
 export type Settings = {
 	favorites: string[]; theme: string; stations: Record<string, StationSettings>;
-	widgets: { matchAppFilters: boolean; stations: Record<string, StationSettings>; display: {
-		fields: string[]; compact: boolean; trainsPerDirection: number; timeStyle: 'countdown' | 'minutes' | 'clock';
-	} };
+	widgets: { matchAppFilters: boolean; stations: Record<string, StationSettings>; display: WidgetDisplay; lockScreen: { display: WidgetDisplay; directionOrder: 'downtownLeft' | 'uptownLeft'; showService: boolean } };
 };
 export type NerdsFile = { format: 'subways-for-nerds'; version: 1; exportedAt: string; lastStation: string; settings: Settings };
 export type SettingsRevision = { revision: number; settings: Settings | null };
@@ -13,7 +12,7 @@ export type Conflict = { path: string; local: unknown; remote: unknown };
 export type Resolutions = Record<string, 'local' | 'remote'>;
 export const widgetFields = ['stationName', 'destination', 'track', 'service', 'carType', 'carCount', 'carNumbers', 'location', 'updatedAt', 'refreshButton', 'groupHeaders'];
 export function defaults(): Settings {
-	return { favorites: [], theme: 'subway', stations: {}, widgets: { matchAppFilters: false, stations: {}, display: {
+	return { favorites: [], theme: 'subway', stations: {}, widgets: { matchAppFilters: false, stations: {}, lockScreen: { display: { fields: ['carType', 'stationName'], compact: true, trainsPerDirection: 2, timeStyle: 'minutes' }, directionOrder: 'downtownLeft', showService: true }, display: {
 		fields: ['stationName', 'destination', 'track', 'carType', 'updatedAt', 'refreshButton', 'groupHeaders'].sort(), compact: true, trainsPerDirection: 0, timeStyle: 'countdown',
 	} } };
 }
@@ -32,17 +31,23 @@ function stations(value: unknown): Record<string, StationSettings> {
 		return [id, { direction: v.direction, routes: strings(v.routes, 128).sort(), view: v.view }];
 	}));
 }
+function validateDisplay(value: unknown): WidgetDisplay {
+	const d = object(value); keys(d, ['fields', 'compact', 'trainsPerDirection', 'timeStyle']);
+	const fields = strings(d.fields, widgetFields.length).sort();
+	if (fields.some(f => !widgetFields.includes(f)) || !Number.isInteger(d.trainsPerDirection) || d.trainsPerDirection < 0 || d.trainsPerDirection > 8 || !['countdown', 'minutes', 'clock'].includes(d.timeStyle)) invalid();
+	return { fields, compact: boolean(d.compact), trainsPerDirection: d.trainsPerDirection, timeStyle: d.timeStyle };
+}
 export function validateSettings(value: unknown): Settings {
 	if (new TextEncoder().encode(JSON.stringify(value)).length > MAX_SETTINGS_BYTES) throw new Error('Settings files must be smaller than 1 MiB.');
 	const v = object(value); keys(v, ['favorites', 'theme', 'stations', 'widgets']);
-	const w = object(v.widgets); keys(w, ['matchAppFilters', 'stations', 'display']);
-	const d = object(w.display); keys(d, ['fields', 'compact', 'trainsPerDirection', 'timeStyle']);
-	const fields = strings(d.fields, widgetFields.length).sort();
-	if (fields.some(f => !widgetFields.includes(f)) || !Number.isInteger(d.trainsPerDirection) || d.trainsPerDirection < 0 || d.trainsPerDirection > 8 || !['countdown', 'minutes', 'clock'].includes(d.timeStyle)) invalid();
+	const w = object(v.widgets); keys(w, ['matchAppFilters', 'stations', 'display', ...(Object.hasOwn(w, 'lockScreen') ? ['lockScreen'] : [])]);
+	const display = validateDisplay(w.display);
+	const lock = w.lockScreen === undefined ? { display: { fields: display.fields.filter(f => ['stationName', 'carType', 'carCount'].includes(f)), compact: true, trainsPerDirection: 2, timeStyle: display.timeStyle }, directionOrder: 'downtownLeft', showService: true } : object(w.lockScreen);
+	keys(lock, ['display', 'directionOrder', 'showService']);
+	if (!['downtownLeft', 'uptownLeft'].includes(lock.directionOrder)) invalid();
 	return { favorites: strings(v.favorites), theme: string(v.theme), stations: stations(v.stations), widgets: {
-		matchAppFilters: boolean(w.matchAppFilters), stations: stations(w.stations), display: {
-			fields, compact: boolean(d.compact), trainsPerDirection: d.trainsPerDirection, timeStyle: d.timeStyle,
-		},
+		matchAppFilters: boolean(w.matchAppFilters), stations: stations(w.stations), display,
+		lockScreen: { display: validateDisplay(lock.display), directionOrder: lock.directionOrder, showService: boolean(lock.showService) },
 	} };
 }
 export function decodeNerds(text: string): NerdsFile {

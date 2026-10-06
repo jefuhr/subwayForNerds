@@ -40,7 +40,7 @@ struct SettingsTransferSection: View {
 	}
 }
 @MainActor func settingsLabel(_ path: String, app: AppModel) -> String {
-	let labels = ["favorites": "Favorites", "theme": "Theme", "stations": "Stations", "widgets": "Widgets", "display": "Display", "fields": "Shown information", "compact": "Compact rows", "trainsPerDirection": "Trains per direction", "timeStyle": "Arrival display", "matchAppFilters": "Match app filters", "direction": "Direction", "routes": "Lines", "view": "Board grouping"]
+	let labels = ["favorites": "Favorites", "theme": "Theme", "stations": "Stations", "widgets": "Widgets", "display": "Display", "lockScreen": "Lock Screen", "directionOrder": "Direction order", "showService": "Service icons", "fields": "Shown information", "compact": "Compact rows", "trainsPerDirection": "Trains per direction", "timeStyle": "Arrival display", "matchAppFilters": "Match app filters", "direction": "Direction", "routes": "Lines", "view": "Board grouping"]
 	return path.split(separator: "/").map { part in
 		let key = part.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "~1", with: "/").replacingOccurrences(of: "~0", with: "~")
 		return app.stations.first(where: { $0.id == key })?.name ?? labels[key] ?? key.capitalized

@@ -30,12 +30,59 @@ public struct WidgetDisplayOptions: Codable, Sendable, Equatable {
 	public var trainsPerDirection = 0
 	public var timeStyle: WidgetTimeStyle = .countdown
 	public init() {}
+	/// Try the richest layout first; the view measures which candidate actually fits.
+	/// A chosen train count is an upper limit, as is the widget size's maximum.
+	public func candidateCounts(maximum: Int) -> [Int] {
+		let limit = max(1, trainsPerDirection == 0 ? maximum : min(maximum, trainsPerDirection))
+		return Array(stride(from: limit, through: 1, by: -1))
+	}
+}
+
+public enum LockScreenDirectionOrder: String, Codable, Sendable, CaseIterable, Identifiable {
+	case downtownLeft, uptownLeft
+	public var id: String { rawValue }
+	public var title: String {
+		switch self { case .downtownLeft: "Downtown left, uptown right"; case .uptownLeft: "Uptown left, downtown right" }
+	}
+}
+
+/// Lock Screen presentation is independent of Home Screen display and route filters.
+public struct LockScreenWidgetOptions: Codable, Sendable, Equatable {
+	public static let fields: [WidgetField] = [.stationName, .destination, .track, .service, .carType, .carCount, .carNumbers, .location, .updatedAt]
+	public var display: WidgetDisplayOptions
+	public var directionOrder: LockScreenDirectionOrder = .downtownLeft
+	public var showService = true
+	public init() {
+		display = WidgetDisplayOptions()
+		display.fields = [.stationName, .carType]
+		display.trainsPerDirection = 2
+		display.timeStyle = .minutes
+	}
+	/// Preserve information previously visible in accessories when splitting settings.
+	public init(legacyDisplay: WidgetDisplayOptions) {
+		self.init()
+		display.fields = legacyDisplay.fields.intersection([.stationName, .carType, .carCount])
+		display.timeStyle = legacyDisplay.timeStyle
+	}
+	private enum CodingKeys: String, CodingKey { case display, directionOrder, showService }
+	public init(from decoder: Decoder) throws {
+		self.init()
+		let values = try decoder.container(keyedBy: CodingKeys.self)
+		display = try values.decodeIfPresent(WidgetDisplayOptions.self, forKey: .display) ?? display
+		directionOrder = try values.decodeIfPresent(LockScreenDirectionOrder.self, forKey: .directionOrder) ?? .downtownLeft
+		showService = try values.decodeIfPresent(Bool.self, forKey: .showService) ?? true
+	}
+	public func orderedDirections(regional: Bool = false) -> [String] {
+		let directions = regional ? ["TO_NJ", "TO_NY"] : ["SOUTH", "NORTH"]
+		return directionOrder == .downtownLeft ? directions : directions.reversed()
+	}
+	public var candidateCounts: [Int] { display.candidateCounts(maximum: 6) }
 }
 /// Car details retain the existing freshness rules; missing reports stay blank.
 public func widgetTrainDetails(_ row: Departure, options: WidgetDisplayOptions, now: TimeInterval, cached: Bool = false) -> String {
 	var values: [String] = []
 	if options.fields.contains(.track), let track = row.actualTrack ?? row.scheduledTrack { values.append("T\(track)") }
-	if options.fields.contains(.service), !row.pattern.isEmpty { values.append(row.pattern) }
+	if options.fields.contains(.service), !row.pattern.isEmpty { values.append(row.pattern + (row.patternSource == "inferred" ? " · est." : "")) }
 	if !cached, Display.currentConsist(row.consist, now: now), let consist = row.consist {
 		let beforeCars = values.count
 		if options.fields.contains(.carType) {
@@ -52,15 +99,17 @@ public func widgetTrainDetails(_ row: Departure, options: WidgetDisplayOptions, 
 
 public struct WidgetPreferences: Codable, Sendable, Equatable {
 	public var display: WidgetDisplayOptions
+	public var lockScreen: LockScreenWidgetOptions
 	public var matchAppFilters: Bool
 	public var stations: [String: StationPreference]
-	public init(matchAppFilters: Bool = false, stations: [String: StationPreference] = [:], display: WidgetDisplayOptions = WidgetDisplayOptions()) {
-		self.matchAppFilters = matchAppFilters; self.stations = stations; self.display = display
+	public init(matchAppFilters: Bool = false, stations: [String: StationPreference] = [:], display: WidgetDisplayOptions = WidgetDisplayOptions(), lockScreen: LockScreenWidgetOptions = LockScreenWidgetOptions()) {
+		self.matchAppFilters = matchAppFilters; self.stations = stations; self.display = display; self.lockScreen = lockScreen
 	}
-	private enum CodingKeys: String, CodingKey { case matchAppFilters, stations, display }
+	private enum CodingKeys: String, CodingKey { case matchAppFilters, stations, display, lockScreen }
 	public init(from decoder: Decoder) throws {
 		let values = try decoder.container(keyedBy: CodingKeys.self)
 		display = try values.decodeIfPresent(WidgetDisplayOptions.self, forKey: .display) ?? WidgetDisplayOptions()
+		lockScreen = try values.decodeIfPresent(LockScreenWidgetOptions.self, forKey: .lockScreen) ?? (values.contains(.display) ? LockScreenWidgetOptions(legacyDisplay: display) : LockScreenWidgetOptions())
 		matchAppFilters = try values.decodeIfPresent(Bool.self, forKey: .matchAppFilters) ?? false
 		stations = try values.decodeIfPresent([String: StationPreference].self, forKey: .stations) ?? [:]
 	}

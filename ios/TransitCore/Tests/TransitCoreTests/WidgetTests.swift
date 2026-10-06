@@ -94,6 +94,70 @@ struct WidgetTests {
 		#expect(widgetTimelineDates(board, now: 1100).isEmpty)
 	}
 
+	@Test func lockScreenSettingsMigrateWithoutChangingHomeScreenDisplay() throws {
+		var home = WidgetDisplayOptions()
+		home.fields = [.destination, .carCount]
+		home.trainsPerDirection = 5
+		home.timeStyle = .clock
+		let legacy = try JSONSerialization.data(withJSONObject: ["display": JSONSerialization.jsonObject(with: JSONEncoder().encode(home))])
+		var settings = try JSONDecoder().decode(WidgetPreferences.self, from: legacy)
+		#expect(settings.display == home)
+		#expect(settings.lockScreen.display.fields == [.carCount])
+		#expect(settings.lockScreen.display.timeStyle == .clock)
+		#expect(settings.lockScreen.display.trainsPerDirection == 2)
+		#expect(settings.lockScreen.directionOrder == .downtownLeft)
+		#expect(settings.lockScreen.showService)
+		settings.lockScreen.display.trainsPerDirection = 0
+		settings.lockScreen.display.fields = [.track, .carType]
+		settings.lockScreen.directionOrder = .uptownLeft
+		settings.lockScreen.showService = false
+		#expect(settings.display == home)
+		#expect(try JSONDecoder().decode(WidgetPreferences.self, from: JSONEncoder().encode(settings)) == settings)
+		let previousLock = try JSONSerialization.data(withJSONObject: ["display": JSONSerialization.jsonObject(with: JSONEncoder().encode(settings.lockScreen.display)), "directionOrder": "uptownLeft"])
+		let migratedLock = try JSONDecoder().decode(LockScreenWidgetOptions.self, from: previousLock)
+		#expect(migratedLock.showService && migratedLock.directionOrder == .uptownLeft)
+		#expect(migratedLock.display == settings.lockScreen.display)
+	}
+
+	@Test func lockScreenDirectionsAndCountsKeepBothSidesAndBoundMaximumDensity() {
+		var options = LockScreenWidgetOptions()
+		#expect(options.orderedDirections() == ["SOUTH", "NORTH"])
+		#expect(options.orderedDirections(regional: true) == ["TO_NJ", "TO_NY"])
+		#expect(options.candidateCounts == [2, 1])
+		options.display.trainsPerDirection = 0
+		#expect(options.candidateCounts == [6, 5, 4, 3, 2, 1])
+		options.directionOrder = .uptownLeft
+		#expect(options.orderedDirections() == ["NORTH", "SOUTH"])
+		#expect(options.orderedDirections(regional: true) == ["TO_NY", "TO_NJ"])
+		options.display.trainsPerDirection = -100
+		#expect(options.candidateCounts == [1])
+		options.display.trainsPerDirection = 100
+		#expect(options.candidateCounts.first == 6)
+	}
+
+	@Test func homeScreenCountsTryTheMostTrainsThatTheSizeAndSettingAllow() {
+		var options = WidgetDisplayOptions()
+		#expect(options.candidateCounts(maximum: 3) == [3, 2, 1])
+		#expect(options.candidateCounts(maximum: 0) == [1])
+		options.trainsPerDirection = 2
+		#expect(options.candidateCounts(maximum: 8) == [2, 1])
+		#expect(options.candidateCounts(maximum: 1) == [1])
+		options.trainsPerDirection = -4
+		#expect(options.candidateCounts(maximum: 8) == [1])
+	}
+
+	@Test func widgetServiceDetailsCanBeHiddenAndIdentifyInferredPatterns() {
+		var row = departure("service", direction: "NORTH", time: 1100)
+		row.pattern = "Brighton local"
+		var display = WidgetDisplayOptions()
+		display.fields = [.service]
+		#expect(widgetTrainDetails(row, options: display, now: 1000) == "Brighton local")
+		row.patternSource = "inferred"
+		#expect(widgetTrainDetails(row, options: display, now: 1000) == "Brighton local · est.")
+		display.fields = []
+		#expect(widgetTrainDetails(row, options: display, now: 1000).isEmpty)
+	}
+
 	private func station(_ id: String, lat: Double = 40) -> Station {
 		Station(id: id, name: id, borough: "M", routes: ["Q", "B"], lat: lat, lon: -74)
 	}

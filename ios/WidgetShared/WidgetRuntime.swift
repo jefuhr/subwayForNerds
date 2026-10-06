@@ -10,15 +10,17 @@ struct SubwayWidgetEntry: TimelineEntry, Sendable {
 	var board: Board?
 	var preference = StationPreference(view: .direction)
 	var display = WidgetDisplayOptions()
+	var lockScreen = LockScreenWidgetOptions()
 	var themeID = "subway"
 	var cached = false
 	var locationNotice: String?
 	var message: String?
 	var url: URL { station.map { WidgetLink.board(stationID: $0.id) } ?? URL(string: "subwaynerds://board")! }
+	/// Mixed car types give previews the longer details that real boards often have.
 	static func example(date: Date = .now) -> SubwayWidgetEntry {
 		let station = Station(id: "44", name: "Church Av", borough: "Bk", routes: ["B", "Q"], lat: 40.65, lon: -73.96)
-		let rows = (0..<16).map { index in
-			Departure(key: "example-\(index)", tripKey: "example-\(index)", route: index.isMultiple(of: 3) ? "B" : "Q", destination: index.isMultiple(of: 2) ? "96 St" : "Coney Island", direction: index.isMultiple(of: 2) ? "NORTH" : "SOUTH", stopId: "D28", partId: "D28", area: "Brighton", time: date.timeIntervalSince1970 + Double(index + 2) * 60, scheduledTrack: index.isMultiple(of: 2) ? "A2" : "A1", pattern: "Local", patternSource: "reported", location: "", feed: "example", timestamp: date.timeIntervalSince1970, consist: Consist(cars: [ConsistCar(number: "4149", type: "R211A"), ConsistCar(number: "4148", type: "R211A")], updatedAt: date.timeIntervalSince1970, fetchedAt: date.timeIntervalSince1970))
+		let rows = (0..<28).map { index in
+			Departure(key: "example-\(index)", tripKey: "example-\(index)", route: index.isMultiple(of: 3) ? "B" : "Q", destination: index.isMultiple(of: 2) ? "96 St" : "Coney Island", direction: index.isMultiple(of: 2) ? "NORTH" : "SOUTH", stopId: "D28", partId: "D28", area: "Brighton", time: date.timeIntervalSince1970 + Double(index + 2) * 60, scheduledTrack: index.isMultiple(of: 2) ? "A2" : "A1", pattern: "Local", patternSource: "reported", location: "", feed: "example", timestamp: date.timeIntervalSince1970, consist: Consist(cars: index.isMultiple(of: 3) ? [ConsistCar(number: "4149", type: "R211A"), ConsistCar(number: "4148", type: "R211A")] : [ConsistCar(number: "8713", type: "R160A"), ConsistCar(number: "9802", type: "R160B")], updatedAt: date.timeIntervalSince1970, fetchedAt: date.timeIntervalSince1970))
 		}
 		return SubwayWidgetEntry(date: date, station: station, board: Board(station: station, generatedAt: date.timeIntervalSince1970, departures: rows))
 	}
@@ -37,7 +39,7 @@ struct SubwayTimelineProvider: TimelineProvider {
 			if !entry.cached, let board = entry.board {
 				let dates = widgetTimelineDates(board, now: entry.date.timeIntervalSince1970)
 				for date in dates {
-					let saved = SubwayWidgetEntry(date: Date(timeIntervalSince1970: date), station: entry.station, board: board, preference: entry.preference, display: entry.display, themeID: entry.themeID, cached: date == dates.last, locationNotice: entry.locationNotice, message: entry.message)
+					let saved = SubwayWidgetEntry(date: Date(timeIntervalSince1970: date), station: entry.station, board: board, preference: entry.preference, display: entry.display, lockScreen: entry.lockScreen, themeID: entry.themeID, cached: date == dates.last, locationNotice: entry.locationNotice, message: entry.message)
 					entries.append(saved)
 				}
 			}
@@ -55,6 +57,7 @@ enum WidgetBoardLoader {
 		}
 		entry.themeID = state.themeID
 		entry.display = state.widgets.display
+		entry.lockScreen = state.widgets.lockScreen
 		guard !state.favorites.isEmpty else { entry.message = "Add a favorite in the app."; return entry }
 		let locator = await WidgetLocator()
 		let location = await locator.locate()

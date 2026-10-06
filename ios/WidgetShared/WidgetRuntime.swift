@@ -33,6 +33,11 @@ struct SubwayTimelineProvider: TimelineProvider {
 		Task { completion(await WidgetBoardLoader.load()) }
 	}
 	func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<SubwayWidgetEntry>) -> Void) {
+		let isLockScreen: Bool
+		switch context.family {
+		case .accessoryInline, .accessoryCircular, .accessoryRectangular: isLockScreen = true
+		default: isLockScreen = false
+		}
 		Task {
 			let entry = await WidgetBoardLoader.load()
 			var entries = [entry]
@@ -43,7 +48,8 @@ struct SubwayTimelineProvider: TimelineProvider {
 					entries.append(saved)
 				}
 			}
-			completion(Timeline(entries: entries, policy: .after(entry.date.addingTimeInterval(300))))
+			let interval = (isLockScreen ? entry.lockScreen.display : entry.display).refreshInterval.seconds
+			completion(Timeline(entries: entries, policy: .after(entry.date.addingTimeInterval(interval))))
 		}
 	}
 }

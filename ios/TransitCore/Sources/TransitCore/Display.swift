@@ -37,7 +37,7 @@ public enum Display {
 
 	/// Widgets format every row of every timeline entry, so the formatter is created once.
 	/// DateFormatter is thread-safe for formatting.
-	nonisolated(unsafe) private static let clockFormatter: DateFormatter = {
+	private static let clockFormatter: DateFormatter = {
 		let formatter = DateFormatter()
 		formatter.locale = Locale(identifier: "en_US")
 		formatter.timeZone = TimeZone(identifier: "America/New_York")

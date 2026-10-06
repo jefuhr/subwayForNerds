@@ -24,12 +24,31 @@ public enum WidgetTimeStyle: String, Codable, Sendable, CaseIterable, Identifiab
 	public var id: String { rawValue }
 	public var title: String { switch self { case .countdown: "Minutes and seconds"; case .minutes: "Minutes"; case .clock: "Arrival clock time" } }
 }
+/// A preferred data reload interval. WidgetKit controls the actual schedule.
+public enum WidgetRefreshInterval: Int, Codable, Sendable, CaseIterable, Identifiable {
+	case oneMinute = 1, twoMinutes = 2, fiveMinutes = 5, tenMinutes = 10, fifteenMinutes = 15, thirtyMinutes = 30, sixtyMinutes = 60
+	public var id: Int { rawValue }
+	public var title: String { rawValue == 1 ? "1 minute" : "\(rawValue) minutes" }
+	public var seconds: TimeInterval { TimeInterval(rawValue * 60) }
+}
 public struct WidgetDisplayOptions: Codable, Sendable, Equatable {
 	public var fields: Set<WidgetField> = [.stationName, .destination, .track, .carType, .updatedAt, .refreshButton, .groupHeaders]
 	public var compact = true
 	public var trainsPerDirection = 0
 	public var timeStyle: WidgetTimeStyle = .countdown
+	public var refreshInterval: WidgetRefreshInterval = .fiveMinutes
 	public init() {}
+	private enum CodingKeys: String, CodingKey { case fields, compact, trainsPerDirection, timeStyle, refreshInterval }
+	public init(from decoder: Decoder) throws {
+		self.init()
+		let values = try decoder.container(keyedBy: CodingKeys.self)
+		fields = try values.decodeIfPresent(Set<WidgetField>.self, forKey: .fields) ?? fields
+		compact = try values.decodeIfPresent(Bool.self, forKey: .compact) ?? compact
+		trainsPerDirection = try values.decodeIfPresent(Int.self, forKey: .trainsPerDirection) ?? trainsPerDirection
+		timeStyle = try values.decodeIfPresent(WidgetTimeStyle.self, forKey: .timeStyle) ?? timeStyle
+		// Missing or unsupported intervals must not discard existing display choices.
+		refreshInterval = (try? values.decode(WidgetRefreshInterval.self, forKey: .refreshInterval)) ?? .fiveMinutes
+	}
 	/// Try the richest layout first; the view measures which candidate actually fits.
 	/// A chosen train count is an upper limit, as is the widget size's maximum.
 	public func candidateCounts(maximum: Int) -> [Int] {

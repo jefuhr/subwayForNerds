@@ -300,3 +300,18 @@ older runs for the same pull request. To enforce them before merging, configure
 branch protection to require the two job names; this workflow does not change
 repository branch-protection settings. GitHub's current runner inventory is
 [documented here](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md).
+
+## October 5, 2026 — two Lock Screen departures per direction
+
+- Inline, circular, and rectangular widgets now select the two soonest matching
+  departures in each direction. Lock Screen counts stay at two independently of
+  Home Screen density/count settings; missing departures use an empty slot in
+  circular/rectangular layouts. Car details remain subject to display settings
+  and the existing report freshness rules.
+- The focused simulator E2E test passed. It checks all four departure slots in
+  circular and rectangular views, the exact inline list, and the last-estimate
+  label for saved predictions. Screenshots were exported and visually reviewed.
+  Evidence: `artifacts/widgets/lock-20261005-191229.xcresult`, `lock-ui.log`, and
+  `lock-screens/`. This checks the shared widget views, not placement on the
+  system Lock Screen. The test is included in the normal PR iOS suite and the
+  focused widget QA script.

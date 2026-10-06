@@ -19,7 +19,7 @@ struct WidgetDisplaySettingsView: View {
 				Picker("Arrival display", selection: binding(\.timeStyle)) {
 					ForEach(WidgetTimeStyle.allCases) { Text($0.title).tag($0) }
 				}.accessibilityIdentifier("widgetTimeStyle")
-			} header: { ListHeader("Layout") } footer: { Text("Directions use arrows. Train counts adapt to the widget size and text size. Lock Screen widgets show the next train in each direction.") }
+			} header: { ListHeader("Layout") } footer: { Text("Directions use arrows. Train counts adapt to the widget size and text size. Lock Screen widgets show the next two trains in each direction.") }
 			Section {
 				ForEach(WidgetField.allCases) { field in
 					Toggle(field.title, isOn: Binding(get: { app.widgetPreferences.display.fields.contains(field) }, set: { enabled in

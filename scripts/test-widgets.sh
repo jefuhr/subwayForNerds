@@ -29,6 +29,7 @@ TEST_RUNNER_SFN_WIDGET_QA_API="http://127.0.0.1:$fixture_port/subwaysForNerds/ap
 	-derivedDataPath ios/DerivedData/Widgets -resultBundlePath "$result" -collect-test-diagnostics never \
 	-only-testing:SubwaysForNerdsUITests/SubwaysForNerdsUITests/testWidgetDisplaySettingsHideInformationAndSurviveRelaunch \
 	-only-testing:SubwaysForNerdsUITests/SubwaysForNerdsUITests/testWidgetSettingsPreserveIndependentFiltersAcrossToggleAndRelaunch \
+	-only-testing:SubwaysForNerdsUITests/SubwaysForNerdsUITests/testLockScreenWidgetsShowTwoDeparturesInEachDirection \
 	-only-testing:SubwaysForNerdsUITests/SubwaysForNerdsUITests/testEveryWidgetFamilyAndFailureStateRenders \
 	-only-testing:SubwaysForNerdsUITests/SubwaysForNerdsUITests/testWidgetDeepLinkWinsOverClosestFavoriteStartup \
 	CODE_SIGNING_ALLOWED=NO > artifacts/widgets/ui-latest.log 2>&1

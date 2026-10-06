@@ -131,7 +131,7 @@ apply across widgets and remain separate from the app-filter matching toggle.
 Car reports follow the existing 90-second last-reported and 300-second expiry
 rules; offline boards do not show car reports as current. Home Screen widgets
 show the selected details, shortened to fit. Lock Screen widgets prioritize the
-next train in each direction; circular and rectangular widgets can also show car
+next two trains in each direction; circular and rectangular widgets can also show car
 types and counts. Stale predictions always retain their last-estimate label,
 even when report-time display is switched off.
 

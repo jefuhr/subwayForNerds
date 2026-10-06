@@ -35,13 +35,19 @@ public enum Display {
 		return Countdown(value: seconds < 60 ? "<1" : String(Int(floor(seconds / 60))), unit: "min")
 	}
 
-	public static func clockTime(_ seconds: TimeInterval?) -> String {
-		guard let seconds else { return "—" }
+	/// Widgets format every row of every timeline entry, so the formatter is created once.
+	/// DateFormatter is thread-safe for formatting.
+	nonisolated(unsafe) private static let clockFormatter: DateFormatter = {
 		let formatter = DateFormatter()
 		formatter.locale = Locale(identifier: "en_US")
 		formatter.timeZone = TimeZone(identifier: "America/New_York")
 		formatter.dateFormat = "h:mm a"
-		return formatter.string(from: Date(timeIntervalSince1970: seconds))
+		return formatter
+	}()
+
+	public static func clockTime(_ seconds: TimeInterval?) -> String {
+		guard let seconds else { return "—" }
+		return clockFormatter.string(from: Date(timeIntervalSince1970: seconds))
 	}
 
 	public static func ageLabel(_ timestamp: TimeInterval?, now: TimeInterval) -> String {

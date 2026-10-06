@@ -216,16 +216,60 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		}
 	}
 
+	func testHomeScreenWidgetsKeepMarginsSeparateColumnsAndFillTheirHeight() {
+		let app = launch()
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["widgetPreviews"], in: app)
+		app.buttons["widgetPreviews"].tap()
+		for (family, minimum) in [("Small", 2), ("Medium", 3), ("Large", 7), ("Extra large", 7)] {
+			app.buttons["widgetPreviewFamily"].tap(); app.buttons[family].tap()
+			let canvas = app.otherElements["widgetPreviewCanvas"]
+			XCTAssertTrue(canvas.waitForExistence(timeout: 5))
+			// WidgetKit insets Home Screen content by 16 points on every side.
+			let content = canvas.frame.insetBy(dx: 15.5, dy: 15.5)
+			let heading = app.staticTexts["widgetStationName"].frame
+			let reportTime = app.descendants(matching: .any)["widgetUpdatedAt"].frame
+			XCTAssertTrue(content.contains(heading), "\(family) heading must stay inside the content margins")
+			XCTAssertTrue(content.contains(reportTime), "\(family) report time must stay inside the content margins")
+			var columns: [CGRect] = []
+			for direction in ["NORTH", "SOUTH"] {
+				let rows = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "widgetDeparture_\(direction)_")).allElementsBoundByIndex.map(\.frame)
+				XCTAssertGreaterThanOrEqual(rows.count, minimum, "\(family) should fit at least \(minimum) trains per direction")
+				guard let first = rows.first else { continue }
+				for row in rows {
+					XCTAssertTrue(content.contains(row), "\(family) rows must stay inside the content margins")
+					XCTAssertGreaterThan(row.minY, heading.maxY)
+					XCTAssertFalse(row.intersects(reportTime), "\(family) rows must not run into the report time")
+				}
+				columns.append(rows.reduce(first) { $0.union($1) })
+				if ["Large", "Extra large"].contains(family), let lowest = rows.map(\.maxY).max() {
+					XCTAssertLessThan(content.maxY - lowest, first.height + 8, "\(family) should use its height for more trains instead of leaving a gap")
+				}
+			}
+			if columns.count == 2 { XCTAssertFalse(columns[0].intersects(columns[1]), "\(family) direction columns must not overlap") }
+			screenshot("home-layout-\(family)", app: app)
+		}
+	}
+
 	private func assertLockScreenDeparturesFit(in app: XCUIApplication, minimumPerDirection: Int) {
 		let canvas = app.otherElements["widgetPreviewCanvas"]
 		XCTAssertTrue(canvas.exists)
 		XCTAssertEqual(canvas.frame.height, 76, accuracy: 1, "The accessibility container must match the fixed widget size")
 		let bounds = canvas.frame.insetBy(dx: 11, dy: 11)
+		// Circular widgets are circles, so their rows are checked against the circle itself.
+		let circular = abs(canvas.frame.width - canvas.frame.height) < 1
+		let center = CGPoint(x: canvas.frame.midX, y: canvas.frame.midY)
 		for direction in ["NORTH", "SOUTH"] {
 			let rows = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "widgetDeparture_\(direction)_")).allElementsBoundByIndex
 			XCTAssertGreaterThanOrEqual(rows.count, minimumPerDirection)
 			for row in rows {
 				XCTAssertTrue(row.isHittable)
+				if circular {
+					for corner in [CGPoint(x: row.frame.minX, y: row.frame.minY), CGPoint(x: row.frame.maxX, y: row.frame.minY), CGPoint(x: row.frame.minX, y: row.frame.maxY), CGPoint(x: row.frame.maxX, y: row.frame.maxY)] {
+						XCTAssertLessThanOrEqual(hypot(corner.x - center.x, corner.y - center.y), canvas.frame.width / 2 + 0.5, "Departure rows must stay inside the circle")
+					}
+					continue
+				}
 				XCTAssertGreaterThanOrEqual(row.frame.minY, bounds.minY)
 				XCTAssertLessThanOrEqual(row.frame.maxY, bounds.maxY, "Departure rows must stay inside the widget")
 				XCTAssertGreaterThanOrEqual(row.frame.minX, bounds.minX)

@@ -356,3 +356,48 @@ repository branch-protection settings. GitHub's current runner inventory is
 The simulator checks exercise the extension's shared view through the Debug
 preview harness. They do not establish widget placement or interactions on the
 system Lock Screen; the device check establishes installation and launch.
+
+## October 5, 2026 — widget spacing and SpringBoard review
+
+- Home Screen widgets now fit their trains to each size: direction arrows sit in a gutter
+  beside each column, arrivals keep to a right-aligned column, details align with
+  destinations, and medium and larger sizes put the report time beside the refresh
+  button. **Fit automatically** uses ViewThatFits, so the iPhone 17 large widget shows
+  eight trains per direction instead of six above a blank band; medium keeps three and
+  small keeps two. Route bullets cut their letters out on tinted and clear Home Screens.
+- Real widgets were placed on the iPhone 17 simulator (iOS 27) Home Screen with live
+  production departures, before and after the change. The baseline showed defects that
+  the in-app preview did not: countdown timers were laid out at their widest width and
+  floated after the destination, route letters drew at regular weight, and the small
+  widget's title sat about 10 points from the top edge against about 17 at the sides.
+  All three are fixed in the final captures. Measured sizes on this simulator: medium
+  349.67 × 164.33, large 349.67 × 365, circular 72 × 72, rectangular 162 × 72 points.
+- Default, Clear, and Tinted Home Screen appearances were captured with the widgets
+  placed; cut-out route letters remain legible on Clear and Tinted. The simulator was
+  returned to Default. Lock Screen widgets were added in the system editor and captured
+  there, then discarded with Cancel. That pass found circular arrivals truncated by the
+  first draft's inset. The circle now insets its rows by 10 points, and the UI test
+  checks circular rows against the circle rather than a square. A rendered probe showed
+  that the Lock Screen draws accessory text at the same scale as the preview (1.00).
+  The editor also showed renders from earlier builds, so the final circular train count
+  was confirmed in the preview at the real 72-point size: two trains per direction with
+  shortened car details.
+- With the first draft's longer candidate lists, the widget extension rendered timeline
+  entries at a median interval of 114 ms (26 to 34 entries per reload). Caching the
+  clock-time formatter and starting each size one train above its usual capacity brought
+  the median to 37 ms. Evidence from the simulator's unified log:
+  `artifacts/widget-ux/render-cadence-before.txt` and `render-cadence-after.txt`.
+- All 43 TransitCore tests and the nine native startup checks passed
+  (`artifacts/widget-ux/TransitCore-final.log`, `native-startup-final.log`).
+- `bash scripts/test-widgets.sh` passed all eight widget UI tests on the iPhone 17
+  simulator, including the new Home Screen margin, column, and height test:
+  `artifacts/widgets/ui-20261005-234347.xcresult` and `ui-latest.log`, with exported
+  screenshots in `ui-20261005-234347-screens/`. SpringBoard captures are under
+  `artifacts/widget-ux/`: baseline `explore2-212438-screens/`, final
+  `real-final-233907-screens/` and `final-real-home.png`, appearances
+  `appearance-v9-223923-screens/` and `appearance-v10-224134-screens/`, and the Lock
+  Screen editor `lock-real5-233135-screens/`. The opt-in `WidgetUXPassTests` repeat them.
+
+The SpringBoard passes use live production departures, so their contents vary between
+runs. The simulator's location override and permission granted for these passes were
+reset afterward.

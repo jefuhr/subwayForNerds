@@ -135,6 +135,17 @@ struct WidgetTests {
 		#expect(options.candidateCounts.first == 6)
 	}
 
+	@Test func homeScreenCountsTryTheMostTrainsThatTheSizeAndSettingAllow() {
+		var options = WidgetDisplayOptions()
+		#expect(options.candidateCounts(maximum: 3) == [3, 2, 1])
+		#expect(options.candidateCounts(maximum: 0) == [1])
+		options.trainsPerDirection = 2
+		#expect(options.candidateCounts(maximum: 8) == [2, 1])
+		#expect(options.candidateCounts(maximum: 1) == [1])
+		options.trainsPerDirection = -4
+		#expect(options.candidateCounts(maximum: 8) == [1])
+	}
+
 	@Test func widgetServiceDetailsCanBeHiddenAndIdentifyInferredPatterns() {
 		var row = departure("service", direction: "NORTH", time: 1100)
 		row.pattern = "Brighton local"

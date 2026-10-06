@@ -30,6 +30,12 @@ public struct WidgetDisplayOptions: Codable, Sendable, Equatable {
 	public var trainsPerDirection = 0
 	public var timeStyle: WidgetTimeStyle = .countdown
 	public init() {}
+	/// Try the richest layout first; the view measures which candidate actually fits.
+	/// A chosen train count is an upper limit, as is the widget size's maximum.
+	public func candidateCounts(maximum: Int) -> [Int] {
+		let limit = max(1, trainsPerDirection == 0 ? maximum : min(maximum, trainsPerDirection))
+		return Array(stride(from: limit, through: 1, by: -1))
+	}
 }
 
 public enum LockScreenDirectionOrder: String, Codable, Sendable, CaseIterable, Identifiable {
@@ -70,11 +76,7 @@ public struct LockScreenWidgetOptions: Codable, Sendable, Equatable {
 		let directions = regional ? ["TO_NJ", "TO_NY"] : ["SOUTH", "NORTH"]
 		return directionOrder == .downtownLeft ? directions : directions.reversed()
 	}
-	/// Try the richest layout first; the view measures which candidate actually fits.
-	public var candidateCounts: [Int] {
-		let maximum = display.trainsPerDirection == 0 ? 6 : min(6, max(1, display.trainsPerDirection))
-		return Array(stride(from: maximum, through: 1, by: -1))
-	}
+	public var candidateCounts: [Int] { display.candidateCounts(maximum: 6) }
 }
 /// Car details retain the existing freshness rules; missing reports stay blank.
 public func widgetTrainDetails(_ row: Departure, options: WidgetDisplayOptions, now: TimeInterval, cached: Bool = false) -> String {

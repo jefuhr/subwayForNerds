@@ -27,7 +27,7 @@ test('NJT station APIs remain available without upstream data and exclude MTA al
   const app = await createServer(service);
   try {
     for (const id of ['njt-lr-30771', 'njt-lr-30829', 'njt-lr-30855']) {
-      const response = await app.inject(`/subwaysForNerds/api/v1/stations/${id}/board`);
+      const response = await app.inject(`/api/v1/stations/${id}/board`);
       assert.equal(response.statusCode, 200);
       const board = response.json();
       assert.equal(board.station.departureMode, 'external');

@@ -2,7 +2,7 @@ import { performance } from 'node:perf_hooks';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 
-const origin = process.env.BENCH_URL || 'http://127.0.0.1:8091/subwaysForNerds/';
+const origin = process.env.BENCH_URL || 'http://127.0.0.1:8091/';
 const url = origin + 'api/v1/stations/602/board';
 await fetch(url).then(r => r.arrayBuffer());
 const timings = [];

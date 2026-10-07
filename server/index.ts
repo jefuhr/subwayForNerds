@@ -13,7 +13,10 @@ import { registerAnalytics } from './analytics';
 
 export async function createServer(service = new TransitService({ fixtureDir: process.env.FIXTURE_DIR })) {
   const app = Fastify({ logger: process.env.NODE_ENV === 'production' });
-  const base = process.env.APP_BASE || '/subwaysForNerds/';
+  const configuredBase = process.env.APP_BASE || '/';
+  // The live systemd unit still sets the old mount point during this hostname
+  // cutover. Treat that exact legacy value as root so an app-only deploy is safe.
+  const base = configuredBase === '/subwaysForNerds/' ? '/' : configuredBase;
   if (!/^\/(?:[A-Za-z0-9_-]+\/)*$/.test(base)) throw new Error('APP_BASE must be an absolute path ending in /');
   await app.register(compress);
   const api = base + 'api/v1';
@@ -70,6 +73,19 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
   app.get(api + '/fleet/health', () => ({ available: !!service.fleet?.initialized && !service.fleet.error, error: service.fleet?.error || null }));
   app.get(api + '/health', () => ({ status: [...service.slots.values()].every(s => s.state.timestamp && nowSeconds() - s.state.timestamp <= 90 && !s.state.error) ? 'ok' : 'degraded', feeds: [...service.slots.values()].map(s => ({ ...s.state, age: s.state.timestamp ? nowSeconds() - s.state.timestamp : null })), stationCount: service.catalog.length }));
   app.get('/healthz', () => ({ status: 'ok' }));
+  if (base === '/') {
+    for (const legacy of ['/subwaysForNerds', '/subwayForNerds']) {
+      const redirectLegacy = (req: any, reply: any) => {
+        const pathname = req.url.split('?', 1)[0];
+        const suffix = pathname.slice(legacy.length) || '/';
+        const queryAt = req.url.indexOf('?');
+        const query = queryAt < 0 ? '' : req.url.slice(queryAt);
+        return reply.code(301).header('Location', `https://subwaysfornerds.juliet.nyc${suffix}${query}`).send();
+      };
+      app.get(legacy, redirectLegacy);
+      app.get(legacy + '/*', redirectLegacy);
+    }
+  }
   if (base !== '/') app.get(base.slice(0, -1), (_req, reply) => reply.redirect(base));
   if (existsSync(resolve('dist'))) {
     app.get(base + 'stats', (_req, reply) => reply.header('Cache-Control', 'no-cache').sendFile('index.html'));

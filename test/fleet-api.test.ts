@@ -21,24 +21,24 @@ test('fleet APIs use local paginated inventory, reject malformed filters, and is
   const app = await createServer(service);
   try {
     await service.fleet.ready;
-    const list = await app.inject('/subwaysForNerds/api/v1/fleet');
+    const list = await app.inject('/api/v1/fleet');
     assert.equal(list.statusCode, 200); assert.equal(list.json().rows.length, 100);
     assert.ok(list.json().coverage.find((c: any) => c.category === 'passenger').count > 4000);
-    const second = await app.inject('/subwaysForNerds/api/v1/fleet?page=2');
+    const second = await app.inject('/api/v1/fleet?page=2');
     assert.notEqual(second.json().rows[0].id, list.json().rows[0].id);
-    assert.equal((await app.inject('/subwaysForNerds/api/v1/fleet?page=-1')).statusCode, 400);
-    assert.equal((await app.inject('/subwaysForNerds/api/v1/fleet/cars/not-recorded')).statusCode, 404);
-    const work = await app.inject('/subwaysForNerds/api/v1/fleet?q=OL912');
+    assert.equal((await app.inject('/api/v1/fleet?page=-1')).statusCode, 400);
+    assert.equal((await app.inject('/api/v1/fleet/cars/not-recorded')).statusCode, 404);
+    const work = await app.inject('/api/v1/fleet?q=OL912');
     assert.equal(work.json().total, 1);
-    const car = await app.inject('/subwaysForNerds/api/v1/fleet/cars/' + encodeURIComponent(work.json().rows[0].cars[0].id));
+    const car = await app.inject('/api/v1/fleet/cars/' + encodeURIComponent(work.json().rows[0].cars[0].id));
     assert.equal(car.statusCode, 200); assert.equal(car.json().cars[0].last, undefined);
     const detail = [...service.details.values()][0].train;
-    const result = await app.inject('/subwaysForNerds/api/v1/trips/transfers?' + new URLSearchParams({ key: detail.key, stopId: detail.stops[0].id }));
+    const result = await app.inject('/api/v1/trips/transfers?' + new URLSearchParams({ key: detail.key, stopId: detail.stops[0].id }));
     assert.equal(result.statusCode, 200); assert.ok(result.json().message);
-    assert.equal((await app.inject('/subwaysForNerds/api/v1/trips/transfers?sequence=no')).statusCode, 400);
+    assert.equal((await app.inject('/api/v1/trips/transfers?sequence=no')).statusCode, 400);
     await service.fleet.worker.terminate();
-    assert.equal((await app.inject('/subwaysForNerds/api/v1/fleet')).statusCode, 503);
-    assert.equal((await app.inject('/subwaysForNerds/api/v1/stations/602/board')).statusCode, 200);
+    assert.equal((await app.inject('/api/v1/fleet')).statusCode, 503);
+    assert.equal((await app.inject('/api/v1/stations/602/board')).statusCode, 200);
     assert.equal(upstream, 0);
   } finally { await app.close(); await rm(dir, { recursive: true, force: true }); }
 });

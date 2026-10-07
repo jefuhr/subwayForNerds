@@ -1,5 +1,17 @@
 import { test, expect } from '@playwright/test';
 
+test('serves the app, API, and service worker from the domain root', async ({ page }) => {
+  const response = await page.goto('/');
+  expect(response?.ok()).toBeTruthy();
+  await expect(page).toHaveURL(/\/$/);
+  expect((await page.request.get('/api/v1/stations')).status()).toBe(200);
+  const legacy = await page.request.get('/subwaysForNerds/api/v1/stations?keep=this', { maxRedirects: 0 });
+  expect(legacy.status()).toBe(301);
+  expect(legacy.headers().location).toBe('https://subwaysfornerds.juliet.nyc/api/v1/stations?keep=this');
+  const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
+  expect(new URL(scope).pathname).toBe('/');
+});
+
 test.beforeEach(async ({ page }) => {
   // Recorded feed clock: prevents replayed fixtures from impersonating live data.
   await page.clock.install({ time: new Date('2026-09-06T00:59:40Z') });

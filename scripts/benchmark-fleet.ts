@@ -16,7 +16,7 @@ const app = await createServer(service);
 let timer: ReturnType<typeof setInterval> | undefined;
 try {
   const address = await app.listen({ host: '127.0.0.1', port: 0 });
-  const url = address + '/subwaysForNerds/api/v1/stations/602/board';
+  const url = address + '/api/v1/stations/602/board';
   async function phase() {
     const times: number[] = [];
     for (let batch = 0; batch < 100; batch++) await Promise.all(Array.from({ length: 8 }, async () => {

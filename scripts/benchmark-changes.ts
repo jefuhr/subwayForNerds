@@ -31,7 +31,7 @@ const app = await createServer(service);
 await app.listen({port:0,host:'127.0.0.1'});
 const address = app.server.address();
 if (!address || typeof address === 'string') throw Error('Missing local listener');
-const url = `http://127.0.0.1:${address.port}/subwaysForNerds/api/v1/stations/602/board`;
+const url = `http://127.0.0.1:${address.port}/api/v1/stations/602/board`;
 await fetch(url).then(r=>r.arrayBuffer());
 async function sample(count: number) {
   const latencies: number[] = []; let next=0;

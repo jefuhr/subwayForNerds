@@ -97,7 +97,7 @@ temporary databases, never the production state directory.
   arrival (explicit departure fallback), connections in the following 30 minutes,
   raw gaps, and freshness. An ambiguous or removed visit returns an explanation.
 
-These endpoints live under the existing `/subwaysForNerds/api/v1` prefix. None
+These endpoints live under `/api/v1` on `subwaysfornerds.juliet.nyc`. None
 fetch upstream data on request. The deprecated `Departure.onward` payload remains
 for existing clients; the comparison UI and ranking logic are removed.
 

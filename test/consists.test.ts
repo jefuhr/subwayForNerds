@@ -56,7 +56,7 @@ test('independent Helium refresh enriches board and trip APIs and clears removed
   service.accept('gtfs-ace', raw, now);
   const stationId = service.catalog.find(s => s.parts.some(p => p.id === 'A32'))!.id;
   const app = await createServer(service);
-  const url = `/subwaysForNerds/api/v1/stations/${stationId}/board`;
+  const url = `/api/v1/stations/${stationId}/board`;
   try {
     const before = await app.inject(url);
     await service.refreshConsists();
@@ -64,7 +64,7 @@ test('independent Helium refresh enriches board and trip APIs and clears removed
     assert.notEqual(before.headers.etag, after.headers.etag);
     const departure = after.json().departures[0];
     assert.deepEqual(departure.consist.cars, trip.consistCars);
-    const detail = await app.inject('/subwaysForNerds/api/v1/trips?key=' + encodeURIComponent(departure.tripKey));
+    const detail = await app.inject('/api/v1/trips?key=' + encodeURIComponent(departure.tripKey));
     assert.deepEqual(detail.json().train.consist, departure.consist);
     assert.equal(requests, 1);
     // A new GTFS snapshot also picks up the existing Helium cache.

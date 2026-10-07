@@ -16,14 +16,14 @@ test('change summaries reach boards and transfers while explanations stay in tri
   ]}}]},now);
   const app=await createServer(service);
   try {
-    const board=(await app.inject('/subwaysForNerds/api/v1/stations/602/board')).json();
+    const board=(await app.inject('/api/v1/stations/602/board')).json();
     const d=board.departures[0]; assert.equal(d.changes[0].kind,'track'); assert.equal(d.changes[0].description,undefined);
-    const detail=(await app.inject('/subwaysForNerds/api/v1/trips?key='+encodeURIComponent(d.tripKey))).json();
+    const detail=(await app.inject('/api/v1/trips?key='+encodeURIComponent(d.tripKey))).json();
     assert.match(detail.train.changes[0].description,/reported track 4/);
-    const transfers=(await app.inject('/subwaysForNerds/api/v1/trips/transfers?key='+encodeURIComponent(d.tripKey)+'&stopId=631N')).json();
+    const transfers=(await app.inject('/api/v1/trips/transfers?key='+encodeURIComponent(d.tripKey)+'&stopId=631N')).json();
     assert.equal(transfers.connections.length,1); assert.equal(transfers.connections[0].changes[0].kind,'track');
     service.slots.get('gtfs')!.state.error='Network failure'; service.refreshBoards(now);
-    const stale=(await app.inject('/subwaysForNerds/api/v1/stations/602/board')).json();
+    const stale=(await app.inject('/api/v1/stations/602/board')).json();
     assert.equal(changeStale(stale.departures[0].changes[0],now),true);
   } finally {await app.close();}
 });
@@ -36,17 +36,36 @@ test('station APIs are indexed, conditional, isolated from upstream, and resilie
   service.slots.get('gtfs-l')!.state.error = 'Simulated L feed outage'; service.refreshBoards();
   const app = await createServer(service);
   try {
-    const response = await app.inject('/subwaysForNerds/api/v1/stations/602/board');
+    const response = await app.inject('/api/v1/stations/602/board');
     assert.equal(response.statusCode, 200); assert.ok(response.json().departures.length);
     assert.ok(response.json().sources.some((s: any) => s.id === 'gtfs-l' && s.error));
-    const unchanged = await app.inject({ url: '/subwaysForNerds/api/v1/stations/602/board', headers: { 'if-none-match': response.headers.etag! } });
+    const unchanged = await app.inject({ url: '/api/v1/stations/602/board', headers: { 'if-none-match': response.headers.etag! } });
     assert.equal(unchanged.statusCode, 304);
-    const unknown = await app.inject('/subwaysForNerds/api/v1/stations/not-a-station/board'); assert.equal(unknown.statusCode, 404);
-    const rootApi = await app.inject('/api/v1/stations'); assert.equal(rootApi.statusCode, 404);
-    const trip = await app.inject('/subwaysForNerds/api/v1/trips?key=' + encodeURIComponent(response.json().departures[0].tripKey));
+    const unknown = await app.inject('/api/v1/stations/not-a-station/board'); assert.equal(unknown.statusCode, 404);
+    const rootApi = await app.inject('/api/v1/stations'); assert.equal(rootApi.statusCode, 200);
+    const legacyApi = await app.inject('/subwaysForNerds/api/v1/stations?keep=this');
+    assert.equal(legacyApi.statusCode, 301);
+    assert.equal(legacyApi.headers.location, 'https://subwaysfornerds.juliet.nyc/api/v1/stations?keep=this');
+    const trip = await app.inject('/api/v1/trips?key=' + encodeURIComponent(response.json().departures[0].tripKey));
     assert.equal(trip.statusCode, 200); assert.ok(trip.json().raw.length);
     assert.equal(fetched, 0);
   } finally { await app.close(); }
+});
+
+test('the live systemd legacy base is served from the new domain root', async () => {
+  const previous = process.env.APP_BASE;
+  process.env.APP_BASE = '/subwaysForNerds/';
+  const app = await createServer(new TransitService());
+  try {
+    assert.equal((await app.inject('/api/v1/stations')).statusCode, 200);
+    const oldPath = await app.inject('/subwaysForNerds/api/v1/stations?station=602');
+    assert.equal(oldPath.statusCode, 301);
+    assert.equal(oldPath.headers.location, 'https://subwaysfornerds.juliet.nyc/api/v1/stations?station=602');
+  } finally {
+    await app.close();
+    if (previous === undefined) delete process.env.APP_BASE;
+    else process.env.APP_BASE = previous;
+  }
 });
 test('older feeds cannot overwrite newer data, and missing trips are removed without invented cancellations', () => {
   const service = new TransitService();

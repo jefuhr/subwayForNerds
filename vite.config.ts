@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
-const base = process.env.APP_BASE || '/subwaysForNerds/';
+const base = process.env.APP_BASE || '/';
 export default defineConfig({
   base,
   plugins: [react(), {

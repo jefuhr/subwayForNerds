@@ -3,13 +3,13 @@ services:
     build:
       context: .
       args:
-        APP_BASE: /subwaysForNerds/
+        APP_BASE: /
     restart: unless-stopped
     ports:
       - "127.0.0.1:8091:8091"
     volumes:
       - subway-state:/app/state
     environment:
-      APP_BASE: /subwaysForNerds/
+      APP_BASE: /
 volumes:
   subway-state:

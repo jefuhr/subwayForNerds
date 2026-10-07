@@ -15,7 +15,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:5173/subwaysForNerds/`. The API runs on port 8091.
+Open `http://localhost:5173/`. The API runs on port 8091.
 For the production build, including offline installation:
 
 ```sh
@@ -23,7 +23,7 @@ npm run build
 npm start
 ```
 
-Open `http://localhost:8091/subwaysForNerds/`. Initial station boards are available
+Open `http://localhost:8091/`. Initial station boards are available
 immediately; upstream feeds populate them independently. Use HTTPS when exposing
 the app beyond localhost so geolocation and service workers work.
 
@@ -119,7 +119,7 @@ means “all elevators working”.
 
 ## HTTP interface
 
-All app endpoints live under `/subwaysForNerds/api/v1/`:
+All app endpoints live under `/api/v1/` on the app host:
 
 | Endpoint | Result |
 | --- | --- |
@@ -135,12 +135,14 @@ the UI formats them in `America/New_York`. Shared contracts are in `shared/types
 
 ## Deployment
 
-The juliet.nyc host already runs `subways-for-nerds.service` from
-`/opt/subways-for-nerds`, behind its existing nginx prefix. The local
-`~/deploy-sfn.sh` helper builds the frontend locally, backs up the deployed app,
-ships committed `main` source plus `dist/`, restarts only the subway service, and
-checks the public endpoints. Commit the intended release before using that helper;
-it archives committed source, while building the frontend from the checkout.
+The juliet.nyc host runs `subways-for-nerds.service` from
+`/opt/subways-for-nerds`, behind nginx at
+`https://subwaysfornerds.juliet.nyc/`. The old `/subwaysForNerds/` path redirects
+there, keeping any remaining path and query string. The local
+`~/Scripts/deploy-sfn.sh` helper builds the frontend locally, backs up the deployed
+app, ships committed `main` source plus `dist/`, restarts only the subway service,
+and checks the public endpoints. Commit the intended release before using that
+helper; it archives committed source, while building the frontend from the checkout.
 
 For a new container-based host instead:
 
@@ -149,12 +151,14 @@ docker compose up --build -d
 ```
 
 The container runs as an unprivileged user, listens on loopback port 8091 through
-Compose, and persists feed data in a named volume. Add the locations in
-`deploy/nginx.conf` to juliet.nyc's existing HTTPS server block. The proxy preserves
-the entire prefix. No root-level `/api`, `/assets`, `/sw.js`, or ferry routes change.
+Compose, and persists feed data in a named volume. Include `deploy/nginx.conf` in
+the dedicated `subwaysfornerds.juliet.nyc` HTTPS server block. Its root paths belong
+to this app; the juliet.nyc landing site keeps its existing routes.
 
-`APP_BASE` defaults to `/subwaysForNerds/` and must match at build time and runtime.
-The service worker, manifest, navigation and API remain scoped to it. `HOST`,
+`APP_BASE` defaults to `/` and must match at build time and runtime. The running
+juliet systemd unit still has the former `/subwaysForNerds/` value; the server
+normalizes that legacy setting to `/` during this cutover. The service worker,
+manifest, navigation and API are scoped to the domain root. `HOST`,
 `PORT` and `STATE_DIR` configure the server. `FIXTURE_DIR` is a development-only
 option for replaying the original investigation's decoded JSON tree; replay dates
 are preserved so old captures remain visibly stale.
@@ -201,7 +205,7 @@ sessions, station views, and control actions with a random browser ID, coarse
 device category, and referring hostname. No location, search text, full referrer
 URL, raw IP address, or raw user-agent string is stored in analytics. Events are
 kept for 365 days in `STATE_DIR/analytics.sqlite`, separate from fleet data.
-Public aggregates are available at `/subwaysForNerds/stats`; browser counts are
+Public aggregates are available at `/stats`; browser counts are
 estimates. Collection starts at deployment with no historical backfill.
 
 Browser storage holds per-station direction and line preferences, a station

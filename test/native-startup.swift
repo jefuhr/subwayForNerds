@@ -121,6 +121,30 @@ struct NativeStartupTests {
 		try expect(unavailable.stations.count == 3, "Unavailable location must not remove the station catalog")
 		print("PASS: unavailable nearby search preserves the catalog and explains the location failure")
 		await stop(unavailable, task: disabledForeground, background: true)
+
+		let fixture = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("test/fixtures/settings.nerds")
+		let file = try NerdsSettingsFile.decode(Data(contentsOf: fixture))
+		let before = unavailable.portableSettings
+		unavailable.previewSettingsFile(fixture)
+		try expect(unavailable.pendingSettingsImport != nil && unavailable.portableSettings == before, "Opening a .nerds file must preview without changing settings")
+		try unavailable.importSettings(file)
+		try expect(unavailable.portableSettings == file.settings && unavailable.stationID == "602", "Import must apply station, widget and app preferences together")
+		let imported = AppModel(stateDirectory: directory)
+		try expect(imported.portableSettings == file.settings, "Imported preferences must survive relaunch")
+		let importedWidgetSettings = try imported.widgetStore!.load().widgets
+		try expect(importedWidgetSettings == file.settings.widgets, "Import must update the shared widget snapshot")
+		let settingsURL = directory.appendingPathComponent("settings.json")
+		let backupURL = directory.appendingPathComponent("settings-backup.json")
+		try FileManager.default.moveItem(at: settingsURL, to: backupURL)
+		try FileManager.default.createDirectory(at: settingsURL, withIntermediateDirectories: false)
+		var replacement = file; replacement.settings.favorites = ["changed"]
+		var failed = false
+		do { try unavailable.importSettings(replacement) } catch { failed = true }
+		try expect(failed && unavailable.portableSettings == file.settings, "A failed import write must retain the previous settings in memory")
+		try FileManager.default.removeItem(at: settingsURL)
+		try FileManager.default.moveItem(at: backupURL, to: settingsURL)
+		print("PASS: .nerds preview, atomic import, widget sharing, relaunch and write-failure recovery")
+
 	}
 
 	@MainActor static func waitForStation(_ id: String, in app: AppModel) async throws {

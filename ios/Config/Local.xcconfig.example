@@ -6,3 +6,7 @@ PRODUCT_BUNDLE_IDENTIFIER = nyc.juliet.subwaysfornerds
 // and an App Group registered to this team. Both targets use the same group.
 SFN_WIDGET_BUNDLE_IDENTIFIER = nyc.juliet.subwaysfornerds.widgets
 SFN_APP_GROUP_IDENTIFIER = group.nyc.juliet.subwaysfornerds
+
+// Google iOS OAuth client ID, with dot-separated components reversed.
+// Obtain this from Google Cloud before enabling native Google sign-in.
+// SFN_GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.YOUR_CLIENT_ID

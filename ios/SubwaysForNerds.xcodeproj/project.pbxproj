@@ -11,6 +11,8 @@
 		000000000000000000000065 /* FleetOffline in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000063 /* FleetOffline */; };
 		000000000000000000000075 /* TransitCore in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000074 /* TransitCore */; };
 		000000000000000000000076 /* SubwayWidgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 000000000000000000000073 /* SubwayWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		000000000000000000000093 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000091 /* GoogleSignIn */; };
+		000000000000000000000094 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000092 /* GoogleSignInSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,6 +83,8 @@
 			files = (
 				000000000000000000000064 /* TransitCore in Frameworks */,
 				000000000000000000000065 /* FleetOffline in Frameworks */,
+				000000000000000000000093 /* GoogleSignIn in Frameworks */,
+				000000000000000000000094 /* GoogleSignInSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -149,6 +153,8 @@
 			packageProductDependencies = (
 				000000000000000000000062 /* TransitCore */,
 				000000000000000000000063 /* FleetOffline */,
+				000000000000000000000091 /* GoogleSignIn */,
+				000000000000000000000092 /* GoogleSignInSwift */,
 			);
 			productName = SubwaysForNerds;
 			productReference = 000000000000000000000007 /* SubwaysForNerds.app */;
@@ -230,6 +236,7 @@
 			mainGroup = 000000000000000000000002;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				000000000000000000000090 /* GoogleSignIn-iOS */,
 				000000000000000000000060 /* XCLocalSwiftPackageReference "TransitCore" */,
 				000000000000000000000061 /* XCLocalSwiftPackageReference "FleetOffline" */,
 			);
@@ -401,7 +408,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
-				CODE_SIGN_ENTITLEMENTS = Config/App.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Config/Widget.entitlements;
 				INFOPLIST_FILE = Config/WidgetInfo.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -419,7 +426,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
-				CODE_SIGN_ENTITLEMENTS = Config/App.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Config/Widget.entitlements;
 				INFOPLIST_FILE = Config/WidgetInfo.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -484,7 +491,13 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		000000000000000000000090 /* GoogleSignIn-iOS */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/google/GoogleSignIn-iOS"; requirement = {kind = exactVersion; version = 10.0.0; }; };
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		000000000000000000000091 /* GoogleSignIn */ = {isa = XCSwiftPackageProductDependency; package = 000000000000000000000090; productName = GoogleSignIn; };
+		000000000000000000000092 /* GoogleSignInSwift */ = {isa = XCSwiftPackageProductDependency; package = 000000000000000000000090; productName = GoogleSignInSwift; };
 		000000000000000000000062 /* TransitCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 000000000000000000000060 /* XCLocalSwiftPackageReference "TransitCore" */;

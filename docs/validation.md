@@ -402,6 +402,56 @@ The SpringBoard passes use live production departures, so their contents vary be
 runs. The simulator's location override and permission granted for these passes were
 reset afterward.
 
+
+## October 6, 2026 — portable settings and optional accounts
+
+- `npm run check` passed the production web build and all 64 backend/shared tests.
+  Account coverage includes signed-token validation, replay and browser binding,
+  CSRF, explicit linking, revision checks, session invalidation, deletion, durable
+  encrypted grants, and rejection of an incorrect encryption key. The focused
+  account suite also passed after the final database-permissions adjustment.
+- `npm run test:native` passed 43 TransitCore and 17 FleetOffline tests.
+  `bash scripts/test-native-startup.sh` passed, including bounded `.nerds` reading,
+  preview without mutation, atomic replacement, widget sharing, relaunch, and
+  failed-write recovery. Shared TypeScript and Swift `.nerds` fixtures match.
+- The full browser run passed 46 tests with four expected skips and one WebKit
+  offline file-injection failure. The test now selects the file before taking
+  the browser offline and commits the import while disconnected. All 15 focused
+  settings tests then passed across desktop Chromium, mobile Chromium, and mobile
+  WebKit, including conflict resolution, account-switch isolation, storage failure,
+  and the standalone privacy page under the installed service worker.
+- The native `.nerds` UI test passed after allowing the simulator’s Files picker
+  time to initialize. It checks cancellation, replacement, relaunch persistence,
+  and presentation of the export picker; the export screenshot was visually
+  reviewed. Evidence: `artifacts/accounts/ios-focused-3.xcresult` and
+  `artifacts/accounts/ios-focused-attachments/`. The initial full native run
+  passed 12 tests, skipped three opt-in tests, and failed the initial export-picker
+  wait and a widget-toggle assertion. The final focused widget test passed with
+  a settled-navigation wait and a tap on the switch thumb, verifying display
+  changes and relaunch persistence. That run rebuilt the final app successfully:
+  `artifacts/accounts/ios-widget-final.xcresult` and `ios-widget-final.log`.
+- Evidence is retained in `artifacts/accounts/`, `playwright-report/`, and
+  `test-results/`. Native simulator results are in `.xcresult` bundles, with
+  screenshots and recordings exported under `artifacts/accounts/ios-attachments/`.
+- Real Apple/Google authorization, signed-device callbacks, and provider revocation
+  still require owner enrollment and credentials. Authentication defaults to off;
+  setup and rollout instructions are in `docs/accounts.md`. Mocked backend/browser
+  checks do not establish a live-provider pass.
+
+### PR integration with the latest main branch
+
+Merged the independent Lock Screen customization changes before opening the PR.
+The portable schema now carries Lock Screen display options, direction order, and
+service icons. Older v1 files migrate their previous display settings consistently
+in Swift and TypeScript. Both shared fixtures exercise customized Lock Screen values.
+
+After integration, the web build and all 65 backend/shared tests passed, all 48
+TransitCore and 17 FleetOffline tests passed, and the AppModel startup integration
+checks passed. All 15 focused browser settings tests passed across Chromium and
+WebKit. The native app and UI test bundle compiled with `build-for-testing` for
+the generic iOS Simulator destination. The earlier native UI results above
+predate this merge; the merged UI suite is left to PR CI. Logs are retained as
+`artifacts/accounts/merge-*.log`.
 ## October 6, 2026 — widget review and independent refresh intervals
 
 - Reviewed Claude's widget spacing and density change (`0c896f5`) and the shared

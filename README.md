@@ -187,8 +187,8 @@ below 200ms. Actual results and platform limitations belong in `docs/validation.
 - Theme palettes and local Lato/Flame font assets were adapted from the user's
   `~/DiD_Open` mobile branch. The interface and transit service are new.
 
-No accounts or analytics are included. Location stays on-device. Browser storage
+Optional Apple/Google accounts sync settings; `.nerds` files transfer settings without an account.
+See [account setup and privacy](docs/accounts.md). Location stays on-device. Browser storage
 holds preferences, a station catalog, and up to eight recent station snapshots.
 The native SwiftUI client uses the same HTTP contracts, with on-device location,
-preferences, cached boards, and an optional downloaded fleet snapshot. It has no
-third-party runtime dependencies. See [the native feature and validation matrix](docs/ios.md).
+preferences, cached boards, and an optional downloaded fleet snapshot. It uses Apple frameworks and the pinned Google Sign-In SDK for optional accounts. See [the native feature and validation matrix](docs/ios.md).

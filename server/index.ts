@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import { accountOptions, registerAccounts } from './accounts';
 import compress from '@fastify/compress';
 import staticFiles from '@fastify/static';
 import { existsSync } from 'node:fs';
@@ -12,11 +13,14 @@ import { transfers } from './transfers';
 import { registerFleetOfflineRoutes } from './fleet-offline-routes';
 
 export async function createServer(service = new TransitService({ fixtureDir: process.env.FIXTURE_DIR })) {
-  const app = Fastify({ logger: process.env.NODE_ENV === 'production' });
+  const app = Fastify({ trustProxy: process.env.SFN_TRUST_PROXY ? process.env.SFN_TRUST_PROXY.split(',') : false, logger: process.env.NODE_ENV === 'production' ? { serializers: { req: req => ({ method: req.method, url: req.url?.split('?')[0] }) } } : false });
   const base = process.env.APP_BASE || '/subwaysForNerds/';
   if (!/^\/(?:[A-Za-z0-9_-]+\/)*$/.test(base)) throw new Error('APP_BASE must be an absolute path ending in /');
   await app.register(compress);
   const api = base + 'api/v1';
+  let accounts;
+  try { accounts = accountOptions(); } catch { app.log.error('Account configuration unavailable; authentication disabled'); }
+  await registerAccounts(app, api, accounts);
   const encoded = new WeakMap<object, { json: string; gzip: Buffer; etag: string }>();
   app.addHook('onSend', async (_req, reply, payload) => {
     reply.header('X-Content-Type-Options', 'nosniff');

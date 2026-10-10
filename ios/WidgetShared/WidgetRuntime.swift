@@ -57,26 +57,36 @@ struct SubwayTimelineProvider: TimelineProvider {
 enum WidgetBoardLoader {
 	static func load() async -> SubwayWidgetEntry {
 		var entry = SubwayWidgetEntry(date: .now)
-		guard let store = WidgetSharedStore.configured(), let state = try? store.load() else {
+		guard let store = WidgetSharedStore.configured(), var state = try? store.load() else {
 			entry.message = "Open the app to set up your widgets."
 			return entry
+		}
+		let location: WidgetCoordinate?
+		if state.favorites.isEmpty { location = nil }
+		else {
+			let locator = await WidgetLocator()
+			location = await locator.locate()
+			// The app may publish a newer location or settings while Core Location waits.
+			state = (try? store.load()) ?? state
 		}
 		entry.themeID = state.themeID
 		entry.display = state.widgets.display
 		entry.lockScreen = state.widgets.lockScreen
 		guard !state.favorites.isEmpty else { entry.message = "Add a favorite in the app."; return entry }
-		let locator = await WidgetLocator()
-		let location = await locator.locate()
 		let previous = store.selection()
-		let fallbackCoordinate = previous == nil ? state.appLocation : nil
-		guard let station = state.selectedStation(location: location ?? fallbackCoordinate, previous: previous?.stationID) else {
+		let now = Date().timeIntervalSince1970
+		let coordinate = WidgetCoordinate.newestUsable(in: [location, state.appLocation, previous?.location], now: now)
+		guard var station = state.selectedStation(location: coordinate, previous: previous?.stationID, now: now) else {
 			entry.message = "Open the app to load your favorite stations."
 			return entry
+		}
+		if let saved = try? store.saveSelection(stationID: station.id, location: coordinate) {
+			// Another widget may have saved a newer fix between our read and write.
+			station = state.selectedStation(location: saved.location, previous: saved.stationID) ?? station
 		}
 		entry.station = station
 		entry.preference = state.widgets.preference(for: station.id, app: state.appFilters)
 		entry.locationNotice = location == nil ? "Location unavailable · saved favorite" : nil
-		try? store.saveSelection(stationID: station.id, location: location ?? previous?.location ?? fallbackCoordinate)
 		if station.departureMode == "external" { entry.message = "Open station for departure times."; return entry }
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.timeoutIntervalForRequest = 8
@@ -129,9 +139,16 @@ private final class WidgetLocator: NSObject, @preconcurrency CLLocationManagerDe
 		}
 	}
 	func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-		guard let location = locations.last, location.horizontalAccuracy >= 0, abs(location.timestamp.timeIntervalSinceNow) < 300 else { finish(nil); return }
-		finish(WidgetCoordinate(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, timestamp: location.timestamp.timeIntervalSince1970))
+		let coordinates = locations.filter { $0.horizontalAccuracy.isFinite && $0.horizontalAccuracy >= 0 }.map {
+			WidgetCoordinate(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude, timestamp: $0.timestamp.timeIntervalSince1970)
+		}
+		finish(WidgetCoordinate.newestUsable(in: coordinates, now: Date().timeIntervalSince1970))
 	}
 	func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) { finish(nil) }
-	private func finish(_ location: WidgetCoordinate?) { timeout?.cancel(); timeout = nil; let continuation = waiting; waiting = nil; continuation?.resume(returning: location) }
+	private func finish(_ location: WidgetCoordinate?) {
+		timeout?.cancel(); timeout = nil
+		let continuation = waiting; waiting = nil
+		manager.stopUpdatingLocation()
+		continuation?.resume(returning: location)
+	}
 }

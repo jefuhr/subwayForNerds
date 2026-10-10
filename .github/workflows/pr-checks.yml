@@ -70,6 +70,7 @@ jobs:
         run: |
           npm run test:native
           bash scripts/test-native-startup.sh
+          bash scripts/test-native-account-choices.sh
       - name: App and widget simulator E2E tests
         run: npm run test:ios
       - name: Save simulator results and fixture logs

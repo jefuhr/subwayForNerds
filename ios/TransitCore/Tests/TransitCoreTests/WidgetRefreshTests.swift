@@ -3,6 +3,33 @@ import Testing
 @testable import TransitCore
 
 struct WidgetRefreshTests {
+	@Test func newestUsableLocationWinsAcrossAppAndWidgetRefreshes() {
+		let app = WidgetCoordinate(latitude: 41, longitude: -74, timestamp: 990)
+		let extensionFix = WidgetCoordinate(latitude: 40, longitude: -74, timestamp: 980)
+		let otherWidget = WidgetCoordinate(latitude: 42, longitude: -74, timestamp: 995)
+		#expect(WidgetCoordinate.newestUsable(in: [extensionFix, app, nil], now: 1000) == app)
+		#expect(WidgetCoordinate.newestUsable(in: [nil, app, otherWidget], now: 1000) == otherWidget)
+		#expect(WidgetCoordinate.newestUsable(in: [nil, app, otherWidget], now: 1300) == nil)
+		let stations = [Station(id: "a", name: "A", borough: "M", routes: ["Q"], lat: 40, lon: -74),
+			Station(id: "b", name: "B", borough: "M", routes: ["Q"], lat: 41, lon: -74)]
+		var state = WidgetSharedState(favorites: ["a", "b"], stations: stations, appLocation: app)
+		#expect(state.selectedStation(location: extensionFix, previous: "a", now: 1000)?.id == "b")
+		#expect(state.selectedStation(location: nil, previous: "a", now: 1300)?.id == "a")
+		state.favorites = ["a"]
+		#expect(state.selectedStation(location: nil, previous: "b", now: 1000)?.id == "a")
+	}
+
+	@Test func locationFreshnessHasFiniteBoundsAndRejectsFutureFixes() {
+		#expect(WidgetCoordinate(latitude: 40, longitude: -74, timestamp: 700.001).isUsable(now: 1000))
+		#expect(WidgetCoordinate(latitude: 40, longitude: -74, timestamp: 1000).isUsable(now: 1000))
+		for timestamp in [700, 1000.001, .nan, .infinity, -.infinity] {
+			#expect(!WidgetCoordinate(latitude: 40, longitude: -74, timestamp: timestamp).isUsable(now: 1000))
+		}
+		#expect(!WidgetCoordinate(latitude: 91, longitude: -74, timestamp: 1000).isUsable(now: 1000))
+		#expect(!WidgetCoordinate(latitude: 40, longitude: 181, timestamp: 1000).isUsable(now: 1000))
+		#expect(!WidgetCoordinate(latitude: 40, longitude: -74, timestamp: 1000).isUsable(now: .nan))
+	}
+
 	@Test func legacyDisplaysKeepTheirSettingsAndFiveMinuteRefresh() throws {
 		let legacy = Data("""
 		{"display":{"fields":["carType"],"compact":false,"trainsPerDirection":4,"timeStyle":"clock"},

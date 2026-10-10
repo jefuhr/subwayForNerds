@@ -1,5 +1,117 @@
 # Validation
 
+## October 10, 2026 — favorites, widget movement, and native regression audit
+
+### Fixes and failure coverage
+
+- Saved settings now keep a validated redundant snapshot. A damaged primary file
+  recovers favorites from it; without a readable snapshot, routine writes preserve
+  the unreadable original until an explicit import. Failed preference writes roll
+  back the visible star, theme, filters, and widget options and show an error on
+  the board. Regression tests cover damaged files, failed writes, and import repair.
+- Widget station selection compares fresh locations from the app, extension, and
+  other widgets. A slower or location-less refresh cannot overwrite a newer fix.
+  Invalid, future-dated, and stale fixes do not pick a station. The loader rereads
+  shared settings after waiting for location, including favorite removals.
+- The foreground app shares in-flight location requests between startup, nearby
+  search, and widgets, and refreshes widget coordinates every 30 seconds without
+  changing the manually opened board. Backgrounding cancels the request. Failed
+  nearby lookups clear old distances. Saved-favorite widget links also work before
+  a station catalog is available and take precedence over startup navigation.
+- Account conflict resolution requires an explicit local or remote choice tied
+  to the values currently displayed. Empty and stale choices no longer silently
+  resolve a conflict. API regression coverage includes malformed responses, ETags,
+  cache clearing, station isolation, and HTTP errors.
+
+### Automated checks
+
+- `npm run check`: Passed the web build and all 80 backend tests.
+  Evidence: `artifacts/bug-pass/web-check.log`.
+- `bash scripts/test-native.sh`: Passed 70 TransitCore tests and 17 FleetOffline
+  tests. Evidence: `artifacts/bug-pass/native-final.log`.
+- `bash scripts/test-native-startup.sh`: Passed 14 groups exercising the actual
+  AppModel, including persistence failures, cold widget links, concurrent location
+  consumers, movement, and stale fixes. Evidence:
+  `artifacts/bug-pass/startup-final.log`.
+- `bash scripts/test-native-account-choices.sh`: Passed both conflict-choice
+  regression groups using the actual UI helper. This check is included in CI.
+  Evidence: `artifacts/bug-pass/account-final.log`.
+- Widget tests reproduced three failures (eight failed expectations) before the
+  fixes, then passed afterward. Evidence: `artifacts/bug-pass/widget-tests-before.txt`
+  and `artifacts/bug-pass/widget-tests-after.txt`. The account conflict-choice bug
+  was also reproduced before its fix in
+  `artifacts/bug-pass/account-conflict-before.log`.
+- `SFN_SIMULATOR_ID=4B471BAD-EFE7-4069-B98F-F42C73364FC4 SFN_BUILD_JOBS=2 bash scripts/test-ios.sh`:
+  The full iPhone run completed with 20 passes, 10 opt-in skips, and one failure in
+  the new picker-star test's dismissal step. The test attempted `Done` while iOS
+  27 search mode hid that toolbar. It now exits search before dismissing the sheet.
+  The favorite itself saved correctly and the selected board remained unchanged.
+  Evidence: `artifacts/bug-pass/full-iphone.log`,
+  `artifacts/native-ui-20261010-113633.xcresult`, and exported attachments under
+  `artifacts/bug-pass/iphone-screens/`.
+- The locally signed follow-up passed all four selected UI tests: the corrected
+  picker-star workflow, actual granted Core Location, closest-favorite/background
+  return, and train/fleet navigation. The latter two also validate hardened waits
+  for background suspension and asynchronous fleet loading. The denied Core
+  Location test passed separately. Exact commands are preserved in
+  `artifacts/bug-pass/run-followup.sh`; logs/result bundles are
+  `artifacts/bug-pass/iphone-granted.log` / `.xcresult` and
+  `artifacts/bug-pass/iphone-denied.log` / `.xcresult`.
+- `SFN_ALLOW_SIMULATOR_STATE_RESET=1 SFN_SIMULATOR_ID=4B471BAD-EFE7-4069-B98F-F42C73364FC4 python3 scripts/test-ios-location-movement.py`:
+  Passed using actual simulator Core Location, without the app's injected-location
+  test hook. Cold launch selected Times Square, then movement to Union Square
+  reached the App Group in **30.03 seconds** while the foreground board stayed on
+  Times Square and both favorites stayed saved. This measures shared-state
+  publication, not WidgetKit's display latency. Evidence:
+  `artifacts/bug-pass/system-location.log` and JSON snapshots/screenshots in
+  `artifacts/bug-pass/system-location/`.
+- The opt-in `WidgetHomeScreenTests/testWidgetGallerySharedFavoriteAndNavigation`
+  passed on the locally signed build: installed the real widget from SpringBoard's
+  gallery, displayed Union Square from the shared favorite, opened that station
+  when tapped, and removed the test widget. Evidence:
+  `artifacts/bug-pass/iphone-home-widget.log` / `.xcresult` and
+  `artifacts/bug-pass/home-widget-screens/`. SpringBoard animation waits made this
+  320-second run much slower than the in-app preview checks.
+- The iPad mini (A17 Pro), iOS 27, passed all seven selected UI tests with zero
+  failures or skips: station-specific board views, closest-favorite/background
+  return, favorites across changing locations, offline fleet, import preview and
+  restore, station search/themes, and train/fleet navigation. Evidence:
+  `artifacts/bug-pass/ipad-final.log` / `.xcresult`, `ipad-summary.json`, and
+  exported screenshots in `artifacts/bug-pass/ipad-screens/`.
+- The final picker-star test also passed on iPad, including staying on the current
+  board and preserving the new favorite through offline relaunch. Evidence:
+  `artifacts/bug-pass/ipad-picker.log` / `.xcresult` and `ipad-picker-screens/`.
+  Across the full run and targeted reruns, 24 distinct iPhone scenarios and eight
+  iPad scenarios have passing results. The original test-harness failures remain
+  preserved; no failed scenario lacks a passing corrected rerun. Seven extended
+  opt-in widget appearance/gallery scenarios were not enabled in this audit.
+- `xcodebuild build -project ios/SubwaysForNerds.xcodeproj -scheme SubwaysForNerds -configuration Release -destination 'generic/platform=iOS' -derivedDataPath ios/DerivedData/Simulator -jobs 2 CODE_SIGNING_ALLOWED=NO`:
+  Passed the complete unsigned iOS Release app and widget build. This is compile
+  validation, not a physical-device install. Evidence:
+  `artifacts/bug-pass/release-build.log`.
+- Visually reviewed exported screenshots of the remaining favorite after removal,
+  medium, large, and rectangular widget previews, the installed Home Screen
+  widget, and the iPad board after moving back to Union Square. These are screenshot
+  reviews of automated runs, not physical-device/manual interaction acceptance.
+
+### Test environment and limits
+
+- Dedicated iOS 27 iPhone and iPad simulators are used. Previously running
+  simulators were temporarily stopped with permission; their data was preserved.
+  The initial cold simulator runner crashed before executing tests. A concurrent
+  iPad runner stalled during startup and was stopped; device runs were serialized.
+- Both task simulators were shut down afterward, location overrides were cleared,
+  fixture servers were stopped, and all four previously running simulators were
+  booted again. Evidence: `artifacts/bug-pass/restored-simulators.json`. No simulator
+  was erased or deleted, and worker worktrees and verification artifacts remain.
+- The first two new favorites UI tests failed because their helper expected the
+  current station in the shortcut strip. The current station is represented by
+  the board's favorite button. The helper was corrected; initial failures remain
+  recorded in `artifacts/bug-pass/favorites-ios.log`.
+- These checks do not establish physical-device background WidgetKit delivery
+  timing or live Apple/Google account authentication. Widget refresh requests
+  remain subject to system scheduling. No physical device was installed or changed.
+
 ## October 1, 2026 — nearby station simulator QA and correction
 
 - Reproduced the Board location button opening ordinary search on an iPhone 17

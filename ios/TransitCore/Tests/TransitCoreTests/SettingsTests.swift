@@ -65,4 +65,25 @@ struct SettingsTests {
 		#expect(throws: (any Error).self) { try store.save(bad) }
 		#expect(try store.load()?.settings == record.settings)
 	}
+	@Test func damagedPrimaryRecoversLatestFavoritesFromBackup() throws {
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		defer { try? FileManager.default.removeItem(at: directory) }
+		let store = DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json"))
+		var settings = PortableSettings(); settings.favorites = ["602", "611"]
+		try store.save(DeviceSettings(settings: settings, lastStation: "611"))
+		settings.favorites = ["611"]
+		try store.save(DeviceSettings(settings: settings, lastStation: "611"))
+		try Data("{damaged".utf8).write(to: store.fileURL, options: .atomic)
+		#expect(try store.load()?.settings.favorites == ["611"])
+	}
+	@Test func unreadableSettingsAreNotOverwrittenByRoutineSaves() throws {
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		defer { try? FileManager.default.removeItem(at: directory) }
+		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+		let store = DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json"))
+		let damaged = Data("{damaged but recoverable".utf8)
+		try damaged.write(to: store.fileURL)
+		#expect(throws: (any Error).self) { try store.save(DeviceSettings(settings: PortableSettings(), lastStation: "602")) }
+		#expect(try Data(contentsOf: store.fileURL) == damaged)
+	}
 }

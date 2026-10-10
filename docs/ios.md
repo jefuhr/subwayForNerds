@@ -296,6 +296,25 @@ and select `testNearbySystemLocationDeniedKeepsSearchAvailable`. Both tests skip
 without their explicit setup. Afterward, run `simctl privacy` with `reset location`
 for this bundle and `simctl location` with `clear` to remove the QA overrides.
 
+To check foreground movement with actual Core Location, install a Debug simulator
+build using `CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-` so its App Group is
+available, then run:
+
+```sh
+SFN_ALLOW_SIMULATOR_STATE_RESET=1 SFN_SIMULATOR_ID=<disposable-simulator-id> \
+  python3 scripts/test-ios-location-movement.py
+```
+
+This opt-in check replaces only that test app's saved settings. It seeds two
+favorites, launches offline near Times Square, moves to Union Square without
+relaunching, and checks that the shared widget location updates while the open
+board and favorite membership remain unchanged. JSON snapshots, measured delay,
+and screenshots are saved under `artifacts/bug-pass/system-location/`. It measures
+foreground publication to the App Group; WidgetKit's background delivery timing
+still requires physical-device observation. Do not run it concurrently with UI
+tests on the same simulator. Clear the simulator's location and permission
+overrides afterward using the commands above.
+
 Physical-device acceptance still requires a paired phone: location allowance and
 denial, keyboard/search, background/resume, themes and filters after relaunch,
 fleet download, airplane-mode relaunch, and deletion/re-download. Keep device

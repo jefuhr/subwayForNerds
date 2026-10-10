@@ -191,6 +191,7 @@ final class AccountModel {
 	}
 	func resolve(_ choices: [String: String]) async {
 		guard let base = conflictBase, let remote = conflictRemote, let settings = remote.settings, let account, let app else { return }
+		guard conflicts.allSatisfy({ AccountConflictChoices.isExplicit(choices[$0.path]) }) else { return }
 		do {
 			let merged = try SettingsMerge.merge(base: base, local: app.portableSettings, remote: settings, choices: choices)
 			guard merged.conflicts.isEmpty else { conflicts = merged.conflicts; return }

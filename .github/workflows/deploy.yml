@@ -1,0 +1,65 @@
+name: Deploy production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Inspect the current host and release without deploying
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    concurrency:
+      group: deploy-${{ github.repository }}-production
+      cancel-in-progress: false
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, macOS, ARM64, production-deploy]
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      SFN_REPO: ${{ github.workspace }}
+      DEPLOY_SHA: ${{ github.sha }}
+      DEPLOY_DRY_RUN: ${{ inputs.dry_run || false }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        if: env.DEPLOY_DRY_RUN != 'true'
+        run: npm ci
+      - name: Check local deployment tools
+        shell: bash
+        run: |
+          for task_command in git ssh curl python3 tar gzip node npm; do
+            command -v "$task_command" >/dev/null || {
+              echo "Missing deployment tool: $task_command" >&2
+              exit 1
+            }
+          done
+      - name: Test deployment gates without contacting production
+        shell: bash
+        run: |
+          bash -n deploy/deploy-sfn.sh
+          python3 test/deploy-script.test.py
+      - name: Deploy the triggering commit
+        shell: bash
+        run: |
+          export BACKUP_DIR="$HOME/backups"
+          task_args=(--branch "$DEPLOY_SHA")
+          if [[ "$DEPLOY_DRY_RUN" == true ]]; then
+            task_args+=(--dry-run)
+          fi
+          bash deploy/deploy-sfn.sh "${task_args[@]}"

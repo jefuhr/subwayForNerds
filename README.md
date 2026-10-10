@@ -192,3 +192,7 @@ See [account setup and privacy](docs/accounts.md). Location stays on-device. Bro
 holds preferences, a station catalog, and up to eight recent station snapshots.
 The native SwiftUI client uses the same HTTP contracts, with on-device location,
 preferences, cached boards, and an optional downloaded fleet snapshot. It uses Apple frameworks and the pinned Google Sign-In SDK for optional accounts. See [the native feature and validation matrix](docs/ios.md).
+
+## Automated deployment
+
+Production pushes and manual runs deploy through the self-hosted Mac runner. See [GitHub Actions deployment](docs/github-actions-deploy.md) for triggers, dry runs, runner management, backups, and verification.

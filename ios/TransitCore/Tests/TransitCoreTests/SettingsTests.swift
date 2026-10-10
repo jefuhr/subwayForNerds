@@ -11,6 +11,22 @@ struct SettingsTests {
 		#expect(file.settings.widgets.lockScreen.display.trainsPerDirection == 5)
 		#expect(try NerdsSettingsFile.decode(file.data()).settings == file.settings)
 	}
+	@Test func refreshIntervalsSurvivePortableRoundTrips() throws {
+		var settings = PortableSettings()
+		settings.widgets.display.refreshInterval = .oneMinute
+		settings.widgets.lockScreen.display.refreshInterval = .thirtyMinutes
+		let file = NerdsSettingsFile(settings: settings, lastStation: "602")
+		let restored = try NerdsSettingsFile.decode(file.data())
+		#expect(restored.settings.widgets.display.refreshInterval == .oneMinute)
+		#expect(restored.settings.widgets.lockScreen.display.refreshInterval == .thirtyMinutes)
+		var root = try JSONSerialization.jsonObject(with: file.data()) as! [String: Any]
+		var rawSettings = root["settings"] as! [String: Any]
+		var widgets = rawSettings["widgets"] as! [String: Any]
+		var display = widgets["display"] as! [String: Any]
+		display["refreshInterval"] = 3; widgets["display"] = display
+		rawSettings["widgets"] = widgets; root["settings"] = rawSettings
+		#expect(throws: (any Error).self) { try NerdsSettingsFile.decode(JSONSerialization.data(withJSONObject: root)) }
+	}
 	@Test func olderFilesMigrateLockScreenSettings() throws {
 		let file = NerdsSettingsFile(settings: PortableSettings(), lastStation: "602")
 		var root = try JSONSerialization.jsonObject(with: file.data()) as! [String: Any]

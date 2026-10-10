@@ -41,3 +41,15 @@ test('older files migrate Lock Screen settings and reject invalid new settings',
 	assert.equal(migrated.widgets.lockScreen.display.trainsPerDirection, 2);
 	assert.throws(() => validateSettings({ ...migrated, widgets: { ...migrated.widgets, lockScreen: { ...migrated.widgets.lockScreen, showService: 'false' } } }));
 });
+
+test('native refresh intervals survive web file round trips', () => {
+	const settings = defaults();
+	const display: any = settings.widgets.display;
+	const lock: any = settings.widgets.lockScreen.display;
+	display.refreshInterval = 1; lock.refreshInterval = 30;
+	const restored = decodeNerds(encodeNerds(settings, '602')).settings;
+	assert.equal((restored.widgets.display as any).refreshInterval, 1);
+	assert.equal((restored.widgets.lockScreen.display as any).refreshInterval, 30);
+	display.refreshInterval = 3;
+	assert.throws(() => validateSettings(settings));
+});

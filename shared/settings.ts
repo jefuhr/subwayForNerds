@@ -1,7 +1,7 @@
 /** The public .nerds v1 contract. Keep Swift and the shared fixture in lockstep. */
 export const MAX_SETTINGS_BYTES = 1024 * 1024;
 export type StationSettings = { direction: string; routes: string[]; view: 'track' | 'direction' | 'family' | 'corridor' | 'service' };
-export type WidgetDisplay = { fields: string[]; compact: boolean; trainsPerDirection: number; timeStyle: 'countdown' | 'minutes' | 'clock' };
+export type WidgetDisplay = { fields: string[]; compact: boolean; trainsPerDirection: number; timeStyle: 'countdown' | 'minutes' | 'clock'; refreshInterval?: 1 | 2 | 5 | 10 | 15 | 30 | 60 };
 export type Settings = {
 	favorites: string[]; theme: string; stations: Record<string, StationSettings>;
 	widgets: { matchAppFilters: boolean; stations: Record<string, StationSettings>; display: WidgetDisplay; lockScreen: { display: WidgetDisplay; directionOrder: 'downtownLeft' | 'uptownLeft'; showService: boolean } };
@@ -32,10 +32,11 @@ function stations(value: unknown): Record<string, StationSettings> {
 	}));
 }
 function validateDisplay(value: unknown): WidgetDisplay {
-	const d = object(value); keys(d, ['fields', 'compact', 'trainsPerDirection', 'timeStyle']);
+	const d = object(value); keys(d, ['fields', 'compact', 'trainsPerDirection', 'timeStyle', ...(Object.hasOwn(d, 'refreshInterval') ? ['refreshInterval'] : [])]);
+	if (Object.hasOwn(d, 'refreshInterval') && ![1, 2, 5, 10, 15, 30, 60].includes(d.refreshInterval)) invalid();
 	const fields = strings(d.fields, widgetFields.length).sort();
 	if (fields.some(f => !widgetFields.includes(f)) || !Number.isInteger(d.trainsPerDirection) || d.trainsPerDirection < 0 || d.trainsPerDirection > 8 || !['countdown', 'minutes', 'clock'].includes(d.timeStyle)) invalid();
-	return { fields, compact: boolean(d.compact), trainsPerDirection: d.trainsPerDirection, timeStyle: d.timeStyle };
+	return { fields, compact: boolean(d.compact), trainsPerDirection: d.trainsPerDirection, timeStyle: d.timeStyle, ...(Object.hasOwn(d, 'refreshInterval') ? { refreshInterval: d.refreshInterval } : {}) };
 }
 export function validateSettings(value: unknown): Settings {
 	if (new TextEncoder().encode(JSON.stringify(value)).length > MAX_SETTINGS_BYTES) throw new Error('Settings files must be smaller than 1 MiB.');

@@ -40,11 +40,14 @@ if name == 'curl':
 	url = args[-1]
 	event('https', url=url)
 	if '-w' in args:
-		print('500' if fail == 'https' else '200', end=''); finish()
+		count_file = root / 'http-attempts'
+		count = int(count_file.read_text()) if count_file.exists() else 0
+		count_file.write_text(str(count + 1))
+		print('500' if fail == 'https' or (fail == 'warming' and count < 2) else '200', end=''); finish()
 	if url.endswith('/api/v1/health'):
 		print(json.dumps({'feeds': [{'id': 'fixture', 'timestamp': 1, 'age': 1}], 'stationCount': 1, 'status': 'healthy'}))
 	elif app == 'sfn':
-		print('<html></html>' if fail == 'assets' else '<script src="/subwaysForNerds/assets/app.js"></script>')
+		print('<html></html>' if fail == 'assets' else '<script src="/assets/app.js"></script>')
 	else:
 		print('<script src="app.js?v=123"></script>')
 	finish()
@@ -56,7 +59,7 @@ if 'cat ' in command and 'cat >' not in command and 'DEPLOYED_SHA' in command:
 if 'cat ' in command and 'config/display.json' in command:
 	print('{}'); finish()
 if 'grep -oP' in command:
-	print('/subwaysForNerds/'); finish()
+	print('/wrong/' if fail == 'base' else '/'); finish()
 if 'tar --exclude=' in command and '-czf -' in command:
 	event('backup')
 	if fail == 'backup': finish(1)
@@ -171,7 +174,7 @@ class DeploymentTests(unittest.TestCase):
 		else:
 			build = next(event for event in events if event['kind'] == 'build')
 			self.assertEqual(build['code'], 'committed release')
-			self.assertEqual(build['base'], '/subwaysForNerds/')
+			self.assertEqual(build['base'], '/')
 			self.assertTrue(any(event.get('url', '').endswith('/assets/app.js') for event in events))
 		kinds = [event['kind'] for event in events]
 		self.assertLess(kinds.index('backup'), kinds.index('sync'))
@@ -182,6 +185,14 @@ class DeploymentTests(unittest.TestCase):
 		self.assertFalse(list(self.backups.glob('*.partial.*')))
 		with tarfile.open(archives[0]) as archive:
 			self.assertEqual(archive.extractfile('fixture/config').read(), b'private fixture configuration')
+
+	def test_health_checks_wait_for_startup_and_use_current_site(self):
+		result = self.run_script(fail='warming')
+		self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+		urls = [event['url'] for event in self.events() if event['kind'] == 'https']
+		self.assertTrue(urls)
+		self.assertTrue(all(url.startswith('https://subwaysfornerds.juliet.nyc/') for url in urls))
+		self.assertFalse(any('/ferryTimesMobile/' in url or '/subwaysForNerds/' in url for url in urls))
 
 	def test_git_worktree_is_accepted(self):
 		linked = self.root / 'linked'
@@ -220,6 +231,19 @@ class DeploymentTests(unittest.TestCase):
 		result = self.run_script(fail='build')
 		self.assertNotEqual(result.returncode, 0)
 		self.assertFalse(any(event['kind'] in ('backup', 'sync', 'marker') for event in self.events()))
+
+	def test_mount_point_mismatch_fails_before_backup_or_sync(self):
+		result = self.run_script(fail='base')
+		self.assertNotEqual(result.returncode, 0)
+		self.assertIn('refusing to deploy', result.stdout + result.stderr)
+		self.assertFalse(any(event['kind'] in ('backup', 'sync', 'marker') for event in self.events()))
+
+	def test_backup_preserves_availability_and_leaves_feed_state_untouched(self):
+		result = self.run_script()
+		self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+		command = next(event['command'] for event in self.events() if event['kind'] == 'ssh' and 'tar --exclude=' in event['command'])
+		self.assertIn('--exclude=subways-for-nerds/state', command)
+		self.assertNotIn('systemctl stop', command)
 
 	def test_missing_assets_prevent_success_marker(self):
 		result = self.run_script(fail='assets')

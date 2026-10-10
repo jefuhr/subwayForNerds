@@ -50,3 +50,18 @@ for archive in archives[keep:]:
 	archive.unlink()
 PY
 }
+
+# systemd's active state precedes application readiness during cold startup.
+verify_http() {
+	local label="$1" url="$2" code=000 attempt
+	for attempt in $(seq 1 12); do
+		code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$url") || code=000
+		if [[ "$code" == 200 ]]; then
+			printf '  %-40s %s\n' "$label" "$code"
+			return 0
+		fi
+		[[ "$attempt" == 12 ]] || sleep 5
+	done
+	printf '  %-40s %s\n' "$label" "$code"
+	return 1
+}

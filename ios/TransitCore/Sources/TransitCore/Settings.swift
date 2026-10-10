@@ -100,7 +100,12 @@ private enum SettingsValidation {
 		}
 	}
 	static func display(_ value: JSONValue?) throws {
-		let display = try object(value, keys: ["fields", "compact", "trainsPerDirection", "timeStyle"])
+		let raw = try object(value)
+		let keys: Set<String> = raw["refreshInterval"] == nil ? ["fields", "compact", "trainsPerDirection", "timeStyle"] : ["fields", "compact", "trainsPerDirection", "timeStyle", "refreshInterval"]
+		let display = try object(value, keys: keys)
+		if let interval = display["refreshInterval"] {
+			guard case .number(let count) = interval, WidgetRefreshInterval.allCases.contains(where: { Double($0.rawValue) == count }) else { throw SettingsError.invalid }
+		}
 		try boolean(display["compact"])
 		guard case .number(let count) = display["trainsPerDirection"], (0...8).contains(count), count.rounded() == count, WidgetTimeStyle(rawValue: try string(display["timeStyle"])) != nil else { throw SettingsError.invalid }
 		guard try strings(display["fields"], limit: WidgetField.allCases.count).allSatisfy({ WidgetField(rawValue: $0) != nil }) else { throw SettingsError.invalid }

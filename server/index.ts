@@ -75,7 +75,26 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
     offline: { available: !!service.offline?.manifest, generatedAt: service.offline?.manifest?.generatedAt ?? null, error: service.offline?.error || null },
   }));
   registerFleetOfflineRoutes(app, service, api);
-  app.get(api + '/health', () => ({ status: [...service.slots.values()].every(s => s.state.timestamp && nowSeconds() - s.state.timestamp <= 90 && !s.state.error) ? 'ok' : 'degraded', feeds: [...service.slots.values()].map(s => ({ ...s.state, age: s.state.timestamp ? nowSeconds() - s.state.timestamp : null })), stationCount: service.catalog.length }));
+	app.get(api + '/health', () => {
+		const now = nowSeconds();
+		const feeds = [...service.slots.values()].map(({ state }) => ({
+			...state,
+			age: state.timestamp ? now - state.timestamp : null,
+			fetchAge: state.fetchedAt ? now - state.fetchedAt : null,
+		}));
+		const arrivalsOk = feeds.filter(s => s.id !== 'subway-alerts').every(s => s.age !== null && s.age <= 90 && !s.error);
+		const alertFeed = feeds.find(s => s.id === 'subway-alerts');
+		// Alert snapshots can remain unchanged while polling succeeds. Allow two
+		// 60-second polling intervals, without claiming an old snapshot is fresh.
+		const alertsOk = !!alertFeed?.timestamp && alertFeed.fetchAge !== null && alertFeed.fetchAge <= 120 && !alertFeed.error;
+		const alertsFresh = alertsOk && alertFeed?.age != null && alertFeed.age <= 90;
+		return {
+			status: arrivalsOk && alertsOk ? 'ok' : 'degraded',
+			arrivals: { status: arrivalsOk ? 'ok' : 'degraded' },
+			alerts: { status: alertsOk ? 'ok' : 'degraded', freshness: alertsFresh ? 'live' : 'uncertain' },
+			feeds, stationCount: service.catalog.length,
+		};
+	});
   app.get('/healthz', () => ({ status: 'ok' }));
   if (base !== '/') app.get(base.slice(0, -1), (_req, reply) => reply.redirect(base));
   if (existsSync(resolve('dist'))) {

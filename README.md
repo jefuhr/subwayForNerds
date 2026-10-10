@@ -118,11 +118,22 @@ All app endpoints live under `/subwaysForNerds/api/v1/`:
 | `stations/:id/board` | Indexed departures, onward predictions, relevant alerts and source ages |
 | `stations/:id/context` | Entrances, equipment, outages and source states |
 | `trips?key=…` | Normalized train and original decoded trip/position entities |
-| `health` | Per-feed availability and catalog count |
+| `health` | Arrival health, alert polling health and snapshot freshness, per-feed ages, and catalog count |
 
 JSON responses support ETags and conditional requests. `/healthz` checks process
 liveness; inspect `api/v1/health` for upstream health. Times are Unix seconds;
 the UI formats them in `America/New_York`. Shared contracts are in `shared/types.ts`.
+
+The health response reports `arrivals.status` and `alerts.status` separately. Arrival
+feeds require a published timestamp no older than 90 seconds and no fetch error.
+Alerts require a valid snapshot, no fetch error, and a successful fetch within 120
+seconds (two 60-second polling intervals). An unchanged alerts snapshot older than
+90 seconds reports `alerts.freshness: "uncertain"`; a recent snapshot with healthy
+polling reports `"live"`. Missing data or unhealthy polling also makes freshness
+uncertain. Overall `status` is `"ok"` only when both component statuses are `"ok"`;
+uncertain alert freshness alone does not make it degraded. Each feed retains
+`timestamp`, `fetchedAt`, `error`, and `age`, and adds `fetchAge` (seconds since the
+last successful fetch). Ages are `null` when the corresponding timestamp is absent.
 
 ## Deployment
 

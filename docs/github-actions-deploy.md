@@ -58,3 +58,9 @@ bash -n deploy/deploy-sfn.sh
 ```
 
 Before the first automatic deployment, run a dry run from a fresh production-branch checkout with `SFN_REPO` set to that checkout and `--branch` set to its full commit SHA. After publication, inspect the first deployment log, the public endpoints checked by the script, and the recorded `DEPLOYED_SHA`. Publishing this workflow to `main` immediately triggers a real deployment.
+
+## Current production URLs and startup
+
+The production URL is `https://subwaysfornerds.juliet.nyc`, with build and systemd `APP_BASE=/`. Override with `SFN_SITE` and `SFN_BASE` for another target. A mismatched build/server base fails before backup or sync. Required endpoints retry up to 12 times, five seconds apart.
+
+Deployment backups contain release files and exclude `node_modules/` and `state/`. The 17 GB runtime feed state remains live and is not replaced by deployment or code rollback. These archives do not provide feed database recovery; manage state backups separately. The service stays running during backup.

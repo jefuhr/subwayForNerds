@@ -40,8 +40,8 @@ HOST="${SFN_HOST:-ubuntu@52.5.187.46}"
 KEY="${SFN_KEY:-$HOME/julie.pem}"
 APP_DIR="/opt/subways-for-nerds"
 SERVICE="subways-for-nerds"
-BASE="/subwaysForNerds/"
-SITE="https://juliet.nyc"
+BASE="${SFN_BASE:-/}"
+SITE="${SFN_SITE:-https://subwaysfornerds.juliet.nyc}"
 KEEP_BACKUPS=5
 BACKUP_DIR="${BACKUP_DIR:-$HOME/backups}"
 
@@ -95,12 +95,10 @@ fi
 
 # --- the mount point must agree across vite, systemd and nginx ----------------
 say "checking the mount point"
-VITE_BASE=$(git -C "$REPO" show "${BRANCH}:vite.config.ts" 2>/dev/null | grep -oE "APP_BASE \|\| '[^']+'" | grep -oE "'[^']+'" | tr -d "'" || true)
 UNIT_BASE=$("${SSH[@]}" "grep -oP '(?<=^Environment=APP_BASE=).*' /etc/systemd/system/${SERVICE}.service" 2>/dev/null || true)
-echo "  vite base:      ${VITE_BASE:-<unreadable>}"
+echo "  build base:     $BASE"
 echo "  unit APP_BASE:  ${UNIT_BASE:-<unset>}"
-[[ "${VITE_BASE:-$BASE}" == "${UNIT_BASE:-$BASE}" ]] \
-  || warn "vite and the systemd unit disagree — assets will 404 until they match"
+[[ "$BASE" == "${UNIT_BASE:-$BASE}" ]] || die "build base and systemd APP_BASE disagree — refusing to deploy"
 
 if [[ "$DRY_RUN" == 1 ]]; then say "dry run — stopping before any changes"; exit 0; fi
 
@@ -141,9 +139,9 @@ BACKUP="$BACKUP_DIR/${SERVICE}-backup-${STAMP}.tgz"
 ROLLBACK=$(local_backup_rollback "$BACKUP" "cd /opt && sudo tar xzf - && sudo systemctl restart $SERVICE")
 if [[ -n "$DEPLOYED_SHA" ]]; then
   say "backing up to $BACKUP on this machine"
-  # Pause the writer so SQLite and its WAL are captured consistently. Always
-  # restart, including when tar fails, before continuing with the release.
-  backup_local "$BACKUP" "set -e; cd /opt; sudo systemctl stop $SERVICE >&2; trap 'sudo systemctl start $SERVICE >&2' EXIT; sudo tar --exclude=${SERVICE}/node_modules -czf - ${SERVICE}"
+  # Back up release files only. The 17 GB feed database is not changed by
+  # deployment or code rollback; keep it live and manage its backups separately.
+  backup_local "$BACKUP" "set -e; cd /opt; sudo tar --exclude=${SERVICE}/node_modules --exclude=${SERVICE}/state -czf - ${SERVICE}"
 else
   say "no previous deploy to back up"
   ROLLBACK="(nothing to roll back to — this was the first deploy)"
@@ -198,10 +196,7 @@ fi
 say "verifying from the outside"
 FAILED=0
 check() {
-  local code
-  code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "$2" || echo 000)
-  printf '  %-40s %s\n' "$1" "$code"
-  [[ "$code" == "200" ]] || FAILED=1
+  verify_http "$1" "$2" || FAILED=1
 }
 
 check "${BASE}api/v1/health"   "${SITE}${BASE}api/v1/health"

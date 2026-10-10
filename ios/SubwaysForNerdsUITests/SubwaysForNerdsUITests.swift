@@ -44,10 +44,122 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		app.activate()
 		XCTAssertEqual(app.buttons["selectedStation"].label, manualStation)
 		XCUIDevice.shared.press(.home)
-		XCTAssertTrue(app.wait(for: .runningBackground, timeout: 5))
+		let backgrounded = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+			app.state == .runningBackground || app.state == .runningBackgroundSuspended
+		}, object: app)
+		XCTAssertEqual(XCTWaiter.wait(for: [backgrounded], timeout: 15), .completed)
 		app.activate()
 		XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: nearest, object: app.buttons["selectedStation"])], timeout: 5), .completed)
 		screenshot("closest-favorite-foreground", app: app)
+	}
+
+	func testFavoritesSurviveWidgetEditsRemovalAndRepeatedOfflineRelaunch() {
+		var app = launch()
+		addTwoFavorites(in: app)
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["widgetDisplaySettings"], in: app)
+		app.buttons["widgetDisplaySettings"].tap()
+		app.buttons["widgetRefreshInterval"].tap()
+		app.buttons["1 minute"].tap()
+		app.navigationBars.buttons.firstMatch.tap()
+		scrollTo(app.switches["widgetMatchAppFilters"], in: app)
+		let match = app.switches["widgetMatchAppFilters"]
+		for expected in ["1", "0", "1", "0"] {
+			match.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+			XCTAssertEqual(match.value as? String, expected)
+		}
+		app.terminate()
+
+		for attempt in 1...3 {
+			app = launch(reset: false, offline: true)
+			for id in ["602", "611"] {
+				XCTAssertTrue(app.buttons["favoriteStation_\(id)"].waitForExistence(timeout: 5))
+				app.buttons["favoriteStation_\(id)"].tap()
+				XCTAssertEqual(app.buttons["toggleFavorite"].label, "Remove favorite station")
+			}
+			screenshot("favorites-offline-relaunch-\(attempt)", app: app)
+			app.terminate()
+		}
+		app = launch(reset: false, offline: true)
+		app.buttons["favoriteStation_602"].tap()
+		app.buttons["toggleFavorite"].tap()
+		XCTAssertFalse(app.buttons["favoriteStation_602"].exists)
+		app.terminate()
+		app = launch(reset: false, offline: true, location: "40.735736,-73.990568")
+		assertSelectedStation("Times", in: app)
+		XCTAssertFalse(app.buttons["favoriteStation_602"].exists, "A removed favorite must stay removed across relaunch and location changes")
+		XCTAssertEqual(app.buttons["toggleFavorite"].label, "Remove favorite station")
+		screenshot("removed-favorite-stays-removed", app: app)
+	}
+
+	func testClosestFavoriteTracksMovementWithoutChangingSavedFavorites() {
+		var app = launch()
+		addTwoFavorites(in: app)
+		app.terminate()
+		for (coordinate, name) in [("40.755290,-73.987495", "Times"), ("40.735736,-73.990568", "Union"), ("40.755290,-73.987495", "Times")] {
+			app = launch(reset: false, offline: true, location: coordinate)
+			assertSelectedStation(name, in: app)
+			let otherFavorite = name == "Times" ? "602" : "611"
+			XCTAssertTrue(app.buttons["favoriteStation_\(otherFavorite)"].exists)
+			XCTAssertEqual(app.buttons["toggleFavorite"].label, "Remove favorite station")
+			screenshot("closest-favorite-movement-\(name)", app: app)
+			app.terminate()
+		}
+		app = launch(reset: false, offline: true)
+		assertSelectedStation("Times", in: app)
+		XCTAssertTrue(app.buttons["favoriteStation_602"].exists, "Unavailable location must preserve the saved list")
+		XCTAssertEqual(app.buttons["toggleFavorite"].label, "Remove favorite station")
+	}
+
+	private func addTwoFavorites(in app: XCUIApplication) {
+		XCTAssertTrue(app.buttons["direction_ALL"].waitForExistence(timeout: 20))
+		app.buttons["toggleFavorite"].tap()
+		app.buttons["findStation"].tap()
+		let search = app.searchFields.firstMatch
+		XCTAssertTrue(search.waitForExistence(timeout: 5))
+		search.tap(); search.typeText("Times Sq")
+		let times = app.buttons["station_611"]
+		XCTAssertTrue(times.waitForExistence(timeout: 5))
+		times.tap()
+		assertSelectedStation("Times", in: app)
+		app.buttons["toggleFavorite"].tap()
+		XCTAssertTrue(app.buttons["favoriteStation_602"].exists)
+		XCTAssertEqual(app.buttons["toggleFavorite"].label, "Remove favorite station")
+	}
+
+	func testStarringInPickerPreservesCurrentStationAndSurvivesRelaunch() {
+		var app = launch()
+		assertSelectedStation("Union", in: app)
+		app.buttons["findStation"].tap()
+		let search = app.searchFields.firstMatch
+		XCTAssertTrue(search.waitForExistence(timeout: 5))
+		search.tap(); search.typeText("Times Sq")
+		let star = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Favorite Times Sq'")).firstMatch
+		XCTAssertTrue(star.waitForExistence(timeout: 5))
+		star.tap()
+		XCTAssertTrue(app.searchFields.firstMatch.exists, "Starring a search result must keep the picker open")
+		XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Remove favorite Times Sq'")).firstMatch.exists)
+		// iOS 27 replaces the sheet toolbar while its search field is active.
+		if !app.buttons["Done"].exists {
+			let exitSearch = app.buttons["close"].exists ? app.buttons["close"] : app.buttons["Cancel"]
+			if exitSearch.exists { exitSearch.tap() }
+		}
+		XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 5))
+		app.buttons["Done"].tap()
+		assertSelectedStation("Union", in: app)
+		XCTAssertTrue(app.buttons["favoriteStation_611"].exists)
+		app.terminate()
+		app = launch(reset: false, offline: true)
+		assertSelectedStation("Union", in: app)
+		app.buttons["favoriteStation_611"].tap()
+		assertSelectedStation("Times", in: app)
+		XCTAssertEqual(app.buttons["toggleFavorite"].label, "Remove favorite station")
+		screenshot("picker-favorite-after-relaunch", app: app)
+	}
+
+	private func assertSelectedStation(_ name: String, in app: XCUIApplication) {
+		let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS[c] %@", name), object: app.buttons["selectedStation"])
+		XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 10), .completed)
 	}
 
 	func testWidgetSettingsPreserveIndependentFiltersAcrossToggleAndRelaunch() {
@@ -518,6 +630,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		screenshot("native-train-details", app: app)
 		app.tab("Fleet").tap()
 		let car = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'fleet_'")).firstMatch
+		XCTAssertTrue(car.waitForExistence(timeout: 20))
 		scrollTo(car, in: app)
 		car.tap()
 		XCTAssertTrue(app.descendants(matching: .any)["fleetDetails"].firstMatch.waitForExistence(timeout: 10))

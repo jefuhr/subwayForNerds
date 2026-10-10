@@ -16,6 +16,7 @@ const device = choices.find(d => d.state === "Booted") || choices[0];
 if (!device) { console.error("Install an iOS 26+ iPhone simulator in Xcode Settings > Components."); process.exit(1); }
 process.stdout.write(device.udid);
 ')}
+xcrun simctl bootstatus "$simulator_id" -b
 if curl -fsS --max-time 1 http://127.0.0.1:8092/healthz >/dev/null 2>&1; then
 	echo 'Port 8092 is already in use. Stop the existing fixture server before running native UI tests.' >&2
 	exit 1
@@ -34,4 +35,5 @@ result="artifacts/native-ui-$(date +%Y%m%d-%H%M%S).xcresult"
 xcodebuild test -project ios/SubwaysForNerds.xcodeproj -scheme SubwaysForNerds \
 	-destination "platform=iOS Simulator,id=$simulator_id" -destination-timeout 120 \
 	-resultBundlePath "$result" -collect-test-diagnostics never \
-	-derivedDataPath ios/DerivedData/Simulator -jobs "${SFN_BUILD_JOBS:-2}" CODE_SIGNING_ALLOWED=NO 2>&1 | tee artifacts/native-ui-tests.log
+	-derivedDataPath ios/DerivedData/Simulator -jobs "${SFN_BUILD_JOBS:-2}" -parallel-testing-enabled NO \
+	CODE_SIGNING_ALLOWED=NO "$@" 2>&1 | tee artifacts/native-ui-tests.log

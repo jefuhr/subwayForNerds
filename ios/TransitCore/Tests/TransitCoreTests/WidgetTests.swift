@@ -25,6 +25,79 @@ struct WidgetTests {
 		#expect(WidgetSharedState().selectedStation(location: nil, previous: nil) == nil)
 	}
 
+	@Test func newerAppLocationMovesAnExistingWidgetSelection() {
+		let now = Date().timeIntervalSince1970
+		let appLocation = WidgetCoordinate(latitude: 41, longitude: -74, timestamp: now)
+		let state = WidgetSharedState(favorites: ["a", "b"], stations: [station("a", lat: 40), station("b", lat: 41)], appLocation: appLocation)
+		#expect(state.selectedStation(location: nil, previous: "a")?.id == "b")
+		let olderExtensionLocation = WidgetCoordinate(latitude: 40, longitude: -74, timestamp: now - 120)
+		#expect(state.selectedStation(location: olderExtensionLocation, previous: "a")?.id == "b")
+	}
+
+	@Test func staleOrInvalidLocationsKeepTheSavedFavorite() {
+		let now = Date().timeIntervalSince1970
+		let state = WidgetSharedState(favorites: ["a", "b"], stations: [station("a", lat: 40), station("b", lat: 41)])
+		for timestamp in [now - 301, now + 60, .nan, .infinity] {
+			#expect(state.selectedStation(location: WidgetCoordinate(latitude: 41, longitude: -74, timestamp: timestamp), previous: "a")?.id == "a")
+		}
+		#expect(state.selectedStation(location: WidgetCoordinate(latitude: .nan, longitude: -74), previous: "a")?.id == "a")
+	}
+
+	@Test func unavailableLocationCannotEraseANewerSavedSelection() throws {
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		defer { try? FileManager.default.removeItem(at: directory) }
+		let firstProcess = WidgetSharedStore(directory: directory)
+		let secondProcess = WidgetSharedStore(directory: directory)
+		let location = WidgetCoordinate(latitude: 41, longitude: -74, timestamp: 2000)
+		try firstProcess.saveSelection(stationID: "b", location: location)
+		try secondProcess.saveSelection(stationID: "a", location: nil)
+		#expect(firstProcess.selection()?.stationID == "b")
+		#expect(firstProcess.selection()?.location == location)
+	}
+
+	@Test func losingSelectionWriterReceivesTheWinningLocation() throws {
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		defer { try? FileManager.default.removeItem(at: directory) }
+		let store = WidgetSharedStore(directory: directory)
+		let newest = try store.saveSelection(stationID: "b", location: WidgetCoordinate(latitude: 41, longitude: -74, timestamp: 2000))
+		#expect(try store.saveSelection(stationID: "a", location: WidgetCoordinate(latitude: 40, longitude: -74, timestamp: 1000)) == newest)
+		#expect(try store.saveSelection(stationID: "a", location: nil) == newest)
+		#expect(try store.saveSelection(stationID: "a", location: WidgetCoordinate(latitude: 999, longitude: -74, timestamp: 3000)) == newest)
+	}
+
+	@Test func legacySelectionRemainsReadableAndFutureLocationDoesNotBlockNewFix() throws {
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		defer { try? FileManager.default.removeItem(at: directory) }
+		let store = WidgetSharedStore(directory: directory)
+		try store.save(WidgetSharedState())
+		let now = Date().timeIntervalSince1970
+		let legacy = WidgetSharedStore.Selection(stationID: "a", location: WidgetCoordinate(latitude: 40, longitude: -74, timestamp: now + 120), savedAt: now)
+		try JSONEncoder().encode(legacy).write(to: directory.appendingPathComponent("selection.json"))
+		#expect(store.selection() == legacy)
+		let fixed = try store.saveSelection(stationID: "b", location: WidgetCoordinate(latitude: 41, longitude: -74, timestamp: now))
+		#expect(fixed.stationID == "b" && store.selection() == fixed)
+	}
+
+	@Test func concurrentStoreInstancesPreserveNewestBoardAndSelection() async throws {
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		defer { try? FileManager.default.removeItem(at: directory) }
+		let boardStation = station("a")
+		try await withThrowingTaskGroup(of: Void.self) { group in
+			for index in (0..<8).reversed() {
+				group.addTask {
+					let store = WidgetSharedStore(directory: directory)
+					try store.saveBoard(Board(station: boardStation, generatedAt: Double(index + 1)))
+					try store.saveSelection(stationID: String(index), location: WidgetCoordinate(latitude: 40, longitude: -74, timestamp: Double(index + 1)))
+				}
+			}
+			try await group.waitForAll()
+		}
+		let store = WidgetSharedStore(directory: directory)
+		#expect(store.board(stationID: "a")?.generatedAt == 8)
+		#expect(store.selection()?.stationID == "7")
+		#expect(store.selection()?.location?.timestamp == 8)
+	}
+
 	@Test func projectionBalancesDirectionsFiltersBeforeLimitingAndExcludesCanceled() {
 		var canceled = departure("canceled", direction: "NORTH", time: 1010)
 		canceled.relationship = "CANCELED"

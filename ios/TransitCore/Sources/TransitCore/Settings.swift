@@ -128,15 +128,32 @@ public struct DeviceSettings: Codable, Sendable {
 public struct DeviceSettingsStore: Sendable {
 	public let fileURL: URL
 	public init(fileURL: URL) { self.fileURL = fileURL }
-	public func load() throws -> DeviceSettings? {
-		guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
-		let value = try JSONDecoder().decode(DeviceSettings.self, from: Data(contentsOf: fileURL))
+	private var backupURL: URL { fileURL.appendingPathExtension("backup") }
+	private func read(_ url: URL) throws -> DeviceSettings {
+		let value = try JSONDecoder().decode(DeviceSettings.self, from: Data(contentsOf: url))
 		_ = try value.settings.validated(); return value
 	}
-	public func save(_ value: DeviceSettings) throws {
+	public func load() throws -> DeviceSettings? {
+		guard FileManager.default.fileExists(atPath: fileURL.path) else {
+			return FileManager.default.fileExists(atPath: backupURL.path) ? try read(backupURL) : nil
+		}
+		do { return try read(fileURL) }
+		catch {
+			if let recovered = try? read(backupURL) { return recovered }
+			throw error
+		}
+	}
+	public func save(_ value: DeviceSettings, replacingUnreadable: Bool = false) throws {
 		_ = try value.settings.validated()
+		// A failed read must not turn a routine board refresh into a destructive
+		// migration from stale legacy preferences. Only an explicit import replaces it.
+		if !replacingUnreadable { _ = try load() }
 		try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-		try JSONEncoder().encode(value).write(to: fileURL, options: .atomic)
+		let data = try JSONEncoder().encode(value)
+		try data.write(to: fileURL, options: .atomic)
+		// The primary write is authoritative. Retain a redundant current snapshot
+		// without reporting a successful primary save as failed if backup I/O fails.
+		try? data.write(to: backupURL, options: .atomic)
 	}
 }
 public struct SettingsConflict: Identifiable, Sendable {
@@ -162,7 +179,8 @@ public struct SettingsMerge: Sendable {
 					}; return .object(result)
 				}
 			}
-			if let choice = choices[path] { return choice == "remote" ? r : l }
+			if choices[path] == "remote" { return r }
+			if choices[path] == "local" { return l }
 			conflicts.append(SettingsConflict(path: path, local: l, remote: r)); return l
 		}
 		var ids: [String] = []

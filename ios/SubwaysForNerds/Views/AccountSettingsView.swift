@@ -6,7 +6,7 @@ import GoogleSignInSwift
 struct AccountSettingsSection: View {
 	@Environment(AppModel.self) private var app
 	@Environment(AccountModel.self) private var account
-	@State private var choices: [String: String] = [:]
+	@State private var choices = AccountConflictChoices()
 	@State private var confirmDelete = false
 	@State private var unlink: String?
 	var body: some View {
@@ -35,14 +35,18 @@ struct AccountSettingsSection: View {
 					ForEach(account.conflicts) { conflict in
 						VStack(alignment: .leading) {
 							Text(settingsLabel(conflict.path, app: app)).font(.subheadline)
-							Picker("Keep", selection: Binding(get: { choices[conflict.path] ?? "" }, set: { choices[conflict.path] = $0 })) {
+							Picker("Keep", selection: Binding(get: { choices.selection(for: conflict) }, set: { choices.select($0, for: conflict) })) {
 								Text("Choose a value").tag("")
 								Text("This device: " + settingsValue(conflict.local)).tag("local")
 								Text("Account: " + settingsValue(conflict.remote)).tag("remote")
 							}
 						}
 					}
-					Button("Save choices") { Task { await account.resolve(choices) } }.disabled(account.conflicts.contains { choices[$0.path] == nil })
+					Button("Save choices") {
+						guard let resolved = choices.resolved(for: account.conflicts) else { return }
+						choices = AccountConflictChoices()
+						Task { await account.resolve(resolved) }
+					}.disabled(choices.resolved(for: account.conflicts) == nil)
 				}
 				Button("Sync now") { Task { await account.sync() } }
 				Button("Sign out") { Task { await account.logout() } }
@@ -61,6 +65,10 @@ struct AccountSettingsSection: View {
 			}
 			Link("Privacy", destination: URL(string: "https://juliet.nyc/subwaysForNerds/privacy.html")!)
 		} header: { ListHeader("Account and sync") } footer: { Text("Your current station stays separate on each device. Signing out keeps local settings.") }
+		.onChange(of: account.account?.id) { _, _ in choices = AccountConflictChoices() }
+		.onChange(of: account.conflicts.isEmpty) { _, empty in
+			if empty { choices = AccountConflictChoices() }
+		}
 		.confirmationDialog("Delete your account and all synced settings?", isPresented: $confirmDelete, titleVisibility: .visible) {
 			Button("Delete account", role: .destructive) { Task { await account.remove() } }
 		} message: { Text("Settings already on devices will remain there.") }

@@ -31,6 +31,7 @@ final class AppModel {
 	@ObservationIgnored private var lastWidgetReload: TimeInterval = 0
 	@ObservationIgnored private var widgetLocation: WidgetCoordinate?
 	@ObservationIgnored private let widgetReloadEnabled: Bool
+	@ObservationIgnored private var durableSettings: PortableSettings?
 	var board: Board?
 	var boardIsCached = true
 	var boardError: String?
@@ -60,6 +61,9 @@ final class AppModel {
 	@ObservationIgnored private var catalogGeneration = 0
 	@ObservationIgnored private var favoriteStartupAttempted = false
 	@ObservationIgnored private var closestFavoriteTask: Task<CLLocation?, Never>?
+	@ObservationIgnored private var locationTask: Task<CLLocation, Error>?
+	@ObservationIgnored private var locationGeneration = 0
+	@ObservationIgnored private let locationRequest: (@MainActor @Sendable () async throws -> CLLocation)?
 	@ObservationIgnored private var downloadTask: Task<Void, Never>?
 	@ObservationIgnored private var downloadGeneration: UUID?
 	@ObservationIgnored private var lastCatalogAttempt: TimeInterval = 0
@@ -69,7 +73,8 @@ final class AppModel {
 	@ObservationIgnored private let testLocation: CLLocation?
 	#endif
 
-	init(stateDirectory: URL? = nil) {
+	init(stateDirectory: URL? = nil, locationRequest: (@MainActor @Sendable () async throws -> CLLocation)? = nil) {
+		self.locationRequest = locationRequest
 		directory = stateDirectory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
 			.appendingPathComponent("SubwaysForNerds", isDirectory: true)
 		widgetStore = stateDirectory.map { WidgetSharedStore(directory: $0.appendingPathComponent("Widgets")) } ?? WidgetSharedStore.configured()
@@ -114,6 +119,7 @@ final class AppModel {
 		for id in favorites {
 			if let board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id)) { try? widgetStore?.saveBoard(board, endpoint: endpoint) }
 		}
+		durableSettings = portableSettings
 		if !FileManager.default.fileExists(atPath: directory.appendingPathComponent("settings.json").path) { persist() }
 		else if portable == nil { settingsError = "Saved settings could not be read. Restore a .nerds backup to recover your preferences." }
 		#if DEBUG
@@ -209,7 +215,7 @@ final class AppModel {
 		syncWidgets(reload: true)
 	}
 	func openWidgetURL(_ url: URL) {
-		guard let id = WidgetLink.stationID(from: url), stations.contains(where: { $0.id == id }) else { return }
+		guard let id = WidgetLink.stationID(from: url), favorites.contains(id) || stations.contains(where: { $0.id == id }) else { return }
 		selectStation(id)
 	}
 
@@ -239,6 +245,9 @@ final class AppModel {
 			favoriteStartupAttempted = false
 			closestFavoriteTask?.cancel()
 			closestFavoriteTask = nil
+			locationGeneration += 1
+			locationTask?.cancel()
+			locationTask = nil
 			locator.cancel()
 		}
 	}
@@ -274,6 +283,7 @@ final class AppModel {
 			group.addTask { await self.loadInitialCatalog() }
 			group.addTask { await self.boardLoop() }
 			group.addTask { await self.favoritesLoop() }
+			group.addTask { await self.widgetLocationLoop() }
 		}
 	}
 
@@ -300,6 +310,19 @@ final class AppModel {
 			await refreshFavorites()
 			do { try await Task.sleep(for: .seconds(30)) } catch { return }
 		}
+	}
+	private func widgetLocationLoop() async {
+		while !Task.isCancelled {
+			await refreshWidgetLocation()
+			do { try await Task.sleep(for: .seconds(30)) } catch { return }
+		}
+	}
+	func refreshWidgetLocation() async {
+		// Keep the widget's closest favorite current while the app is in use,
+		// without moving a manually selected board or prompting in the background.
+		guard active, !Task.isCancelled, !locationDisabled, !favorites.isEmpty,
+			locator.isAuthorized || locationRequest != nil else { return }
+		_ = try? await currentLocation()
 	}
 
 	func refreshCatalog() async {
@@ -365,6 +388,7 @@ final class AppModel {
 
 	func locateNearby() async {
 		guard !locating else { return }
+		nearbyLocation = nil
 		guard !locationDisabled else { locationError = "Location is disabled. You can still search for any station."; return }
 		locating = true
 		locationError = nil
@@ -374,15 +398,28 @@ final class AppModel {
 	}
 
 	private func currentLocation() async throws -> CLLocation {
-		let location: CLLocation
-		#if DEBUG
-		if let testLocation { location = testLocation } else { location = try await locator.locate() }
-		#else
-		location = try await locator.locate()
-		#endif
+		if locationTask == nil {
+			locationGeneration += 1
+			locationTask = Task { @MainActor in
+				if let locationRequest { return try await locationRequest() }
+				#if DEBUG
+				if let testLocation { return testLocation }
+				#endif
+				return try await locator.locate()
+			}
+		}
+		let generation = locationGeneration
+		defer { if generation == locationGeneration { locationTask = nil } }
+		let location = try await locationTask!.value
+		guard generation == locationGeneration, !Task.isCancelled else { throw CancellationError() }
+		guard Self.usableLocation(location) else { throw AppError.message("Could not get a current location. Search for a station or try again.") }
 		widgetLocation = WidgetCoordinate(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, timestamp: location.timestamp.timeIntervalSince1970)
 		syncWidgets(reload: true)
 		return location
+	}
+	static func usableLocation(_ location: CLLocation, now: Date = .now) -> Bool {
+		let coordinate = WidgetCoordinate(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, timestamp: location.timestamp.timeIntervalSince1970)
+		return location.horizontalAccuracy.isFinite && location.horizontalAccuracy >= 0 && coordinate.isUsable(now: now.timeIntervalSince1970)
 	}
 
 	private func openClosestFavoriteOnce() async {
@@ -467,13 +504,21 @@ final class AppModel {
 	private func persist() {
 		do {
 			try settingsStore.save(record(settings: portableSettings, lastStation: stationID, sync: settingsSync))
+			durableSettings = portableSettings
 			settingsError = nil; settingsDidChange?(); syncWidgets(reload: false)
-		} catch { settingsError = "Settings could not be saved on this device. " + error.localizedDescription }
+		} catch {
+			if let saved = durableSettings {
+				favorites = saved.favorites; themeID = saved.theme
+				stationPreferences = saved.stations; widgetPreferences = saved.widgets
+			}
+			settingsError = "Settings could not be saved on this device. Your previous preferences are unchanged. " + error.localizedDescription
+		}
 	}
-	func acceptSettings(_ settings: PortableSettings, lastStation: String? = nil, sync: SettingsSyncState?, notify: Bool = false) throws {
+	func acceptSettings(_ settings: PortableSettings, lastStation: String? = nil, sync: SettingsSyncState?, notify: Bool = false, replacingUnreadable: Bool = false) throws {
 		let selected = lastStation ?? stationID
-		try settingsStore.save(record(settings: settings, lastStation: selected, sync: sync))
+		try settingsStore.save(record(settings: settings, lastStation: selected, sync: sync), replacingUnreadable: replacingUnreadable)
 		favorites = settings.favorites; themeID = settings.theme; stationPreferences = settings.stations; widgetPreferences = settings.widgets; settingsSync = sync; settingsError = nil
+		durableSettings = settings
 		if selected != stationID {
 			stationID = selected; favoriteStartupAttempted = true; boardGeneration += 1
 			board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: selected)); boardIsCached = true; boardError = nil
@@ -494,7 +539,7 @@ final class AppModel {
 		} catch { settingsError = (error as? SettingsError)?.localizedDescription ?? "This settings file could not be read. Choose a valid .nerds file."; selectedTab = 2 }
 	}
 	func importSettings(_ file: NerdsSettingsFile) throws {
-		try acceptSettings(file.settings, lastStation: file.lastStation, sync: settingsSync, notify: true)
+		try acceptSettings(file.settings, lastStation: file.lastStation, sync: settingsSync, notify: true, replacingUnreadable: true)
 		pendingSettingsImport = nil
 	}
 	private func syncWidgets(reload: Bool) {
@@ -531,6 +576,13 @@ private final class LocationProvider: NSObject, @preconcurrency CLLocationManage
 	private let manager = CLLocationManager()
 	private var continuation: CheckedContinuation<CLLocation, Error>?
 	private var timeout: Task<Void, Never>?
+	var isAuthorized: Bool {
+		#if os(macOS)
+		return manager.authorizationStatus == .authorizedAlways
+		#else
+		return manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways
+		#endif
+	}
 
 	override init() {
 		super.init()
@@ -565,12 +617,15 @@ private final class LocationProvider: NSObject, @preconcurrency CLLocationManage
 		}
 	}
 	func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-		if let location = locations.last { finish(.success(location)) }
+		guard continuation != nil else { return }
+		if let location = locations.filter({ AppModel.usableLocation($0) }).max(by: { $0.timestamp < $1.timestamp }) { finish(.success(location)) }
+		else { manager.startUpdatingLocation() }
 	}
 	func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
 		finish(.failure(AppError.message("Could not get your location. Search for a station or try again.")))
 	}
 	private func finish(_ result: Result<CLLocation, Error>) {
+		manager.stopUpdatingLocation()
 		timeout?.cancel()
 		timeout = nil
 		let waiting = continuation

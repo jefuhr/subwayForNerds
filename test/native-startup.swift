@@ -137,6 +137,9 @@ struct NativeStartupTests {
 		let backupURL = directory.appendingPathComponent("settings-backup.json")
 		try FileManager.default.moveItem(at: settingsURL, to: backupURL)
 		try FileManager.default.createDirectory(at: settingsURL, withIntermediateDirectories: false)
+		let favoritesBeforeFailedSave = unavailable.favorites
+		unavailable.toggleFavorite("unsaved-favorite")
+		try expect(unavailable.favorites == favoritesBeforeFailedSave && unavailable.settingsError != nil, "A failed favorite save must roll back the star and report the error")
 		var replacement = file; replacement.settings.favorites = ["changed"]
 		var failed = false
 		do { try unavailable.importSettings(replacement) } catch { failed = true }
@@ -144,7 +147,83 @@ struct NativeStartupTests {
 		try FileManager.default.removeItem(at: settingsURL)
 		try FileManager.default.moveItem(at: backupURL, to: settingsURL)
 		print("PASS: .nerds preview, atomic import, widget sharing, relaunch and write-failure recovery")
+		try Data("{damaged".utf8).write(to: settingsURL, options: .atomic)
+		let recovered = AppModel(stateDirectory: directory)
+		try expect(recovered.favorites == file.settings.favorites, "Damaged settings must recover the latest favorites from the redundant snapshot")
+		print("PASS: favorites recover from a damaged primary settings file")
 
+		let brokenDirectory = directory.appendingPathComponent("unrecoverable")
+		try FileManager.default.createDirectory(at: brokenDirectory, withIntermediateDirectories: true)
+		let brokenURL = brokenDirectory.appendingPathComponent("settings.json")
+		let damaged = Data("{do not overwrite".utf8)
+		try damaged.write(to: brokenURL)
+		let broken = AppModel(stateDirectory: brokenDirectory)
+		broken.toggleFavorite("602")
+		try expect(try Data(contentsOf: brokenURL) == damaged, "Routine preference saves must preserve unreadable originals")
+		try broken.importSettings(file)
+		try expect(AppModel(stateDirectory: brokenDirectory).favorites == file.settings.favorites, "An explicit validated import can repair unreadable settings")
+		print("PASS: unreadable settings are preserved until an explicit import repairs them")
+		let coldDirectory = directory.appendingPathComponent("cold-widget-link")
+		var coldSettings = PortableSettings(); coldSettings.favorites = ["far", "near"]
+		try DeviceSettingsStore(fileURL: coldDirectory.appendingPathComponent("settings.json")).save(DeviceSettings(settings: coldSettings, lastStation: "near"))
+		setenv("SFN_DISABLE_LOCATION", "0", 1)
+		let cold = AppModel(stateDirectory: coldDirectory)
+		cold.openWidgetURL(WidgetLink.board(stationID: "unknown"))
+		try expect(cold.stationID == "near", "Unknown widget links must remain rejected")
+		cold.openWidgetURL(WidgetLink.board(stationID: "far"))
+		try expect(cold.stationID == "far", "A saved favorite widget link must work before the catalog is available")
+		cold.stations = stations
+		let coldForeground = Task { await cold.runWhileActive() }
+		try await Task.sleep(for: .milliseconds(250))
+		try expect(cold.stationID == "far", "A later catalog load must not override a cold widget link")
+		await stop(cold, task: coldForeground, background: true)
+		print("PASS: a saved favorite widget deep link works without a cached catalog and wins over startup selection")
+		try await locationRegressions(directory: directory.appendingPathComponent("location"), stations: stations)
+
+	}
+
+	@MainActor static func locationRegressions(directory: URL, stations: [Station]) async throws {
+		setenv("SFN_DISABLE_LOCATION", "0", 1)
+		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+		try JSONEncoder().encode(stations).write(to: directory.appendingPathComponent("stations.json"))
+		var settings = PortableSettings(); settings.favorites = ["far", "near"]
+		try DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json")).save(DeviceSettings(settings: settings, lastStation: "far"))
+		let source = LocationSequence()
+		let model = AppModel(stateDirectory: directory, locationRequest: { try await source.locate() })
+		let foreground = Task { await model.runWhileActive() }
+		for _ in 0..<100 where source.requests == 0 { try await Task.sleep(for: .milliseconds(10)) }
+		let nearby = Task { await model.locateNearby() }
+		try await waitForStation("near", in: model)
+		await nearby.value
+		try expect(source.requests == 1 && model.nearbyLocation != nil && model.locationError == nil, "Startup, nearby search, and widget refresh must share an in-flight location request")
+		model.selectStation("near")
+		source.location = CLLocation(latitude: 40.90, longitude: -73.90)
+		await model.refreshWidgetLocation()
+		let shared = try model.widgetStore!.load()
+		try expect(shared.appLocation?.latitude == 40.90 && model.stationID == "near", "Moving must refresh widget coordinates without redirecting a manual board selection")
+		await stop(model, task: foreground, background: true)
+		let requests = source.requests
+		await model.refreshWidgetLocation()
+		try expect(source.requests == requests, "Background app must not poll for widget location")
+		let invalid = CLLocation(coordinate: CLLocationCoordinate2D(latitude: 40.9, longitude: -73.9), altitude: 0, horizontalAccuracy: -1, verticalAccuracy: -1, timestamp: .now)
+		let stale = CLLocation(coordinate: CLLocationCoordinate2D(latitude: 40.9, longitude: -73.9), altitude: 0, horizontalAccuracy: 20, verticalAccuracy: 20, timestamp: Date().addingTimeInterval(-3600))
+		try expect(!AppModel.usableLocation(invalid) && !AppModel.usableLocation(stale), "Invalid or stale GPS fixes must not select the wrong favorite")
+		source.location = stale
+		await model.locateNearby()
+		try expect(model.locationError != nil && model.nearbyLocation == nil && model.stationID == "near", "A stale location response must clear old nearby distances, report a failure, and preserve the selected board")
+		let unchanged = try model.widgetStore!.load().appLocation
+		try expect(unchanged == shared.appLocation, "A stale location response must not replace the widget's newer fix")
+		print("PASS: concurrent location requests coalesce, foreground movement updates widgets without navigation, and stale GPS fixes are rejected")
+	}
+
+	@MainActor final class LocationSequence {
+		var requests = 0
+		var location = CLLocation(latitude: 40.755290, longitude: -73.987495)
+		func locate() async throws -> CLLocation {
+			requests += 1
+			try await Task.sleep(for: .milliseconds(200))
+			return location
+		}
 	}
 
 	@MainActor static func waitForStation(_ id: String, in app: AppModel) async throws {

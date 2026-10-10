@@ -147,6 +147,14 @@ public struct WidgetCoordinate: Codable, Sendable, Equatable {
 		self.latitude = latitude; self.longitude = longitude; self.timestamp = timestamp
 	}
 	public var isValid: Bool { latitude.isFinite && longitude.isFinite && abs(latitude) <= 90 && abs(longitude) <= 180 }
+	/// Reuse the extension's five-minute ceiling for every location source.
+	/// Future or nonfinite timestamps must not outrank a real location fix.
+	public func isUsable(now: TimeInterval) -> Bool {
+		isValid && timestamp.isFinite && now.isFinite && timestamp <= now && now - timestamp < 300
+	}
+	public static func newestUsable(in coordinates: [WidgetCoordinate?], now: TimeInterval) -> WidgetCoordinate? {
+		coordinates.compactMap { $0 }.filter { $0.isUsable(now: now) }.max { $0.timestamp < $1.timestamp }
+	}
 	private func distance(to station: Station) -> Double {
 		let radians = Double.pi / 180
 		let a = latitude * radians, b = station.lat * radians
@@ -169,9 +177,11 @@ public struct WidgetSharedState: Codable, Sendable, Equatable {
 		self.favorites = favorites; self.stations = stations; self.appFilters = appFilters
 		self.widgets = widgets; self.themeID = themeID; self.endpoint = endpoint; self.appLocation = appLocation
 	}
-	public func selectedStation(location: WidgetCoordinate?, previous: String?) -> Station? {
+	public func selectedStation(location: WidgetCoordinate?, previous: String?, now: TimeInterval = Date().timeIntervalSince1970) -> Station? {
 		let candidates = favorites.compactMap { id in stations.first { $0.id == id } }
-		if let location, location.isValid { return candidates.min { location.closer($0, than: $1) } }
+		if let location = WidgetCoordinate.newestUsable(in: [location, appLocation], now: now) {
+			return candidates.min { location.closer($0, than: $1) }
+		}
 		return candidates.first { $0.id == previous } ?? candidates.first
 	}
 }
@@ -255,11 +265,22 @@ public struct WidgetSharedStore: Sendable {
 		}
 	}
 	public func selection() -> Selection? { try? read(Selection.self, name: "selection.json") }
-	public func saveSelection(stationID: String, location: WidgetCoordinate?) throws {
+	/// Return the winning selection so a slower refresh also renders the newer fix.
+	@discardableResult
+	public func saveSelection(stationID: String, location: WidgetCoordinate?) throws -> Selection {
+		let now = Date().timeIntervalSince1970
+		let validLocation = location.flatMap { $0.isValid && $0.timestamp.isFinite && $0.timestamp <= now ? $0 : nil }
+		var accepted = Selection(stationID: stationID, location: validLocation, savedAt: now)
 		try coordinate(name: "selection.json") { url in
-			if let location, let previous = selection()?.location, previous.timestamp > location.timestamp { return }
-			try encode(Selection(stationID: stationID, location: location, savedAt: Date().timeIntervalSince1970), at: url)
+			if let previous = selection(), let saved = previous.location,
+				saved.isValid, saved.timestamp.isFinite, saved.timestamp <= Date().timeIntervalSince1970,
+				saved.timestamp > (validLocation?.timestamp ?? -.infinity) {
+				accepted = previous
+				return
+			}
+			try encode(accepted, at: url)
 		}
+		return accepted
 	}
 	private func boardName(_ id: String) -> String { "board-" + Data(id.utf8).base64EncodedString().replacingOccurrences(of: "/", with: "_") + ".json" }
 	private func read<T: Decodable>(_ type: T.Type, name: String) throws -> T {

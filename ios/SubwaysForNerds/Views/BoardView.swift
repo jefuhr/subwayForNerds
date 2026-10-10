@@ -59,6 +59,9 @@ struct BoardView: View {
 				stationHeading
 					.listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 2, trailing: 8))
 			}
+			if let error = app.settingsError {
+				Section { Notice(text: error).accessibilityIdentifier("boardSettingsError") }
+			}
 			if externalDepartures, let station = app.station {
 				NjtDeparturesSection(station: station)
 			} else {

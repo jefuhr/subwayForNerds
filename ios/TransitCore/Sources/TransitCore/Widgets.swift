@@ -117,6 +117,7 @@ public func widgetTrainDetails(_ row: Departure, options: WidgetDisplayOptions, 
 }
 
 public struct WidgetPreferences: Codable, Sendable, Equatable {
+	public var stationSelection = WidgetStationSelection()
 	public var display: WidgetDisplayOptions
 	public var lockScreen: LockScreenWidgetOptions
 	public var matchAppFilters: Bool
@@ -124,13 +125,14 @@ public struct WidgetPreferences: Codable, Sendable, Equatable {
 	public init(matchAppFilters: Bool = false, stations: [String: StationPreference] = [:], display: WidgetDisplayOptions = WidgetDisplayOptions(), lockScreen: LockScreenWidgetOptions = LockScreenWidgetOptions()) {
 		self.matchAppFilters = matchAppFilters; self.stations = stations; self.display = display; self.lockScreen = lockScreen
 	}
-	private enum CodingKeys: String, CodingKey { case matchAppFilters, stations, display, lockScreen }
+	private enum CodingKeys: String, CodingKey { case matchAppFilters, stations, display, lockScreen, stationSelection }
 	public init(from decoder: Decoder) throws {
 		let values = try decoder.container(keyedBy: CodingKeys.self)
 		display = try values.decodeIfPresent(WidgetDisplayOptions.self, forKey: .display) ?? WidgetDisplayOptions()
 		lockScreen = try values.decodeIfPresent(LockScreenWidgetOptions.self, forKey: .lockScreen) ?? (values.contains(.display) ? LockScreenWidgetOptions(legacyDisplay: display) : LockScreenWidgetOptions())
 		matchAppFilters = try values.decodeIfPresent(Bool.self, forKey: .matchAppFilters) ?? false
 		stations = try values.decodeIfPresent([String: StationPreference].self, forKey: .stations) ?? [:]
+		stationSelection = try values.decodeIfPresent(WidgetStationSelection.self, forKey: .stationSelection) ?? WidgetStationSelection()
 	}
 	public func preference(for stationID: String, app: [String: StationPreference]) -> StationPreference {
 		var value = matchAppFilters ? app[stationID] ?? StationPreference() : stations[stationID] ?? StationPreference(view: .direction)
@@ -150,18 +152,19 @@ public struct WidgetCoordinate: Codable, Sendable, Equatable {
 	/// Reuse the extension's five-minute ceiling for every location source.
 	/// Future or nonfinite timestamps must not outrank a real location fix.
 	public func isUsable(now: TimeInterval) -> Bool {
-		isValid && timestamp.isFinite && now.isFinite && timestamp <= now && now - timestamp < 300
+		isValid && timestamp.isFinite && timestamp > 0 && now.isFinite && timestamp <= now && now - timestamp < 300
 	}
 	public static func newestUsable(in coordinates: [WidgetCoordinate?], now: TimeInterval) -> WidgetCoordinate? {
 		coordinates.compactMap { $0 }.filter { $0.isUsable(now: now) }.max { $0.timestamp < $1.timestamp }
 	}
-	private func distance(to station: Station) -> Double {
-		let radians = Double.pi / 180
-		let a = latitude * radians, b = station.lat * radians
-		let value = pow(sin((b - a) / 2), 2) + cos(a) * cos(b) * pow(sin((station.lon - longitude) * radians / 2), 2)
-		return 2 * asin(sqrt(min(1, max(0, value))))
+	public func distanceMeters(to station: Station) -> Double {
+		let parts = station.parts.filter { WidgetCoordinate(latitude: $0.lat, longitude: $0.lon).isValid }
+		let points = parts.isEmpty ? [(station.lat, station.lon)] : parts.map { ($0.lat, $0.lon) }
+		return points.filter { WidgetCoordinate(latitude: $0.0, longitude: $0.1).isValid }.map {
+			Display.distanceMeters(lat1: latitude, lon1: longitude, lat2: $0.0, lon2: $0.1)
+		}.min() ?? .infinity
 	}
-	public func closer(_ left: Station, than right: Station) -> Bool { distance(to: left) < distance(to: right) }
+	public func closer(_ left: Station, than right: Station) -> Bool { distanceMeters(to: left) < distanceMeters(to: right) }
 }
 
 /// The app owns this snapshot. Widget refreshes never rewrite app settings.
@@ -173,16 +176,27 @@ public struct WidgetSharedState: Codable, Sendable, Equatable {
 	public var themeID: String
 	public var endpoint: String
 	public var appLocation: WidgetCoordinate?
-	public init(favorites: [String] = [], stations: [Station] = [], appFilters: [String: StationPreference] = [:], widgets: WidgetPreferences = WidgetPreferences(), themeID: String = "subway", endpoint: String = TransitAPI.productionBaseURL.absoluteString, appLocation: WidgetCoordinate? = nil) {
+	public var stationSelection: StationSelection
+	public init(favorites: [String] = [], stations: [Station] = [], appFilters: [String: StationPreference] = [:], widgets: WidgetPreferences = WidgetPreferences(), themeID: String = "subway", endpoint: String = TransitAPI.productionBaseURL.absoluteString, appLocation: WidgetCoordinate? = nil, stationSelection: StationSelection = StationSelection()) {
 		self.favorites = favorites; self.stations = stations; self.appFilters = appFilters
 		self.widgets = widgets; self.themeID = themeID; self.endpoint = endpoint; self.appLocation = appLocation
+		self.stationSelection = stationSelection
 	}
+	private enum CodingKeys: String, CodingKey { case favorites, stations, appFilters, widgets, themeID, endpoint, appLocation, stationSelection }
+	public init(from decoder: Decoder) throws {
+		let values = try decoder.container(keyedBy: CodingKeys.self)
+		favorites = try values.decode([String].self, forKey: .favorites)
+		stations = try values.decode([Station].self, forKey: .stations)
+		appFilters = try values.decode([String: StationPreference].self, forKey: .appFilters)
+		widgets = try values.decode(WidgetPreferences.self, forKey: .widgets)
+		themeID = try values.decode(String.self, forKey: .themeID)
+		endpoint = try values.decode(String.self, forKey: .endpoint)
+		appLocation = try values.decodeIfPresent(WidgetCoordinate.self, forKey: .appLocation)
+		stationSelection = try values.decodeIfPresent(StationSelection.self, forKey: .stationSelection) ?? StationSelection()
+	}
+	public var effectiveStationSelection: StationSelection { widgets.stationSelection.followApp ? stationSelection : widgets.stationSelection.selection }
 	public func selectedStation(location: WidgetCoordinate?, previous: String?, now: TimeInterval = Date().timeIntervalSince1970) -> Station? {
-		let candidates = favorites.compactMap { id in stations.first { $0.id == id } }
-		if let location = WidgetCoordinate.newestUsable(in: [location, appLocation], now: now) {
-			return candidates.min { location.closer($0, than: $1) }
-		}
-		return candidates.first { $0.id == previous } ?? candidates.first
+		effectiveStationSelection.select(stations: stations, favorites: favorites, location: WidgetCoordinate.newestUsable(in: [location, appLocation], now: now), previous: previous, now: now)
 	}
 }
 

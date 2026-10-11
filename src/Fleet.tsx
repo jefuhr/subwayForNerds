@@ -4,6 +4,7 @@ import type { FleetCar, FleetDetail, FleetPage } from '../shared/fleet';
 import { ageLabel, clockTime } from '../shared/display';
 import { api } from './platform';
 import Modal from './Modal';
+import { FavoriteCarButton, FavoriteConsistButton } from './Favorites';
 
 function useFleetData<T>(path: string) {
   const [data, setData] = useState<T>(), [error, setError] = useState('');
@@ -78,9 +79,10 @@ function FleetDetails({ selection, now, back, select, station, trip }: { selecti
     {error && <p className="notice">{error}</p>}{!data && !error && <p className="empty">Loading car history…</p>}
     {data && <>
       <section className="fleet-next"><strong>{next && (next.time == null || next.time >= now) ? `Next stop: ${next.name}` : 'Next stop unavailable'}</strong>{next && (next.time == null || next.time >= now) && <span>{clockTime(next.time)} estimated · {current!.route}{next.stationId && <button className="text-button" onClick={() => station(next.stationId!)}>Open station board</button>}</span>}{current && <button className="text-button" onClick={() => trip(current.tripKey)}>Open live train details</button>}</section>
+      {selection.kind !== 'cars' && <FavoriteConsistButton ids={data.cars.map(car => car.id)} />}
       <p className="fine-print">Reported order does not establish the leading end. Historical formations are not confirmed current links.</p>
       {data.cars.map(car => <section className="fleet-car" key={car.id}>
-        <h3><button className="text-button" onClick={() => select({ id: car.id, kind: 'cars' })}>{car.number} · {car.equipment}</button></h3>
+        <h3 className="favorite-car-heading"><button className="text-button" onClick={() => select({ id: car.id, kind: 'cars' })}>{car.number} · {car.equipment}</button><FavoriteCarButton id={car.id} /></h3>
         <CarReport car={car} now={now} failed={!!error} />
         <p className="fine-print">Roster: {car.lifecycle}{car.aliases.length ? ` · aliases ${car.aliases.join(', ')}` : ''}</p>
         {car.facts && <dl className="fact-grid">{Object.entries(car.facts).map(([key, value]) => <div key={key}><dt>{key.replaceAll('_', ' ')}</dt><dd>{value}</dd></div>)}</dl>}

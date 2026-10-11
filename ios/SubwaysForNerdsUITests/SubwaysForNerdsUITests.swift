@@ -708,6 +708,76 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		screenshot("settings-export", app: relaunched)
 	}
 
+	func testTrainFavoritesHighlightAndSurviveRelaunch() {
+		var app = launch()
+		let departure = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'departure_' AND label CONTAINS '4149'")).firstMatch
+		scrollTo(departure, in: app); departure.tap()
+		let car = app.buttons["favoriteCar_nyct:R211A:4149"]
+		scrollTo(car, in: app); car.tap()
+		XCTAssertTrue(car.isSelected)
+		app.buttons["favoriteConsist"].tap()
+		XCTAssertTrue(app.buttons["favoriteConsist"].isSelected)
+		screenshot("favorite-train-details", app: app)
+		app.navigationBars.buttons.firstMatch.tap()
+		XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'departure_' AND label CONTAINS 'Favorite consist'")).firstMatch.waitForExistence(timeout: 5))
+		screenshot("favorite-train-feed", app: app)
+		app.terminate()
+		app = launch(reset: false, offline: true)
+		XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'departure_' AND label CONTAINS 'Favorite consist'")).firstMatch.exists)
+		app.tab("Settings").tap()
+		let favorites = app.buttons["favoriteTrainsSettings"]
+		scrollTo(favorites, in: app); favorites.tap()
+		let removeCar = app.buttons["removeFavoriteCar_nyct:R211A:4149"]
+		XCTAssertTrue(removeCar.waitForExistence(timeout: 5))
+		removeCar.tap()
+		XCTAssertFalse(removeCar.exists)
+		app.buttons["undoTrainRemoval"].tap()
+		XCTAssertTrue(removeCar.waitForExistence(timeout: 5))
+		app.buttons["favoriteTrainMatch"].tap()
+		app.buttons["Any member car"].tap()
+		XCTAssertTrue(removeCar.exists)
+		screenshot("favorite-trains-management", app: app)
+	}
+
+	func testStationRadiusWidgetOverrideAndCompactThemesPersist() {
+		var app = launch()
+		app.tab("Settings").tap()
+		let kitty = app.buttons["theme_hello-kitty"]
+		XCTAssertTrue(kitty.waitForExistence(timeout: 5)); kitty.tap()
+		XCTAssertGreaterThanOrEqual(kitty.frame.height, 44)
+		XCTAssertFalse(app.staticTexts["Pink with a purpose"].exists)
+		screenshot("compact-themes-hello-kitty", app: app)
+		let stationSettings = app.buttons["stationSelectionSettings"]
+		scrollTo(stationSettings, in: app); stationSettings.tap()
+		app.buttons["appStationMode"].tap(); app.buttons["Favorite within radius"].tap()
+		let radius = app.textFields["appRadiusFeet"]
+		XCTAssertTrue(radius.waitForExistence(timeout: 5))
+		radius.tap(); radius.press(forDuration: 1)
+		if app.menuItems["Select All"].exists { app.menuItems["Select All"].tap() }
+		radius.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 8) + "1")
+		XCTAssertEqual(app.buttons.matching(identifier: "appRadiusDone").count, 1)
+		app.buttons["appRadiusDone"].tap()
+		XCTAssertEqual(radius.value as? String, "1")
+		screenshot("favorite-radius-one-foot", app: app)
+		app.navigationBars.buttons.firstMatch.tap()
+		let widget = app.buttons["widgetStationSelectionSettings"]
+		scrollTo(widget, in: app); widget.tap()
+		let follow = app.switches["widgetFollowAppStation"]
+		follow.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+		app.buttons["widgetStationMode"].tap(); app.buttons["Closest station"].tap()
+		XCTAssertEqual(follow.value as? String, "0")
+		screenshot("independent-widget-station", app: app)
+		app.terminate()
+		app = launch(reset: false)
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["stationSelectionSettings"], in: app); app.buttons["stationSelectionSettings"].tap()
+		XCTAssertEqual(app.textFields["appRadiusFeet"].value as? String, "1")
+		app.navigationBars.buttons.firstMatch.tap()
+		scrollTo(app.buttons["widgetStationSelectionSettings"], in: app); app.buttons["widgetStationSelectionSettings"].tap()
+		XCTAssertEqual(app.switches["widgetFollowAppStation"].value as? String, "0")
+		XCTAssertTrue(app.buttons["widgetStationMode"].label.contains("Closest station"))
+	}
+
 	private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
 		for _ in 0..<12 {
 			if element.exists && element.isHittable { return }

@@ -179,6 +179,7 @@ struct NativeStartupTests {
 		await stop(cold, task: coldForeground, background: true)
 		print("PASS: a saved favorite widget deep link works without a cached catalog and wins over startup selection")
 		try await locationRegressions(directory: directory.appendingPathComponent("location"), stations: stations)
+		try await selectionRegressions(directory: directory.appendingPathComponent("selection"), stations: stations)
 
 	}
 
@@ -214,6 +215,90 @@ struct NativeStartupTests {
 		let unchanged = try model.widgetStore!.load().appLocation
 		try expect(unchanged == shared.appLocation, "A stale location response must not replace the widget's newer fix")
 		print("PASS: concurrent location requests coalesce, foreground movement updates widgets without navigation, and stale GPS fixes are rejected")
+	}
+
+	@MainActor static func selectionRegressions(directory: URL, stations: [Station]) async throws {
+		// Failure modes: empty favorites gating GPS, radius ignored, incomplete widget
+		// catalogs, lost nonfavorite cache, late GPS navigation, and partial rollback.
+		setenv("SFN_DISABLE_LOCATION", "0", 1)
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [StalledAPI.self]
+		let session = URLSession(configuration: configuration)
+		defer { session.invalidateAndCancel() }
+		for mode in [StationSelection.Mode.closest, .nearbyFavorite] {
+			let folder = directory.appendingPathComponent(mode.rawValue)
+			try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+			try JSONEncoder().encode(stations).write(to: folder.appendingPathComponent("stations.json"))
+			var settings = PortableSettings()
+			settings.favorites = mode == .closest ? [] : ["far"]
+			settings.stationSelection = StationSelection(mode: mode, radiusFeet: 1)
+			try DeviceSettingsStore(fileURL: folder.appendingPathComponent("settings.json")).save(DeviceSettings(settings: settings, lastStation: "far"))
+			let cached = Board(station: stations[1], generatedAt: 123, departures: [])
+			let cacheName = Data("near".utf8).base64EncodedString().replacingOccurrences(of: "/", with: "_")
+			try JSONEncoder().encode(cached).write(to: folder.appendingPathComponent("board-\(cacheName).json"))
+			let source = LocationSequence()
+			let model = AppModel(stateDirectory: folder, locationRequest: { try await source.locate() })
+			model.api = TransitAPI(baseURL: model.baseURL, session: session)
+			let foreground = Task { await model.runWhileActive() }
+			try await waitForStation("near", in: model)
+			try expect(source.requests > 0 && model.boardIsCached && model.board?.station.id == "near", "Automatic selection must open the nonfavorite cached board")
+			let shared = try model.widgetStore!.load()
+			try expect(shared.stations == stations && shared.stationSelection == settings.stationSelection, "Widgets must receive the full catalog and app selection preferences")
+			try expect(shared.selectedStation(location: nil, previous: "far")?.id == "near", "Widgets following the app must select a nonfavorite using the shared location")
+			let requests = source.requests
+			await model.refreshWidgetLocation()
+			try expect(source.requests > requests, "Foreground widget location refresh must work without favorites in closest mode")
+			await stop(model, task: foreground, background: true)
+			let restored = AppModel(stateDirectory: folder)
+			try expect(restored.widgetStore!.board(stationID: "near", endpoint: restored.endpoint)?.generatedAt == 123, "Relaunch must share the selected nonfavorite board cache with widgets")
+			var override = WidgetStationSelection()
+			override.followApp = false
+			override.selection = StationSelection(mode: .favorite, radiusFeet: 1)
+			restored.setWidgetStationSelection(override)
+			let independent = try restored.widgetStore!.load()
+			try expect(independent.selectedStation(location: shared.appLocation, previous: "near")?.id == (mode == .closest ? nil : "far"), "Independent widget selection must override app closest selection")
+			override.followApp = true
+			restored.setWidgetStationSelection(override)
+			let following = try restored.widgetStore!.load()
+			try expect(following.selectedStation(location: shared.appLocation, previous: "far")?.id == "near" && following.widgets.stationSelection.selection == override.selection, "Following the app must preserve the stored independent override")
+			let before = restored.portableSettings
+			let widgetBefore = try restored.widgetStore!.load()
+			let settingsURL = folder.appendingPathComponent("settings.json")
+			let savedURL = folder.appendingPathComponent("settings.saved")
+			try FileManager.default.moveItem(at: settingsURL, to: savedURL)
+			try FileManager.default.createDirectory(at: settingsURL, withIntermediateDirectories: false)
+			restored.setStationSelection(StationSelection(mode: .favorite, radiusFeet: 26400))
+			try expect(restored.portableSettings == before && restored.settingsError != nil, "Failed station preference save must roll back")
+			override.followApp = false
+			restored.setWidgetStationSelection(override)
+			try expect(restored.portableSettings == before && restored.settingsError != nil, "Failed widget override save must roll back")
+			restored.toggleFavoriteCar("nyct:R160:001")
+			try expect(restored.portableSettings == before && restored.settingsError != nil, "Failed car favorite save must roll back")
+			restored.toggleFavoriteConsist(["nyct:R160:001", "nyct:R160:002"])
+			try expect(restored.portableSettings == before && restored.settingsError != nil, "Failed consist favorite save must roll back")
+			restored.setTrainMatch(.anyCar)
+			try expect(restored.portableSettings == before && restored.settingsError != nil, "Failed matching preference save must roll back")
+			try expect(try restored.widgetStore!.load() == widgetBefore, "Failed preference writes must not publish partial widget settings")
+			try FileManager.default.removeItem(at: settingsURL)
+			try FileManager.default.moveItem(at: savedURL, to: settingsURL)
+			try expect(AppModel(stateDirectory: folder).portableSettings == before, "Failed new preferences must remain rolled back after relaunch")
+		}
+		// Explicitly choosing the already displayed station must also beat pending GPS.
+		let raceFolder = directory.appendingPathComponent("closest")
+		let source = LocationSequence()
+		let race = AppModel(stateDirectory: raceFolder, locationRequest: { try await source.locate() })
+		race.api = TransitAPI(baseURL: race.baseURL, session: session)
+		race.selectStation("far")
+		race.suspend(background: true)
+		let foreground = Task { await race.runWhileActive() }
+		for _ in 0..<100 where source.requests == 0 { try await Task.sleep(for: .milliseconds(10)) }
+		try expect(source.requests > 0, "Race regression must have an in-flight GPS request")
+		race.selectStation("far")
+		await race.refreshWidgetLocation()
+		try await Task.sleep(for: .milliseconds(50))
+		try expect(race.stationID == "far", "A manual choice of the current station must win over pending automatic GPS selection")
+		await stop(race, task: foreground, background: true)
+		print("PASS: closest without favorites, one-foot nearby fallback, widget overrides/full catalog/nonfavorite cache, pending GPS navigation, and new-preference write rollback")
 	}
 
 	@MainActor final class LocationSequence {

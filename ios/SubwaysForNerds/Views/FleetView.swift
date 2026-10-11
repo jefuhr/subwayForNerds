@@ -246,6 +246,9 @@ struct FleetDetailView: View {
 			}
 			if let data {
 				Section {
+					if kind != "cars", !data.cars.isEmpty, data.cars.count <= 20, data.cars.allSatisfy({ TrainFavorites.validCarID($0.id) }) {
+						FavoriteConsistButton(ids: data.cars.map(\.id))
+					}
 					if let current {
 						VStack(alignment: .leading, spacing: 2) {
 							if let next = current.next, next.time == nil || (next.time ?? 0) >= app.now {
@@ -314,13 +317,16 @@ struct FleetDetailView: View {
 	private func carSection(_ car: FleetCar) -> some View {
 		let historical = !app.connected || usingSaved || error != nil
 		return Section {
-			if kind != "cars" {
-				NavigationLink { FleetDetailView(id: car.id, kind: "cars", preferSaved: usingSaved) } label: {
+			HStack {
+				if kind != "cars" {
+					NavigationLink { FleetDetailView(id: car.id, kind: "cars", preferSaved: usingSaved) } label: {
+						CarReportView(car: car, now: app.now, historical: historical)
+					}
+					.accessibilityLabel("\(car.number) · \(car.equipment) car details")
+				} else {
 					CarReportView(car: car, now: app.now, historical: historical)
 				}
-				.accessibilityLabel("\(car.number) · \(car.equipment) car details")
-			} else {
-				CarReportView(car: car, now: app.now, historical: historical)
+				if TrainFavorites.validCarID(car.id) { FavoriteCarButton(id: car.id) }
 			}
 			FactGrid(facts: carFacts(car)).listRowInsets(.vertical, 8)
 			if let last = car.last, kind == "cars", !last.consistId.isEmpty {

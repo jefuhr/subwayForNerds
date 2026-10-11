@@ -29,7 +29,7 @@ struct SettingsTransferSection: View {
 			Button("Import settings") { importing = true }.accessibilityIdentifier("importSettings")
 			if let message = error ?? app.settingsError { Text(message).foregroundStyle(.red).font(.footnote).accessibilityIdentifier("settingsError") }
 		} header: { ListHeader("Move your settings") } footer: {
-			Text("Move favorites, themes, station filters, and widget preferences between devices with a .nerds file. No account is needed.")
+			Text("Move favorite stations and trains, station selection, themes, filters, and widget preferences between devices with a .nerds file. No account is needed.")
 		}
 		.fileImporter(isPresented: $importing, allowedContentTypes: [.nerdsSettings]) { result in
 			switch result { case .success(let url): app.previewSettingsFile(url); case .failure(let failure): error = failure.localizedDescription }
@@ -40,7 +40,7 @@ struct SettingsTransferSection: View {
 	}
 }
 @MainActor func settingsLabel(_ path: String, app: AppModel) -> String {
-	let labels = ["favorites": "Favorites", "theme": "Theme", "stations": "Stations", "widgets": "Widgets", "display": "Display", "lockScreen": "Lock Screen", "directionOrder": "Direction order", "showService": "Service icons", "fields": "Shown information", "compact": "Compact rows", "trainsPerDirection": "Trains per direction", "timeStyle": "Arrival display", "matchAppFilters": "Match app filters", "direction": "Direction", "routes": "Lines", "view": "Board grouping"]
+	let labels = ["favorites": "Favorite stations", "trainFavorites": "Favorite trains", "cars": "Cars", "consists": "Consists", "match": "Consist matching", "stationSelection": "Station selection", "mode": "Mode", "radiusFeet": "Radius (ft)", "followApp": "Follow app", "selection": "Station choice", "theme": "Theme", "stations": "Stations", "widgets": "Widgets", "display": "Display", "lockScreen": "Lock Screen", "directionOrder": "Direction order", "showService": "Service icons", "fields": "Shown information", "compact": "Compact rows", "trainsPerDirection": "Trains per direction", "timeStyle": "Arrival display", "matchAppFilters": "Match app filters", "direction": "Direction", "routes": "Lines", "view": "Board grouping"]
 	return path.split(separator: "/").map { part in
 		let key = part.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "~1", with: "/").replacingOccurrences(of: "~0", with: "~")
 		return app.stations.first(where: { $0.id == key })?.name ?? labels[key] ?? key.capitalized
@@ -50,9 +50,12 @@ func settingsValue(_ value: JSONValue?) -> String {
 	guard let value else { return "Not set" }
 	switch value {
 	case .bool(let on): return on ? "On" : "Off"
-	case .string(let text): return AppTheme.all.first(where: { $0.id == text })?.name ?? WidgetField(rawValue: text)?.title ?? text
+	case .string(let text): return AppTheme.all.first(where: { $0.id == text })?.name ?? WidgetField(rawValue: text)?.title ?? StationSelection.Mode(rawValue: text)?.title ?? TrainFavorites.Match(rawValue: text)?.title ?? (TrainFavorites.validCarID(text) ? TrainFavorites.label(text) : text)
 	case .number(let number): return number.formatted()
-	case .array(let array): return array.isEmpty ? "None" : array.map { settingsValue($0) }.joined(separator: ", ")
+	case .array(let array): return array.isEmpty ? "None" : array.map { item in
+		if case .array(let ids) = item { return "\(ids.count)-car consist: " + ids.map { settingsValue($0) }.joined(separator: ", ") }
+		return settingsValue(item)
+	}.joined(separator: "; ")
 	case .object(let object): return object.keys.sorted().map { $0.capitalized + ": " + settingsValue(object[$0]) }.joined(separator: " · ")
 	case .null: return "Not set"
 	}
@@ -81,7 +84,7 @@ struct SettingsImportPreview: View {
 		NavigationStack {
 			List {
 				Section {
-					Text("\(file.settings.favorites.count) favorites")
+					Text("\(file.settings.favorites.count) favorite stations · \(file.settings.trainFavorites.cars.count) cars · \(file.settings.trainFavorites.consists.count) consists")
 					Text("Last station: " + (app.stations.first(where: { $0.id == file.lastStation })?.name ?? file.lastStation))
 					Text(account.account == nil ? "This replaces settings on this device." : "This replaces settings on this device and will sync to your account.")
 				}

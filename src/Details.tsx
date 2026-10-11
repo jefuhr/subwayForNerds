@@ -7,8 +7,11 @@ import Modal from './Modal';
 import { currentConsist } from '../shared/consist';
 import { ChangeDetails, ChangeLabels } from './Changes';
 import { changesAhead } from '../shared/changes';
+import { consistCarIDs, favoriteTrainMatch, fleetCarID } from '../shared/favorites';
+import { FavoriteCarButton, FavoriteConsistButton, useTrainFavorites } from './Favorites';
 
 export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: string; close: () => void; now: number; openFleet?: (id?: string) => void }) {
+  const favorites = useTrainFavorites();
   const [data, setData] = useState<{ train: Train; raw: unknown }>();
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<StopPrediction>();
@@ -21,6 +24,8 @@ export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: strin
     return () => { controller.abort(); clearInterval(timer); };
   }, [tripKey]);
   const train = data?.train;
+  const ids = train && currentConsist(train.consist, now) ? consistCarIDs(train.consist, train.feed) : undefined;
+  const match = train ? favoriteTrainMatch(train.consist, train.feed, favorites, now, !!error) : null;
   return <Modal title={train ? `${train.route} → ${train.destination}` : 'Train details'} eyebrow="THE WHOLE PICTURE" close={close}>
     {error && <p className="notice"><AlertTriangle size={16} />{error}</p>}
     {!train && !error && <p className="empty">Loading train details…</p>}
@@ -34,7 +39,10 @@ export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: strin
       </dl>
       <section className="consist-detail">
         <div className="section-label">CAR NUMBERS <span>{currentConsist(train.consist, now) ? `Helium · reported ${ageLabel(train.consist.updatedAt, now)}` : 'Not currently available'}</span></div>
-        {currentConsist(train.consist, now) && <><ol className="consist-cars">{train.consist.cars.map((car, i) => <li key={i}><button className="car-link" onClick={() => openFleet?.(car.type ? `${train.feed === 'gtfs-si' ? 'sir' : 'nyct'}:${/^R160[AB]?$/.test(car.type) ? 'R160' : car.type}:${car.number}` : undefined)}><strong>{car.number}</strong>{car.type && <small>{car.type}</small>}</button></li>)}</ol><p className="fine-print">Tap a car for its fleet history. Reported order does not confirm the front of the train.</p></>}
+        {currentConsist(train.consist, now) && <>{ids && <FavoriteConsistButton ids={ids} />}<ol className="consist-cars">{train.consist.cars.map((car, i) => {
+          const id = fleetCarID(car.number, car.type, train.feed);
+          return <li key={i} className={id && match?.carIDs.includes(id) ? 'favorite-car' : ''}><button className="car-link" onClick={() => openFleet?.(id)}><strong>{car.number}</strong>{car.type && <small>{car.type}</small>}{id && match?.carIDs.includes(id) && <span className="favorite-car-badge">★ Favorite</span>}</button>{id && <FavoriteCarButton id={id} />}</li>;
+        })}</ol><p className="fine-print">Tap a car for its fleet history. Reported order does not confirm the front of the train.</p></>}
       </section>
       {train.alerts.map(a => <p key={a} className="notice"><AlertTriangle size={16} />{a}</p>)}
       <ChangeDetails changes={changesAhead(train.changes, 0)} now={now} />

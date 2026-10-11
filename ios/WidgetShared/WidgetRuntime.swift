@@ -62,7 +62,7 @@ enum WidgetBoardLoader {
 			return entry
 		}
 		let location: WidgetCoordinate?
-		if state.favorites.isEmpty { location = nil }
+		if state.effectiveStationSelection.mode == .favorite && state.favorites.isEmpty { location = nil }
 		else {
 			let locator = await WidgetLocator()
 			location = await locator.locate()
@@ -72,12 +72,12 @@ enum WidgetBoardLoader {
 		entry.themeID = state.themeID
 		entry.display = state.widgets.display
 		entry.lockScreen = state.widgets.lockScreen
-		guard !state.favorites.isEmpty else { entry.message = "Add a favorite in the app."; return entry }
+		guard state.effectiveStationSelection.mode != .favorite || !state.favorites.isEmpty else { entry.message = "Add a favorite or choose Closest station in Settings."; return entry }
 		let previous = store.selection()
 		let now = Date().timeIntervalSince1970
 		let coordinate = WidgetCoordinate.newestUsable(in: [location, state.appLocation, previous?.location], now: now)
 		guard var station = state.selectedStation(location: coordinate, previous: previous?.stationID, now: now) else {
-			entry.message = "Open the app to load your favorite stations."
+			entry.message = "Open the app to load your stations."
 			return entry
 		}
 		if let saved = try? store.saveSelection(stationID: station.id, location: coordinate) {
@@ -86,7 +86,7 @@ enum WidgetBoardLoader {
 		}
 		entry.station = station
 		entry.preference = state.widgets.preference(for: station.id, app: state.appFilters)
-		entry.locationNotice = location == nil ? "Location unavailable · saved favorite" : nil
+		entry.locationNotice = coordinate == nil ? "Location unavailable · saved station" : nil
 		if station.departureMode == "external" { entry.message = "Open station for departure times."; return entry }
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.timeoutIntervalForRequest = 8
@@ -113,7 +113,7 @@ enum WidgetBoardLoader {
 
 struct RefreshSubwayWidget: AppIntent {
 	static let title: LocalizedStringResource = "Refresh train widget"
-	static let description = IntentDescription("Request a new report for your closest favorite station.")
+	static let description = IntentDescription("Request a new report using your widget station settings.")
 	func perform() async throws -> some IntentResult {
 		_ = await WidgetBoardLoader.load()
 		WidgetCenter.shared.reloadTimelines(ofKind: WidgetSharedStore.kind)

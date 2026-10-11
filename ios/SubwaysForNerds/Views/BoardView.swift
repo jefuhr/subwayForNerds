@@ -358,6 +358,7 @@ private struct NjtDeparturesSection: View {
 }
 
 struct DepartureRow: View {
+	@Environment(AppModel.self) private var app
 	let departure: Departure
 	let now: TimeInterval
 	var cached = false
@@ -365,6 +366,7 @@ struct DepartureRow: View {
 	var showPlatform = false
 	private var countdown: Countdown { Display.countdown(departure.time, timestamp: departure.timestamp, now: now, cached: cached) }
 	private var historical: Bool { cached || Display.freshness(departure.timestamp, now: now) != .live || departure.locationTimestamp.map { now - $0 > 90 } == true }
+	private var favoriteMatch: TrainFavoriteMatch? { app.trainFavorites.match(departure.consist, feed: departure.feed, now: now, cached: cached) }
 	private var gap: Int? {
 		guard !cached, Display.boardable(departure), let previous, Display.freshness(previous.timestamp, now: now) == .live,
 			  Display.freshness(departure.timestamp, now: now) == .live, let before = previous.time, let after = departure.time else { return nil }
@@ -403,10 +405,16 @@ struct DepartureRow: View {
 					Text("\(Array(Set(consist.cars.compactMap(\.type))).sorted().joined(separator: " / ")) · \(Display.consistSummary(consist.cars))\(Display.freshness(consist.updatedAt, now: now) == .live ? "" : " · last reported")")
 						.font(.caption2).foregroundStyle(.secondary).lineLimit(1)
 				}
+				if let match = favoriteMatch {
+					Label(match.exactConsist ? "Favorite consist" : "Favorite cars: " + match.carIDs.map(TrainFavorites.label).joined(separator: ", "), systemImage: "star.fill")
+						.font(.caption2.weight(.semibold)).foregroundStyle(app.theme.ink).fixedSize(horizontal: false, vertical: true)
+				}
 				if departure.assigned == false { Text("Not yet assigned").font(.caption2.weight(.semibold)) }
 				if !Display.boardable(departure) { Text(departure.relationship?.lowercased() ?? "Not boarding").font(.caption.bold()) }
 			}
 		}
+		.padding(.vertical, favoriteMatch == nil ? 0 : 2).padding(.horizontal, favoriteMatch == nil ? 0 : 4)
+		.background(favoriteMatch == nil ? Color.clear : app.theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
 		.accessibilityElement(children: .combine)
 	}
 

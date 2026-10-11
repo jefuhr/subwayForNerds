@@ -372,6 +372,13 @@ struct DepartureRow: View {
 			  Display.freshness(departure.timestamp, now: now) == .live, let before = previous.time, let after = departure.time else { return nil }
 		return Int(((after - before) / 60).rounded())
 	}
+	// Built in steps: as one expression this exceeded CI's type-checking time limit.
+	private var positionDetail: String {
+		var detail = "Stop-relative position"
+		if let stops = departure.stopsAway, stops >= 0 { detail = "\(stops) \(stops == 1 ? "stop" : "stops") away" }
+		if let reported = departure.locationTimestamp { detail += " · \(Display.ageLabel(reported, now: now))" }
+		return detail
+	}
 	var body: some View {
 		HStack(alignment: .top, spacing: 8) {
 			RouteBullet(route: departure.route, small: true)
@@ -396,7 +403,7 @@ struct DepartureRow: View {
 				}
 				Text((historical ? "Last report: " : "") + departure.location).font(.caption)
 				HStack(alignment: .firstTextBaseline) {
-					Text((departure.stopsAway.flatMap { $0 >= 0 ? "\($0) \($0 == 1 ? "stop" : "stops") away" : nil } ?? "Stop-relative position") + (departure.locationTimestamp.map { " · \(Display.ageLabel($0, now: now))" } ?? ""))
+					Text(positionDetail)
 					Spacer(minLength: 4)
 					if let gap, gap > 0 { Text("+\(gap)m after previous") }
 				}

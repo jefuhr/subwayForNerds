@@ -39,8 +39,20 @@ the app beyond localhost so geolocation and service workers work.
   (Union Square is the initial fallback). The station title opens search; stars
   save favorites. A nearby button can request location again and sorts stations
   on-device by straight-line distance.
-- A complex includes its constituent stations. Direction, constituent station and
-  reported/scheduled track define the groups. A group is a feed-based boarding
+- Swipe horizontally between favorite station boards, or use the page dots,
+  arrows, or keyboard arrows while the pager is focused. Favorites are ordered
+  by distance for the visit; without location they retain saved order. Browsing
+  freezes the order so a late location fix cannot interrupt navigation. Shared
+  station links keep their selected station, and nonfavorites get a temporary
+  first page. Each page retains its station's filters and cached departures.
+- The View menu beside Departures offers track, direction across all platforms,
+  direction by route family, direction by station corridor, and service views.
+  Each station remembers its view. Track is the default; service sections contain
+  separate direction lists. Combined views retain each train’s boarding area.
+  Direction grouping uses feed northbound/southbound assignments, including
+  crosstown services; each train retains its local direction label.
+  A complex includes its constituent stations. Direction, constituent station and
+  reported/scheduled track define the default groups. A group is a feed-based boarding
   area, not a guarantee of shared platform access. Unknown tracks stay unknown.
 - Trains from different routes are interleaved by predicted time. Five rows per
   group are shown initially; each group can expand. Route and direction filters
@@ -212,10 +224,57 @@ below 200ms. Actual results and platform limitations belong in `docs/validation.
   `~/DiD_Open` mobile branch. The interface and transit service are new.
 
 Optional Apple/Google accounts sync settings; `.nerds` files transfer settings without an account.
-See [account setup and privacy](docs/accounts.md). Location stays on-device. Browser storage
-holds preferences, a station catalog, and up to eight recent station snapshots.
+See [account setup and privacy](docs/accounts.md). Location stays on-device.
+First-party analytics record sessions, station views, and control actions with
+a random browser ID, coarse device category, and referring hostname. No location,
+search text, full referrer URL, raw IP address, or raw user-agent string is stored
+in analytics. Events are kept for 365 days in `STATE_DIR/analytics.sqlite`,
+separate from fleet data. Public aggregates are available at `stats` under the
+app base (`/stats` in production); browser counts are estimates. Collection
+starts at deployment with no historical backfill.
+
+Browser storage holds per-station direction and line preferences, a station
+catalog, and snapshots for every favorite plus eight recent nonfavorites when
+space permits. Favorites preload immediately and refresh every 30 seconds; the
+selected station refreshes every 10 seconds. Fetching pauses while hidden or
+offline. Nonfavorite snapshots are evicted first when storage fills.
+
 The native SwiftUI client uses the same HTTP contracts, with on-device location,
 preferences, cached boards, and an optional downloaded fleet snapshot. It uses Apple frameworks and the pinned Google Sign-In SDK for optional accounts. See [the native feature and validation matrix](docs/ios.md).
+
+### PATH
+
+The station picker includes all 13 PATH stations, separately labeled `(PATH)`, with
+New Jersey search, favorites, nearby sorting, and the four regular routes plus
+JSQ–33 via Hoboken. Coordinates come from the [PATH GTFS feed](https://rapid.nationalrtap.org/GTFSFileManagement/UserUploadFiles/14843/PATHGTFS.zip).
+The server polls the [Port Authority RidePATH feed](https://www.panynj.gov/bin/portauthority/ridepath.json)
+every 15 seconds with the same cache, backoff and stale-data handling as subway feeds.
+Arrival times use each estimate's upstream `lastUpdated`, never the time fetched.
+PATH estimates are station-specific: the source does not link journeys or supply
+tracks, car assignments, positions, onward stop predictions, or service alerts.
+PATH boards do not display MTA alerts or MTA equipment status as PATH data.
+
+### NJ Transit light rail
+
+The catalog includes 62 distinct NJ Transit light rail stations: Hudson–Bergen
+Light Rail (24), Newark Light Rail (17), and River LINE (21). Search by system
+name, HBLR/NLR, municipality, or the published station ID; favorites, station
+paging and nearby sorting work as usual. Names distinguish these stations from
+nearby PATH stations. The route badges represent the three systems, not individual
+branch service patterns.
+
+This is station-directory support: NJ Transit live arrivals, schedules and alerts
+are not ingested. These station pages say so explicitly and link to NJ Transit's
+DepartureVision, light rail schedules and alerts rather than showing an empty
+live board or MTA data.
+
+Station IDs, system membership and coordinates were imported on 2026-09-21 from
+[NJ TRANSIT GIS's light rail station layer](https://services6.arcgis.com/M0t0HPE53pFK525U/arcgis/rest/services/NJTransit_Light_Rail_Stations/FeatureServer/0).
+The bundled file is `data/njt-light-rail-stations.json`; coordinates are station
+vicinity points, not entrances. Display names expand abbreviations and use
+Harsimus Cove, Warren Street/NJIT and Trenton Transit Center. No live accessibility
+claim is inferred from this dataset. The daily MTA catalog refresh preserves these
+stations and PATH stations.
 
 ## Automated deployment
 

@@ -17,10 +17,11 @@ export function accountOptions(env=process.env):AccountOptions|undefined{
 function fail(statusCode:number,message:string):never{throw Object.assign(new Error(message),{statusCode});}
 const providerName=(v:unknown):ProviderName=>v==='apple'||v==='google'?v:fail(400,'Choose Apple or Google.');
 const text=(value:unknown)=>typeof value==='string'&&value.length>0&&value.length<16000?value:fail(400,'Invalid login request.');
-export async function registerAccounts(app:FastifyInstance,api:string,options?:AccountOptions){
+export async function registerAccounts(app:FastifyInstance,api:string,options?:AccountOptions,{exemptLoopback=false}:{exemptLoopback?:boolean}={}){
 	await app.register(async auth=>{
 		await auth.register(cookie);
-		await auth.register(rateLimit,{max:120,timeWindow:60000});
+		// Parallel browser suites share one loopback client; production keys every client separately.
+		await auth.register(rateLimit,{max:120,timeWindow:60000,allowList:exemptLoopback?['127.0.0.1','::1']:[]});
 		auth.addHook('onRequest',async(_req,reply)=>{reply.header('Cache-Control','no-store');});
 		auth.setErrorHandler((error,_req,reply)=>{const status=(error as any).statusCode||500;reply.code(status).send({error:status>=500?'Account service unavailable. Your settings remain on this device.':(error as Error).message});});
 		auth.get(api+'/auth/config',()=>({enabled:!!options,googleClientID:options?.providers.google.nativeClientID,googleServerClientID:options?.providers.google.webClientID}));

@@ -1,0 +1,38 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { normalizePath, pathCatalog } from '../server/path';
+import { TransitService } from '../server/service';
+import { groupDepartures } from '../shared/departureGroups';
+const timestamp = 1788739200;
+const message = { target: '33S', secondsToArrival: '120', lineColor: 'FF9900,4D92FB', headSign: '33rd Street via Hoboken', lastUpdated: new Date(timestamp * 1000).toISOString() };
+const raw = { results: [{ consideredStation: '09S', destinations: [{ label: 'ToNY', messages: [message] }, { label: 'ToNJ', messages: [{ ...message, target: 'JSQ', headSign: 'Journal Square', secondsToArrival: 'Delayed' }] }] }] };
+test('PATH has 13 separate stations and preserves station identity and upstream times', () => {
+  assert.equal(pathCatalog.length, 13);
+  assert.equal(new Set(pathCatalog.map(s => s.id)).size, 13);
+  const trains = [...normalizePath(raw).values()];
+  assert.equal(trains[0].route, 'PATH-JSQ-33-HOB');
+  assert.equal(trains[0].stops[0].id, 'path-09s');
+  assert.equal(trains[0].stops[0].arrival, timestamp + 120);
+  assert.equal(trains[1].stops[0].arrival, null);
+  assert.equal(trains[0].stops.length, 1);
+  assert.equal(trains[0].position, undefined);
+  assert.throws(() => normalizePath({ results: [] }));
+  assert.throws(() => normalizePath({ results: [{ ...raw.results[0], destinations: [{ messages: [{ ...message, lastUpdated: 'invalid' }] }] }] }));
+});
+test('PATH boards isolate sources and alerts, group both directions and retain stale estimates', () => {
+  const service = new TransitService();
+  service.accept('path', raw, timestamp);
+  service.refreshBoards(timestamp);
+  const board = service.boards.get('path-09s')!;
+  assert.equal(board.departures.length, 2);
+  assert.deepEqual(board.sources.map(s => s.id), ['path']);
+  assert.deepEqual(groupDepartures(board.departures, board.station, 'direction').map(g => g.direction), ['TO_NY', 'TO_NJ']);
+  assert.equal(board.departures[0].onward.length, 0);
+  assert.match(board.departures[0].area, /To New York/);
+  assert.ok(!service.boards.get('602')!.sources.some(s => s.id === 'path'));
+  service.slots.get('path')!.state.error = 'offline';
+  service.refreshBoards(timestamp + 600);
+  assert.equal(service.boards.get('path-09s')!.departures.length, 2);
+  assert.equal(service.boards.get('path-09s')!.sources[0].error, 'offline');
+  assert.equal(service.boards.get('path-09s')!.departures[0].timestamp, timestamp);
+});

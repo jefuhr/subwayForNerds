@@ -11,6 +11,7 @@ import { TransitService } from './service';
 import { nowSeconds } from './transit';
 import { transfers } from './transfers';
 import { registerFleetOfflineRoutes } from './fleet-offline-routes';
+import { registerAnalytics } from './analytics';
 
 export async function createServer(service = new TransitService({ fixtureDir: process.env.FIXTURE_DIR })) {
   const app = Fastify({ trustProxy: process.env.SFN_TRUST_PROXY ? process.env.SFN_TRUST_PROXY.split(',') : false, logger: process.env.NODE_ENV === 'production' ? { serializers: { req: req => ({ method: req.method, url: req.url?.split('?')[0] }) } } : false });
@@ -21,6 +22,7 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
   let accounts;
   try { accounts = accountOptions(); } catch { app.log.error('Account configuration unavailable; authentication disabled'); }
   await registerAccounts(app, api, accounts);
+  registerAnalytics(app, api, service.catalog);
   const encoded = new WeakMap<object, { json: string; gzip: Buffer; etag: string }>();
   app.addHook('onSend', async (_req, reply, payload) => {
     reply.header('X-Content-Type-Options', 'nosniff');
@@ -98,6 +100,7 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
   app.get('/healthz', () => ({ status: 'ok' }));
   if (base !== '/') app.get(base.slice(0, -1), (_req, reply) => reply.redirect(base));
   if (existsSync(resolve('dist'))) {
+    app.get(base + 'stats', (_req, reply) => reply.header('Cache-Control', 'no-cache').sendFile('index.html'));
     await app.register(staticFiles, { root: resolve('dist'), prefix: base, index: ['index.html'],
       setHeaders: (reply, file) => { reply.header('Cache-Control', file.includes('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache'); } });
   }

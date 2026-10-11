@@ -28,7 +28,7 @@ test('health separates successful alert polling from snapshot freshness', async 
 	assert.deepEqual(health.feeds.find((s: SourceState) => s.id === 'subway-alerts'), {
 		id: 'subway-alerts', timestamp: now - 1084, fetchedAt: now - 20, error: null, age: 1084, fetchAge: 20,
 	});
-	assert.equal(health.feeds.length, 9);
+	assert.equal(health.feeds.length, 10);
 	assert.equal(health.stationCount, service.catalog.length);
 });
 

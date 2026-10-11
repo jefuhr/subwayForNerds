@@ -84,7 +84,7 @@ for (const [mode, radiusFeet, favorites, expected] of [
 	await page.route('**/api/v1/stations', route => route.fulfill({ json: stations }));
 	await page.route('**/api/v1/stations/*/board', route => route.fulfill({ json: { station: stations.find(s => route.request().url().includes('/' + s.id + '/')) ?? { ...stations[0], id: '602', name: 'Saved station' }, departures: [], sources: [], alerts: [], generatedAt: now } }));
 	await page.addInitScript(() => { navigator.geolocation.getCurrentPosition = ok => ok({ coords: { latitude: 0, longitude: 0 }, timestamp: Date.now() } as GeolocationPosition); });
-	await page.goto('./'); await expect(page.locator('h1')).toHaveText(expected);
+	await page.goto('./'); await expect(page.locator('.active-page h1')).toHaveText(expected);
 });
 
 test('manual navigation wins over a pending startup location fix', async ({ page }) => {

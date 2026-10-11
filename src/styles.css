@@ -78,3 +78,39 @@
 @media(max-width:330px){.theme-grid{grid-template-columns:1fr}}
 
 .favorite-car-badge{display:block;color:var(--ink);font:10px/1.4 system-ui,sans-serif}.consist-cars .favorite-car small{color:var(--ink)}
+/* Favorite station pages keep the app chrome stationary during navigation. */
+.station-pages{overflow:hidden;overflow:clip;min-width:0}
+.station-page-track{position:relative;will-change:transform}
+.station-page-track.sliding{transition:transform 200ms ease-out}
+.station-page{width:100%;min-width:0}
+.neighbor-page{position:absolute;top:0;pointer-events:none;visibility:hidden}
+.station-page-track.moving .neighbor-page{visibility:visible}
+.app-shell{--station-sidebar-width:250px}
+.station-pages.has-pager{padding-bottom:calc(56px + env(safe-area-inset-bottom))}
+.station-pager-dock{position:fixed;left:var(--station-sidebar-width);right:0;bottom:calc(8px + env(safe-area-inset-bottom));z-index:6;display:flex;justify-content:center;padding:0 12px;pointer-events:none}
+.station-pager{display:flex;align-items:center;justify-content:center;gap:0;margin:0;min-width:0;max-width:100%;padding:2px 4px;border:1px solid var(--line);border-radius:24px;background:var(--card);box-shadow:0 2px 12px #0003;pointer-events:auto}
+.station-pager>.icon-button{min-width:32px;min-height:32px;width:32px;height:32px;padding:6px;border-radius:50%}
+.station-pager>.icon-button{flex-shrink:0}
+.station-pager button:disabled{opacity:.3;cursor:default}
+.station-page-dots{display:flex;align-items:center;overflow-x:auto;max-width:168px;min-width:0;scrollbar-width:none;overscroll-behavior-x:contain;position:relative}
+.station-page-dots::-webkit-scrollbar{display:none}
+.station-page-dots button{display:grid;place-items:center;flex:0 0 24px;height:32px;border-radius:6px}
+.station-page-dots button span{width:5px;height:5px;border-radius:50%;background:var(--muted);opacity:.4}
+.station-page-dots button[aria-current] span{background:var(--accent);opacity:1;transform:scale(1.35)}
+@media(min-width:1650px){.app-shell{--station-sidebar-width:275px}}
+@media(max-width:1100px){.app-shell{--station-sidebar-width:220px}}
+@media(max-width:800px){.app-shell{--station-sidebar-width:0px}}
+@media(prefers-reduced-motion:reduce){.station-page-track.sliding{transition:none}}
+
+/* Departure display choices and grouped boarding information. */
+.board-toolbar{gap:8px;flex-wrap:wrap}.board-title{min-width:0;flex-wrap:wrap}
+.departure-view{position:relative}.view-trigger{gap:5px;padding:6px 8px;border:1px solid var(--line);border-radius:5px;background:var(--card);white-space:nowrap}
+.view-menu{position:absolute;top:calc(100% + 5px);right:0;z-index:8;width:265px;max-width:calc(100vw - 30px);padding:5px;border:1px solid var(--line);border-radius:7px;background:var(--card);box-shadow:0 8px 24px #0003}
+.view-menu button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:42px;padding:9px;text-align:left;font-size:12px;border-radius:4px;line-height:1.4}.view-menu button svg{flex-shrink:0}.view-menu button:hover,.view-menu button:focus-visible{background:var(--raised)}.view-menu button[aria-checked=true]{color:var(--accent)}
+.train-boarding{display:block;margin-top:5px;font-size:10px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}
+.service-section{min-width:0}.service-heading{display:flex;align-items:center;gap:10px;font-size:15px;margin:0 0 12px}.service-directions{display:grid;gap:14px}
+@media(max-width:560px){.board-title{gap:6px}.view-trigger{font-size:10px;padding:5px 6px;min-height:40px}.board-actions{margin-left:auto}.view-menu{position:fixed;top:auto;right:15px;margin-top:5px}.train-boarding{font-size:9px}}
+
+.route-bullet.path-route,.train-identity>.route-bullet.path-route,.station-result .route-bullet.path-route.small{width:auto;max-width:110px;height:auto;min-height:25px;border-radius:4px;padding:5px;font-size:10px;letter-spacing:0;text-align:center;color:#111;text-shadow:0 0 3px #fff;line-height:1.2}.route-bullet.path-route.small{font-size:9px;min-height:20px}
+
+.route-bullet.njt-route,.station-result .route-bullet.njt-route.small{width:auto;height:auto;min-height:25px;border-radius:4px;padding:5px 7px;font-size:11px;letter-spacing:0;line-height:1.2;white-space:nowrap;color:#fff}.route-bullet.njt-route.small{min-height:20px;font-size:10px}.njt-station-info{padding:24px 0;max-width:640px}.njt-station-info h2{font-size:21px}.njt-station-info p{color:var(--muted);line-height:1.6;margin:12px 0}.njt-links{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:20px}.njt-links a{display:inline-flex;gap:6px;align-items:center}

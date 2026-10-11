@@ -1,0 +1,498 @@
+[
+  {
+    "code": "30539",
+    "name": "Grove Street",
+    "municipality": "Bloomfield Twp",
+    "route": "NJT-NLR",
+    "lat": 40.7804565,
+    "lon": -74.1879602
+  },
+  {
+    "code": "30761",
+    "name": "Silver Lake",
+    "municipality": "Belleville Twp",
+    "route": "NJT-NLR",
+    "lat": 40.7803349,
+    "lon": -74.1806309
+  },
+  {
+    "code": "30762",
+    "name": "Branch Brook Park",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7796464,
+    "lon": -74.1746657
+  },
+  {
+    "code": "30763",
+    "name": "Davenport Avenue",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.772346,
+    "lon": -74.1781895
+  },
+  {
+    "code": "30764",
+    "name": "Bloomfield Avenue",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7654436,
+    "lon": -74.1798834
+  },
+  {
+    "code": "30765",
+    "name": "Park Avenue",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7585341,
+    "lon": -74.1849832
+  },
+  {
+    "code": "30766",
+    "name": "Orange Street",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7506317,
+    "lon": -74.1849422
+  },
+  {
+    "code": "30767",
+    "name": "Norfolk Street",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7453499,
+    "lon": -74.1830091
+  },
+  {
+    "code": "30768",
+    "name": "Warren Street/NJIT",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7424173,
+    "lon": -74.1811895
+  },
+  {
+    "code": "30769",
+    "name": "Washington Street",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7383572,
+    "lon": -74.174035
+  },
+  {
+    "code": "30770",
+    "name": "Military Park",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7374435,
+    "lon": -74.1707929
+  },
+  {
+    "code": "30771",
+    "name": "Newark Penn Station",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7349339,
+    "lon": -74.163489
+  },
+  {
+    "code": "30772",
+    "name": "NJPAC/Center Street",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7395089,
+    "lon": -74.1655815
+  },
+  {
+    "code": "30773",
+    "name": "Atlantic Street",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7441699,
+    "lon": -74.1684908
+  },
+  {
+    "code": "30774",
+    "name": "Riverfront Stadium",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7460232,
+    "lon": -74.1696614
+  },
+  {
+    "code": "30775",
+    "name": "Broad Street Station",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.747214,
+    "lon": -74.1715075
+  },
+  {
+    "code": "30776",
+    "name": "Harriet Tubman Square",
+    "municipality": "Newark",
+    "route": "NJT-NLR",
+    "lat": 40.7439518,
+    "lon": -74.1698505
+  },
+  {
+    "code": "30823",
+    "name": "Tonnelle Avenue",
+    "municipality": "North Bergen Twp",
+    "route": "NJT-HBLR",
+    "lat": 40.7873341,
+    "lon": -74.0312601
+  },
+  {
+    "code": "30824",
+    "name": "Bergenline Avenue",
+    "municipality": "Union City",
+    "route": "NJT-HBLR",
+    "lat": 40.7826032,
+    "lon": -74.0229028
+  },
+  {
+    "code": "30825",
+    "name": "Port Imperial",
+    "municipality": "Weehawken Twp",
+    "route": "NJT-HBLR",
+    "lat": 40.7759758,
+    "lon": -74.0127992
+  },
+  {
+    "code": "30826",
+    "name": "Lincoln Harbor",
+    "municipality": "Weehawken Twp",
+    "route": "NJT-HBLR",
+    "lat": 40.7614106,
+    "lon": -74.0240029
+  },
+  {
+    "code": "30827",
+    "name": "9th Street/Congress Street",
+    "municipality": "Hoboken",
+    "route": "NJT-HBLR",
+    "lat": 40.7488862,
+    "lon": -74.0385144
+  },
+  {
+    "code": "30828",
+    "name": "2nd Street",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.7417477,
+    "lon": -74.0428121
+  },
+  {
+    "code": "30829",
+    "name": "Hoboken Terminal",
+    "municipality": "Hoboken",
+    "route": "NJT-HBLR",
+    "lat": 40.7340588,
+    "lon": -74.0292026
+  },
+  {
+    "code": "30830",
+    "name": "Newport",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.7268273,
+    "lon": -74.0362347
+  },
+  {
+    "code": "30831",
+    "name": "Harsimus Cove",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.7226869,
+    "lon": -74.0372878
+  },
+  {
+    "code": "30832",
+    "name": "Harborside",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.7189181,
+    "lon": -74.034111
+  },
+  {
+    "code": "30833",
+    "name": "Exchange Place",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.7160266,
+    "lon": -74.0340922
+  },
+  {
+    "code": "30834",
+    "name": "Essex Street",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.7128493,
+    "lon": -74.0360775
+  },
+  {
+    "code": "30835",
+    "name": "Marin Boulevard",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.7144443,
+    "lon": -74.0432485
+  },
+  {
+    "code": "30836",
+    "name": "Jersey Avenue",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.7149905,
+    "lon": -74.0484849
+  },
+  {
+    "code": "30837",
+    "name": "Liberty State Park",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.7103833,
+    "lon": -74.0558145
+  },
+  {
+    "code": "30838",
+    "name": "Garfield Avenue",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.7105845,
+    "lon": -74.0710983
+  },
+  {
+    "code": "30839",
+    "name": "Martin Luther King Drive",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.712107,
+    "lon": -74.0773356
+  },
+  {
+    "code": "30840",
+    "name": "West Side Avenue",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.7145663,
+    "lon": -74.0875855
+  },
+  {
+    "code": "30841",
+    "name": "Richard Street",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.6991558,
+    "lon": -74.0786381
+  },
+  {
+    "code": "30842",
+    "name": "Danforth Avenue",
+    "municipality": "Jersey City",
+    "route": "NJT-HBLR",
+    "lat": 40.6923699,
+    "lon": -74.08727
+  },
+  {
+    "code": "30843",
+    "name": "45th Street",
+    "municipality": "Bayonne",
+    "route": "NJT-HBLR",
+    "lat": 40.6787032,
+    "lon": -74.1016435
+  },
+  {
+    "code": "30844",
+    "name": "34th Street",
+    "municipality": "Bayonne",
+    "route": "NJT-HBLR",
+    "lat": 40.6718432,
+    "lon": -74.1074661
+  },
+  {
+    "code": "30845",
+    "name": "22nd Street",
+    "municipality": "Bayonne",
+    "route": "NJT-HBLR",
+    "lat": 40.6613118,
+    "lon": -74.1164575
+  },
+  {
+    "code": "30855",
+    "name": "Trenton Transit Center",
+    "municipality": "Trenton",
+    "route": "NJT-RIVER",
+    "lat": 40.2183803,
+    "lon": -74.7550848
+  },
+  {
+    "code": "30856",
+    "name": "Hamilton Avenue",
+    "municipality": "Trenton",
+    "route": "NJT-RIVER",
+    "lat": 40.2119489,
+    "lon": -74.7557668
+  },
+  {
+    "code": "30857",
+    "name": "Cass Street",
+    "municipality": "Trenton",
+    "route": "NJT-RIVER",
+    "lat": 40.2054356,
+    "lon": -74.7542777
+  },
+  {
+    "code": "30858",
+    "name": "Bordentown",
+    "municipality": "Bordentown City",
+    "route": "NJT-RIVER",
+    "lat": 40.1481973,
+    "lon": -74.7162442
+  },
+  {
+    "code": "30859",
+    "name": "Roebling",
+    "municipality": "Florence Twp",
+    "route": "NJT-RIVER",
+    "lat": 40.1168999,
+    "lon": -74.7702376
+  },
+  {
+    "code": "30860",
+    "name": "Florence",
+    "municipality": "Florence Twp",
+    "route": "NJT-RIVER",
+    "lat": 40.1000087,
+    "lon": -74.8051097
+  },
+  {
+    "code": "30861",
+    "name": "Burlington Town Centre",
+    "municipality": "Burlington City",
+    "route": "NJT-RIVER",
+    "lat": 40.077379,
+    "lon": -74.8594304
+  },
+  {
+    "code": "30862",
+    "name": "Burlington South",
+    "municipality": "Burlington City",
+    "route": "NJT-RIVER",
+    "lat": 40.0746011,
+    "lon": -74.8690091
+  },
+  {
+    "code": "30863",
+    "name": "Beverly/Edgewater Park",
+    "municipality": "Beverly",
+    "route": "NJT-RIVER",
+    "lat": 40.0611031,
+    "lon": -74.9152177
+  },
+  {
+    "code": "30864",
+    "name": "Delanco",
+    "municipality": "Delanco Twp",
+    "route": "NJT-RIVER",
+    "lat": 40.0481107,
+    "lon": -74.9503656
+  },
+  {
+    "code": "30865",
+    "name": "Riverside",
+    "municipality": "Riverside Twp",
+    "route": "NJT-RIVER",
+    "lat": 40.0392683,
+    "lon": -74.9588921
+  },
+  {
+    "code": "30866",
+    "name": "Cinnaminson",
+    "municipality": "Cinnaminson Twp",
+    "route": "NJT-RIVER",
+    "lat": 40.0166604,
+    "lon": -74.9999822
+  },
+  {
+    "code": "30867",
+    "name": "Riverton",
+    "municipality": "Riverton",
+    "route": "NJT-RIVER",
+    "lat": 40.0089725,
+    "lon": -75.0130812
+  },
+  {
+    "code": "30868",
+    "name": "Palmyra",
+    "municipality": "Palmyra",
+    "route": "NJT-RIVER",
+    "lat": 40.0042707,
+    "lon": -75.0210963
+  },
+  {
+    "code": "30869",
+    "name": "Pennsauken/Route 73",
+    "municipality": "Pennsauken Twp",
+    "route": "NJT-RIVER",
+    "lat": 39.9934221,
+    "lon": -75.039072
+  },
+  {
+    "code": "30870",
+    "name": "36th Street",
+    "municipality": "Pennsauken Twp",
+    "route": "NJT-RIVER",
+    "lat": 39.9612829,
+    "lon": -75.0790969
+  },
+  {
+    "code": "30871",
+    "name": "Walter Rand Transportation Center",
+    "municipality": "Camden",
+    "route": "NJT-RIVER",
+    "lat": 39.9431643,
+    "lon": -75.1203288
+  },
+  {
+    "code": "30872",
+    "name": "Cooper Street/Rutgers",
+    "municipality": "Camden",
+    "route": "NJT-RIVER",
+    "lat": 39.947493,
+    "lon": -75.1241463
+  },
+  {
+    "code": "30873",
+    "name": "Aquarium",
+    "municipality": "Camden",
+    "route": "NJT-RIVER",
+    "lat": 39.9456341,
+    "lon": -75.1286713
+  },
+  {
+    "code": "30874",
+    "name": "Entertainment Center",
+    "municipality": "Camden",
+    "route": "NJT-RIVER",
+    "lat": 39.9409237,
+    "lon": -75.1284917
+  },
+  {
+    "code": "31145",
+    "name": "8th Street",
+    "municipality": "Bayonne",
+    "route": "NJT-HBLR",
+    "lat": 40.6543008,
+    "lon": -74.1289436
+  },
+  {
+    "code": "31898",
+    "name": "Pennsauken Transit Center",
+    "municipality": "Pennsauken Twp",
+    "route": "NJT-RIVER",
+    "lat": 39.9783056,
+    "lon": -75.0619749
+  }
+]

@@ -14363,5 +14363,2196 @@
         "borough": "Bx"
       }
     ]
+  },
+  {
+    "id": "path-09s",
+    "name": "9th Street (PATH)",
+    "routes": [
+      "PATH-JSQ-33",
+      "PATH-HOB-33",
+      "PATH-JSQ-33-HOB"
+    ],
+    "borough": "M",
+    "lat": 40.734267,
+    "lon": -73.999006,
+    "parts": [
+      {
+        "id": "path-09s",
+        "stationId": "path-09s",
+        "name": "9th Street (PATH)",
+        "routes": [
+          "PATH-JSQ-33",
+          "PATH-HOB-33",
+          "PATH-JSQ-33-HOB"
+        ],
+        "line": "PATH",
+        "lat": 40.734267,
+        "lon": -73.999006,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-14s",
+    "name": "14th Street (PATH)",
+    "routes": [
+      "PATH-JSQ-33",
+      "PATH-HOB-33",
+      "PATH-JSQ-33-HOB"
+    ],
+    "borough": "M",
+    "lat": 40.7373,
+    "lon": -73.996858,
+    "parts": [
+      {
+        "id": "path-14s",
+        "stationId": "path-14s",
+        "name": "14th Street (PATH)",
+        "routes": [
+          "PATH-JSQ-33",
+          "PATH-HOB-33",
+          "PATH-JSQ-33-HOB"
+        ],
+        "line": "PATH",
+        "lat": 40.7373,
+        "lon": -73.996858,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-23s",
+    "name": "23rd Street (PATH)",
+    "routes": [
+      "PATH-JSQ-33",
+      "PATH-HOB-33",
+      "PATH-JSQ-33-HOB"
+    ],
+    "borough": "M",
+    "lat": 40.74286,
+    "lon": -73.992792,
+    "parts": [
+      {
+        "id": "path-23s",
+        "stationId": "path-23s",
+        "name": "23rd Street (PATH)",
+        "routes": [
+          "PATH-JSQ-33",
+          "PATH-HOB-33",
+          "PATH-JSQ-33-HOB"
+        ],
+        "line": "PATH",
+        "lat": 40.74286,
+        "lon": -73.992792,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-33s",
+    "name": "33rd Street (PATH)",
+    "routes": [
+      "PATH-JSQ-33",
+      "PATH-HOB-33",
+      "PATH-JSQ-33-HOB"
+    ],
+    "borough": "M",
+    "lat": 40.748591,
+    "lon": -73.988633,
+    "parts": [
+      {
+        "id": "path-33s",
+        "stationId": "path-33s",
+        "name": "33rd Street (PATH)",
+        "routes": [
+          "PATH-JSQ-33",
+          "PATH-HOB-33",
+          "PATH-JSQ-33-HOB"
+        ],
+        "line": "PATH",
+        "lat": 40.748591,
+        "lon": -73.988633,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-chr",
+    "name": "Christopher Street (PATH)",
+    "routes": [
+      "PATH-JSQ-33",
+      "PATH-HOB-33",
+      "PATH-JSQ-33-HOB"
+    ],
+    "borough": "M",
+    "lat": 40.732942,
+    "lon": -74.007081,
+    "parts": [
+      {
+        "id": "path-chr",
+        "stationId": "path-chr",
+        "name": "Christopher Street (PATH)",
+        "routes": [
+          "PATH-JSQ-33",
+          "PATH-HOB-33",
+          "PATH-JSQ-33-HOB"
+        ],
+        "line": "PATH",
+        "lat": 40.732942,
+        "lon": -74.007081,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-exp",
+    "name": "Exchange Place (PATH)",
+    "routes": [
+      "PATH-NWK-WTC",
+      "PATH-HOB-WTC"
+    ],
+    "borough": "NJ",
+    "lat": 40.716798,
+    "lon": -74.032451,
+    "parts": [
+      {
+        "id": "path-exp",
+        "stationId": "path-exp",
+        "name": "Exchange Place (PATH)",
+        "routes": [
+          "PATH-NWK-WTC",
+          "PATH-HOB-WTC"
+        ],
+        "line": "PATH",
+        "lat": 40.716798,
+        "lon": -74.032451,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-grv",
+    "name": "Grove Street (PATH)",
+    "routes": [
+      "PATH-NWK-WTC",
+      "PATH-JSQ-33",
+      "PATH-JSQ-33-HOB"
+    ],
+    "borough": "NJ",
+    "lat": 40.719264,
+    "lon": -74.04257,
+    "parts": [
+      {
+        "id": "path-grv",
+        "stationId": "path-grv",
+        "name": "Grove Street (PATH)",
+        "routes": [
+          "PATH-NWK-WTC",
+          "PATH-JSQ-33",
+          "PATH-JSQ-33-HOB"
+        ],
+        "line": "PATH",
+        "lat": 40.719264,
+        "lon": -74.04257,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-har",
+    "name": "Harrison (PATH)",
+    "routes": [
+      "PATH-NWK-WTC"
+    ],
+    "borough": "NJ",
+    "lat": 40.739382,
+    "lon": -74.15561,
+    "parts": [
+      {
+        "id": "path-har",
+        "stationId": "path-har",
+        "name": "Harrison (PATH)",
+        "routes": [
+          "PATH-NWK-WTC"
+        ],
+        "line": "PATH",
+        "lat": 40.739382,
+        "lon": -74.15561,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-hob",
+    "name": "Hoboken (PATH)",
+    "routes": [
+      "PATH-HOB-WTC",
+      "PATH-HOB-33",
+      "PATH-JSQ-33-HOB"
+    ],
+    "borough": "NJ",
+    "lat": 40.735331,
+    "lon": -74.029005,
+    "parts": [
+      {
+        "id": "path-hob",
+        "stationId": "path-hob",
+        "name": "Hoboken (PATH)",
+        "routes": [
+          "PATH-HOB-WTC",
+          "PATH-HOB-33",
+          "PATH-JSQ-33-HOB"
+        ],
+        "line": "PATH",
+        "lat": 40.735331,
+        "lon": -74.029005,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-jsq",
+    "name": "Journal Square (PATH)",
+    "routes": [
+      "PATH-NWK-WTC",
+      "PATH-JSQ-33",
+      "PATH-JSQ-33-HOB"
+    ],
+    "borough": "NJ",
+    "lat": 40.73199,
+    "lon": -74.062854,
+    "parts": [
+      {
+        "id": "path-jsq",
+        "stationId": "path-jsq",
+        "name": "Journal Square (PATH)",
+        "routes": [
+          "PATH-NWK-WTC",
+          "PATH-JSQ-33",
+          "PATH-JSQ-33-HOB"
+        ],
+        "line": "PATH",
+        "lat": 40.73199,
+        "lon": -74.062854,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-new",
+    "name": "Newport (PATH)",
+    "routes": [
+      "PATH-HOB-WTC",
+      "PATH-JSQ-33",
+      "PATH-HOB-33",
+      "PATH-JSQ-33-HOB"
+    ],
+    "borough": "NJ",
+    "lat": 40.727091,
+    "lon": -74.034645,
+    "parts": [
+      {
+        "id": "path-new",
+        "stationId": "path-new",
+        "name": "Newport (PATH)",
+        "routes": [
+          "PATH-HOB-WTC",
+          "PATH-JSQ-33",
+          "PATH-HOB-33",
+          "PATH-JSQ-33-HOB"
+        ],
+        "line": "PATH",
+        "lat": 40.727091,
+        "lon": -74.034645,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-nwk",
+    "name": "Newark (PATH)",
+    "routes": [
+      "PATH-NWK-WTC"
+    ],
+    "borough": "NJ",
+    "lat": 40.734435,
+    "lon": -74.164059,
+    "parts": [
+      {
+        "id": "path-nwk",
+        "stationId": "path-nwk",
+        "name": "Newark (PATH)",
+        "routes": [
+          "PATH-NWK-WTC"
+        ],
+        "line": "PATH",
+        "lat": 40.734435,
+        "lon": -74.164059,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "path-wtc",
+    "name": "World Trade Center (PATH)",
+    "routes": [
+      "PATH-NWK-WTC",
+      "PATH-HOB-WTC"
+    ],
+    "borough": "M",
+    "lat": 40.71224,
+    "lon": -74.012522,
+    "parts": [
+      {
+        "id": "path-wtc",
+        "stationId": "path-wtc",
+        "name": "World Trade Center (PATH)",
+        "routes": [
+          "PATH-NWK-WTC",
+          "PATH-HOB-WTC"
+        ],
+        "line": "PATH",
+        "lat": 40.71224,
+        "lon": -74.012522,
+        "ada": "",
+        "adaNotes": "",
+        "north": "To New York",
+        "south": "To New Jersey"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30539",
+    "name": "Grove Street (NLR)",
+    "borough": "NJ",
+    "municipality": "Bloomfield Twp",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7804565,
+    "lon": -74.1879602,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30539",
+        "stationId": "30539",
+        "name": "Grove Street (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7804565,
+        "lon": -74.1879602,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30761",
+    "name": "Silver Lake (NLR)",
+    "borough": "NJ",
+    "municipality": "Belleville Twp",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7803349,
+    "lon": -74.1806309,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30761",
+        "stationId": "30761",
+        "name": "Silver Lake (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7803349,
+        "lon": -74.1806309,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30762",
+    "name": "Branch Brook Park (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7796464,
+    "lon": -74.1746657,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30762",
+        "stationId": "30762",
+        "name": "Branch Brook Park (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7796464,
+        "lon": -74.1746657,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30763",
+    "name": "Davenport Avenue (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.772346,
+    "lon": -74.1781895,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30763",
+        "stationId": "30763",
+        "name": "Davenport Avenue (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.772346,
+        "lon": -74.1781895,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30764",
+    "name": "Bloomfield Avenue (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7654436,
+    "lon": -74.1798834,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30764",
+        "stationId": "30764",
+        "name": "Bloomfield Avenue (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7654436,
+        "lon": -74.1798834,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30765",
+    "name": "Park Avenue (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7585341,
+    "lon": -74.1849832,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30765",
+        "stationId": "30765",
+        "name": "Park Avenue (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7585341,
+        "lon": -74.1849832,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30766",
+    "name": "Orange Street (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7506317,
+    "lon": -74.1849422,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30766",
+        "stationId": "30766",
+        "name": "Orange Street (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7506317,
+        "lon": -74.1849422,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30767",
+    "name": "Norfolk Street (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7453499,
+    "lon": -74.1830091,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30767",
+        "stationId": "30767",
+        "name": "Norfolk Street (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7453499,
+        "lon": -74.1830091,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30768",
+    "name": "Warren Street/NJIT (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7424173,
+    "lon": -74.1811895,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30768",
+        "stationId": "30768",
+        "name": "Warren Street/NJIT (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7424173,
+        "lon": -74.1811895,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30769",
+    "name": "Washington Street (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7383572,
+    "lon": -74.174035,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30769",
+        "stationId": "30769",
+        "name": "Washington Street (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7383572,
+        "lon": -74.174035,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30770",
+    "name": "Military Park (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7374435,
+    "lon": -74.1707929,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30770",
+        "stationId": "30770",
+        "name": "Military Park (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7374435,
+        "lon": -74.1707929,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30771",
+    "name": "Newark Penn Station (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7349339,
+    "lon": -74.163489,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30771",
+        "stationId": "30771",
+        "name": "Newark Penn Station (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7349339,
+        "lon": -74.163489,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30772",
+    "name": "NJPAC/Center Street (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7395089,
+    "lon": -74.1655815,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30772",
+        "stationId": "30772",
+        "name": "NJPAC/Center Street (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7395089,
+        "lon": -74.1655815,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30773",
+    "name": "Atlantic Street (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7441699,
+    "lon": -74.1684908,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30773",
+        "stationId": "30773",
+        "name": "Atlantic Street (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7441699,
+        "lon": -74.1684908,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30774",
+    "name": "Riverfront Stadium (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7460232,
+    "lon": -74.1696614,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30774",
+        "stationId": "30774",
+        "name": "Riverfront Stadium (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7460232,
+        "lon": -74.1696614,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30775",
+    "name": "Broad Street Station (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.747214,
+    "lon": -74.1715075,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30775",
+        "stationId": "30775",
+        "name": "Broad Street Station (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.747214,
+        "lon": -74.1715075,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30776",
+    "name": "Harriet Tubman Square (NLR)",
+    "borough": "NJ",
+    "municipality": "Newark",
+    "routes": [
+      "NJT-NLR"
+    ],
+    "lat": 40.7439518,
+    "lon": -74.1698505,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30776",
+        "stationId": "30776",
+        "name": "Harriet Tubman Square (NLR)",
+        "line": "NJ Transit Newark Light Rail",
+        "routes": [
+          "NJT-NLR"
+        ],
+        "lat": 40.7439518,
+        "lon": -74.1698505,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30823",
+    "name": "Tonnelle Avenue (HBLR)",
+    "borough": "NJ",
+    "municipality": "North Bergen Twp",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7873341,
+    "lon": -74.0312601,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30823",
+        "stationId": "30823",
+        "name": "Tonnelle Avenue (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7873341,
+        "lon": -74.0312601,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30824",
+    "name": "Bergenline Avenue (HBLR)",
+    "borough": "NJ",
+    "municipality": "Union City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7826032,
+    "lon": -74.0229028,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30824",
+        "stationId": "30824",
+        "name": "Bergenline Avenue (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7826032,
+        "lon": -74.0229028,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30825",
+    "name": "Port Imperial (HBLR)",
+    "borough": "NJ",
+    "municipality": "Weehawken Twp",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7759758,
+    "lon": -74.0127992,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30825",
+        "stationId": "30825",
+        "name": "Port Imperial (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7759758,
+        "lon": -74.0127992,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30826",
+    "name": "Lincoln Harbor (HBLR)",
+    "borough": "NJ",
+    "municipality": "Weehawken Twp",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7614106,
+    "lon": -74.0240029,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30826",
+        "stationId": "30826",
+        "name": "Lincoln Harbor (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7614106,
+        "lon": -74.0240029,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30827",
+    "name": "9th Street/Congress Street (HBLR)",
+    "borough": "NJ",
+    "municipality": "Hoboken",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7488862,
+    "lon": -74.0385144,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30827",
+        "stationId": "30827",
+        "name": "9th Street/Congress Street (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7488862,
+        "lon": -74.0385144,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30828",
+    "name": "2nd Street (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7417477,
+    "lon": -74.0428121,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30828",
+        "stationId": "30828",
+        "name": "2nd Street (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7417477,
+        "lon": -74.0428121,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30829",
+    "name": "Hoboken Terminal (HBLR)",
+    "borough": "NJ",
+    "municipality": "Hoboken",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7340588,
+    "lon": -74.0292026,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30829",
+        "stationId": "30829",
+        "name": "Hoboken Terminal (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7340588,
+        "lon": -74.0292026,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30830",
+    "name": "Newport (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7268273,
+    "lon": -74.0362347,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30830",
+        "stationId": "30830",
+        "name": "Newport (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7268273,
+        "lon": -74.0362347,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30831",
+    "name": "Harsimus Cove (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7226869,
+    "lon": -74.0372878,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30831",
+        "stationId": "30831",
+        "name": "Harsimus Cove (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7226869,
+        "lon": -74.0372878,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30832",
+    "name": "Harborside (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7189181,
+    "lon": -74.034111,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30832",
+        "stationId": "30832",
+        "name": "Harborside (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7189181,
+        "lon": -74.034111,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30833",
+    "name": "Exchange Place (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7160266,
+    "lon": -74.0340922,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30833",
+        "stationId": "30833",
+        "name": "Exchange Place (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7160266,
+        "lon": -74.0340922,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30834",
+    "name": "Essex Street (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7128493,
+    "lon": -74.0360775,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30834",
+        "stationId": "30834",
+        "name": "Essex Street (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7128493,
+        "lon": -74.0360775,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30835",
+    "name": "Marin Boulevard (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7144443,
+    "lon": -74.0432485,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30835",
+        "stationId": "30835",
+        "name": "Marin Boulevard (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7144443,
+        "lon": -74.0432485,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30836",
+    "name": "Jersey Avenue (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7149905,
+    "lon": -74.0484849,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30836",
+        "stationId": "30836",
+        "name": "Jersey Avenue (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7149905,
+        "lon": -74.0484849,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30837",
+    "name": "Liberty State Park (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7103833,
+    "lon": -74.0558145,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30837",
+        "stationId": "30837",
+        "name": "Liberty State Park (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7103833,
+        "lon": -74.0558145,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30838",
+    "name": "Garfield Avenue (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7105845,
+    "lon": -74.0710983,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30838",
+        "stationId": "30838",
+        "name": "Garfield Avenue (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7105845,
+        "lon": -74.0710983,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30839",
+    "name": "Martin Luther King Drive (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.712107,
+    "lon": -74.0773356,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30839",
+        "stationId": "30839",
+        "name": "Martin Luther King Drive (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.712107,
+        "lon": -74.0773356,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30840",
+    "name": "West Side Avenue (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.7145663,
+    "lon": -74.0875855,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30840",
+        "stationId": "30840",
+        "name": "West Side Avenue (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.7145663,
+        "lon": -74.0875855,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30841",
+    "name": "Richard Street (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.6991558,
+    "lon": -74.0786381,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30841",
+        "stationId": "30841",
+        "name": "Richard Street (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.6991558,
+        "lon": -74.0786381,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30842",
+    "name": "Danforth Avenue (HBLR)",
+    "borough": "NJ",
+    "municipality": "Jersey City",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.6923699,
+    "lon": -74.08727,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30842",
+        "stationId": "30842",
+        "name": "Danforth Avenue (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.6923699,
+        "lon": -74.08727,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30843",
+    "name": "45th Street (HBLR)",
+    "borough": "NJ",
+    "municipality": "Bayonne",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.6787032,
+    "lon": -74.1016435,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30843",
+        "stationId": "30843",
+        "name": "45th Street (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.6787032,
+        "lon": -74.1016435,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30844",
+    "name": "34th Street (HBLR)",
+    "borough": "NJ",
+    "municipality": "Bayonne",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.6718432,
+    "lon": -74.1074661,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30844",
+        "stationId": "30844",
+        "name": "34th Street (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.6718432,
+        "lon": -74.1074661,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30845",
+    "name": "22nd Street (HBLR)",
+    "borough": "NJ",
+    "municipality": "Bayonne",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.6613118,
+    "lon": -74.1164575,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30845",
+        "stationId": "30845",
+        "name": "22nd Street (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.6613118,
+        "lon": -74.1164575,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30855",
+    "name": "Trenton Transit Center (River LINE)",
+    "borough": "NJ",
+    "municipality": "Trenton",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.2183803,
+    "lon": -74.7550848,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30855",
+        "stationId": "30855",
+        "name": "Trenton Transit Center (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.2183803,
+        "lon": -74.7550848,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30856",
+    "name": "Hamilton Avenue (River LINE)",
+    "borough": "NJ",
+    "municipality": "Trenton",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.2119489,
+    "lon": -74.7557668,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30856",
+        "stationId": "30856",
+        "name": "Hamilton Avenue (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.2119489,
+        "lon": -74.7557668,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30857",
+    "name": "Cass Street (River LINE)",
+    "borough": "NJ",
+    "municipality": "Trenton",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.2054356,
+    "lon": -74.7542777,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30857",
+        "stationId": "30857",
+        "name": "Cass Street (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.2054356,
+        "lon": -74.7542777,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30858",
+    "name": "Bordentown (River LINE)",
+    "borough": "NJ",
+    "municipality": "Bordentown City",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.1481973,
+    "lon": -74.7162442,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30858",
+        "stationId": "30858",
+        "name": "Bordentown (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.1481973,
+        "lon": -74.7162442,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30859",
+    "name": "Roebling (River LINE)",
+    "borough": "NJ",
+    "municipality": "Florence Twp",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.1168999,
+    "lon": -74.7702376,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30859",
+        "stationId": "30859",
+        "name": "Roebling (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.1168999,
+        "lon": -74.7702376,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30860",
+    "name": "Florence (River LINE)",
+    "borough": "NJ",
+    "municipality": "Florence Twp",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.1000087,
+    "lon": -74.8051097,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30860",
+        "stationId": "30860",
+        "name": "Florence (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.1000087,
+        "lon": -74.8051097,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30861",
+    "name": "Burlington Town Centre (River LINE)",
+    "borough": "NJ",
+    "municipality": "Burlington City",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.077379,
+    "lon": -74.8594304,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30861",
+        "stationId": "30861",
+        "name": "Burlington Town Centre (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.077379,
+        "lon": -74.8594304,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30862",
+    "name": "Burlington South (River LINE)",
+    "borough": "NJ",
+    "municipality": "Burlington City",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.0746011,
+    "lon": -74.8690091,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30862",
+        "stationId": "30862",
+        "name": "Burlington South (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.0746011,
+        "lon": -74.8690091,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30863",
+    "name": "Beverly/Edgewater Park (River LINE)",
+    "borough": "NJ",
+    "municipality": "Beverly",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.0611031,
+    "lon": -74.9152177,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30863",
+        "stationId": "30863",
+        "name": "Beverly/Edgewater Park (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.0611031,
+        "lon": -74.9152177,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30864",
+    "name": "Delanco (River LINE)",
+    "borough": "NJ",
+    "municipality": "Delanco Twp",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.0481107,
+    "lon": -74.9503656,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30864",
+        "stationId": "30864",
+        "name": "Delanco (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.0481107,
+        "lon": -74.9503656,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30865",
+    "name": "Riverside (River LINE)",
+    "borough": "NJ",
+    "municipality": "Riverside Twp",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.0392683,
+    "lon": -74.9588921,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30865",
+        "stationId": "30865",
+        "name": "Riverside (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.0392683,
+        "lon": -74.9588921,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30866",
+    "name": "Cinnaminson (River LINE)",
+    "borough": "NJ",
+    "municipality": "Cinnaminson Twp",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.0166604,
+    "lon": -74.9999822,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30866",
+        "stationId": "30866",
+        "name": "Cinnaminson (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.0166604,
+        "lon": -74.9999822,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30867",
+    "name": "Riverton (River LINE)",
+    "borough": "NJ",
+    "municipality": "Riverton",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.0089725,
+    "lon": -75.0130812,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30867",
+        "stationId": "30867",
+        "name": "Riverton (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.0089725,
+        "lon": -75.0130812,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30868",
+    "name": "Palmyra (River LINE)",
+    "borough": "NJ",
+    "municipality": "Palmyra",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 40.0042707,
+    "lon": -75.0210963,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30868",
+        "stationId": "30868",
+        "name": "Palmyra (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 40.0042707,
+        "lon": -75.0210963,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30869",
+    "name": "Pennsauken/Route 73 (River LINE)",
+    "borough": "NJ",
+    "municipality": "Pennsauken Twp",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 39.9934221,
+    "lon": -75.039072,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30869",
+        "stationId": "30869",
+        "name": "Pennsauken/Route 73 (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 39.9934221,
+        "lon": -75.039072,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30870",
+    "name": "36th Street (River LINE)",
+    "borough": "NJ",
+    "municipality": "Pennsauken Twp",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 39.9612829,
+    "lon": -75.0790969,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30870",
+        "stationId": "30870",
+        "name": "36th Street (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 39.9612829,
+        "lon": -75.0790969,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30871",
+    "name": "Walter Rand Transportation Center (River LINE)",
+    "borough": "NJ",
+    "municipality": "Camden",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 39.9431643,
+    "lon": -75.1203288,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30871",
+        "stationId": "30871",
+        "name": "Walter Rand Transportation Center (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 39.9431643,
+        "lon": -75.1203288,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30872",
+    "name": "Cooper Street/Rutgers (River LINE)",
+    "borough": "NJ",
+    "municipality": "Camden",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 39.947493,
+    "lon": -75.1241463,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30872",
+        "stationId": "30872",
+        "name": "Cooper Street/Rutgers (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 39.947493,
+        "lon": -75.1241463,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30873",
+    "name": "Aquarium (River LINE)",
+    "borough": "NJ",
+    "municipality": "Camden",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 39.9456341,
+    "lon": -75.1286713,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30873",
+        "stationId": "30873",
+        "name": "Aquarium (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 39.9456341,
+        "lon": -75.1286713,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-30874",
+    "name": "Entertainment Center (River LINE)",
+    "borough": "NJ",
+    "municipality": "Camden",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 39.9409237,
+    "lon": -75.1284917,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-30874",
+        "stationId": "30874",
+        "name": "Entertainment Center (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 39.9409237,
+        "lon": -75.1284917,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-31145",
+    "name": "8th Street (HBLR)",
+    "borough": "NJ",
+    "municipality": "Bayonne",
+    "routes": [
+      "NJT-HBLR"
+    ],
+    "lat": 40.6543008,
+    "lon": -74.1289436,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-31145",
+        "stationId": "31145",
+        "name": "8th Street (HBLR)",
+        "line": "NJ Transit Hudson–Bergen Light Rail",
+        "routes": [
+          "NJT-HBLR"
+        ],
+        "lat": 40.6543008,
+        "lon": -74.1289436,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
+  },
+  {
+    "id": "njt-lr-31898",
+    "name": "Pennsauken Transit Center (River LINE)",
+    "borough": "NJ",
+    "municipality": "Pennsauken Twp",
+    "routes": [
+      "NJT-RIVER"
+    ],
+    "lat": 39.9783056,
+    "lon": -75.0619749,
+    "departureMode": "external",
+    "parts": [
+      {
+        "id": "njt-lr-31898",
+        "stationId": "31898",
+        "name": "Pennsauken Transit Center (River LINE)",
+        "line": "NJ Transit River LINE",
+        "routes": [
+          "NJT-RIVER"
+        ],
+        "lat": 39.9783056,
+        "lon": -75.0619749,
+        "ada": "",
+        "adaNotes": "",
+        "north": "Northbound",
+        "south": "Southbound"
+      }
+    ]
   }
 ]

@@ -1,3 +1,4 @@
+import { directionLabel } from '../shared/departureGroups';
 import type { AlertSelector, Board, Departure, ServiceAlert, SourceState, Station, Train } from '../shared/types';
 import { changesAhead, changeSummary } from '../shared/changes';
 import { extension } from './decode';
@@ -105,6 +106,7 @@ export function patternFor(train: Train, stopId: string, catalog: Station[]): { 
   return { label: `${label} ${skips ? 'express' : 'local'}`, source: 'inferred' };
 }
 export function locationFor(train: Train) {
+  if (train.feed === 'path') return 'Position unavailable';
   const p = train.position;
   if (p?.stopId) {
     if (p.status === 'STOPPED_AT') return `At ${p.name}`;
@@ -127,7 +129,7 @@ export function buildBoard(station: Station, trains: Iterable<Train>, states: So
     const relevantTrack = stop.actualTrack || stop.scheduledTrack;
     departures.push({ key: `${train.key}|${stop.id}|${i}`, tripKey: train.key, route: train.route, destination: train.destination,
       direction, stopId: stop.id, partId: part.id,
-      area: `${part.line} · ${direction === 'NORTH' ? part.north : direction === 'SOUTH' ? part.south : 'Direction unknown'}${relevantTrack ? ` · Track ${relevantTrack}` : ''}`,
+      area: `${part.line} · ${direction === 'NORTH' ? part.north : direction === 'SOUTH' ? part.south : directionLabel(direction)}${relevantTrack ? ` · Track ${relevantTrack}` : ''}`,
       time, arrival: stop.arrival, departure: stop.departure, scheduledTrack: stop.scheduledTrack, actualTrack: stop.actualTrack,
       pattern: pattern.label, patternSource: pattern.source, location: locationFor(train), locationTimestamp: train.position?.timestamp,
       stopsAway: train.position?.stopId ? (train.stops.findIndex(s => s.id === train.position!.stopId) >= 0 ? i - train.stops.findIndex(s => s.id === train.position!.stopId) : null) : null,
@@ -141,6 +143,7 @@ export function buildBoard(station: Station, trains: Iterable<Train>, states: So
   departures.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity) || a.key.localeCompare(b.key));
   const routes = new Set([...station.routes, ...departures.map(d => d.route)]);
   const feedIds = new Set(Object.entries(FEED_ROUTES).filter(([, r]) => r.some(x => routes.has(x))).map(([id]) => id));
+  if (station.id.startsWith('path-')) feedIds.add('path');
   if (station.routes.includes('SIR')) feedIds.add('gtfs-si');
   for (const part of station.parts) {
     if (part.line === 'Franklin Shuttle') feedIds.add('gtfs-bdfm');
@@ -149,8 +152,9 @@ export function buildBoard(station: Station, trains: Iterable<Train>, states: So
   }
   departures.forEach(d => feedIds.add(d.feed));
   const stationStops = new Set(station.parts.map(p => p.id));
-  return { station, generatedAt: now, departures, sources: states.filter(s => feedIds.has(s.id) || s.id === 'subway-alerts' || s.id === 'helium'),
+  return { station, generatedAt: now, departures, sources: states.filter(s => feedIds.has(s.id) || (!station.id.startsWith('path-') && station.departureMode !== 'external' && (s.id === 'subway-alerts' || s.id === 'helium'))),
     alerts: alerts.filter(a => {
+      if (station.id.startsWith('path-') || station.departureMode === 'external') return false;
       if (!alertActive(a, now)) return false;
       // Selectors are ORed; constraints inside one selector must all match.
       // Agency-wide notices have no narrower selector and still belong here.

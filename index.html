@@ -12,7 +12,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="%BASE_URL%icon-180.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Subway Nerds" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<!-- Keep installed iOS apps below the status bar instead of under its translucent overlay. -->
+		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Subways for Nerds</title>
     <script>try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem('sfn:theme')) || 'subway'; } catch {}</script>
   </head>

@@ -166,3 +166,12 @@ test('persisted accounts survive restart, grants stay encrypted, and wrong keys 
 		const reopened=new AccountStore(file,key);assert.equal(reopened.session(token),null);assert.equal(reopened.revocations()[0].grant,'never-store-this-token-as-plaintext');reopened.close();
 	}finally{await rm(directory,{recursive:true,force:true});}
 });
+test('auth rate limits apply to loopback clients unless a test fixture exempts them',async()=>{
+	const statuses=async(exemptLoopback:boolean)=>{
+		const app=Fastify();await registerAccounts(app,'/api/v1',undefined,{exemptLoopback});
+		try{const codes=[];for(let i=0;i<121;i++)codes.push((await app.inject({url:'/api/v1/auth/config',remoteAddress:'127.0.0.1'})).statusCode);return codes;}
+		finally{await app.close();}
+	};
+	const limited=await statuses(false);assert.equal(limited[119],200);assert.equal(limited[120],429);
+	assert.ok((await statuses(true)).every(code=>code===200));
+});

@@ -20,6 +20,9 @@ final class AppModel {
 	var stations: [Station] = []
 	var stationID: String
 	var favorites: [String]
+	var trainFavorites: TrainFavorites
+	var stationSelection: StationSelection
+	var units: UnitPreferences
 	var themeID: String
 	var stationPreferences: [String: StationPreference]
 	var settingsError: String?
@@ -100,6 +103,9 @@ final class AppModel {
 		let portable = try? DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json")).load()
 		stationID = portable?.lastStation ?? saved.stationID
 		favorites = portable?.settings.favorites ?? saved.favorites
+		trainFavorites = portable?.settings.trainFavorites ?? TrainFavorites()
+		stationSelection = portable?.settings.stationSelection ?? StationSelection()
+		units = portable?.settings.units ?? UnitPreferences()
 		recent = portable?.recent ?? saved.recent
 		themeID = portable?.settings.theme ?? (AppTheme.all.contains(where: { $0.id == saved.theme }) ? saved.theme : "subway")
 		stationPreferences = portable?.settings.stations ?? saved.stations
@@ -116,7 +122,7 @@ final class AppModel {
 		stations = Self.read([Station].self, at: directory.appendingPathComponent("stations.json")) ?? []
 		board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: stationID))
 		widgetLocation = (try? widgetStore?.load())?.appLocation
-		for id in favorites {
+		for id in Set(favorites + [stationID]) {
 			if let board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id)) { try? widgetStore?.saveBoard(board, endpoint: endpoint) }
 		}
 		durableSettings = portableSettings
@@ -156,6 +162,27 @@ final class AppModel {
 		persist()
 		pruneBoards()
 	}
+	func toggleFavoriteCar(_ id: String) {
+		guard TrainFavorites.validCarID(id) else { return }
+		if trainFavorites.cars.contains(id) { trainFavorites.cars.removeAll { $0 == id } } else { trainFavorites.cars.append(id) }
+		persist()
+	}
+	func toggleFavoriteConsist(_ ids: [String]) {
+		guard (1...20).contains(ids.count), Set(ids).count == ids.count, ids.allSatisfy(TrainFavorites.validCarID) else { return }
+		if trainFavorites.containsConsist(ids) { trainFavorites.consists.removeAll { TrainFavorites.consistKey($0) == TrainFavorites.consistKey(ids) } }
+		else { trainFavorites.consists.append(ids.sorted()) }
+		persist()
+	}
+	func setDistanceUnit(_ value: DistanceUnit) { units.distance = value; persist() }
+	func setTimeFormat(_ value: TimeFormat) { units.time = value; persist() }
+	func setTrainMatch(_ value: TrainFavorites.Match) { trainFavorites.match = value; persist() }
+	func setStationSelection(_ value: StationSelection) {
+		stationSelection = value
+		// A settings change must not let an older startup location request navigate.
+		favoriteStartupAttempted = true
+		persistWidgetPreferences()
+	}
+	func setWidgetStationSelection(_ value: WidgetStationSelection) { widgetPreferences.stationSelection = value; persistWidgetPreferences() }
 
 	func setDirection(_ direction: String) {
 		var value = preference
@@ -320,7 +347,8 @@ final class AppModel {
 	func refreshWidgetLocation() async {
 		// Keep the widget's closest favorite current while the app is in use,
 		// without moving a manually selected board or prompting in the background.
-		guard active, !Task.isCancelled, !locationDisabled, !favorites.isEmpty,
+		let selection = widgetPreferences.stationSelection.followApp ? stationSelection : widgetPreferences.stationSelection.selection
+		guard active, !Task.isCancelled, !locationDisabled, selection.mode != .favorite || !favorites.isEmpty,
 			locator.isAuthorized || locationRequest != nil else { return }
 		_ = try? await currentLocation()
 	}
@@ -358,7 +386,7 @@ final class AppModel {
 			try Task.checkCancellation()
 			guard generation == boardGeneration, requestedEndpoint == endpoint, id == stationID else { return }
 			Self.write(value, at: Self.boardURL(directory: directory, id: id))
-			if favorites.contains(id) { try? widgetStore?.saveBoard(value, endpoint: requestedEndpoint) }
+			try? widgetStore?.saveBoard(value, endpoint: requestedEndpoint)
 			board = value
 			boardIsCached = !connected
 			boardError = nil
@@ -423,7 +451,8 @@ final class AppModel {
 	}
 
 	private func openClosestFavoriteOnce() async {
-		guard active, !Task.isCancelled, !locationDisabled, !favoriteStartupAttempted, !favoriteStations.isEmpty else { return }
+		guard active, !Task.isCancelled, !locationDisabled, !favoriteStartupAttempted, !stations.isEmpty,
+			stationSelection.mode != .favorite || !favoriteStations.isEmpty else { return }
 		let initialStation = stationID
 		// A permission sheet briefly deactivates the scene. Reuse the same one-shot
 		// request after activation, while canceled polling tasks never navigate.
@@ -440,7 +469,9 @@ final class AppModel {
 		guard active, !Task.isCancelled, !favoriteStartupAttempted else { return }
 		closestFavoriteTask = nil
 		guard let location, initialStation == stationID else { return }
-		if let closest = favoriteStations.min(by: { location.distance(from: CLLocation(latitude: $0.lat, longitude: $0.lon)) < location.distance(from: CLLocation(latitude: $1.lat, longitude: $1.lon)) }) {
+		let coordinate = WidgetCoordinate(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, timestamp: location.timestamp.timeIntervalSince1970)
+		guard coordinate.isUsable(now: Date().timeIntervalSince1970) else { return }
+		if let closest = stationSelection.select(stations: stations, favorites: favorites, location: coordinate, previous: stationID) {
 			selectStation(closest.id)
 			await refreshBoard()
 		}
@@ -494,6 +525,7 @@ final class AppModel {
 	private func recordRecent(_ id: String) { recent.removeAll { $0 == id }; recent.insert(id, at: 0); recent = Array(recent.prefix(8)) }
 	var portableSettings: PortableSettings {
 		var value = PortableSettings(); value.favorites = favorites; value.theme = themeID
+		value.trainFavorites = trainFavorites; value.stationSelection = stationSelection; value.units = units
 		value.stations = stationPreferences; value.widgets = widgetPreferences; return value
 	}
 	private var settingsStore: DeviceSettingsStore { DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json")) }
@@ -509,6 +541,7 @@ final class AppModel {
 		} catch {
 			if let saved = durableSettings {
 				favorites = saved.favorites; themeID = saved.theme
+				trainFavorites = saved.trainFavorites; stationSelection = saved.stationSelection; units = saved.units
 				stationPreferences = saved.stations; widgetPreferences = saved.widgets
 			}
 			settingsError = "Settings could not be saved on this device. Your previous preferences are unchanged. " + error.localizedDescription
@@ -518,12 +551,14 @@ final class AppModel {
 		let selected = lastStation ?? stationID
 		try settingsStore.save(record(settings: settings, lastStation: selected, sync: sync), replacingUnreadable: replacingUnreadable)
 		favorites = settings.favorites; themeID = settings.theme; stationPreferences = settings.stations; widgetPreferences = settings.widgets; settingsSync = sync; settingsError = nil
+		trainFavorites = settings.trainFavorites; stationSelection = settings.stationSelection; units = settings.units
+		if lastStation != nil { favoriteStartupAttempted = true }
 		durableSettings = settings
 		if selected != stationID {
 			stationID = selected; favoriteStartupAttempted = true; boardGeneration += 1
 			board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: selected)); boardIsCached = true; boardError = nil
 		}
-		for id in favorites {
+		for id in Set(favorites + [stationID]) {
 			if let board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id)) { try? widgetStore?.saveBoard(board, endpoint: endpoint) }
 		}
 		syncWidgets(reload: true)
@@ -544,10 +579,10 @@ final class AppModel {
 	}
 	private func syncWidgets(reload: Bool) {
 		guard let widgetStore else { return }
-		let state = WidgetSharedState(favorites: favorites, stations: favoriteStations, appFilters: stationPreferences, widgets: widgetPreferences, themeID: themeID, endpoint: endpoint, appLocation: widgetLocation)
+		let state = WidgetSharedState(favorites: favorites, stations: stations, appFilters: stationPreferences, widgets: widgetPreferences, themeID: themeID, endpoint: endpoint, appLocation: widgetLocation, stationSelection: stationSelection, units: units)
 		let previous = try? widgetStore.load()
 		try? widgetStore.save(state)
-		let changed = previous?.favorites != state.favorites || previous?.appFilters != state.appFilters || previous?.themeID != state.themeID || previous?.endpoint != state.endpoint
+		let changed = previous?.favorites != state.favorites || previous?.appFilters != state.appFilters || previous?.themeID != state.themeID || previous?.endpoint != state.endpoint || previous?.stationSelection != state.stationSelection || previous?.widgets != state.widgets || previous?.units != state.units
 		let time = Date().timeIntervalSince1970
 		if reload || changed || time - lastWidgetReload >= 60 {
 			lastWidgetReload = time

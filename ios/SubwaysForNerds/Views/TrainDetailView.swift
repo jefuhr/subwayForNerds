@@ -89,19 +89,26 @@ struct TrainDetailView: View {
 
 	private func consistSection(_ consist: Consist, feed: String) -> some View {
 		Section {
-			LazyVGrid(columns: [GridItem(.adaptive(minimum: 72), spacing: 6)], alignment: .leading, spacing: 6) {
+			if let ids = TrainFavorites.consistIDs(consist, feed: feed) { FavoriteConsistButton(ids: ids) }
+			LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), spacing: 6)], alignment: .leading, spacing: 6) {
 				ForEach(Array(consist.cars.enumerated()), id: \.offset) { _, car in
-					Button { carTarget = car.type.map { .car(fleetID(number: car.number, type: $0, feed: feed)) } ?? .search(car.number) } label: {
+					let id = TrainFavorites.carID(number: car.number, type: car.type, feed: feed)
+					let highlighted = id.map { app.trainFavorites.match(consist, feed: feed, now: now)?.carIDs.contains($0) == true } ?? false
+					HStack(spacing: 0) {
+					Button { carTarget = id.map { .car($0) } ?? .search(car.number) } label: {
 						VStack(spacing: 0) {
 							Text(car.number).font(.subheadline.weight(.semibold).monospacedDigit())
 							Text(car.type ?? "Type not reported").font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+							if highlighted { Label("Favorite", systemImage: "star.fill").font(.caption2).foregroundStyle(app.theme.ink) }
 						}
 						.frame(maxWidth: .infinity, minHeight: 44)
-						.background(app.theme.ink.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+						.background(highlighted ? app.theme.accent.opacity(0.16) : app.theme.ink.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
 						.contentShape(Rectangle())
 					}
 					.buttonStyle(.plain)
-					.accessibilityLabel("Car \(car.number), \(car.type ?? "type not reported")")
+					.accessibilityLabel("Car \(car.number), \(car.type ?? "type not reported")\(highlighted ? ", favorite" : "")")
+					if let id { FavoriteCarButton(id: id) }
+					}
 				}
 			}
 			.listRowInsets(.vertical, 8)
@@ -121,10 +128,6 @@ struct TrainDetailView: View {
 		return facts
 	}
 
-	private func fleetID(number: String, type: String, feed: String) -> String {
-		let equipment = ["R160", "R160A", "R160B"].contains(type) ? "R160" : type
-		return "\(feed == "gtfs-si" ? "sir" : "nyct"):\(equipment):\(number)"
-	}
 	private func refresh() async {
 		let requestedEndpoint = app.endpoint
 		requestGeneration += 1
@@ -142,6 +145,7 @@ struct TrainDetailView: View {
 }
 
 private struct StopRow: View {
+	@Environment(AppModel.self) private var app
 	let stop: StopPrediction
 	let now: TimeInterval
 	private var details: String {
@@ -162,8 +166,8 @@ private struct StopRow: View {
 			}
 			Spacer(minLength: 4)
 			VStack(alignment: .trailing, spacing: 1) {
-				Text(Display.clockTime(stop.arrival)).font(.subheadline.monospacedDigit())
-				if let departure = stop.departure, departure != stop.arrival { Text("dep \(Display.clockTime(departure))").font(.caption2.monospacedDigit()).foregroundStyle(.secondary) }
+				Text(Display.clockTime(stop.arrival, format: app.units.time)).font(.subheadline.monospacedDigit())
+				if let departure = stop.departure, departure != stop.arrival { Text("dep \(Display.clockTime(departure, format: app.units.time))").font(.caption2.monospacedDigit()).foregroundStyle(.secondary) }
 			}
 		}
 		.accessibilityElement(children: .combine)
@@ -206,7 +210,7 @@ struct TransferView: View {
 			if let data {
 				Section {
 					VStack(alignment: .leading, spacing: 2) {
-						Text("Your train: \(Display.clockTime(data.arrival)) estimated \(data.basis)\(data.basis == "departure" ? " (arrival unavailable)" : "")").font(.subheadline.weight(.semibold))
+						Text("Your train: \(Display.clockTime(data.arrival, format: app.units.time)) estimated \(data.basis)\(data.basis == "departure" ? " (arrival unavailable)" : "")").font(.subheadline.weight(.semibold))
 						Text("Updated \(Display.ageLabel(data.originTimestamp, now: app.now))").font(.caption).foregroundStyle(.secondary)
 					}
 					if stale { Notice(text: "Predictions are stale or the arrival estimate has passed. Awaiting an update.") }
@@ -230,7 +234,7 @@ struct TransferView: View {
 										}
 									}
 									Spacer(minLength: 4)
-									Text(Display.clockTime(departure.time)).font(.subheadline.monospacedDigit())
+									Text(Display.clockTime(departure.time, format: app.units.time)).font(.subheadline.monospacedDigit())
 								}
 								.accessibilityElement(children: .combine)
 							}

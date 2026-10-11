@@ -4,7 +4,7 @@ import rateLimit from '@fastify/rate-limit';
 import { join } from 'node:path';
 import { AccountStore, hash, secret, type ProviderName, type Challenge } from './account-store';
 import { productionProviders, type AuthProvider, type LoginInput } from './auth-providers';
-import { validateSettings, MAX_SETTINGS_BYTES } from '../shared/settings';
+import { validateSettings, defaults, equal, MAX_SETTINGS_BYTES } from '../shared/settings';
 export type AccountOptions = {store:AccountStore;origin:string;providers:Record<ProviderName,AuthProvider>};
 export function accountOptions(env=process.env):AccountOptions|undefined{
 	if(env.SFN_AUTH_ENABLED!=='true')return;
@@ -91,6 +91,16 @@ export async function registerAccounts(app:FastifyInstance,api:string,options?:A
 		auth.put(api+'/account/settings',{bodyLimit:MAX_SETTINGS_BYTES},async(req,reply)=>{
 			const user=mutation(req);const match=/^"(\d+)"$/.exec(String(req.headers['if-match']||''));if(!match)fail(428,'Reload account settings before saving.');
 			let settings;try{settings=validateSettings(req.body);}catch(error){fail(400,(error as Error).message);}
+			const stored=store.settings(user.id);
+			if(stored.revision!==Number(match![1]))return reply.code(412).send(stored);
+			if(stored.settings){
+				const current=validateSettings(stored.settings),baseline=defaults(),incoming=req.body as Record<string,any>;
+				if((!Object.hasOwn(incoming,'trainFavorites')&&!equal(current.trainFavorites,baseline.trainFavorites))||
+					(!Object.hasOwn(incoming,'stationSelection')&&!equal(current.stationSelection,baseline.stationSelection))||
+					(!Object.hasOwn(incoming.widgets,'stationSelection')&&!equal(current.widgets.stationSelection,baseline.widgets.stationSelection))||
+					(!Object.hasOwn(incoming,'units')&&!equal(current.units,baseline.units)))
+					fail(409,'Update Subway Nerds before syncing. This client cannot preserve your saved trains, station selection, or unit settings.');
+			}
 			const result=store.putSettings(user.id,Number(match![1]),settings!);
 			if(!result)return reply.code(412).send(store.settings(user.id));
 			return reply.header('ETag','"'+result.revision+'"').send(result);

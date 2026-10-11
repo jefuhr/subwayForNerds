@@ -33,7 +33,9 @@ the app beyond localhost so geolocation and service workers work.
 ## How the board works
 
 - A fresh visit with saved favorites requests one location fix and opens the
-  closest favorite; if location is unavailable, the last station is restored
+  closest favorite by default. Settings can instead choose the closest station,
+  or favor a saved station only within a chosen radius (1–26,400 feet).
+  If location is unavailable, the last station is restored
   (Union Square is the initial fallback). The station title opens search; stars
   save favorites. A nearby button can request location again and sorts stations
   on-device by straight-line distance.
@@ -54,6 +56,15 @@ the app beyond localhost so geolocation and service workers work.
 - Open Fleet for grouped consists or individual cars, last reports, sourced home-yard
   estimates and 30 days of collected movement history. See [fleet data and operations](docs/fleet.md)
   for coverage, identity rules, backup/restore and API details.
+- Star cars or whole consists from train and fleet details. Fresh matching trains
+  are highlighted on the normal board. Settings can match complete consists or
+  any member car, and manage saved trains that are not currently reporting.
+  Train favorites and station policies transfer through `.nerds` exports and
+  account sync. Widgets follow the app's station policy unless overridden.
+- Settings can show distances in miles, feet, meters, or kilometers and use
+  12-hour or 24-hour clocks. Automatic distance formatting preserves the existing
+  nearby meters/kilometers and radius feet display. Unit choices transfer with
+  settings and apply to native widgets. Clock times remain in Eastern time.
 - Station info includes constituent station accessibility, entrance coordinates,
   equipment status, upcoming/current outages and published travel alternatives.
 - Ten themes: the original Subway Console plus NYC Ferry, Night, Hello Kitty,
@@ -82,6 +93,8 @@ its report or fetch time; failed requests do not interrupt departure predictions
 The fleet database retains last observations across restarts, but only new reports
 can establish current assignments. Cached offline boards hide live car lists.
 Reported order does not establish which end of the train is leading.
+See [API access research](docs/api-access.md) for the published MTA terms and
+the current NJ TRANSIT light rail investigation.
 
 Scheduled and reported actual track fields are separate. Some feed groups populate
 `actual_track` at future stops; this is not evidence of the train's current

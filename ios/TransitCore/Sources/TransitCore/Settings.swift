@@ -5,7 +5,21 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 	public var theme = "subway"
 	public var stations: [String: StationPreference] = [:]
 	public var widgets = WidgetPreferences()
+	public var trainFavorites = TrainFavorites()
+	public var stationSelection = StationSelection()
+	public var units = UnitPreferences()
 	public init() {}
+	private enum CodingKeys: String, CodingKey { case favorites, theme, stations, widgets, trainFavorites, stationSelection, units }
+	public init(from decoder: Decoder) throws {
+		let values = try decoder.container(keyedBy: CodingKeys.self)
+		favorites = try values.decode([String].self, forKey: .favorites)
+		theme = try values.decode(String.self, forKey: .theme)
+		stations = try values.decode([String: StationPreference].self, forKey: .stations)
+		widgets = try values.decode(WidgetPreferences.self, forKey: .widgets)
+		trainFavorites = try values.decodeIfPresent(TrainFavorites.self, forKey: .trainFavorites) ?? TrainFavorites()
+		stationSelection = try values.decodeIfPresent(StationSelection.self, forKey: .stationSelection) ?? StationSelection()
+		units = values.contains(.units) ? try values.decode(UnitPreferences.self, forKey: .units) : UnitPreferences()
+	}
 	public static func == (lhs: PortableSettings, rhs: PortableSettings) -> Bool { (try? lhs.json()) == (try? rhs.json()) }
 	public func validated() throws -> PortableSettings {
 		let value = try json()
@@ -14,6 +28,8 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 	}
 	public func json() throws -> JSONValue {
 		var normalized = self
+		normalized.trainFavorites.cars.sort()
+		normalized.trainFavorites.consists = trainFavorites.consists.map { $0.sorted() }.sorted { TrainFavorites.consistKey($0) < TrainFavorites.consistKey($1) }
 		normalized.stations = stations.mapValues { var value = $0; value.routes.sort(); return value }
 		normalized.widgets.stations = widgets.stations.mapValues { var value = $0; value.routes.sort(); return value }
 		var value = try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(normalized))
@@ -32,7 +48,7 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 public struct NerdsSettingsFile: Codable, Sendable, Identifiable {
 	public static let maxBytes = 1_048_576
 	public var format = "subways-for-nerds"
-	public var version = 1
+	public var version = 2
 	public var exportedAt: String
 	public var lastStation: String
 	public var settings: PortableSettings
@@ -47,12 +63,17 @@ public struct NerdsSettingsFile: Codable, Sendable, Identifiable {
 		let value = try JSONDecoder().decode(JSONValue.self, from: data)
 		let root = try SettingsValidation.object(value, keys: ["format", "version", "exportedAt", "lastStation", "settings"])
 		guard root["format"] == .string("subways-for-nerds") else { throw SettingsError.invalid }
-		guard root["version"] == .number(1) else { throw SettingsError.message("This settings version is not supported. Update Subway Nerds and try again.") }
+		guard root["version"] == .number(1) || root["version"] == .number(2) else { throw SettingsError.message("This settings version is not supported. Update Subway Nerds and try again.") }
 		let timestamp = try SettingsValidation.string(root["exportedAt"])
 		let formatter = ISO8601DateFormatter(); formatter.formatOptions.insert(.withFractionalSeconds)
 		guard formatter.date(from: timestamp) != nil || ISO8601DateFormatter().date(from: timestamp) != nil else { throw SettingsError.invalid }
 		_ = try SettingsValidation.string(root["lastStation"])
 		try SettingsValidation.settings(root["settings"])
+		if root["version"] == .number(2) {
+			let settings = try SettingsValidation.object(root["settings"])
+			let widgets = try SettingsValidation.object(settings["widgets"])
+			guard settings["trainFavorites"] != nil, settings["stationSelection"] != nil, widgets["stationSelection"] != nil else { throw SettingsError.invalid }
+		}
 		return try JSONDecoder().decode(Self.self, from: data)
 	}
 	public func data() throws -> Data {
@@ -86,18 +107,46 @@ private enum SettingsValidation {
 		}
 	}
 	static func settings(_ value: JSONValue?) throws {
-		let root = try object(value, keys: ["favorites", "theme", "stations", "widgets"])
+		let rawRoot = try object(value)
+		let rootKeys: Set<String> = ["favorites", "theme", "stations", "widgets"]
+		let root = try object(value, keys: rootKeys.union(["trainFavorites", "stationSelection", "units"].filter { rawRoot[$0] != nil }))
+		if let value = root["trainFavorites"] { try trainFavorites(value) }
+		if let value = root["stationSelection"] { try stationSelection(value) }
+		if let value = root["units"] {
+			let units = try object(value, keys: ["distance", "time"])
+			guard DistanceUnit(rawValue: try string(units["distance"])) != nil, TimeFormat(rawValue: try string(units["time"])) != nil else { throw SettingsError.invalid }
+		}
 		_ = try strings(root["favorites"]); _ = try string(root["theme"]); try stations(root["stations"])
 		let rawWidgets = try object(root["widgets"])
-		let widgetKeys: Set<String> = rawWidgets["lockScreen"] == nil ? ["display", "matchAppFilters", "stations"] : ["display", "matchAppFilters", "stations", "lockScreen"]
+		let widgetKeys: Set<String> = Set(["display", "matchAppFilters", "stations"]).union(["lockScreen", "stationSelection"].filter { rawWidgets[$0] != nil })
 		let widgets = try object(root["widgets"], keys: widgetKeys)
 		try boolean(widgets["matchAppFilters"]); try stations(widgets["stations"])
 		try display(widgets["display"])
+		if let value = widgets["stationSelection"] {
+			let selection = try object(value, keys: ["followApp", "selection"])
+			try boolean(selection["followApp"]); try stationSelection(selection["selection"])
+		}
 		if let value = widgets["lockScreen"] {
 			let lock = try object(value, keys: ["display", "directionOrder", "showService"])
 			try display(lock["display"]); try boolean(lock["showService"])
 			guard LockScreenDirectionOrder(rawValue: try string(lock["directionOrder"])) != nil else { throw SettingsError.invalid }
 		}
+	}
+	static func trainFavorites(_ value: JSONValue?) throws {
+		let saved = try object(value, keys: ["cars", "consists", "match"])
+		guard try strings(saved["cars"]).allSatisfy(TrainFavorites.validCarID),
+			TrainFavorites.Match(rawValue: try string(saved["match"])) != nil,
+			case .array(let groups) = saved["consists"], groups.count <= 2000 else { throw SettingsError.invalid }
+		var keys = Set<String>()
+		for group in groups {
+			let ids = try strings(group, limit: 20)
+			guard !ids.isEmpty, ids.allSatisfy(TrainFavorites.validCarID), keys.insert(TrainFavorites.consistKey(ids)).inserted else { throw SettingsError.invalid }
+		}
+	}
+	static func stationSelection(_ value: JSONValue?) throws {
+		let selection = try object(value, keys: ["mode", "radiusFeet"])
+		guard StationSelection.Mode(rawValue: try string(selection["mode"])) != nil,
+			case .number(let radius) = selection["radiusFeet"], radius.rounded() == radius, (1...26400).contains(radius) else { throw SettingsError.invalid }
 	}
 	static func display(_ value: JSONValue?) throws {
 		let raw = try object(value)
@@ -186,9 +235,18 @@ public struct SettingsMerge: Sendable {
 		var ids: [String] = []
 		for id in remote.favorites + local.favorites + base.favorites where !ids.contains(id) { ids.append(id) }
 		let favorites = ids.filter { mergeValue(.bool(base.favorites.contains($0)), .bool(local.favorites.contains($0)), .bool(remote.favorites.contains($0)), "/favorites/" + $0) == .bool(true) }
+		func memberships(_ b: [String], _ l: [String], _ r: [String], path: String) -> [String] {
+			Set(b + l + r).sorted().filter { mergeValue(.bool(b.contains($0)), .bool(l.contains($0)), .bool(r.contains($0)), path + "/" + $0) == .bool(true) }
+		}
+		let cars = memberships(base.trainFavorites.cars, local.trainFavorites.cars, remote.trainFavorites.cars, path: "/trainFavorites/cars")
+		let groups = [base, local, remote].map { $0.trainFavorites.consists.map(TrainFavorites.consistKey) }
+		let consists = memberships(groups[0], groups[1], groups[2], path: "/trainFavorites/consists").map { $0.components(separatedBy: "\u{1f}") }
 		var b = base, l = local, r = remote; b.favorites = []; l.favorites = []; r.favorites = []
+		b.trainFavorites.cars = []; l.trainFavorites.cars = []; r.trainFavorites.cars = []
+		b.trainFavorites.consists = []; l.trainFavorites.consists = []; r.trainFavorites.consists = []
 		let merged = mergeValue(try b.json(), try l.json(), try r.json(), "")!
 		var settings = try JSONDecoder().decode(PortableSettings.self, from: JSONEncoder().encode(merged)); settings.favorites = favorites
+		settings.trainFavorites.cars = cars; settings.trainFavorites.consists = consists
 		return SettingsMerge(settings: try settings.validated(), conflicts: conflicts)
 	}
 	public static func changes(from: PortableSettings, to: PortableSettings) throws -> [SettingsConflict] {

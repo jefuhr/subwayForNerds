@@ -118,7 +118,7 @@ struct FleetView: View {
 		.listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
 		if let error { Section { Notice(text: error) } }
 		if usingSaved, let saved = app.offlineManifest {
-			Section { Notice(text: "Saved fleet · \(easternDate(saved.generatedAt)). Every report is historical.") }
+			Section { Notice(text: "Saved fleet · \(easternDate(saved.generatedAt, timeFormat: app.units.time)). Every report is historical.") }
 		}
 		if let data {
 			Section {
@@ -242,17 +242,20 @@ struct FleetDetailView: View {
 		List {
 			if let error { Section { Notice(text: error) } }
 			if usingSaved, let manifest = app.offlineManifest {
-				Section { Notice(text: "Saved fleet · \(easternDate(manifest.generatedAt)). Every report is historical.") }
+				Section { Notice(text: "Saved fleet · \(easternDate(manifest.generatedAt, timeFormat: app.units.time)). Every report is historical.") }
 			}
 			if let data {
 				Section {
+					if kind != "cars", !data.cars.isEmpty, data.cars.count <= 20, data.cars.allSatisfy({ TrainFavorites.validCarID($0.id) }) {
+						FavoriteConsistButton(ids: data.cars.map(\.id))
+					}
 					if let current {
 						VStack(alignment: .leading, spacing: 2) {
 							if let next = current.next, next.time == nil || (next.time ?? 0) >= app.now {
 								HStack(alignment: .firstTextBaseline, spacing: 8) {
 									Text("Next stop: \(next.name)").font(.subheadline.weight(.semibold))
 									Spacer(minLength: 4)
-									Text(Display.clockTime(next.time)).font(.subheadline.monospacedDigit())
+									Text(Display.clockTime(next.time, format: app.units.time)).font(.subheadline.monospacedDigit())
 								}
 								Text("Estimated · \(current.route)").font(.caption2).foregroundStyle(.secondary)
 							} else { Text("Next stop unavailable").font(.subheadline) }
@@ -280,7 +283,7 @@ struct FleetDetailView: View {
 					ForEach(Array(data.history.enumerated()), id: \.offset) { _, observation in
 						VStack(alignment: .leading, spacing: 2) {
 							Text("\(observation.route) · \(observation.location)").font(.subheadline.weight(.semibold))
-							Text(easternDate(observation.timestamp)).font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+							Text(easternDate(observation.timestamp, timeFormat: app.units.time)).font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
 							Text("Cars " + observation.cars.map { $0.split(separator: ":").last.map(String.init) ?? $0 }.joined(separator: " · ")).font(.caption2).foregroundStyle(.secondary)
 							if !observation.consistId.isEmpty && observation.consistId != id {
 								NavigationLink("Observed consist") { FleetDetailView(id: observation.consistId, kind: "consists", preferSaved: usingSaved) }
@@ -314,13 +317,16 @@ struct FleetDetailView: View {
 	private func carSection(_ car: FleetCar) -> some View {
 		let historical = !app.connected || usingSaved || error != nil
 		return Section {
-			if kind != "cars" {
-				NavigationLink { FleetDetailView(id: car.id, kind: "cars", preferSaved: usingSaved) } label: {
+			HStack {
+				if kind != "cars" {
+					NavigationLink { FleetDetailView(id: car.id, kind: "cars", preferSaved: usingSaved) } label: {
+						CarReportView(car: car, now: app.now, historical: historical)
+					}
+					.accessibilityLabel("\(car.number) · \(car.equipment) car details")
+				} else {
 					CarReportView(car: car, now: app.now, historical: historical)
 				}
-				.accessibilityLabel("\(car.number) · \(car.equipment) car details")
-			} else {
-				CarReportView(car: car, now: app.now, historical: historical)
+				if TrainFavorites.validCarID(car.id) { FavoriteCarButton(id: car.id) }
 			}
 			FactGrid(facts: carFacts(car)).listRowInsets(.vertical, 8)
 			if let last = car.last, kind == "cars", !last.consistId.isEmpty {

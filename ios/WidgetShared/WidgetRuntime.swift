@@ -12,6 +12,7 @@ struct SubwayWidgetEntry: TimelineEntry, Sendable {
 	var display = WidgetDisplayOptions()
 	var lockScreen = LockScreenWidgetOptions()
 	var themeID = "subway"
+	var units = UnitPreferences()
 	var cached = false
 	var locationNotice: String?
 	var message: String?
@@ -44,7 +45,7 @@ struct SubwayTimelineProvider: TimelineProvider {
 			if !entry.cached, let board = entry.board {
 				let dates = widgetTimelineDates(board, now: entry.date.timeIntervalSince1970)
 				for date in dates {
-					let saved = SubwayWidgetEntry(date: Date(timeIntervalSince1970: date), station: entry.station, board: board, preference: entry.preference, display: entry.display, lockScreen: entry.lockScreen, themeID: entry.themeID, cached: date == dates.last, locationNotice: entry.locationNotice, message: entry.message)
+					let saved = SubwayWidgetEntry(date: Date(timeIntervalSince1970: date), station: entry.station, board: board, preference: entry.preference, display: entry.display, lockScreen: entry.lockScreen, themeID: entry.themeID, units: entry.units, cached: date == dates.last, locationNotice: entry.locationNotice, message: entry.message)
 					entries.append(saved)
 				}
 			}
@@ -62,7 +63,7 @@ enum WidgetBoardLoader {
 			return entry
 		}
 		let location: WidgetCoordinate?
-		if state.favorites.isEmpty { location = nil }
+		if state.effectiveStationSelection.mode == .favorite && state.favorites.isEmpty { location = nil }
 		else {
 			let locator = await WidgetLocator()
 			location = await locator.locate()
@@ -70,14 +71,15 @@ enum WidgetBoardLoader {
 			state = (try? store.load()) ?? state
 		}
 		entry.themeID = state.themeID
+		entry.units = state.units
 		entry.display = state.widgets.display
 		entry.lockScreen = state.widgets.lockScreen
-		guard !state.favorites.isEmpty else { entry.message = "Add a favorite in the app."; return entry }
+		guard state.effectiveStationSelection.mode != .favorite || !state.favorites.isEmpty else { entry.message = "Add a favorite or choose Closest station in Settings."; return entry }
 		let previous = store.selection()
 		let now = Date().timeIntervalSince1970
 		let coordinate = WidgetCoordinate.newestUsable(in: [location, state.appLocation, previous?.location], now: now)
 		guard var station = state.selectedStation(location: coordinate, previous: previous?.stationID, now: now) else {
-			entry.message = "Open the app to load your favorite stations."
+			entry.message = "Open the app to load your stations."
 			return entry
 		}
 		if let saved = try? store.saveSelection(stationID: station.id, location: coordinate) {
@@ -86,7 +88,7 @@ enum WidgetBoardLoader {
 		}
 		entry.station = station
 		entry.preference = state.widgets.preference(for: station.id, app: state.appFilters)
-		entry.locationNotice = location == nil ? "Location unavailable · saved favorite" : nil
+		entry.locationNotice = coordinate == nil ? "Location unavailable · saved station" : nil
 		if station.departureMode == "external" { entry.message = "Open station for departure times."; return entry }
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.timeoutIntervalForRequest = 8
@@ -113,7 +115,7 @@ enum WidgetBoardLoader {
 
 struct RefreshSubwayWidget: AppIntent {
 	static let title: LocalizedStringResource = "Refresh train widget"
-	static let description = IntentDescription("Request a new report for your closest favorite station.")
+	static let description = IntentDescription("Request a new report using your widget station settings.")
 	func perform() async throws -> some IntentResult {
 		_ = await WidgetBoardLoader.load()
 		WidgetCenter.shared.reloadTimelines(ofKind: WidgetSharedStore.kind)

@@ -27,9 +27,9 @@ public enum Display {
 		return now - timestamp > 300 ? .expired : now - timestamp > 90 ? .stale : .live
 	}
 
-	public static func countdown(_ time: TimeInterval?, timestamp: TimeInterval, now: TimeInterval, cached: Bool = false) -> Countdown {
+	public static func countdown(_ time: TimeInterval?, timestamp: TimeInterval, now: TimeInterval, cached: Bool = false, timeFormat: TimeFormat = .twelveHour) -> Countdown {
 		guard let time else { return Countdown(value: "—", unit: "no estimate") }
-		guard !cached, freshness(timestamp, now: now) == .live else { return Countdown(value: clockTime(time), unit: "last estimate") }
+		guard !cached, freshness(timestamp, now: now) == .live else { return Countdown(value: clockTime(time, format: timeFormat), unit: "last estimate") }
 		let seconds = time - now
 		if seconds < -30 { return Countdown(value: "—", unit: "awaiting update") }
 		return Countdown(value: seconds < 60 ? "<1" : String(Int(floor(seconds / 60))), unit: "min")
@@ -37,17 +37,33 @@ public enum Display {
 
 	/// Widgets format every row of every timeline entry, so the formatter is created once.
 	/// DateFormatter is thread-safe for formatting.
-	private static let clockFormatter: DateFormatter = {
+	private static func clockFormatter(format: String) -> DateFormatter {
 		let formatter = DateFormatter()
-		formatter.locale = Locale(identifier: "en_US")
+		formatter.locale = Locale(identifier: "en_US_POSIX")
 		formatter.timeZone = TimeZone(identifier: "America/New_York")
-		formatter.dateFormat = "h:mm a"
+		formatter.dateFormat = format
 		return formatter
-	}()
+	}
+	private static let twelveHourFormatter = clockFormatter(format: "h:mm a")
+	private static let twentyFourHourFormatter = clockFormatter(format: "HH:mm")
 
-	public static func clockTime(_ seconds: TimeInterval?) -> String {
+	public static func clockTime(_ seconds: TimeInterval?, format: TimeFormat = .twelveHour) -> String {
 		guard let seconds else { return "—" }
-		return clockFormatter.string(from: Date(timeIntervalSince1970: seconds))
+		return (format == .twelveHour ? twelveHourFormatter : twentyFourHourFormatter).string(from: Date(timeIntervalSince1970: seconds))
+	}
+
+	/// MTA outage dates are published wall-clock strings, not timestamp instants.
+	/// Reformat only their recognized clock portion without inventing a time zone
+	/// or changing the date, and keep freeform return notices verbatim.
+	public static func publishedClockText(_ text: String, format: TimeFormat = .twelveHour) -> String {
+		guard format == .twentyFourHour,
+			let expression = try? NSRegularExpression(pattern: #"^((?:0?[1-9]|1[0-2])/(?:0?[1-9]|[12][0-9]|3[01])/[0-9]{4}\s+)([0-9]{1,2}):([0-9]{2})\s+([AP]M)\z"#, options: .caseInsensitive),
+			let match = expression.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else { return text }
+		let value = text as NSString
+		guard let hour = Int(value.substring(with: match.range(at: 2))), (1...12).contains(hour),
+			let minute = Int(value.substring(with: match.range(at: 3))), (0...59).contains(minute) else { return text }
+		let clockHour = hour % 12 + (value.substring(with: match.range(at: 4)).uppercased() == "PM" ? 12 : 0)
+		return value.substring(with: match.range(at: 1)) + String(format: "%02d:%02d", clockHour, minute)
 	}
 
 	public static func ageLabel(_ timestamp: TimeInterval?, now: TimeInterval) -> String {

@@ -5,15 +5,44 @@ are optional. File transfer works offline and before provider configuration.
 
 ## File format and migration
 
-`.nerds` is UTF-8 JSON with `format: "subways-for-nerds"`, `version: 1`, an ISO
+`.nerds` is UTF-8 JSON with `format: "subways-for-nerds"`, `version: 2`, an ISO
 `exportedAt` timestamp, `lastStation`, and `settings`. The latter contains ordered
 favorites, theme ID, station preferences, and widget preferences. Station
 preferences contain direction, route IDs, and board grouping. Widget settings
 include independent station filters, the match-app toggle, and separate Home Screen
 and Lock Screen display options, including direction order and service icons.
-Older v1 files without Lock Screen settings use the native legacy-display migration.
+Version 2 adds `trainFavorites` (individual `cars`, complete `consists`, and the
+global `match` choice), `stationSelection` (`mode` and `radiusFeet`), and
+`widgets.stationSelection` (`followApp` and an independent `selection`). Car IDs
+use the fleet namespace, equipment family, and car number; consists snapshot
+their complete membership and compare independent of reported order. The match
+choice is `exact` or `anyCar`; changing it retains every saved car and consist.
+
+Station modes are `favorite`, `closest`, and `nearbyFavorite`. The last prefers
+the closest favorite only when its straight-line distance to the nearest valid
+station part is strictly below the radius. Radius values are integer feet from
+1 through 26,400. Explicit app navigation takes precedence over automatic choice.
+Home and Lock Screen widgets share the same station policy and follow the app by
+default; independent widget selection remains stored while following the app.
+
+`units` stores `distance` (`auto`, `mi`, `ft`, `m`, or `km`) and `time` (`12h` or
+`24h`). Automatic distance formatting preserves the existing nearby meters/
+kilometers and radius feet display. Explicit units also change the radius editor;
+decimal input converts to the nearest whole foot without changing the canonical
+`radiusFeet` range or selection boundary. Clock formatting remains in
+America/New_York and does not change elapsed times or countdown minutes. Widgets
+follow the same unit preferences. Older files and stored records without `units`
+use `auto` and `12h`; a present units object must contain both supported values.
+
+Version 1 imports default to no saved trains, exact matching, closest favorite,
+a 5,280-foot radius, and widgets following the app. Older v1 files without Lock
+Screen settings use the native legacy-display migration. Version 2 files require
+the train-favorite and station-selection fields; malformed or partial records
+are rejected before replacement.
 The TypeScript/Swift fixtures in `test/fixtures/settings.nerds` and
 `ios/TransitCore/Tests/TransitCoreTests/Fixtures/settings.nerds` must remain identical.
+The corresponding `favorites.nerds` fixtures exercise the shared v2 fields,
+including one-foot and 26,400-foot radii, and must also remain identical.
 
 Imports validate the full structure and a 1 MiB limit before showing a replacement
 preview. Unknown station IDs survive offline import and cross-platform round trips.
@@ -111,8 +140,12 @@ or environment flag accepts mock identities.
 The clients save locally first, debounce edits for one second, retry on
 foreground/connection recovery, and poll every 30 seconds while active. The
 server uses atomic revision comparisons (`If-Match`, HTTP 412 on stale writes).
-Three-way comparison merges different settings and favorite membership changes.
+Three-way comparison merges different settings and station, car, and consist
+membership changes independently, including removals.
 Conflicting values require a choice. Edits made during an upload remain pending.
+The server refuses a legacy write with HTTP 409 if omitted v2 fields or unit
+settings would erase stored preferences. The user must update that client before syncing; the stored
+revision and settings are retained. HTTP 412 still handles stale revisions first.
 
 A new account starts with this device's settings. Joining an existing account
 with different settings requires choosing the device or account version first.

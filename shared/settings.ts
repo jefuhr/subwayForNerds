@@ -1,18 +1,24 @@
-/** The public .nerds v1 contract. Keep Swift and the shared fixture in lockstep. */
+/** The public .nerds v2 contract, with v1 migration. Keep Swift in lockstep. */
 export const MAX_SETTINGS_BYTES = 1024 * 1024;
+export type UnitSettings = { distance: 'auto' | 'mi' | 'ft' | 'm' | 'km'; time: '12h' | '24h' };
+export const defaultUnits = (): UnitSettings => ({ distance: 'auto', time: '12h' });
+export type TrainFavorites = { cars: string[]; consists: string[][]; match: 'exact' | 'anyCar' };
+export type StationSelection = { mode: 'favorite' | 'closest' | 'nearbyFavorite'; radiusFeet: number };
+export const defaultStationSelection = (): StationSelection => ({ mode: 'favorite', radiusFeet: 5280 });
 export type StationSettings = { direction: string; routes: string[]; view: 'track' | 'direction' | 'family' | 'corridor' | 'service' };
 export type WidgetDisplay = { fields: string[]; compact: boolean; trainsPerDirection: number; timeStyle: 'countdown' | 'minutes' | 'clock'; refreshInterval?: 1 | 2 | 5 | 10 | 15 | 30 | 60 };
 export type Settings = {
 	favorites: string[]; theme: string; stations: Record<string, StationSettings>;
-	widgets: { matchAppFilters: boolean; stations: Record<string, StationSettings>; display: WidgetDisplay; lockScreen: { display: WidgetDisplay; directionOrder: 'downtownLeft' | 'uptownLeft'; showService: boolean } };
+	trainFavorites: TrainFavorites; stationSelection: StationSelection; units: UnitSettings;
+	widgets: { stationSelection: { followApp: boolean; selection: StationSelection }; matchAppFilters: boolean; stations: Record<string, StationSettings>; display: WidgetDisplay; lockScreen: { display: WidgetDisplay; directionOrder: 'downtownLeft' | 'uptownLeft'; showService: boolean } };
 };
-export type NerdsFile = { format: 'subways-for-nerds'; version: 1; exportedAt: string; lastStation: string; settings: Settings };
+export type NerdsFile = { format: 'subways-for-nerds'; version: 1 | 2; exportedAt: string; lastStation: string; settings: Settings };
 export type SettingsRevision = { revision: number; settings: Settings | null };
 export type Conflict = { path: string; local: unknown; remote: unknown };
 export type Resolutions = Record<string, 'local' | 'remote'>;
 export const widgetFields = ['stationName', 'destination', 'track', 'service', 'carType', 'carCount', 'carNumbers', 'location', 'updatedAt', 'refreshButton', 'groupHeaders'];
 export function defaults(): Settings {
-	return { favorites: [], theme: 'subway', stations: {}, widgets: { matchAppFilters: false, stations: {}, lockScreen: { display: { fields: ['carType', 'stationName'], compact: true, trainsPerDirection: 2, timeStyle: 'minutes' }, directionOrder: 'downtownLeft', showService: true }, display: {
+	return { favorites: [], theme: 'subway', stations: {}, trainFavorites: { cars: [], consists: [], match: 'exact' }, stationSelection: defaultStationSelection(), units: defaultUnits(), widgets: { stationSelection: { followApp: true, selection: defaultStationSelection() }, matchAppFilters: false, stations: {}, lockScreen: { display: { fields: ['carType', 'stationName'], compact: true, trainsPerDirection: 2, timeStyle: 'minutes' }, directionOrder: 'downtownLeft', showService: true }, display: {
 		fields: ['stationName', 'destination', 'track', 'carType', 'updatedAt', 'refreshButton', 'groupHeaders'].sort(), compact: true, trainsPerDirection: 0, timeStyle: 'countdown',
 	} } };
 }
@@ -22,6 +28,33 @@ function keys(v: Record<string, any>, names: string[]) { if (Object.keys(v).some
 function string(v: unknown): string { if (typeof v !== 'string' || !v.length || v.length > 128 || /[\u0000-\u001f]/.test(v)) invalid(); return v; }
 function strings(v: unknown, max = 2000): string[] { if (!Array.isArray(v) || v.length > max) invalid(); const a = v.map(string); if (new Set(a).size !== a.length) invalid(); return a; }
 function boolean(v: unknown): boolean { if (typeof v !== 'boolean') invalid(); return v; }
+export function validFleetCarID(value: string): boolean {
+	return value.length <= 128 && /^(nyct|sir):[A-Za-z0-9._-]+:[A-Za-z0-9._-]+$/.test(value) && !/^R160[AB]$/.test(value.split(':')[1]);
+}
+function trainFavorites(value: unknown): TrainFavorites {
+	const v = object(value); keys(v, ['cars', 'consists', 'match']);
+	const cars = strings(v.cars).sort();
+	if (cars.some(id => !validFleetCarID(id)) || !Array.isArray(v.consists) || v.consists.length > 2000 || !['exact', 'anyCar'].includes(v.match)) invalid();
+	const consists = v.consists.map((raw: unknown) => {
+		const ids = strings(raw, 20).sort();
+		if (!ids.length || ids.some(id => !validFleetCarID(id))) invalid();
+		return ids;
+	});
+	const identities = consists.map((ids: string[]) => JSON.stringify(ids));
+	if (new Set(identities).size !== identities.length) invalid();
+	consists.sort((a: string[], b: string[]) => JSON.stringify(a) < JSON.stringify(b) ? -1 : 1);
+	return { cars, consists, match: v.match };
+}
+function stationSelection(value: unknown): StationSelection {
+	const v = object(value); keys(v, ['mode', 'radiusFeet']);
+	if (!['favorite', 'closest', 'nearbyFavorite'].includes(v.mode) || !Number.isInteger(v.radiusFeet) || v.radiusFeet < 1 || v.radiusFeet > 26400) invalid();
+	return { mode: v.mode, radiusFeet: v.radiusFeet };
+}
+function units(value: unknown): UnitSettings {
+	const v = object(value); keys(v, ['distance', 'time']);
+	if (!['auto', 'mi', 'ft', 'm', 'km'].includes(v.distance) || !['12h', '24h'].includes(v.time)) invalid();
+	return { distance: v.distance, time: v.time };
+}
 function stations(value: unknown): Record<string, StationSettings> {
 	const entries = Object.entries(object(value)); if (entries.length > 2000) invalid();
 	return Object.fromEntries(entries.map(([id, raw]) => {
@@ -40,13 +73,19 @@ function validateDisplay(value: unknown): WidgetDisplay {
 }
 export function validateSettings(value: unknown): Settings {
 	if (new TextEncoder().encode(JSON.stringify(value)).length > MAX_SETTINGS_BYTES) throw new Error('Settings files must be smaller than 1 MiB.');
-	const v = object(value); keys(v, ['favorites', 'theme', 'stations', 'widgets']);
-	const w = object(v.widgets); keys(w, ['matchAppFilters', 'stations', 'display', ...(Object.hasOwn(w, 'lockScreen') ? ['lockScreen'] : [])]);
+	const v = object(value); keys(v, ['favorites', 'theme', 'stations', 'widgets', ...['trainFavorites', 'stationSelection', 'units'].filter(k => Object.hasOwn(v, k))]);
+	const w = object(v.widgets); keys(w, ['matchAppFilters', 'stations', 'display', ...['lockScreen', 'stationSelection'].filter(k => Object.hasOwn(w, k))]);
 	const display = validateDisplay(w.display);
 	const lock = w.lockScreen === undefined ? { display: { fields: display.fields.filter(f => ['stationName', 'carType', 'carCount'].includes(f)), compact: true, trainsPerDirection: 2, timeStyle: display.timeStyle }, directionOrder: 'downtownLeft', showService: true } : object(w.lockScreen);
 	keys(lock, ['display', 'directionOrder', 'showService']);
 	if (!['downtownLeft', 'uptownLeft'].includes(lock.directionOrder)) invalid();
-	return { favorites: strings(v.favorites), theme: string(v.theme), stations: stations(v.stations), widgets: {
+	const widgetSelection = Object.hasOwn(w, 'stationSelection') ? object(w.stationSelection) : { followApp: true, selection: defaultStationSelection() };
+	keys(widgetSelection, ['followApp', 'selection']);
+	return { favorites: strings(v.favorites), theme: string(v.theme), stations: stations(v.stations),
+		units: Object.hasOwn(v, 'units') ? units(v.units) : defaultUnits(),
+		trainFavorites: Object.hasOwn(v, 'trainFavorites') ? trainFavorites(v.trainFavorites) : { cars: [], consists: [], match: 'exact' },
+		stationSelection: Object.hasOwn(v, 'stationSelection') ? stationSelection(v.stationSelection) : defaultStationSelection(), widgets: {
+		stationSelection: { followApp: boolean(widgetSelection.followApp), selection: stationSelection(widgetSelection.selection) },
 		matchAppFilters: boolean(w.matchAppFilters), stations: stations(w.stations), display,
 		lockScreen: { display: validateDisplay(lock.display), directionOrder: lock.directionOrder, showService: boolean(lock.showService) },
 	} };
@@ -55,13 +94,14 @@ export function decodeNerds(text: string): NerdsFile {
 	if (new TextEncoder().encode(text).length > MAX_SETTINGS_BYTES) throw new Error('Settings files must be smaller than 1 MiB.');
 	let v: Record<string, any>; try { v = object(JSON.parse(text)); } catch { return invalid(); }
 	if (v.format !== 'subways-for-nerds') invalid();
-	if (v.version !== 1) throw new Error('This settings version is not supported. Update Subway Nerds and try again.');
+	if (v.version !== 1 && v.version !== 2) throw new Error('This settings version is not supported. Update Subway Nerds and try again.');
 	keys(v, ['format', 'version', 'exportedAt', 'lastStation', 'settings']);
 	if (typeof v.exportedAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(v.exportedAt) || !Number.isFinite(Date.parse(v.exportedAt))) invalid();
-	return { format: 'subways-for-nerds', version: 1, exportedAt: v.exportedAt, lastStation: string(v.lastStation), settings: validateSettings(v.settings) };
+	if (v.version === 2 && (!Object.hasOwn(object(v.settings), 'trainFavorites') || !Object.hasOwn(v.settings, 'stationSelection') || !Object.hasOwn(object(v.settings.widgets), 'stationSelection'))) invalid();
+	return { format: 'subways-for-nerds', version: v.version, exportedAt: v.exportedAt, lastStation: string(v.lastStation), settings: validateSettings(v.settings) };
 }
 export function encodeNerds(settings: Settings, lastStation: string): string {
-	const text = JSON.stringify({ format: 'subways-for-nerds', version: 1, exportedAt: new Date().toISOString(), lastStation: string(lastStation), settings: validateSettings(settings) }, null, 2);
+	const text = JSON.stringify({ format: 'subways-for-nerds', version: 2, exportedAt: new Date().toISOString(), lastStation: string(lastStation), settings: validateSettings(settings) }, null, 2);
 	decodeNerds(text); return text;
 }
 export function equal(a: unknown, b: unknown): boolean {
@@ -71,6 +111,8 @@ export function equal(a: unknown, b: unknown): boolean {
 	return x.length === y.length && x.every(([k, v]) => Object.hasOwn(b, k) && equal(v, (b as any)[k]));
 }
 export function mergeSettings(base: Settings, local: Settings, remote: Settings, choices: Resolutions = {}): { settings: Settings; conflicts: Conflict[] } {
+	// Sync baselines written by older clients also need migration before merging.
+	base = validateSettings(base); local = validateSettings(local); remote = validateSettings(remote);
 	const conflicts: Conflict[] = [];
 	const record = (v: any) => v !== null && typeof v === 'object' && !Array.isArray(v);
 	const merge = (b: any, l: any, r: any, path: string): any => {
@@ -90,8 +132,12 @@ export function mergeSettings(base: Settings, local: Settings, remote: Settings,
 	// Favorites are membership edits, not competing replacements of an entire list.
 	const ids = [...new Set([...remote.favorites, ...local.favorites, ...base.favorites])];
 	const favorites = ids.filter(id => merge(base.favorites.includes(id), local.favorites.includes(id), remote.favorites.includes(id), '/favorites/' + id));
-	const settings = merge({ ...base, favorites: [] }, { ...local, favorites: [] }, { ...remote, favorites: [] }, '');
-	return { settings: validateSettings({ ...settings, favorites }), conflicts };
+	const memberships = (b: string[], l: string[], r: string[], path: string) => [...new Set([...r, ...l, ...b])].filter(id => merge(b.includes(id), l.includes(id), r.includes(id), path + '/' + id));
+	const cars = memberships(base.trainFavorites.cars, local.trainFavorites.cars, remote.trainFavorites.cars, '/trainFavorites/cars');
+	const consists = memberships(...[base, local, remote].map(s => s.trainFavorites.consists.map(ids => JSON.stringify(ids))) as [string[], string[], string[]], '/trainFavorites/consists').map(ids => JSON.parse(ids));
+	const withoutMembership = (s: Settings) => ({ ...s, favorites: [], trainFavorites: { ...s.trainFavorites, cars: [], consists: [] } });
+	const settings = merge(withoutMembership(base), withoutMembership(local), withoutMembership(remote), '');
+	return { settings: validateSettings({ ...settings, favorites, trainFavorites: { ...settings.trainFavorites, cars, consists } }), conflicts };
 }
 /** Human-readable changed paths, including additions/removals; shared by file previews. */
 export function settingsChanges(before: Settings, after: Settings): Conflict[] {

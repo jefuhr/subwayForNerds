@@ -8,8 +8,8 @@ struct SubwayWidgets: Widget {
 		StaticConfiguration(kind: WidgetSharedStore.kind, provider: SubwayTimelineProvider()) { entry in
 			SubwayWidgetView(entry: entry)
 		}
-		.configurationDisplayName("Closest favorite trains")
-		.description("Both directions at your closest favorite station. Set line filters in the app’s Settings → Widgets.")
+		.configurationDisplayName("Nearby trains")
+		.description("Both directions at your chosen nearby station. Set station selection and line filters in the app’s Settings → Widgets.")
 		.supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge, .accessoryInline, .accessoryCircular, .accessoryRectangular])
 	}
 }

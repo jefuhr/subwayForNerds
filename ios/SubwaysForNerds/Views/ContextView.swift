@@ -94,7 +94,7 @@ struct ContextView: View {
 			}
 			if let serving = equipment["serving"] { Text(serving).font(.caption) }
 			ForEach(Array(reports.enumerated()), id: \.offset) { _, report in
-				Text("\(report["isupcomingoutage"] == "Y" ? "Upcoming: " : "")\(report["reason"] ?? "Outage") · \(report["outagedate"] ?? "Time unknown") → \(report["estimatedreturntoservice"] ?? "Return time unknown")").font(.caption2).foregroundStyle(.secondary)
+				Text("\(report["isupcomingoutage"] == "Y" ? "Upcoming: " : "")\(report["reason"] ?? "Outage") · \(Display.publishedClockText(report["outagedate"] ?? "Time unknown", format: app.units.time)) → \(Display.publishedClockText(report["estimatedreturntoservice"] ?? "Return time unknown", format: app.units.time))").font(.caption2).foregroundStyle(.secondary)
 			}
 			if !reports.isEmpty, let alternative = equipment["alternativeroute"], !alternative.isEmpty {
 				DisclosureGroup("Travel alternative") { Text(alternative).font(.caption) }.font(.caption.weight(.semibold))
@@ -142,7 +142,7 @@ struct AlertsView: View {
 						Text(alert.description).font(.footnote)
 						if let meta = meta(alert) { Text(meta).font(.caption.weight(.semibold)) }
 						ForEach(Array(alert.periods.enumerated()), id: \.offset) { _, period in
-							Text("\(period.start.map(easternDate) ?? "Start not specified") → \(period.end.map(easternDate) ?? "Until further notice")").font(.caption2).foregroundStyle(.secondary)
+							Text("\(period.start.map { easternDate($0, timeFormat: app.units.time) } ?? "Start not specified") → \(period.end.map { easternDate($0, timeFormat: app.units.time) } ?? "Until further notice")").font(.caption2).foregroundStyle(.secondary)
 						}
 					}
 					.listRowInsets(.vertical, 10)

@@ -1,14 +1,19 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AlertTriangle, ArrowUpRight, Accessibility, Clock3 } from 'lucide-react';
 import type { Board, StationContext, Train, StopPrediction, TransferResult } from '../shared/types';
-import { ageLabel, clockTime, freshness } from '../shared/display';
+import { ageLabel, clockTime, sourceClockText, freshness } from '../shared/display';
 import { api } from './platform';
 import Modal from './Modal';
 import { currentConsist } from '../shared/consist';
 import { ChangeDetails, ChangeLabels } from './Changes';
 import { changesAhead } from '../shared/changes';
+import { consistCarIDs, favoriteTrainMatch, fleetCarID } from '../shared/favorites';
+import { FavoriteCarButton, FavoriteConsistButton, useTrainFavorites } from './Favorites';
+import { useUnits } from './Units';
 
 export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: string; close: () => void; now: number; openFleet?: (id?: string) => void }) {
+  const favorites = useTrainFavorites();
+  const units = useUnits();
   const [data, setData] = useState<{ train: Train; raw: unknown }>();
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<StopPrediction>();
@@ -21,6 +26,8 @@ export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: strin
     return () => { controller.abort(); clearInterval(timer); };
   }, [tripKey]);
   const train = data?.train;
+  const ids = train && currentConsist(train.consist, now) ? consistCarIDs(train.consist, train.feed) : undefined;
+  const match = train ? favoriteTrainMatch(train.consist, train.feed, favorites, now, !!error) : null;
   return <Modal title={train ? `${train.route} → ${train.destination}` : 'Train details'} eyebrow="THE WHOLE PICTURE" close={close}>
     {error && <p className="notice"><AlertTriangle size={16} />{error}</p>}
     {!train && !error && <p className="empty">Loading train details…</p>}
@@ -34,7 +41,10 @@ export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: strin
       </dl>
       <section className="consist-detail">
         <div className="section-label">CAR NUMBERS <span>{currentConsist(train.consist, now) ? `Helium · reported ${ageLabel(train.consist.updatedAt, now)}` : 'Not currently available'}</span></div>
-        {currentConsist(train.consist, now) && <><ol className="consist-cars">{train.consist.cars.map((car, i) => <li key={i}><button className="car-link" onClick={() => openFleet?.(car.type ? `${train.feed === 'gtfs-si' ? 'sir' : 'nyct'}:${/^R160[AB]?$/.test(car.type) ? 'R160' : car.type}:${car.number}` : undefined)}><strong>{car.number}</strong>{car.type && <small>{car.type}</small>}</button></li>)}</ol><p className="fine-print">Tap a car for its fleet history. Reported order does not confirm the front of the train.</p></>}
+        {currentConsist(train.consist, now) && <>{ids && <FavoriteConsistButton ids={ids} />}<ol className="consist-cars">{train.consist.cars.map((car, i) => {
+          const id = fleetCarID(car.number, car.type, train.feed);
+          return <li key={i} className={id && match?.carIDs.includes(id) ? 'favorite-car' : ''}><button className="car-link" onClick={() => openFleet?.(id)}><strong>{car.number}</strong>{car.type && <small>{car.type}</small>}{id && match?.carIDs.includes(id) && <span className="favorite-car-badge">★ Favorite</span>}</button>{id && <FavoriteCarButton id={id} />}</li>;
+        })}</ol><p className="fine-print">Tap a car for its fleet history. Reported order does not confirm the front of the train.</p></>}
       </section>
       {train.alerts.map(a => <p key={a} className="notice"><AlertTriangle size={16} />{a}</p>)}
       <ChangeDetails changes={changesAhead(train.changes, 0)} now={now} />
@@ -42,7 +52,7 @@ export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: strin
       <ol className="stop-sequence">{train.stops.map((s, i) => <li key={s.id + i} className={s.relationship === 'SKIPPED' ? 'skipped' : ''}>
         <button className="stop-link" disabled={s.relationship === 'SKIPPED' || !s.stationId || (s.arrival ?? s.departure ?? Infinity) < now} aria-label={`Transfers at ${s.name}`} onClick={() => { savedScroll.current = trainView.current?.closest('dialog')?.scrollTop || 0; setSelected(s); }}>
         <span className="stop-dot" /><div><strong>{s.name}</strong><small>{s.id}{s.relationship === 'SKIPPED' ? ' · skipped' : ''}{s.scheduledTrack ? ` · scheduled track ${s.scheduledTrack}` : ''}{s.actualTrack ? ` · reported track ${s.actualTrack}` : ''}</small><ChangeLabels changes={s.changes} now={now} /></div>
-        <span className="stop-time">{clockTime(s.arrival)}{s.departure && s.departure !== s.arrival && <small>dep {clockTime(s.departure)}</small>}</span>
+        <span className="stop-time">{clockTime(s.arrival, units.time)}{s.departure && s.departure !== s.arrival && <small>dep {clockTime(s.departure, units.time)}</small>}</span>
         </button>
       </li>)}</ol>
       <p className="fine-print">Stopping patterns reflect the remaining feed predictions. Track fields describe each stop; a future track value is not the train’s current position. Operations IDs identify trips, not physical cars.</p>
@@ -53,6 +63,7 @@ export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: strin
   </Modal>;
 }
 function TransferView({ tripKey, stop, now, back }: { tripKey: string; stop: StopPrediction; now: number; back: () => void }) {
+  const units = useUnits();
   const [data, setData] = useState<TransferResult>(), [error, setError] = useState('');
   useEffect(() => {
     const controller = new AbortController(); let busy = false;
@@ -71,14 +82,15 @@ function TransferView({ tripKey, stop, now, back }: { tripKey: string; stop: Sto
   for (const d of error || stale ? [] : (data?.connections || []).filter(d => freshness(d.timestamp, now) === 'live' && d.time != null && d.time >= now)) { const key = [d.route, d.direction, d.area].join('|'); const a = groups.get(key) || []; a.push(d); groups.set(key, a); }
   return <section className="transfer-view"><button className="text-button" onClick={back}>← Back to train</button><h3>Transfers at {stop.name}</h3>
     {error && <p className="notice">{error}</p>}{!data && !error && <p className="empty">Checking connecting departures…</p>}
-    {data && <><p>Your train: {clockTime(data.arrival)} estimated {data.basis}{data.basis === 'departure' ? ' (arrival unavailable)' : ''} · updated {ageLabel(data.originTimestamp, now)}</p>{stale && !data.message && <p className="notice">Predictions are stale or the arrival estimate has passed. Awaiting an update.</p>}<p className="fine-print">Next 30 minutes · raw time gaps, no walking allowance. Boarding areas may require stairs, passageways, or different platform access. Connections are not guaranteed.</p>
+    {data && <><p>Your train: {clockTime(data.arrival, units.time)} estimated {data.basis}{data.basis === 'departure' ? ' (arrival unavailable)' : ''} · updated {ageLabel(data.originTimestamp, now)}</p>{stale && !data.message && <p className="notice">Predictions are stale or the arrival estimate has passed. Awaiting an update.</p>}<p className="fine-print">Next 30 minutes · raw time gaps, no walking allowance. Boarding areas may require stairs, passageways, or different platform access. Connections are not guaranteed.</p>
       {data.message && <p className="notice">{data.message}</p>}
-      {[...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, connections]) => <section className="transfer-group" key={key}><h4>{connections[0].route} · {connections[0].area}</h4>{connections.sort((a, b) => a.time! - b.time!).map(d => <div className="transfer-row" key={d.key}><span><strong>{d.destination}</strong><small>{d.actualTrack ? `Reported track ${d.actualTrack}` : d.scheduledTrack ? `Scheduled track ${d.scheduledTrack}` : 'Track not reported'}</small><ChangeLabels changes={d.changes} now={now} /></span><span><strong>{clockTime(d.time)}</strong><small>{d.gap < 60 ? '<1 min' : `${Math.floor(d.gap / 60)} min`} after arrival · {d.basis}{d.basis === 'arrival' ? ' fallback' : ''}</small></span></div>)}</section>)}
-      <details className="raw-details"><summary>Prediction sources</summary>{data.sources.map(s => <p key={s.id}>{s.id} · {clockTime(s.timestamp)}{s.error ? ' · unavailable' : ''}</p>)}</details>
+      {[...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, connections]) => <section className="transfer-group" key={key}><h4>{connections[0].route} · {connections[0].area}</h4>{connections.sort((a, b) => a.time! - b.time!).map(d => <div className="transfer-row" key={d.key}><span><strong>{d.destination}</strong><small>{d.actualTrack ? `Reported track ${d.actualTrack}` : d.scheduledTrack ? `Scheduled track ${d.scheduledTrack}` : 'Track not reported'}</small><ChangeLabels changes={d.changes} now={now} /></span><span><strong>{clockTime(d.time, units.time)}</strong><small>{d.gap < 60 ? '<1 min' : `${Math.floor(d.gap / 60)} min`} after arrival · {d.basis}{d.basis === 'arrival' ? ' fallback' : ''}</small></span></div>)}</section>)}
+      <details className="raw-details"><summary>Prediction sources</summary>{data.sources.map(s => <p key={s.id}>{s.id} · {clockTime(s.timestamp, units.time)}{s.error ? ' · unavailable' : ''}</p>)}</details>
     </>}
   </section>;
 }
 export function ContextDetail({ board, close, now }: { board: Board; close: () => void; now: number }) {
+  const units = useUnits();
   const [context, setContext] = useState<StationContext>();
   const [error, setError] = useState('');
   useEffect(() => {
@@ -101,7 +113,7 @@ export function ContextDetail({ board, close, now }: { board: Board; close: () =
         const reports = context.outages.filter(o => (o.equipment || o.equipmentno) === e.equipmentno);
         const current = reports.filter(o => o.isupcomingoutage !== 'Y');
         return <section className="equipment" key={e.equipmentno}><div><strong>{e.equipmentno} · {e.shortdescription || e.serving}</strong><span className={'status-pill ' + (current.length ? 'stale' : 'neutral')}>{current.length ? 'Outage reported' : outageFresh && equipmentState?.fetchedAt ? e.isactive === 'N' ? 'Inactive' : 'No current outage reported' : 'Status unknown'}</span></div><p>{e.serving}</p>
-          {reports.map((o, i) => <p className="outage-note" key={i}>{o.isupcomingoutage === 'Y' ? 'Upcoming: ' : ''}{o.reason} · {o.outagedate} → {o.estimatedreturntoservice || 'Return time unknown'}</p>)}
+          {reports.map((o, i) => <p className="outage-note" key={i}>{o.isupcomingoutage === 'Y' ? 'Upcoming: ' : ''}{o.reason} · {sourceClockText(o.outagedate || '', units.time)} → {sourceClockText(o.estimatedreturntoservice || 'Return time unknown', units.time)}</p>)}
           {reports.length > 0 && e.alternativeroute && <details><summary>Travel alternative</summary><p>{e.alternativeroute}</p></details>}
         </section>;
       })}

@@ -15,3 +15,19 @@
 .provider-button.apple { background: #000; color: #fff; }
 .provider-button.google { background: #fff; color: #1f1f1f; }
 .settings-panel .danger { color: #cf4444; }
+
+.station-choice,.settings-choice{display:grid;gap:12px;margin:12px 0}
+.station-choice label,.settings-choice{display:grid;gap:8px;font-size:14px}
+.station-choice select,.station-choice input[type=number],.settings-choice select{min-height:44px;width:100%;min-width:0;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font:inherit}
+.station-choice input[type=range]{min-height:44px;width:100%;accent-color:var(--accent)}
+.station-choice .fine-print{margin:0}
+.settings-toggle{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px}
+.settings-toggle input{width:20px;height:20px;accent-color:var(--accent)}
+.saved-trains{list-style:none;padding:0;margin:8px 0}
+.saved-trains li{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:4px 0}
+.saved-trains li>span{min-width:0;overflow-wrap:anywhere;font-size:13px}
+.saved-trains small{display:block;font-size:11px;color:var(--muted);line-height:1.6}
+.saved-trains .text-button{min-height:44px;text-align:left}
+
+.saved-trains .text-button{color:var(--ink)}
+.settings-undo{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}.settings-undo button{min-height:44px}

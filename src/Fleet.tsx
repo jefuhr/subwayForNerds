@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrowLeft, ChevronRight, Search } from 'lucide-react';
 import type { FleetCar, FleetDetail, FleetPage } from '../shared/fleet';
-import { ageLabel, clockTime } from '../shared/display';
+import { ageLabel, clockTime, clockDateTime } from '../shared/display';
 import { api } from './platform';
 import Modal from './Modal';
+import { FavoriteCarButton, FavoriteConsistButton } from './Favorites';
+import { useUnits } from './Units';
 
 function useFleetData<T>(path: string) {
   const [data, setData] = useState<T>(), [error, setError] = useState('');
@@ -71,16 +73,18 @@ function FleetResults({ filters, now, select, page }: { filters: Record<string, 
   </>;
 }
 function FleetDetails({ selection, now, back, select, station, trip }: { selection: { id: string; kind: string }; now: number; back: () => void; select: (s: { id: string; kind: string }) => void; station: (id: string) => void; trip: (key: string) => void }) {
+  const units = useUnits();
   const { data, error } = useFleetData<FleetDetail>(`fleet/${selection.kind}/${encodeURIComponent(selection.id)}`);
   const current = data?.cars.find(c => observedNow(c, now, !!error) && (!selection.id.startsWith('observed:') || c.last?.consistId === selection.id))?.last;
   const next = current?.next;
   return <><button className="text-button" onClick={back}><ArrowLeft size={16} />Back to fleet</button>
     {error && <p className="notice">{error}</p>}{!data && !error && <p className="empty">Loading car history…</p>}
     {data && <>
-      <section className="fleet-next"><strong>{next && (next.time == null || next.time >= now) ? `Next stop: ${next.name}` : 'Next stop unavailable'}</strong>{next && (next.time == null || next.time >= now) && <span>{clockTime(next.time)} estimated · {current!.route}{next.stationId && <button className="text-button" onClick={() => station(next.stationId!)}>Open station board</button>}</span>}{current && <button className="text-button" onClick={() => trip(current.tripKey)}>Open live train details</button>}</section>
+      <section className="fleet-next"><strong>{next && (next.time == null || next.time >= now) ? `Next stop: ${next.name}` : 'Next stop unavailable'}</strong>{next && (next.time == null || next.time >= now) && <span>{clockTime(next.time, units.time)} estimated · {current!.route}{next.stationId && <button className="text-button" onClick={() => station(next.stationId!)}>Open station board</button>}</span>}{current && <button className="text-button" onClick={() => trip(current.tripKey)}>Open live train details</button>}</section>
+      {selection.kind !== 'cars' && <FavoriteConsistButton ids={data.cars.map(car => car.id)} />}
       <p className="fine-print">Reported order does not establish the leading end. Historical formations are not confirmed current links.</p>
       {data.cars.map(car => <section className="fleet-car" key={car.id}>
-        <h3><button className="text-button" onClick={() => select({ id: car.id, kind: 'cars' })}>{car.number} · {car.equipment}</button></h3>
+        <h3 className="favorite-car-heading"><button className="text-button" onClick={() => select({ id: car.id, kind: 'cars' })}>{car.number} · {car.equipment}</button><FavoriteCarButton id={car.id} /></h3>
         <CarReport car={car} now={now} failed={!!error} />
         <p className="fine-print">Roster: {car.lifecycle}{car.aliases.length ? ` · aliases ${car.aliases.join(', ')}` : ''}</p>
         {car.facts && <dl className="fact-grid">{Object.entries(car.facts).map(([key, value]) => <div key={key}><dt>{key.replaceAll('_', ' ')}</dt><dd>{value}</dd></div>)}</dl>}
@@ -91,7 +95,7 @@ function FleetDetails({ selection, now, back, select, station, trip }: { selecti
       </section>)}
       <h3>Observed changes · last 30 days</h3><p className="fine-print">Latest 200 changes. Times are observation times, not inferred movement times.</p>
       {!data.history.length && <p className="empty">No movement history collected for this period.</p>}
-      <ol className="fleet-history">{data.history.map((h, i) => <li key={i}><strong>{h.route} · {h.location}</strong><span>{new Date(h.timestamp * 1000).toLocaleString('en-US', { timeZone: 'America/New_York' })} ET</span><small>Cars {h.cars.map(id => id.split(':').at(-1)).join(' · ')}</small></li>)}</ol>
+      <ol className="fleet-history">{data.history.map((h, i) => <li key={i}><strong>{h.route} · {h.location}</strong><span>{clockDateTime(h.timestamp, units.time)} ET</span><small>Cars {h.cars.map(id => id.split(':').at(-1)).join(' · ')}</small></li>)}</ol>
     </>}
   </>;
 }

@@ -37,6 +37,7 @@ struct WidgetPreviewView: View {
 	private var entry: SubwayWidgetEntry {
 		var value = SubwayWidgetEntry.example()
 		value.themeID = app.themeID
+		value.units = app.units
 		value.display = app.widgetPreferences.display
 		value.lockScreen = app.widgetPreferences.lockScreen
 		if scenario == "Saved", var board = value.board { value.cached = true; board.departures = board.departures.map { var row = $0; row.timestamp -= 600; return row }; value.board = board }

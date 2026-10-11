@@ -45,7 +45,7 @@ test('account sync preserves offline edits and requires explicit conflict resolu
 	remote={...remote,theme:'hacker',favorites:['617']};revision++;
 	await context.setOffline(false);
 	await expect(page.getByRole('heading',{name:'Choose which changes to keep'})).toBeVisible();
-	await page.getByRole('combobox').selectOption('local');await page.getByRole('button',{name:'Save choices'}).click();
+	await page.locator('.settings-conflict select').selectOption('local');await page.getByRole('button',{name:'Save choices'}).click();
 	await expect(page.getByRole('status').filter({hasText:'Settings synced'})).toBeVisible();
 	expect(remote.theme).toBe('hello-kitty');expect(remote.favorites).toEqual(['617','602','future:station']);
 	expect(remote.widgets.display.trainsPerDirection).toBe(4);

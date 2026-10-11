@@ -34,6 +34,67 @@ async function fixture() {
 	}};
 	await registerAccounts(app,'/api/v1',options); return app;
 }
+test('legacy account writes cannot erase saved train favorites or station selection', async () => {
+	const app = await fixture();
+	try {
+		const challenge = (await app.inject({ method: 'POST', url: '/api/v1/auth/challenges', payload: { provider: 'apple', platform: 'native', intent: 'login' } })).json();
+		const login = (await app.inject({ method: 'POST', url: '/api/v1/auth/apple/exchange', payload: { challenge: challenge.id, identityToken: 'valid-' + challenge.nonce, code: 'x' } })).json();
+		const headers = { authorization: 'Bearer ' + login.token };
+		const legacy: any = defaults(); delete legacy.trainFavorites; delete legacy.stationSelection; delete legacy.widgets.stationSelection;
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"0"' }, payload: legacy })).statusCode, 200);
+		const settings = defaults();
+		settings.trainFavorites.cars = ['nyct:R160:001'];
+		settings.stationSelection.mode = 'closest';
+		settings.widgets.stationSelection.followApp = false;
+		const save = await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"1"' }, payload: settings });
+		assert.equal(save.statusCode, 200);
+		for (const missing of ['trainFavorites', 'stationSelection', 'widgetStationSelection']) {
+			const partial: any = structuredClone(settings);
+			if (missing === 'widgetStationSelection') delete partial.widgets.stationSelection; else delete partial[missing];
+			const rejected = await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"2"' }, payload: partial });
+			assert.equal(rejected.statusCode, 409);
+			assert.match(rejected.json().error, /update/i);
+		}
+		const retained = (await app.inject({ url: '/api/v1/account/settings', headers })).json();
+		assert.equal(retained.revision, 2);
+		assert.deepEqual(retained.settings, settings);
+	} finally { await app.close(); }
+});
+test('unit preferences survive legacy writes and permit omission only at defaults', async () => {
+	const app = await fixture();
+	try {
+		const challenge = (await app.inject({ method: 'POST', url: '/api/v1/auth/challenges', payload: { provider: 'apple', platform: 'native', intent: 'login' } })).json();
+		const login = (await app.inject({ method: 'POST', url: '/api/v1/auth/apple/exchange', payload: { challenge: challenge.id, identityToken: 'valid-' + challenge.nonce, code: 'x' } })).json();
+		const headers = { authorization: 'Bearer ' + login.token };
+		const settings = { ...defaults(), units: { distance: 'km', time: '24h' } };
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"0"' }, payload: settings })).statusCode, 200);
+		const legacy: any = defaults(); delete legacy.units;
+		legacy.theme = 'hello-kitty';
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"0"' }, payload: legacy })).statusCode, 412);
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"1"' }, payload: legacy })).statusCode, 409);
+		const retained = (await app.inject({ url: '/api/v1/account/settings', headers })).json();
+		assert.equal(retained.revision, 1);
+		assert.deepEqual(retained.settings, settings);
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"1"' }, payload: defaults() })).statusCode, 200);
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"2"' }, payload: legacy })).statusCode, 200);
+		assert.deepEqual((await app.inject({ url: '/api/v1/account/settings', headers })).json().settings, { ...defaults(), theme: 'hello-kitty' });
+	} finally { await app.close(); }
+});
+test('legacy account edits remain writable while all extended settings are defaults', async () => {
+	const app = await fixture();
+	try {
+		const challenge = (await app.inject({ method: 'POST', url: '/api/v1/auth/challenges', payload: { provider: 'apple', platform: 'native', intent: 'login' } })).json();
+		const login = (await app.inject({ method: 'POST', url: '/api/v1/auth/apple/exchange', payload: { challenge: challenge.id, identityToken: 'valid-' + challenge.nonce, code: 'x' } })).json();
+		const headers = { authorization: 'Bearer ' + login.token };
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"0"' }, payload: defaults() })).statusCode, 200);
+		const legacy: any = defaults(); delete legacy.trainFavorites; delete legacy.stationSelection; delete legacy.widgets.stationSelection;
+		legacy.theme = 'hello-kitty';
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"1"' }, payload: legacy })).statusCode, 200);
+		const retained = (await app.inject({ url: '/api/v1/account/settings', headers })).json();
+		assert.equal(retained.revision, 2);
+		assert.deepEqual(retained.settings, { ...defaults(), theme: 'hello-kitty' });
+	} finally { await app.close(); }
+});
 test('native challenges are single use, reject forged proofs, and settings require the owning session', async () => {
 	const app=await fixture();
 	try {

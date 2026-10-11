@@ -45,10 +45,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  ios-e2e:
-    name: iOS simulator E2E
+  ios-build:
+    # The full simulator UI suite (npm run test:ios) runs locally; CI keeps the
+    # fast native checks and compiles every target, including the UI tests.
+    name: iOS build and native tests
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 25
     env:
       CI: 'true'
       SFN_BUILD_JOBS: '2'
@@ -64,20 +66,23 @@ jobs:
           xcodebuild -version
           xcrun --sdk iphonesimulator --show-sdk-version
       - run: npm ci
-      - name: Build web assets for the fixture server
-        run: npm run build
       - name: Native logic and startup integration tests
         run: |
           npm run test:native
           bash scripts/test-native-startup.sh
           bash scripts/test-native-account-choices.sh
-      - name: App and widget simulator E2E tests
-        run: npm run test:ios
-      - name: Save simulator results and fixture logs
+      - name: Compile app, widget and UI tests for the simulator
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          xcodebuild build-for-testing -project ios/SubwaysForNerds.xcodeproj -scheme SubwaysForNerds \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/DerivedData/Simulator \
+            -jobs "$SFN_BUILD_JOBS" CODE_SIGNING_ALLOWED=NO 2>&1 | tee artifacts/ios-build-for-testing.log
+      - name: Save native test and build logs
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: ios-e2e-results
+          name: ios-build-results
           path: |
             artifacts/*.log
             artifacts/*.xcresult

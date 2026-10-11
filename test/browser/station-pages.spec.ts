@@ -56,8 +56,9 @@ test('temporary station remains available and favorite edits keep current statio
   await expect(active(page).locator('h1')).toHaveText('14 St-Union Sq');
 });
 
-test('touch swipes change pages without hijacking vertical or filter scrolling', async ({ page, isMobile }) => {
-  test.skip(!isMobile);
+test('touch swipes change pages without hijacking vertical or filter scrolling', async ({ page, isMobile, browserName }) => {
+  // Synthetic Touch objects are Chromium-only; WebKit rejects the constructor.
+  test.skip(!isMobile || browserName !== 'chromium');
   await seed(page); await page.goto('./?station=602');
   await expect(page.locator('.station-page-count')).toHaveText('1 / 3');
   await swipe(page, 120); await expect(page).toHaveURL(/station=602/);

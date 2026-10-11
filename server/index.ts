@@ -13,7 +13,7 @@ import { transfers } from './transfers';
 import { registerFleetOfflineRoutes } from './fleet-offline-routes';
 import { registerAnalytics } from './analytics';
 
-export async function createServer(service = new TransitService({ fixtureDir: process.env.FIXTURE_DIR })) {
+export async function createServer(service = new TransitService({ fixtureDir: process.env.FIXTURE_DIR }), { exemptLoopbackRateLimits = false } = {}) {
   const app = Fastify({ trustProxy: process.env.SFN_TRUST_PROXY ? process.env.SFN_TRUST_PROXY.split(',') : false, logger: process.env.NODE_ENV === 'production' ? { serializers: { req: req => ({ method: req.method, url: req.url?.split('?')[0] }) } } : false });
   const base = process.env.APP_BASE || '/subwaysForNerds/';
   if (!/^\/(?:[A-Za-z0-9_-]+\/)*$/.test(base)) throw new Error('APP_BASE must be an absolute path ending in /');
@@ -21,7 +21,7 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
   const api = base + 'api/v1';
   let accounts;
   try { accounts = accountOptions(); } catch { app.log.error('Account configuration unavailable; authentication disabled'); }
-  await registerAccounts(app, api, accounts);
+  await registerAccounts(app, api, accounts, { exemptLoopback: exemptLoopbackRateLimits });
   registerAnalytics(app, api, service.catalog);
   const encoded = new WeakMap<object, { json: string; gzip: Buffer; etag: string }>();
   app.addHook('onSend', async (_req, reply, payload) => {

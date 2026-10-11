@@ -45,7 +45,7 @@ test('station preferences migrate once, survive navigation and reload, and do no
   expect(events.filter(e => e.name === 'direction').length).toBeLessThanOrEqual(1);
 });
 
-test('stats direct navigation, reload, narrow layout and offline state never start board requests or traffic', async ({ page, context }) => {
+test('stats direct navigation, reload, narrow layout and offline state never start board requests or traffic', async ({ page, context, browserName }) => {
   let boards = 0, events = 0;
   page.on('request', request => { if (/\/board$/.test(request.url())) boards++; if (request.url().endsWith('/analytics/events')) events++; });
   await page.goto('./stats');
@@ -59,12 +59,15 @@ test('stats direct navigation, reload, narrow layout and offline state never sta
   await expect(page.getByLabel('Period')).toHaveValue('30d');
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await page.reload();
-  await context.setOffline(true);
-  await page.reload();
-  await expect(page.getByRole('heading', { name: 'Public usage stats' })).toBeVisible();
-  await expect(page.getByRole('status')).toContainText('Offline');
+  // WebKit cannot reload under network-offline emulation: https://github.com/microsoft/playwright/issues/42775
+  if (browserName !== 'webkit') {
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Public usage stats' })).toBeVisible();
+    await expect(page.getByRole('status')).toContainText('Offline');
+    await context.setOffline(false);
+  }
   expect(boards).toBe(0); expect(events).toBe(0);
-  await context.setOffline(false);
   await page.getByRole('link', { name: 'Return to departures' }).click();
   await expect(page.locator('.active-page h1')).toHaveText('14 St-Union Sq');
   await page.goBack();
@@ -137,10 +140,12 @@ test('selecting an in-flight favorite reuses its request and newly added favorit
 });
 
 test('nearest favorite restores that station preferences and reset affects only it', async ({ page, context }) => {
-  await context.grantPermissions(['geolocation']);
   const stations = await (await page.request.get('api/v1/stations')).json();
   const closest = stations.find((s: any) => s.id === '617');
-  await context.setGeolocation({ latitude: closest.lat, longitude: closest.lon });
+  // A fixed fix with a millisecond timestamp; WebKit's emulated geolocation reports microseconds.
+  await page.addInitScript(({ lat, lon }) => {
+    navigator.geolocation.getCurrentPosition = ok => ok({ coords: { latitude: lat, longitude: lon }, timestamp: Date.now() } as GeolocationPosition);
+  }, { lat: closest.lat, lon: closest.lon });
   await page.addInitScript(() => {
     localStorage.setItem('sfn:station', '602'); localStorage.setItem('sfn:favorites', '["602","617"]');
     localStorage.setItem('sfn:preferences', JSON.stringify({ version: 1, stations: { '602': { direction: 'NORTH', routes: ['4'] }, '617': { direction: 'SOUTH', routes: ['NONEXISTENT'], view: 'corridor' } } }));

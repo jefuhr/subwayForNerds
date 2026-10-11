@@ -364,7 +364,7 @@ struct DepartureRow: View {
 	var cached = false
 	var previous: Departure?
 	var showPlatform = false
-	private var countdown: Countdown { Display.countdown(departure.time, timestamp: departure.timestamp, now: now, cached: cached) }
+	private var countdown: Countdown { Display.countdown(departure.time, timestamp: departure.timestamp, now: now, cached: cached, timeFormat: app.units.time) }
 	private var historical: Bool { cached || Display.freshness(departure.timestamp, now: now) != .live || departure.locationTimestamp.map { now - $0 > 90 } == true }
 	private var favoriteMatch: TrainFavoriteMatch? { app.trainFavorites.match(departure.consist, feed: departure.feed, now: now, cached: cached) }
 	private var gap: Int? {
@@ -425,7 +425,7 @@ struct DepartureRow: View {
 					Text(countdown.value).font(.title2.weight(.bold).monospacedDigit())
 					if countdown.unit == "min" { Text("min").font(.caption2.weight(.semibold)) }
 				}
-				Text(countdown.unit == "min" ? Display.clockTime(departure.time) : countdown.unit)
+				Text(countdown.unit == "min" ? Display.clockTime(departure.time, format: app.units.time) : countdown.unit)
 					.font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
 			} else {
 				Text("—").font(.title2.weight(.bold))

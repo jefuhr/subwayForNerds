@@ -145,6 +145,7 @@ struct TrainDetailView: View {
 }
 
 private struct StopRow: View {
+	@Environment(AppModel.self) private var app
 	let stop: StopPrediction
 	let now: TimeInterval
 	private var details: String {
@@ -165,8 +166,8 @@ private struct StopRow: View {
 			}
 			Spacer(minLength: 4)
 			VStack(alignment: .trailing, spacing: 1) {
-				Text(Display.clockTime(stop.arrival)).font(.subheadline.monospacedDigit())
-				if let departure = stop.departure, departure != stop.arrival { Text("dep \(Display.clockTime(departure))").font(.caption2.monospacedDigit()).foregroundStyle(.secondary) }
+				Text(Display.clockTime(stop.arrival, format: app.units.time)).font(.subheadline.monospacedDigit())
+				if let departure = stop.departure, departure != stop.arrival { Text("dep \(Display.clockTime(departure, format: app.units.time))").font(.caption2.monospacedDigit()).foregroundStyle(.secondary) }
 			}
 		}
 		.accessibilityElement(children: .combine)
@@ -209,7 +210,7 @@ struct TransferView: View {
 			if let data {
 				Section {
 					VStack(alignment: .leading, spacing: 2) {
-						Text("Your train: \(Display.clockTime(data.arrival)) estimated \(data.basis)\(data.basis == "departure" ? " (arrival unavailable)" : "")").font(.subheadline.weight(.semibold))
+						Text("Your train: \(Display.clockTime(data.arrival, format: app.units.time)) estimated \(data.basis)\(data.basis == "departure" ? " (arrival unavailable)" : "")").font(.subheadline.weight(.semibold))
 						Text("Updated \(Display.ageLabel(data.originTimestamp, now: app.now))").font(.caption).foregroundStyle(.secondary)
 					}
 					if stale { Notice(text: "Predictions are stale or the arrival estimate has passed. Awaiting an update.") }
@@ -233,7 +234,7 @@ struct TransferView: View {
 										}
 									}
 									Spacer(minLength: 4)
-									Text(Display.clockTime(departure.time)).font(.subheadline.monospacedDigit())
+									Text(Display.clockTime(departure.time, format: app.units.time)).font(.subheadline.monospacedDigit())
 								}
 								.accessibilityElement(children: .combine)
 							}

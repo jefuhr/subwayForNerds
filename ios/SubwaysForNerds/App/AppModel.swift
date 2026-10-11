@@ -22,6 +22,7 @@ final class AppModel {
 	var favorites: [String]
 	var trainFavorites: TrainFavorites
 	var stationSelection: StationSelection
+	var units: UnitPreferences
 	var themeID: String
 	var stationPreferences: [String: StationPreference]
 	var settingsError: String?
@@ -104,6 +105,7 @@ final class AppModel {
 		favorites = portable?.settings.favorites ?? saved.favorites
 		trainFavorites = portable?.settings.trainFavorites ?? TrainFavorites()
 		stationSelection = portable?.settings.stationSelection ?? StationSelection()
+		units = portable?.settings.units ?? UnitPreferences()
 		recent = portable?.recent ?? saved.recent
 		themeID = portable?.settings.theme ?? (AppTheme.all.contains(where: { $0.id == saved.theme }) ? saved.theme : "subway")
 		stationPreferences = portable?.settings.stations ?? saved.stations
@@ -171,6 +173,8 @@ final class AppModel {
 		else { trainFavorites.consists.append(ids.sorted()) }
 		persist()
 	}
+	func setDistanceUnit(_ value: DistanceUnit) { units.distance = value; persist() }
+	func setTimeFormat(_ value: TimeFormat) { units.time = value; persist() }
 	func setTrainMatch(_ value: TrainFavorites.Match) { trainFavorites.match = value; persist() }
 	func setStationSelection(_ value: StationSelection) {
 		stationSelection = value
@@ -521,7 +525,7 @@ final class AppModel {
 	private func recordRecent(_ id: String) { recent.removeAll { $0 == id }; recent.insert(id, at: 0); recent = Array(recent.prefix(8)) }
 	var portableSettings: PortableSettings {
 		var value = PortableSettings(); value.favorites = favorites; value.theme = themeID
-		value.trainFavorites = trainFavorites; value.stationSelection = stationSelection
+		value.trainFavorites = trainFavorites; value.stationSelection = stationSelection; value.units = units
 		value.stations = stationPreferences; value.widgets = widgetPreferences; return value
 	}
 	private var settingsStore: DeviceSettingsStore { DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json")) }
@@ -537,7 +541,7 @@ final class AppModel {
 		} catch {
 			if let saved = durableSettings {
 				favorites = saved.favorites; themeID = saved.theme
-				trainFavorites = saved.trainFavorites; stationSelection = saved.stationSelection
+				trainFavorites = saved.trainFavorites; stationSelection = saved.stationSelection; units = saved.units
 				stationPreferences = saved.stations; widgetPreferences = saved.widgets
 			}
 			settingsError = "Settings could not be saved on this device. Your previous preferences are unchanged. " + error.localizedDescription
@@ -547,7 +551,7 @@ final class AppModel {
 		let selected = lastStation ?? stationID
 		try settingsStore.save(record(settings: settings, lastStation: selected, sync: sync), replacingUnreadable: replacingUnreadable)
 		favorites = settings.favorites; themeID = settings.theme; stationPreferences = settings.stations; widgetPreferences = settings.widgets; settingsSync = sync; settingsError = nil
-		trainFavorites = settings.trainFavorites; stationSelection = settings.stationSelection
+		trainFavorites = settings.trainFavorites; stationSelection = settings.stationSelection; units = settings.units
 		if lastStation != nil { favoriteStartupAttempted = true }
 		durableSettings = settings
 		if selected != stationID {
@@ -575,10 +579,10 @@ final class AppModel {
 	}
 	private func syncWidgets(reload: Bool) {
 		guard let widgetStore else { return }
-		let state = WidgetSharedState(favorites: favorites, stations: stations, appFilters: stationPreferences, widgets: widgetPreferences, themeID: themeID, endpoint: endpoint, appLocation: widgetLocation, stationSelection: stationSelection)
+		let state = WidgetSharedState(favorites: favorites, stations: stations, appFilters: stationPreferences, widgets: widgetPreferences, themeID: themeID, endpoint: endpoint, appLocation: widgetLocation, stationSelection: stationSelection, units: units)
 		let previous = try? widgetStore.load()
 		try? widgetStore.save(state)
-		let changed = previous?.favorites != state.favorites || previous?.appFilters != state.appFilters || previous?.themeID != state.themeID || previous?.endpoint != state.endpoint || previous?.stationSelection != state.stationSelection || previous?.widgets != state.widgets
+		let changed = previous?.favorites != state.favorites || previous?.appFilters != state.appFilters || previous?.themeID != state.themeID || previous?.endpoint != state.endpoint || previous?.stationSelection != state.stationSelection || previous?.widgets != state.widgets || previous?.units != state.units
 		let time = Date().timeIntervalSince1970
 		if reload || changed || time - lastWidgetReload >= 60 {
 			lastWidgetReload = time

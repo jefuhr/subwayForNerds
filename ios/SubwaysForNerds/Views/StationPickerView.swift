@@ -70,7 +70,7 @@ struct StationPickerView: View {
 								HStack(alignment: .firstTextBaseline, spacing: 8) {
 									Text(station.name).font(.subheadline.weight(.semibold)).multilineTextAlignment(.leading)
 									Spacer(minLength: 4)
-									Text((station.municipality.map { "\($0), " } ?? "") + boroughName(station.borough) + (distance(station).map { " · \($0 < 1000 ? "\(Int($0.rounded())) m" : String(format: "%.1f km", $0 / 1000))" } ?? ""))
+									Text((station.municipality.map { "\($0), " } ?? "") + boroughName(station.borough) + (distance(station).map { " · \(app.units.distance.distanceLabel(meters: $0))" } ?? ""))
 										.font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.trailing)
 								}
 								RouteStrip(routes: station.routes)

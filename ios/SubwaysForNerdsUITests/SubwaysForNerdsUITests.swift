@@ -708,6 +708,79 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		screenshot("settings-export", app: relaunched)
 	}
 
+	func testV2UnitsAndTrainPreferencesImportAndRelaunch() {
+		let encoded = Data("""
+{
+	"format": "subways-for-nerds", "version": 2,
+	"exportedAt": "2026-10-10T12:00:00Z", "lastStation": "602",
+	"settings": {
+		"favorites": ["602"], "theme": "hello-kitty", "stations": {},
+		"units": {"distance": "mi", "time": "24h"},
+		"trainFavorites": {"cars": ["nyct:R211A:4149"], "consists": [["nyct:R211A:4148", "nyct:R211A:4149"]], "match": "anyCar"},
+		"stationSelection": {"mode": "nearbyFavorite", "radiusFeet": 5280},
+		"widgets": {
+			"stationSelection": {"followApp": false, "selection": {"mode": "nearbyFavorite", "radiusFeet": 26400}},
+			"matchAppFilters": false, "stations": {},
+			"display": {"fields": ["destination", "stationName", "updatedAt"], "compact": false, "trainsPerDirection": 2, "timeStyle": "clock"},
+			"lockScreen": {"display": {"fields": ["stationName"], "compact": true, "trainsPerDirection": 2, "timeStyle": "clock"}, "directionOrder": "downtownLeft", "showService": true}
+		}
+	}
+}
+""".utf8).base64EncodedString()
+		var app = launch(settingsFile: encoded)
+		XCTAssertTrue(app.staticTexts["1 favorite stations · 1 cars · 1 consists"].exists)
+		screenshot("v2-units-import-preview", app: app)
+		app.buttons["Cancel"].tap()
+		scrollTo(app.buttons["distanceUnits"], in: app)
+		XCTAssertTrue(app.buttons["distanceUnits"].label.contains("Automatic"))
+		XCTAssertTrue(app.buttons["timeFormat"].label.contains("12-hour"))
+		app.terminate()
+		app = launch(reset: false, settingsFile: encoded)
+		scrollTo(app.buttons["confirmSettingsImport"], in: app); app.buttons["confirmSettingsImport"].tap()
+		XCTAssertTrue(app.buttons["theme_hello-kitty"].waitForExistence(timeout: 5))
+		app.terminate()
+		app = launch(reset: false)
+		app.tab("Settings").tap()
+		scrollTo(app.buttons["distanceUnits"], in: app)
+		XCTAssertTrue(app.buttons["distanceUnits"].label.contains("Miles"))
+		XCTAssertTrue(app.buttons["timeFormat"].label.contains("24-hour"))
+		app.buttons["timeFormat"].tap(); app.buttons["12-hour"].tap()
+		XCTAssertTrue(app.buttons["timeFormat"].label.contains("12-hour"))
+		app.buttons["timeFormat"].tap(); app.buttons["24-hour"].tap()
+		screenshot("units-settings-after-import", app: app)
+		scrollTo(app.buttons["favoriteTrainsSettings"], in: app); app.buttons["favoriteTrainsSettings"].tap()
+		XCTAssertTrue(app.buttons["removeFavoriteCar_nyct:R211A:4149"].waitForExistence(timeout: 5))
+		XCTAssertTrue(app.buttons["removeFavoriteConsist"].exists)
+		XCTAssertTrue(app.buttons["favoriteTrainMatch"].label.contains("Any member car"))
+		app.navigationBars.buttons.firstMatch.tap()
+		scrollTo(app.buttons["stationSelectionSettings"], in: app); app.buttons["stationSelectionSettings"].tap()
+		XCTAssertEqual(Double(app.textFields["appRadiusFeet"].value as? String ?? ""), 1)
+		app.navigationBars.buttons.firstMatch.tap()
+		scrollTo(app.buttons["widgetStationSelectionSettings"], in: app); app.buttons["widgetStationSelectionSettings"].tap()
+		XCTAssertEqual(app.switches["widgetFollowAppStation"].value as? String, "0")
+		XCTAssertEqual(Double(app.textFields["widgetRadiusFeet"].value as? String ?? ""), 5)
+		app.navigationBars.buttons.firstMatch.tap()
+		// Changing display units must preserve the same physical radius.
+		scrollTo(app.buttons["distanceUnits"], in: app, towardTop: true)
+		for (title, expected) in [("Meters (m)", 1609.344), ("Kilometers (km)", 1.609344), ("Feet (ft)", 5280.0), ("Miles (mi)", 1.0)] {
+			scrollTo(app.buttons["distanceUnits"], in: app); app.buttons["distanceUnits"].tap(); app.buttons[title].tap()
+			scrollTo(app.buttons["stationSelectionSettings"], in: app); app.buttons["stationSelectionSettings"].tap()
+			XCTAssertEqual(Double(app.textFields["appRadiusFeet"].value as? String ?? "") ?? -1, expected, accuracy: 0.0000001)
+			app.navigationBars.buttons.firstMatch.tap()
+		}
+		scrollTo(app.buttons["widgetPreviews"], in: app); app.buttons["widgetPreviews"].tap()
+		let canvas = app.otherElements["widgetPreviewCanvas"]
+		XCTAssertTrue(canvas.waitForExistence(timeout: 5))
+		XCTAssertFalse(canvas.staticTexts.matching(NSPredicate(format: "label MATCHES %@", ".*[0-9] (AM|PM).*" )).firstMatch.exists)
+		screenshot("widget-home-24-hour", app: app)
+		app.buttons["widgetPreviewFamily"].tap(); app.buttons["Rectangular"].tap()
+		screenshot("widget-lock-24-hour", app: app)
+		app.navigationBars.buttons.firstMatch.tap()
+		scrollTo(app.buttons["exportSettings"], in: app, towardTop: true); app.buttons["exportSettings"].tap()
+		XCTAssertTrue(app.buttons["Save"].waitForExistence(timeout: 45) || app.navigationBars["Export"].exists)
+		screenshot("v2-units-settings-export", app: app)
+	}
+
 	func testTrainFavoritesHighlightAndSurviveRelaunch() {
 		var app = launch()
 		let departure = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'departure_' AND label CONTAINS '4149'")).firstMatch
@@ -778,10 +851,10 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		XCTAssertTrue(app.buttons["widgetStationMode"].label.contains("Closest station"))
 	}
 
-	private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
+	private func scrollTo(_ element: XCUIElement, in app: XCUIApplication, towardTop: Bool = false) {
 		for _ in 0..<12 {
 			if element.exists && element.isHittable { return }
-			app.swipeUp()
+			if towardTop { app.swipeDown() } else { app.swipeUp() }
 		}
 		XCTAssertTrue(element.waitForExistence(timeout: 10))
 	}

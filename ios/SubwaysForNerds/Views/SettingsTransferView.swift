@@ -40,7 +40,7 @@ struct SettingsTransferSection: View {
 	}
 }
 @MainActor func settingsLabel(_ path: String, app: AppModel) -> String {
-	let labels = ["favorites": "Favorite stations", "trainFavorites": "Favorite trains", "cars": "Cars", "consists": "Consists", "match": "Consist matching", "stationSelection": "Station selection", "mode": "Mode", "radiusFeet": "Radius (ft)", "followApp": "Follow app", "selection": "Station choice", "theme": "Theme", "stations": "Stations", "widgets": "Widgets", "display": "Display", "lockScreen": "Lock Screen", "directionOrder": "Direction order", "showService": "Service icons", "fields": "Shown information", "compact": "Compact rows", "trainsPerDirection": "Trains per direction", "timeStyle": "Arrival display", "matchAppFilters": "Match app filters", "direction": "Direction", "routes": "Lines", "view": "Board grouping"]
+	let labels = ["units": "Units", "distance": "Distance units", "time": "Time format", "favorites": "Favorite stations", "trainFavorites": "Favorite trains", "cars": "Cars", "consists": "Consists", "match": "Consist matching", "stationSelection": "Station selection", "mode": "Mode", "radiusFeet": "Radius (ft)", "followApp": "Follow app", "selection": "Station choice", "theme": "Theme", "stations": "Stations", "widgets": "Widgets", "display": "Display", "lockScreen": "Lock Screen", "directionOrder": "Direction order", "showService": "Service icons", "fields": "Shown information", "compact": "Compact rows", "trainsPerDirection": "Trains per direction", "timeStyle": "Arrival display", "matchAppFilters": "Match app filters", "direction": "Direction", "routes": "Lines", "view": "Board grouping"]
 	return path.split(separator: "/").map { part in
 		let key = part.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "~1", with: "/").replacingOccurrences(of: "~0", with: "~")
 		return app.stations.first(where: { $0.id == key })?.name ?? labels[key] ?? key.capitalized
@@ -50,7 +50,7 @@ func settingsValue(_ value: JSONValue?) -> String {
 	guard let value else { return "Not set" }
 	switch value {
 	case .bool(let on): return on ? "On" : "Off"
-	case .string(let text): return AppTheme.all.first(where: { $0.id == text })?.name ?? WidgetField(rawValue: text)?.title ?? StationSelection.Mode(rawValue: text)?.title ?? TrainFavorites.Match(rawValue: text)?.title ?? (TrainFavorites.validCarID(text) ? TrainFavorites.label(text) : text)
+	case .string(let text): return AppTheme.all.first(where: { $0.id == text })?.name ?? WidgetField(rawValue: text)?.title ?? StationSelection.Mode(rawValue: text)?.title ?? TrainFavorites.Match(rawValue: text)?.title ?? DistanceUnit(rawValue: text)?.title ?? TimeFormat(rawValue: text)?.title ?? (TrainFavorites.validCarID(text) ? TrainFavorites.label(text) : text)
 	case .number(let number): return number.formatted()
 	case .array(let array): return array.isEmpty ? "None" : array.map { item in
 		if case .array(let ids) = item { return "\(ids.count)-car consist: " + ids.map { settingsValue($0) }.joined(separator: ", ") }

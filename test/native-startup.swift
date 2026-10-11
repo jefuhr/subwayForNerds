@@ -261,6 +261,11 @@ struct NativeStartupTests {
 			restored.setWidgetStationSelection(override)
 			let following = try restored.widgetStore!.load()
 			try expect(following.selectedStation(location: shared.appLocation, previous: "far")?.id == "near" && following.widgets.stationSelection.selection == override.selection, "Following the app must preserve the stored independent override")
+			restored.setDistanceUnit(.km)
+			restored.setTimeFormat(.twentyFourHour)
+			let units = UnitPreferences(distance: .km, time: .twentyFourHour)
+			try expect(restored.units == units && AppModel(stateDirectory: folder).units == units, "Unit preferences must survive relaunch")
+			try expect(try restored.widgetStore!.load().units == units, "Widget sharing must receive both unit preferences")
 			let before = restored.portableSettings
 			let widgetBefore = try restored.widgetStore!.load()
 			let settingsURL = folder.appendingPathComponent("settings.json")
@@ -278,6 +283,9 @@ struct NativeStartupTests {
 			try expect(restored.portableSettings == before && restored.settingsError != nil, "Failed consist favorite save must roll back")
 			restored.setTrainMatch(.anyCar)
 			try expect(restored.portableSettings == before && restored.settingsError != nil, "Failed matching preference save must roll back")
+			restored.setDistanceUnit(.mi)
+			restored.setTimeFormat(.twelveHour)
+			try expect(restored.portableSettings == before && restored.settingsError != nil, "Failed unit preference saves must roll back")
 			try expect(try restored.widgetStore!.load() == widgetBefore, "Failed preference writes must not publish partial widget settings")
 			try FileManager.default.removeItem(at: settingsURL)
 			try FileManager.default.moveItem(at: savedURL, to: settingsURL)
@@ -298,7 +306,7 @@ struct NativeStartupTests {
 		try await Task.sleep(for: .milliseconds(50))
 		try expect(race.stationID == "far", "A manual choice of the current station must win over pending automatic GPS selection")
 		await stop(race, task: foreground, background: true)
-		print("PASS: closest without favorites, one-foot nearby fallback, widget overrides/full catalog/nonfavorite cache, pending GPS navigation, and new-preference write rollback")
+		print("PASS: closest without favorites, one-foot nearby fallback, widget overrides/full catalog/nonfavorite cache, pending GPS navigation, units relaunch/sharing, and new-preference write rollback")
 	}
 
 	@MainActor final class LocationSequence {

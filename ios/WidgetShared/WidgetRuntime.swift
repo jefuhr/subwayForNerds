@@ -12,6 +12,7 @@ struct SubwayWidgetEntry: TimelineEntry, Sendable {
 	var display = WidgetDisplayOptions()
 	var lockScreen = LockScreenWidgetOptions()
 	var themeID = "subway"
+	var units = UnitPreferences()
 	var cached = false
 	var locationNotice: String?
 	var message: String?
@@ -44,7 +45,7 @@ struct SubwayTimelineProvider: TimelineProvider {
 			if !entry.cached, let board = entry.board {
 				let dates = widgetTimelineDates(board, now: entry.date.timeIntervalSince1970)
 				for date in dates {
-					let saved = SubwayWidgetEntry(date: Date(timeIntervalSince1970: date), station: entry.station, board: board, preference: entry.preference, display: entry.display, lockScreen: entry.lockScreen, themeID: entry.themeID, cached: date == dates.last, locationNotice: entry.locationNotice, message: entry.message)
+					let saved = SubwayWidgetEntry(date: Date(timeIntervalSince1970: date), station: entry.station, board: board, preference: entry.preference, display: entry.display, lockScreen: entry.lockScreen, themeID: entry.themeID, units: entry.units, cached: date == dates.last, locationNotice: entry.locationNotice, message: entry.message)
 					entries.append(saved)
 				}
 			}
@@ -70,6 +71,7 @@ enum WidgetBoardLoader {
 			state = (try? store.load()) ?? state
 		}
 		entry.themeID = state.themeID
+		entry.units = state.units
 		entry.display = state.widgets.display
 		entry.lockScreen = state.widgets.lockScreen
 		guard state.effectiveStationSelection.mode != .favorite || !state.favorites.isEmpty else { entry.message = "Add a favorite or choose Closest station in Settings."; return entry }

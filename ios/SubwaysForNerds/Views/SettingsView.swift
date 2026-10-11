@@ -33,6 +33,17 @@ struct SettingsView: View {
 				NavigationLink("Favorite trains") { FavoriteTrainsSettingsView() }.accessibilityIdentifier("favoriteTrainsSettings")
 			} header: { ListHeader("Board") }
 			Section {
+				Picker("Distance units", selection: Binding(get: { app.units.distance }, set: { app.setDistanceUnit($0) })) {
+					ForEach(DistanceUnit.allCases) { unit in Text(unit.title).tag(unit) }
+				}.accessibilityIdentifier("distanceUnits")
+				Picker("Time format", selection: Binding(get: { app.units.time }, set: { app.setTimeFormat($0) })) {
+					ForEach(TimeFormat.allCases) { format in Text(format.title).tag(format) }
+				}.accessibilityIdentifier("timeFormat")
+			} header: { ListHeader("Units") } footer: { Text("Applies throughout the app and Home and Lock Screen widgets. Times use New York time. Automatic shows nearby distances in meters or kilometers and favorite radii in feet and miles.") }
+			.tint(app.theme.selection)
+			.id(app.themeID)
+
+			Section {
 				NavigationLink { StationSelectionSettingsView(widget: true) } label: {
 					LabeledContent("Widget station", value: app.widgetPreferences.stationSelection.followApp ? "Same as app" : app.widgetPreferences.stationSelection.selection.mode.title)
 				}.accessibilityIdentifier("widgetStationSelectionSettings")
@@ -114,17 +125,17 @@ struct SettingsView: View {
 		Section {
 			if let saved = app.offlineManifest {
 				VStack(alignment: .leading, spacing: 2) {
-					LabeledContent("Saved", value: easternDate(saved.generatedAt)).font(.subheadline)
+					LabeledContent("Saved", value: easternDate(saved.generatedAt, timeFormat: app.units.time)).font(.subheadline)
 					LabeledContent("Saved size", value: ByteCountFormatter.string(fromByteCount: saved.byteLength, countStyle: .file)).font(.subheadline)
 					Text("\(saved.counts.cars.formatted()) cars · \(saved.counts.events.formatted()) movement events").font(.caption)
-					Text("History: \(easternDate(saved.historyStart)) – \(easternDate(saved.historyEnd))").font(.caption).foregroundStyle(.secondary)
+					Text("History: \(easternDate(saved.historyStart, timeFormat: app.units.time)) – \(easternDate(saved.historyEnd, timeFormat: app.units.time))").font(.caption).foregroundStyle(.secondary)
 				}
 			} else { Text("Save the full roster, source records, last reports, and all retained movement history to this device.").font(.footnote) }
 			if let available = app.availableManifest {
 				VStack(alignment: .leading, spacing: 2) {
 					LabeledContent("Download size", value: ByteCountFormatter.string(fromByteCount: available.downloadByteLength, countStyle: .file)).font(.subheadline)
 					LabeledContent("Size after saving", value: ByteCountFormatter.string(fromByteCount: available.byteLength, countStyle: .file)).font(.subheadline)
-					Text("Published \(easternDate(available.generatedAt))\(available.compression == "gzip" ? ". Allow free space for both sizes while the compressed download is prepared." : "")")
+					Text("Published \(easternDate(available.generatedAt, timeFormat: app.units.time))\(available.compression == "gzip" ? ". Allow free space for both sizes while the compressed download is prepared." : "")")
 						.font(.caption).foregroundStyle(.secondary)
 				}
 				if app.isDownloading {
@@ -188,12 +199,12 @@ struct StationSelectionSettingsView: View {
 					})).accessibilityIdentifier("widgetFollowAppStation")
 					if app.widgetPreferences.stationSelection.followApp {
 						LabeledContent("App setting", value: app.stationSelection.mode.title)
-						if app.stationSelection.mode == .nearbyFavorite { LabeledContent("Radius", value: "\(app.stationSelection.radiusFeet.formatted()) ft") }
+						if app.stationSelection.mode == .nearbyFavorite { LabeledContent("Radius", value: app.units.distance.radiusLabel(feet: app.stationSelection.radiusFeet)) }
 					}
 				} footer: { Text("Applies to Home and Lock Screen widgets. Your separate widget choice is kept when following the app.") }
 			}
 			if !widget || !app.widgetPreferences.stationSelection.followApp {
-				StationSelectionControls(selection: selection, identifier: widget ? "widget" : "app", editingRadius: $editingRadius)
+				StationSelectionControls(selection: selection, unit: app.units.distance, identifier: widget ? "widget" : "app", editingRadius: $editingRadius)
 			}
 		}.themedList().navigationTitle(widget ? "Widget station" : "Station selection").navigationBarTitleDisplayMode(.inline)
 		.toolbar { ToolbarItemGroup(placement: .keyboard) {
@@ -205,14 +216,15 @@ struct StationSelectionSettingsView: View {
 
 private struct StationSelectionControls: View {
 	@Binding var selection: StationSelection
+	let unit: DistanceUnit
 	let identifier: String
 	@State private var radiusText = ""
 	@State private var draftRadius = 5280.0
 	var editingRadius: FocusState<Bool>.Binding
-	private var validRadius: Int? { Int(radiusText).flatMap { (1...26400).contains($0) ? $0 : nil } }
+	private var validRadius: Int? { unit.radiusFeet(from: radiusText) }
 	private func commitRadius() {
 		if let radius = validRadius, radius != selection.radiusFeet { selection.radiusFeet = radius }
-		radiusText = String(selection.radiusFeet)
+		radiusText = unit.radiusInput(feet: selection.radiusFeet)
 		draftRadius = Double(selection.radiusFeet)
 	}
 	var body: some View {
@@ -224,23 +236,24 @@ private struct StationSelectionControls: View {
 		if selection.mode == .nearbyFavorite {
 			Section {
 				HStack {
-					Text("Radius (ft)")
-					TextField("Feet", text: $radiusText).keyboardType(.numberPad).multilineTextAlignment(.trailing).focused(editingRadius)
-						.accessibilityLabel("Radius in feet").accessibilityIdentifier(identifier + "RadiusFeet")
+					Text("Radius (\(unit.radiusUnit.rawValue))")
+					TextField(unit.radiusUnit.title, text: $radiusText).keyboardType(.decimalPad).multilineTextAlignment(.trailing).focused(editingRadius)
+						.accessibilityLabel("Radius in \(unit.spokenName)").accessibilityIdentifier(identifier + "RadiusFeet")
 						.onSubmit { commitRadius() }
 				}
-				Slider(value: Binding(get: { draftRadius }, set: { draftRadius = $0; radiusText = String(Int($0)) }), in: 1...26400, step: 1, onEditingChanged: { editing in if !editing { commitRadius() } })
-					.accessibilityLabel("Favorite radius").accessibilityValue("\(Int(draftRadius)) feet").accessibilityIdentifier(identifier + "RadiusSlider")
+				Slider(value: Binding(get: { draftRadius }, set: { draftRadius = $0; radiusText = unit.radiusInput(feet: Int($0)) }), in: 1...26400, step: 1, onEditingChanged: { editing in if !editing { commitRadius() } })
+					.accessibilityLabel("Favorite radius").accessibilityValue("\(unit.radiusInput(feet: Int(draftRadius))) \(unit.spokenName)").accessibilityIdentifier(identifier + "RadiusSlider")
 					.accessibilityAdjustableAction { direction in
 						let delta = direction == .increment ? 264 : direction == .decrement ? -264 : 0
-						radiusText = String(min(26400, max(1, Int(draftRadius) + delta))); commitRadius()
+						radiusText = unit.radiusInput(feet: min(26400, max(1, Int(draftRadius) + delta))); commitRadius()
 					}
-				Text("\(Int(draftRadius).formatted()) ft · \((draftRadius / 5280).formatted(.number.precision(.fractionLength(0...4)))) mi").font(.footnote).foregroundStyle(.secondary)
-				if validRadius == nil { Text("Enter a whole number from 1 to 26,400 feet.").font(.footnote).foregroundStyle(.red) }
+				Text(unit.radiusLabel(feet: Int(draftRadius))).font(.footnote).foregroundStyle(.secondary)
+				if validRadius == nil { Text(unit.radiusRangeDescription).font(.footnote).foregroundStyle(.red) }
 			} header: { ListHeader("Favorite radius") } footer: { Text("Choose the closest favorite only when it is inside this radius. At or beyond the radius, show the closest station. Distance is measured in a straight line, not walking distance.") }
-			.onAppear { radiusText = String(selection.radiusFeet); draftRadius = Double(selection.radiusFeet) }
+			.onAppear { radiusText = unit.radiusInput(feet: selection.radiusFeet); draftRadius = Double(selection.radiusFeet) }
 			.onChange(of: radiusText) { _, _ in if let radius = validRadius { draftRadius = Double(radius) } }
-			.onChange(of: selection.radiusFeet) { _, value in radiusText = String(value); draftRadius = Double(value) }
+			.onChange(of: selection.radiusFeet) { _, value in radiusText = unit.radiusInput(feet: value); draftRadius = Double(value) }
+			.onChange(of: unit) { _, _ in radiusText = unit.radiusInput(feet: selection.radiusFeet); draftRadius = Double(selection.radiusFeet) }
 			.onChange(of: editingRadius.wrappedValue) { _, focused in if !focused { commitRadius() } }
 			.onDisappear { commitRadius() }
 		}

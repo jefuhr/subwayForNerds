@@ -193,12 +193,13 @@ func boroughName(_ borough: String) -> String {
 	["NJ": "New Jersey", "M": "Manhattan", "B": "Brooklyn", "Bk": "Brooklyn", "Bx": "Bronx", "Q": "Queens", "SI": "Staten Island"][borough] ?? borough
 }
 
-func easternDate(_ timestamp: TimeInterval) -> String {
+func easternDate(_ timestamp: TimeInterval, timeFormat: TimeFormat = .twelveHour) -> String {
 	let formatter = DateFormatter()
-	formatter.locale = Locale(identifier: "en_US")
+	formatter.locale = Locale(identifier: "en_US_POSIX")
 	formatter.timeZone = TimeZone(identifier: "America/New_York")
 	formatter.dateStyle = .medium
 	formatter.timeStyle = .short
+	if timeFormat == .twentyFourHour { formatter.dateFormat = "MMM d, yyyy 'at' HH:mm" }
 	return formatter.string(from: Date(timeIntervalSince1970: timestamp)) + " ET"
 }
 

@@ -25,10 +25,20 @@ station part is strictly below the radius. Radius values are integer feet from
 Home and Lock Screen widgets share the same station policy and follow the app by
 default; independent widget selection remains stored while following the app.
 
+`units` stores `distance` (`auto`, `mi`, `ft`, `m`, or `km`) and `time` (`12h` or
+`24h`). Automatic distance formatting preserves the existing nearby meters/
+kilometers and radius feet display. Explicit units also change the radius editor;
+decimal input converts to the nearest whole foot without changing the canonical
+`radiusFeet` range or selection boundary. Clock formatting remains in
+America/New_York and does not change elapsed times or countdown minutes. Widgets
+follow the same unit preferences. Older files and stored records without `units`
+use `auto` and `12h`; a present units object must contain both supported values.
+
 Version 1 imports default to no saved trains, exact matching, closest favorite,
 a 5,280-foot radius, and widgets following the app. Older v1 files without Lock
 Screen settings use the native legacy-display migration. Version 2 files require
-the new fields; malformed or partial records are rejected before replacement.
+the train-favorite and station-selection fields; malformed or partial records
+are rejected before replacement.
 The TypeScript/Swift fixtures in `test/fixtures/settings.nerds` and
 `ios/TransitCore/Tests/TransitCoreTests/Fixtures/settings.nerds` must remain identical.
 The corresponding `favorites.nerds` fixtures exercise the shared v2 fields,
@@ -133,8 +143,8 @@ server uses atomic revision comparisons (`If-Match`, HTTP 412 on stale writes).
 Three-way comparison merges different settings and station, car, and consist
 membership changes independently, including removals.
 Conflicting values require a choice. Edits made during an upload remain pending.
-The server refuses a legacy write with HTTP 409 if omitted v2 fields would erase
-stored preferences. The user must update that client before syncing; the stored
+The server refuses a legacy write with HTTP 409 if omitted v2 fields or unit
+settings would erase stored preferences. The user must update that client before syncing; the stored
 revision and settings are retained. HTTP 412 still handles stale revisions first.
 
 A new account starts with this device's settings. Joining an existing account

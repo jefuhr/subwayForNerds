@@ -97,8 +97,9 @@ export async function registerAccounts(app:FastifyInstance,api:string,options?:A
 				const current=validateSettings(stored.settings),baseline=defaults(),incoming=req.body as Record<string,any>;
 				if((!Object.hasOwn(incoming,'trainFavorites')&&!equal(current.trainFavorites,baseline.trainFavorites))||
 					(!Object.hasOwn(incoming,'stationSelection')&&!equal(current.stationSelection,baseline.stationSelection))||
-					(!Object.hasOwn(incoming.widgets,'stationSelection')&&!equal(current.widgets.stationSelection,baseline.widgets.stationSelection)))
-					fail(409,'Update Subway Nerds before syncing. This client cannot preserve your saved trains and station selection.');
+					(!Object.hasOwn(incoming.widgets,'stationSelection')&&!equal(current.widgets.stationSelection,baseline.widgets.stationSelection))||
+					(!Object.hasOwn(incoming,'units')&&!equal(current.units,baseline.units)))
+					fail(409,'Update Subway Nerds before syncing. This client cannot preserve your saved trains, station selection, or unit settings.');
 			}
 			const result=store.putSettings(user.id,Number(match![1]),settings!);
 			if(!result)return reply.code(412).send(store.settings(user.id));

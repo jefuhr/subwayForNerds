@@ -3,6 +3,8 @@ import { Star } from 'lucide-react';
 import { consistKey } from '../shared/favorites';
 import { validFleetCarID, type StationSelection, type TrainFavorites } from '../shared/settings';
 import { getDeviceSettings, subscribeSettings, updateSettings } from './settings-store';
+import { distanceUnitNames, radiusDisplayValue, radiusFeetFromInput, radiusUnit } from '../shared/display';
+import { useUnits } from './Units';
 
 export const carLabel = (id: string) => { const [system, type, number] = id.split(':'); return `${type} ${number}${system === 'sir' ? ' · SIR' : ''}`; };
 export const useTrainFavorites = () => useSyncExternalStore(subscribeSettings, getDeviceSettings).settings.trainFavorites;
@@ -23,22 +25,25 @@ export function FavoriteConsistButton({ ids, compact = false }: { ids: string[];
 }
 
 function StationChoice({ selection, change, prefix }: { selection: StationSelection; change: (value: StationSelection) => void; prefix: 'App' | 'Widget' }) {
-	const [radius, setRadius] = useState(String(selection.radiusFeet));
-	useEffect(() => setRadius(String(selection.radiusFeet)), [selection.radiusFeet]);
-	const valid = /^\d+$/.test(radius) && Number(radius) >= 1 && Number(radius) <= 26400;
+	const unit = useUnits().distance;
+	const [radius, setRadius] = useState(() => radiusDisplayValue(selection.radiusFeet, unit));
+	useEffect(() => setRadius(radiusDisplayValue(selection.radiusFeet, unit)), [selection.radiusFeet, unit]);
+	const draftFeet = radiusFeetFromInput(radius, unit), valid = draftFeet !== null;
+	const displayedFeet = draftFeet ?? selection.radiusFeet;
+	const formattedRadius = `${radiusDisplayValue(displayedFeet, unit)} ${radiusUnit(unit)}`;
 	const commitRadius = () => {
-		if (valid && Number(radius) !== selection.radiusFeet) change({ ...selection, radiusFeet: Number(radius) });
-		else if (!valid) setRadius(String(selection.radiusFeet));
+		if (draftFeet !== null && draftFeet !== selection.radiusFeet) change({ ...selection, radiusFeet: draftFeet });
+		setRadius(radiusDisplayValue(displayedFeet, unit));
 	};
 	return <div className="station-choice">
 		<label>{prefix} station selection<select aria-label={`${prefix} station selection`} value={selection.mode} onChange={e => change({ ...selection, mode: e.target.value as StationSelection['mode'] })}>
 			<option value="favorite">Closest favorite</option><option value="closest">Closest station</option><option value="nearbyFavorite">Favorite within radius</option>
 		</select></label>
 		{selection.mode === 'nearbyFavorite' && <>
-			<label>Radius (ft)<input type="number" min={1} max={26400} step={1} inputMode="numeric" aria-label={`${prefix} radius in feet`} aria-invalid={!valid} value={radius} onBlur={commitRadius} onKeyDown={e => { if (e.key === 'Enter') commitRadius(); }} onChange={e => setRadius(e.target.value)} /></label>
-			<input type="range" min={1} max={26400} step={1} aria-label={`${prefix} favorite radius`} aria-valuetext={`${valid ? radius : selection.radiusFeet} feet`} value={valid ? Number(radius) : selection.radiusFeet} onChange={e => setRadius(e.target.value)} onPointerUp={commitRadius} onKeyUp={commitRadius} onBlur={commitRadius} />
-			<p className="fine-print">{Number(valid ? radius : selection.radiusFeet).toLocaleString()} ft · {Number((Number(valid ? radius : selection.radiusFeet) / 5280).toFixed(4))} mi</p>
-			{!valid && <p className="notice">Enter a whole number from 1 to 26,400 feet.</p>}
+			<label>Radius ({radiusUnit(unit)})<input type="number" min={radiusDisplayValue(1, unit)} max={radiusDisplayValue(26400, unit)} step="any" inputMode="decimal" aria-label={`${prefix} radius in ${distanceUnitNames[unit]}`} aria-invalid={!valid} value={radius} onBlur={commitRadius} onKeyDown={e => { if (e.key === 'Enter') commitRadius(); }} onChange={e => setRadius(e.target.value)} /></label>
+			<input type="range" min={1} max={26400} step={1} aria-label={`${prefix} favorite radius`} aria-valuetext={`${radiusDisplayValue(displayedFeet, unit)} ${distanceUnitNames[unit]}`} value={displayedFeet} onChange={e => setRadius(radiusDisplayValue(Number(e.target.value), unit))} onPointerUp={commitRadius} onKeyUp={commitRadius} onBlur={commitRadius} />
+			<p className="fine-print">{unit === 'auto' ? `${displayedFeet.toLocaleString()} ft · ${Number((displayedFeet / 5280).toFixed(4))} mi` : formattedRadius}</p>
+			{!valid && <p className="notice">Enter a distance from {radiusDisplayValue(1, unit)} to {radiusDisplayValue(26400, unit)} {distanceUnitNames[unit]}.</p>}
 			<p className="fine-print">Choose the closest favorite only inside this radius. At or beyond it, show the closest station. Distance is straight-line distance, not walking distance.</p>
 		</>}
 	</div>;

@@ -61,6 +61,10 @@ the app beyond localhost so geolocation and service workers work.
   any member car, and manage saved trains that are not currently reporting.
   Train favorites and station policies transfer through `.nerds` exports and
   account sync. Widgets follow the app's station policy unless overridden.
+- Settings can show distances in miles, feet, meters, or kilometers and use
+  12-hour or 24-hour clocks. Automatic distance formatting preserves the existing
+  nearby meters/kilometers and radius feet display. Unit choices transfer with
+  settings and apply to native widgets. Clock times remain in Eastern time.
 - Station info includes constituent station accessibility, entrance coordinates,
   equipment status, upcoming/current outages and published travel alternatives.
 - Ten themes: the original Subway Console plus NYC Ferry, Night, Hello Kitty,

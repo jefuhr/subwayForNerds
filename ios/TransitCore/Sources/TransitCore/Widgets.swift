@@ -177,12 +177,13 @@ public struct WidgetSharedState: Codable, Sendable, Equatable {
 	public var endpoint: String
 	public var appLocation: WidgetCoordinate?
 	public var stationSelection: StationSelection
-	public init(favorites: [String] = [], stations: [Station] = [], appFilters: [String: StationPreference] = [:], widgets: WidgetPreferences = WidgetPreferences(), themeID: String = "subway", endpoint: String = TransitAPI.productionBaseURL.absoluteString, appLocation: WidgetCoordinate? = nil, stationSelection: StationSelection = StationSelection()) {
+	public var units: UnitPreferences
+	public init(favorites: [String] = [], stations: [Station] = [], appFilters: [String: StationPreference] = [:], widgets: WidgetPreferences = WidgetPreferences(), themeID: String = "subway", endpoint: String = TransitAPI.productionBaseURL.absoluteString, appLocation: WidgetCoordinate? = nil, stationSelection: StationSelection = StationSelection(), units: UnitPreferences = UnitPreferences()) {
 		self.favorites = favorites; self.stations = stations; self.appFilters = appFilters
 		self.widgets = widgets; self.themeID = themeID; self.endpoint = endpoint; self.appLocation = appLocation
-		self.stationSelection = stationSelection
+		self.stationSelection = stationSelection; self.units = units
 	}
-	private enum CodingKeys: String, CodingKey { case favorites, stations, appFilters, widgets, themeID, endpoint, appLocation, stationSelection }
+	private enum CodingKeys: String, CodingKey { case favorites, stations, appFilters, widgets, themeID, endpoint, appLocation, stationSelection, units }
 	public init(from decoder: Decoder) throws {
 		let values = try decoder.container(keyedBy: CodingKeys.self)
 		favorites = try values.decode([String].self, forKey: .favorites)
@@ -193,6 +194,7 @@ public struct WidgetSharedState: Codable, Sendable, Equatable {
 		endpoint = try values.decode(String.self, forKey: .endpoint)
 		appLocation = try values.decodeIfPresent(WidgetCoordinate.self, forKey: .appLocation)
 		stationSelection = try values.decodeIfPresent(StationSelection.self, forKey: .stationSelection) ?? StationSelection()
+		units = values.contains(.units) ? try values.decode(UnitPreferences.self, forKey: .units) : UnitPreferences()
 	}
 	public var effectiveStationSelection: StationSelection { widgets.stationSelection.followApp ? stationSelection : widgets.stationSelection.selection }
 	public func selectedStation(location: WidgetCoordinate?, previous: String?, now: TimeInterval = Date().timeIntervalSince1970) -> Station? {

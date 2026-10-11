@@ -77,6 +77,10 @@
         "directionOrder": "uptownLeft",
         "showService": false
       }
+    },
+    "units": {
+      "distance": "m",
+      "time": "24h"
     }
   }
 }

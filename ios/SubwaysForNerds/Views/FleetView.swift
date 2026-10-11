@@ -118,7 +118,7 @@ struct FleetView: View {
 		.listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
 		if let error { Section { Notice(text: error) } }
 		if usingSaved, let saved = app.offlineManifest {
-			Section { Notice(text: "Saved fleet · \(easternDate(saved.generatedAt)). Every report is historical.") }
+			Section { Notice(text: "Saved fleet · \(easternDate(saved.generatedAt, timeFormat: app.units.time)). Every report is historical.") }
 		}
 		if let data {
 			Section {
@@ -242,7 +242,7 @@ struct FleetDetailView: View {
 		List {
 			if let error { Section { Notice(text: error) } }
 			if usingSaved, let manifest = app.offlineManifest {
-				Section { Notice(text: "Saved fleet · \(easternDate(manifest.generatedAt)). Every report is historical.") }
+				Section { Notice(text: "Saved fleet · \(easternDate(manifest.generatedAt, timeFormat: app.units.time)). Every report is historical.") }
 			}
 			if let data {
 				Section {
@@ -255,7 +255,7 @@ struct FleetDetailView: View {
 								HStack(alignment: .firstTextBaseline, spacing: 8) {
 									Text("Next stop: \(next.name)").font(.subheadline.weight(.semibold))
 									Spacer(minLength: 4)
-									Text(Display.clockTime(next.time)).font(.subheadline.monospacedDigit())
+									Text(Display.clockTime(next.time, format: app.units.time)).font(.subheadline.monospacedDigit())
 								}
 								Text("Estimated · \(current.route)").font(.caption2).foregroundStyle(.secondary)
 							} else { Text("Next stop unavailable").font(.subheadline) }
@@ -283,7 +283,7 @@ struct FleetDetailView: View {
 					ForEach(Array(data.history.enumerated()), id: \.offset) { _, observation in
 						VStack(alignment: .leading, spacing: 2) {
 							Text("\(observation.route) · \(observation.location)").font(.subheadline.weight(.semibold))
-							Text(easternDate(observation.timestamp)).font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+							Text(easternDate(observation.timestamp, timeFormat: app.units.time)).font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
 							Text("Cars " + observation.cars.map { $0.split(separator: ":").last.map(String.init) ?? $0 }.joined(separator: " · ")).font(.caption2).foregroundStyle(.secondary)
 							if !observation.consistId.isEmpty && observation.consistId != id {
 								NavigationLink("Observed consist") { FleetDetailView(id: observation.consistId, kind: "consists", preferSaved: usingSaved) }

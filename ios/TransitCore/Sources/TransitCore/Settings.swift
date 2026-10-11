@@ -7,8 +7,9 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 	public var widgets = WidgetPreferences()
 	public var trainFavorites = TrainFavorites()
 	public var stationSelection = StationSelection()
+	public var units = UnitPreferences()
 	public init() {}
-	private enum CodingKeys: String, CodingKey { case favorites, theme, stations, widgets, trainFavorites, stationSelection }
+	private enum CodingKeys: String, CodingKey { case favorites, theme, stations, widgets, trainFavorites, stationSelection, units }
 	public init(from decoder: Decoder) throws {
 		let values = try decoder.container(keyedBy: CodingKeys.self)
 		favorites = try values.decode([String].self, forKey: .favorites)
@@ -17,6 +18,7 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 		widgets = try values.decode(WidgetPreferences.self, forKey: .widgets)
 		trainFavorites = try values.decodeIfPresent(TrainFavorites.self, forKey: .trainFavorites) ?? TrainFavorites()
 		stationSelection = try values.decodeIfPresent(StationSelection.self, forKey: .stationSelection) ?? StationSelection()
+		units = values.contains(.units) ? try values.decode(UnitPreferences.self, forKey: .units) : UnitPreferences()
 	}
 	public static func == (lhs: PortableSettings, rhs: PortableSettings) -> Bool { (try? lhs.json()) == (try? rhs.json()) }
 	public func validated() throws -> PortableSettings {
@@ -107,9 +109,13 @@ private enum SettingsValidation {
 	static func settings(_ value: JSONValue?) throws {
 		let rawRoot = try object(value)
 		let rootKeys: Set<String> = ["favorites", "theme", "stations", "widgets"]
-		let root = try object(value, keys: rootKeys.union(["trainFavorites", "stationSelection"].filter { rawRoot[$0] != nil }))
+		let root = try object(value, keys: rootKeys.union(["trainFavorites", "stationSelection", "units"].filter { rawRoot[$0] != nil }))
 		if let value = root["trainFavorites"] { try trainFavorites(value) }
 		if let value = root["stationSelection"] { try stationSelection(value) }
+		if let value = root["units"] {
+			let units = try object(value, keys: ["distance", "time"])
+			guard DistanceUnit(rawValue: try string(units["distance"])) != nil, TimeFormat(rawValue: try string(units["time"])) != nil else { throw SettingsError.invalid }
+		}
 		_ = try strings(root["favorites"]); _ = try string(root["theme"]); try stations(root["stations"])
 		let rawWidgets = try object(root["widgets"])
 		let widgetKeys: Set<String> = Set(["display", "matchAppFilters", "stations"]).union(["lockScreen", "stationSelection"].filter { rawWidgets[$0] != nil })

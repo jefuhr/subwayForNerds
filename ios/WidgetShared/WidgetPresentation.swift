@@ -111,7 +111,7 @@ struct SubwayWidgetView: View {
 		if let time = sourceTime, showsReportTime {
 			HStack(spacing: 4) {
 				Circle().fill(estimated ? Color.orange : accent).frame(width: 5, height: 5)
-				Text("\(estimated ? "Last estimate" : "As of") \(Display.clockTime(time))").lineLimit(1)
+				Text("\(estimated ? "Last estimate" : "As of") \(Display.clockTime(time, format: entry.units.time))").lineLimit(1)
 			}
 			.font(.system(size: metrics.footer, weight: .medium)).foregroundStyle(muted).fixedSize()
 			.accessibilityElement(children: .combine).accessibilityIdentifier("widgetUpdatedAt")
@@ -168,7 +168,7 @@ struct SubwayWidgetView: View {
 
 	private func homeRow(_ departure: Departure, direction: String, index: Int) -> some View {
 		let details = widgetTrainDetails(departure, options: options, now: entry.date.timeIntervalSince1970, cached: entry.cached)
-		let countdown = Display.countdown(departure.time, timestamp: departure.timestamp, now: entry.date.timeIntervalSince1970, cached: entry.cached)
+		let countdown = Display.countdown(departure.time, timestamp: departure.timestamp, now: entry.date.timeIntervalSince1970, cached: entry.cached, timeFormat: entry.units.time)
 		return Group {
 			if family == .systemSmall {
 				VStack(alignment: .leading, spacing: 1) {
@@ -266,7 +266,7 @@ struct SubwayWidgetView: View {
 				ForEach(directions, id: \.self) { direction in accessoryDirection(direction, limit: limit, simplified: simplified) }
 			}
 			if estimated { Text("last est.").font(.system(size: simplified ? 7 : 7 * accessoryTextScale, weight: .medium)) }
-			else if !simplified, shows(.updatedAt), let time = sourceTime { Text("As of \(Display.clockTime(time))").font(.system(size: 7 * accessoryTextScale, weight: .medium)).lineLimit(1).minimumScaleFactor(0.7) }
+			else if !simplified, shows(.updatedAt), let time = sourceTime { Text("As of \(Display.clockTime(time, format: entry.units.time))").font(.system(size: 7 * accessoryTextScale, weight: .medium)).lineLimit(1).minimumScaleFactor(0.7) }
 		}
 	}
 	private var accessoryArrivalSize: Double { (family == .accessoryCircular ? (options.compact ? 8 : 10) : (options.compact ? 10 : 12)) * accessoryTextScale }
@@ -323,7 +323,7 @@ struct SubwayWidgetView: View {
 		}.prefix(limit))
 	}
 	private func compactArrival(_ row: Departure, includeRoute: Bool = true) -> String {
-		let countdown = Display.countdown(row.time, timestamp: row.timestamp, now: entry.date.timeIntervalSince1970, cached: entry.cached)
+		let countdown = Display.countdown(row.time, timestamp: row.timestamp, now: entry.date.timeIntervalSince1970, cached: entry.cached, timeFormat: entry.units.time)
 		let clock = options.timeStyle == .clock || countdown.unit != "min"
 		let value = clock ? shortClockTime(row.time) : countdown.value + "m"
 		return (includeRoute && entry.lockScreen.showService ? routePrefix(row.route) : "") + value
@@ -341,16 +341,16 @@ struct SubwayWidgetView: View {
 			}
 		}.widgetAccentable().accessibilityLabel("Service \(label)")
 	}
-	private func shortClockTime(_ time: TimeInterval?) -> String { String(Display.clockTime(time).split(whereSeparator: \.isWhitespace).first ?? "—") }
+	private func shortClockTime(_ time: TimeInterval?) -> String { String(Display.clockTime(time, format: entry.units.time).split(whereSeparator: \.isWhitespace).first ?? "—") }
 	private func accessoryDetails(_ row: Departure) -> String {
 		var selected = options
 		selected.fields = options.fields.intersection(Set(LockScreenWidgetOptions.fields))
 		return widgetTrainDetails(row, options: selected, now: entry.date.timeIntervalSince1970, cached: entry.cached)
 	}
 	@ViewBuilder private func time(_ departure: Departure) -> some View {
-		let countdown = Display.countdown(departure.time, timestamp: departure.timestamp, now: entry.date.timeIntervalSince1970, cached: entry.cached)
+		let countdown = Display.countdown(departure.time, timestamp: departure.timestamp, now: entry.date.timeIntervalSince1970, cached: entry.cached, timeFormat: entry.units.time)
 		if accessory, options.compact, departure.time != nil, options.timeStyle == .clock || countdown.unit != "min" { Text(shortClockTime(departure.time)) }
-		else if options.timeStyle == .clock, let arrival = departure.time { Text(Display.clockTime(arrival)) }
+		else if options.timeStyle == .clock, let arrival = departure.time { Text(Display.clockTime(arrival, format: entry.units.time)) }
 		else if options.timeStyle == .minutes { Text(countdown.value + (countdown.unit == "min" ? "m" : "")) }
 		else if countdown.unit == "min", let arrival = departure.time, arrival > entry.date.timeIntervalSince1970 {
 			Text(timerInterval: entry.date...Date(timeIntervalSince1970: arrival), countsDown: true, showsHours: false)

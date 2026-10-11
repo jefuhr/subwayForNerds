@@ -60,6 +60,26 @@ test('legacy account writes cannot erase saved train favorites or station select
 		assert.deepEqual(retained.settings, settings);
 	} finally { await app.close(); }
 });
+test('unit preferences survive legacy writes and permit omission only at defaults', async () => {
+	const app = await fixture();
+	try {
+		const challenge = (await app.inject({ method: 'POST', url: '/api/v1/auth/challenges', payload: { provider: 'apple', platform: 'native', intent: 'login' } })).json();
+		const login = (await app.inject({ method: 'POST', url: '/api/v1/auth/apple/exchange', payload: { challenge: challenge.id, identityToken: 'valid-' + challenge.nonce, code: 'x' } })).json();
+		const headers = { authorization: 'Bearer ' + login.token };
+		const settings = { ...defaults(), units: { distance: 'km', time: '24h' } };
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"0"' }, payload: settings })).statusCode, 200);
+		const legacy: any = defaults(); delete legacy.units;
+		legacy.theme = 'hello-kitty';
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"0"' }, payload: legacy })).statusCode, 412);
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"1"' }, payload: legacy })).statusCode, 409);
+		const retained = (await app.inject({ url: '/api/v1/account/settings', headers })).json();
+		assert.equal(retained.revision, 1);
+		assert.deepEqual(retained.settings, settings);
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"1"' }, payload: defaults() })).statusCode, 200);
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"2"' }, payload: legacy })).statusCode, 200);
+		assert.deepEqual((await app.inject({ url: '/api/v1/account/settings', headers })).json().settings, { ...defaults(), theme: 'hello-kitty' });
+	} finally { await app.close(); }
+});
 test('legacy account edits remain writable while all extended settings are defaults', async () => {
 	const app = await fixture();
 	try {

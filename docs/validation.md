@@ -400,12 +400,14 @@ and runs server tests, then executes desktop Chromium, mobile Chromium, and mobi
 WebKit against the recorded fixture server. CI rejects focused `.only` tests and
 publishes the Playwright HTML report, failure screenshots, and traces.
 
-`iOS simulator E2E` uses GitHub's `macos-26` runner and its selected Xcode, runs
-Swift package/startup integration tests, then the normal iPhone simulator suite.
-This includes widget view families, display/filter persistence, and deep links.
-The SpringBoard widget-placement and manually configured system-location tests
-remain opt-in and are not covered by the required suite. No Apple signing secrets
-or physical device are needed for these unsigned app-view tests.
+`iOS build and native tests` uses GitHub's `macos-26` runner and its selected
+Xcode, runs Swift package/startup integration tests, then compiles the app, widget
+extension, and UI test targets for the simulator with `xcodebuild build-for-testing`.
+It does not run the simulator UI suite, which took about 30 minutes per CI run.
+Run `npm run test:ios` locally before merging iOS changes; it covers widget view
+families, display/filter persistence, and deep links. The SpringBoard
+widget-placement and manually configured system-location tests remain opt-in. No
+Apple signing secrets or physical device are needed for these unsigned builds.
 
 Both jobs preserve reports for 14 days, including on failure. New commits cancel
 older runs for the same pull request. To enforce them before merging, configure

@@ -6,6 +6,8 @@ public enum DistanceUnit: String, Codable, Sendable, CaseIterable, Identifiable 
 	public var title: String {
 		switch self { case .auto: "Automatic"; case .mi: "Miles (mi)"; case .ft: "Feet (ft)"; case .m: "Meters (m)"; case .km: "Kilometers (km)" }
 	}
+	/// Compact chip label; VoiceOver uses `title`.
+	public var shortTitle: String { self == .auto ? "Auto" : rawValue }
 	public var radiusUnit: DistanceUnit { self == .auto ? .ft : self }
 	public var spokenName: String {
 		switch radiusUnit { case .mi: "miles"; case .m: "meters"; case .km: "kilometers"; default: "feet" }

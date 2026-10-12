@@ -40,7 +40,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		screenshot("njt-hblr-offline-favorite", app: app)
 	}
 
-	private func launch(reset: Bool = true, offline: Bool = false, location: String? = nil, systemLocation: Bool = false, settingsFile: String? = nil) -> XCUIApplication {
+	private func launch(reset: Bool = true, offline: Bool = false, location: String? = nil, systemLocation: Bool = false, settingsFile: String? = nil, contentSize: String? = nil) -> XCUIApplication {
 		continueAfterFailure = false
 		let app = XCUIApplication()
 		// Offline keeps the fixture endpoint and simulates the outage, so that endpoint's cache stays in use.
@@ -51,6 +51,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		app.launchEnvironment["SFN_DISABLE_LOCATION"] = location == nil && !systemLocation ? "1" : "0"
 		app.launchEnvironment["SFN_TEST_LOCATION"] = location
 		app.launchEnvironment["SFN_TEST_NOW"] = String(ISO8601DateFormatter().date(from: "2026-09-06T00:59:40Z")!.timeIntervalSince1970)
+		if let contentSize { app.launchArguments += ["-UIPreferredContentSizeCategoryName", contentSize] }
 		app.launch()
 		if settingsFile == nil { XCTAssertTrue(app.buttons["selectedStation"].waitForExistence(timeout: 20)) }
 		else { XCTAssertTrue(app.navigationBars["Import settings"].waitForExistence(timeout: 20)) }
@@ -772,9 +773,10 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		XCTAssertTrue(app.staticTexts["1 favorite stations · 1 cars · 1 consists"].exists)
 		screenshot("v2-units-import-preview", app: app)
 		app.buttons["Cancel"].tap()
-		scrollTo(app.buttons["distanceUnits"], in: app)
-		XCTAssertTrue(app.buttons["distanceUnits"].label.contains("Automatic"))
-		XCTAssertTrue(app.buttons["timeFormat"].label.contains("12-hour"))
+		scrollTo(app.buttons["distanceUnits_auto"], in: app)
+		XCTAssertTrue(app.buttons["distanceUnits_auto"].isSelected)
+		XCTAssertEqual(app.buttons["distanceUnits_mi"].label, "Miles (mi)", "Short unit chips keep full spoken names")
+		XCTAssertTrue(app.buttons["timeFormat_12h"].isSelected)
 		app.terminate()
 		app = launch(reset: false, settingsFile: encoded)
 		scrollTo(app.buttons["confirmSettingsImport"], in: app); app.buttons["confirmSettingsImport"].tap()
@@ -782,17 +784,18 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		app.terminate()
 		app = launch(reset: false)
 		app.tab("Settings").tap()
-		scrollTo(app.buttons["distanceUnits"], in: app)
-		XCTAssertTrue(app.buttons["distanceUnits"].label.contains("Miles"))
-		XCTAssertTrue(app.buttons["timeFormat"].label.contains("24-hour"))
-		app.buttons["timeFormat"].tap(); app.buttons["12-hour"].tap()
-		XCTAssertTrue(app.buttons["timeFormat"].label.contains("12-hour"))
-		app.buttons["timeFormat"].tap(); app.buttons["24-hour"].tap()
+		screenshot("settings-root", app: app)
+		scrollTo(app.buttons["distanceUnits_mi"], in: app)
+		XCTAssertTrue(app.buttons["distanceUnits_mi"].isSelected)
+		XCTAssertTrue(app.buttons["timeFormat_24h"].isSelected)
+		app.buttons["timeFormat_12h"].tap()
+		XCTAssertTrue(app.buttons["timeFormat_12h"].isSelected)
+		app.buttons["timeFormat_24h"].tap()
 		screenshot("units-settings-after-import", app: app)
 		scrollTo(app.buttons["favoriteTrainsSettings"], in: app); app.buttons["favoriteTrainsSettings"].tap()
 		XCTAssertTrue(app.buttons["removeFavoriteCar_nyct:R211A:4149"].waitForExistence(timeout: 5))
 		XCTAssertTrue(app.buttons["removeFavoriteConsist"].exists)
-		XCTAssertTrue(app.buttons["favoriteTrainMatch"].label.contains("Any member car"))
+		XCTAssertTrue(app.buttons["Any member car"].isSelected)
 		app.navigationBars.buttons.firstMatch.tap()
 		scrollTo(app.buttons["stationSelectionSettings"], in: app); app.buttons["stationSelectionSettings"].tap()
 		XCTAssertEqual(Double(app.textFields["appRadiusFeet"].value as? String ?? ""), 1)
@@ -802,9 +805,9 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		XCTAssertEqual(Double(app.textFields["widgetRadiusFeet"].value as? String ?? ""), 5)
 		app.navigationBars.buttons.firstMatch.tap()
 		// Changing display units must preserve the same physical radius.
-		scrollTo(app.buttons["distanceUnits"], in: app, towardTop: true)
-		for (title, expected) in [("Meters (m)", 1609.344), ("Kilometers (km)", 1.609344), ("Feet (ft)", 5280.0), ("Miles (mi)", 1.0)] {
-			scrollTo(app.buttons["distanceUnits"], in: app); app.buttons["distanceUnits"].tap(); app.buttons[title].tap()
+		scrollTo(app.buttons["distanceUnits_auto"], in: app, towardTop: true)
+		for (unit, expected) in [("m", 1609.344), ("km", 1.609344), ("ft", 5280.0), ("mi", 1.0)] {
+			scrollTo(app.buttons["distanceUnits_" + unit], in: app); app.buttons["distanceUnits_" + unit].tap()
 			scrollTo(app.buttons["stationSelectionSettings"], in: app); app.buttons["stationSelectionSettings"].tap()
 			XCTAssertEqual(Double(app.textFields["appRadiusFeet"].value as? String ?? "") ?? -1, expected, accuracy: 0.0000001)
 			app.navigationBars.buttons.firstMatch.tap()
@@ -820,6 +823,19 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		scrollTo(app.buttons["exportSettings"], in: app, towardTop: true); app.buttons["exportSettings"].tap()
 		XCTAssertTrue(app.buttons["Save"].waitForExistence(timeout: 45) || app.navigationBars["Export"].exists)
 		screenshot("v2-units-settings-export", app: app)
+	}
+
+	func testUnitControlsStayOnScreenAtAccessibilitySizes() {
+		let app = launch(contentSize: "UICTContentSizeCategoryAccessibilityXXXL")
+		app.tab("Settings").tap()
+		for (id, options) in [("distanceUnits", ["auto", "mi", "ft", "m", "km"]), ("timeFormat", ["12h", "24h"])] {
+			let selected = app.buttons["\(id)_\(options[0])"]
+			scrollTo(selected, in: app)
+			XCTAssertTrue(selected.isSelected)
+			XCTAssertTrue(app.windows.firstMatch.frame.contains(selected.frame), "The current \(id) choice stays on screen")
+			for option in options { XCTAssertTrue(app.buttons["\(id)_\(option)"].exists, "\(id)_\(option) stays reachable") }
+			screenshot("\(id)-accessibility-size", app: app)
+		}
 	}
 
 	func testTrainFavoritesHighlightAndSurviveRelaunch() {
@@ -847,8 +863,8 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		XCTAssertFalse(removeCar.exists)
 		app.buttons["undoTrainRemoval"].tap()
 		XCTAssertTrue(removeCar.waitForExistence(timeout: 5))
-		app.buttons["favoriteTrainMatch"].tap()
 		app.buttons["Any member car"].tap()
+		XCTAssertTrue(app.buttons["Any member car"].isSelected)
 		XCTAssertTrue(removeCar.exists)
 		screenshot("favorite-trains-management", app: app)
 	}
@@ -863,7 +879,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		screenshot("compact-themes-hello-kitty", app: app)
 		let stationSettings = app.buttons["stationSelectionSettings"]
 		scrollTo(stationSettings, in: app); stationSettings.tap()
-		app.buttons["appStationMode"].tap(); app.buttons["Favorite within radius"].tap()
+		app.buttons["Favorite within radius"].tap()
 		let radius = app.textFields["appRadiusFeet"]
 		XCTAssertTrue(radius.waitForExistence(timeout: 5))
 		radius.tap(); radius.press(forDuration: 1)
@@ -878,7 +894,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		scrollTo(widget, in: app); widget.tap()
 		let follow = app.switches["widgetFollowAppStation"]
 		follow.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
-		app.buttons["widgetStationMode"].tap(); app.buttons["Closest station"].tap()
+		app.buttons["Closest station"].tap()
 		XCTAssertEqual(follow.value as? String, "0")
 		screenshot("independent-widget-station", app: app)
 		app.terminate()
@@ -889,7 +905,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		app.navigationBars.buttons.firstMatch.tap()
 		scrollTo(app.buttons["widgetStationSelectionSettings"], in: app); app.buttons["widgetStationSelectionSettings"].tap()
 		XCTAssertEqual(app.switches["widgetFollowAppStation"].value as? String, "0")
-		XCTAssertTrue(app.buttons["widgetStationMode"].label.contains("Closest station"))
+		XCTAssertTrue(app.buttons["Closest station"].isSelected)
 	}
 
 	private func scrollTo(_ element: XCUIElement, in app: XCUIApplication, towardTop: Bool = false) {

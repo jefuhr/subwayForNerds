@@ -85,13 +85,17 @@ test('v2 pack includes recent events inserted out of timestamp order', async () 
 	const source = join(dir, 'fleet.sqlite'), output = join(dir, 'packs');
 	const store = new FleetStore(source), packs = new FleetPackService(source, output);
 	try {
-		store.importRoster([{ car_number: '1', car_class: 'R160', retirement_date: 'In-Service' }], '2026-09-06', 1);
+		store.importRoster([
+			{ car_number: '1', car_class: 'R160', retirement_date: 'In-Service' },
+			{ car_number: '2', car_class: 'R211', retirement_date: 'In-Service' },
+		], '2026-09-06', 1);
 		const event = store.db.prepare('INSERT INTO events VALUES(?,?,?)');
 		const member = store.db.prepare('INSERT INTO event_cars VALUES(?,?)');
 		for (const [id, timestamp] of [['recent-first', now - 86400], ['old', now - 30 * 86400],
-			['boundary', now - 7 * 86400], ['recent-last', now - 3600]] as const) {
-			event.run(id, timestamp, JSON.stringify({ timestamp }));
-			member.run(id, 'nyct:R160:1');
+			['boundary', now - 7 * 86400], ['other-car', now - 7200], ['recent-last', now - 3600]] as const) {
+			const car = id === 'other-car' ? 'nyct:R211:2' : 'nyct:R160:1';
+			event.run(id, timestamp, JSON.stringify({ timestamp, ...(id === 'recent-last' ? {} : { cars: [car] }) }));
+			member.run(id, car);
 		}
 		await packs.start();
 		const job = await packs.request({ equipment: ['R160'], yards: [], historyDays: 7 }, now);

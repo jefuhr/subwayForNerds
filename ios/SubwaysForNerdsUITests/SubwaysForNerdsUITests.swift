@@ -686,8 +686,9 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		app.tab("Settings").tap()
 		scrollTo(app.buttons["checkFleetDownload"], in: app)
 		app.buttons["checkFleetDownload"].tap()
+		XCTAssertTrue(app.descendants(matching: .any)["fleetPackArchiveSize"].firstMatch.waitForExistence(timeout: 30))
 		scrollTo(app.buttons["downloadFleet"], in: app)
-		XCTAssertTrue(app.buttons["downloadFleet"].waitForExistence(timeout: 20))
+		XCTAssertTrue(app.buttons["downloadFleet"].exists)
 		app.buttons["downloadFleet"].tap()
 		let saved = app.buttons["openSavedFleet"]
 		XCTAssertTrue(saved.waitForExistence(timeout: 60))

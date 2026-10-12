@@ -31,7 +31,7 @@ struct FleetSplitView: View {
 	@State private var selection: FleetPick?
 	var body: some View {
 		NavigationSplitView {
-			FleetView(selection: $selection, sideBySide: sizeClass == .regular)
+			FleetView(selection: sizeClass == .regular ? $selection : nil, sideBySide: sizeClass == .regular)
 				.toolbar(removing: .sidebarToggle)
 				.navigationSplitViewColumnWidth(400)
 		} detail: {

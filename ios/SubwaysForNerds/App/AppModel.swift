@@ -1043,7 +1043,7 @@ final class AppModel {
 	}
 
 	func checkDownload() async {
-		guard downloadTask == nil, connected else { return }
+		guard downloadTask == nil else { return }
 		let generation = UUID(), url = baseURL, selection = fleetPackSelection
 		downloadGeneration = generation
 		downloadError = nil
@@ -1065,7 +1065,9 @@ final class AppModel {
 	private static func prepareFleetPack(api: FleetPackAPI, selection: FleetPackSelection) async throws -> FleetPackManifest {
 		var job = try await api.prepare(selection: selection)
 		var restarted = false
-		let deadline = Date().addingTimeInterval(10 * 60)
+		// The server may need to scan several million recent events on its first build.
+		// Wait through its 20-minute worker limit so a slow, valid pack can finish.
+		let deadline = Date().addingTimeInterval(21 * 60)
 		while job.state == .preparing {
 			try Task.checkCancellation()
 			guard Date() < deadline else { throw AppError.message("This fleet pack is taking longer than expected. Try preparing it again. Your saved fleet is still available.") }
@@ -1092,7 +1094,7 @@ final class AppModel {
 	}
 
 	func startDownload() {
-		guard downloadTask == nil, connected, let pack = availablePack, let store = offlineStore else { return }
+		guard downloadTask == nil, let pack = availablePack, let store = offlineStore else { return }
 		downloadError = nil
 		downloadProgress = 0
 		let generation = UUID()

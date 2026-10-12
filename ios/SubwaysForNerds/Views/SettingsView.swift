@@ -179,11 +179,11 @@ struct SettingsView: View {
 				HStack {
 					if app.availablePack != nil {
 						Button(app.offlineManifest == nil ? "Download fleet" : "Update fleet download") { app.startDownload() }
-							.disabled(app.offlineStore == nil || !app.connected).accessibilityIdentifier("downloadFleet")
+							.disabled(app.offlineStore == nil).accessibilityIdentifier("downloadFleet")
 						Spacer()
 					}
 					Button(app.availablePack == nil ? "Prepare download" : "Prepare again") { Task { await app.checkDownload() } }
-						.disabled(app.offlineStore == nil || !app.connected).accessibilityIdentifier("checkFleetDownload")
+						.disabled(app.offlineStore == nil).accessibilityIdentifier("checkFleetDownload")
 				}
 				.buttonStyle(.borderless).actionStyle().font(.subheadline).frame(minHeight: 44)
 			}

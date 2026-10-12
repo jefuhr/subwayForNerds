@@ -90,23 +90,28 @@ try {
 		await line(['assertion', row.id, row.car_id, row.data]); counts.assertions++;
 	}
 	const usedConsists = new Set();
-	const query = source.prepare(`SELECT e.id,e.timestamp,e.data,ec.car_id FROM events e INDEXED BY event_time
-		CROSS JOIN event_cars ec CROSS JOIN selected s
-		WHERE e.timestamp>=? AND ec.event_id=e.id AND s.id=ec.car_id ORDER BY e.timestamp,e.id`);
-	let current, members = [];
-	async function flush() {
-		if (!current) return;
-		await line(['event', current.id, current.timestamp, current.data, members]);
+	// The timestamp index contains rowids, so finding the earliest recent row
+	// avoids fetching every recent event through a random table lookup. Events
+	// can arrive out of timestamp order; use MIN(rowid), not the first timestamp.
+	const firstRecentRow = source.prepare('SELECT MIN(rowid) AS rowid FROM events INDEXED BY event_time WHERE timestamp>=?').get(historyStart)?.rowid;
+	const query = source.prepare(`SELECT id,timestamp,data FROM events NOT INDEXED
+		WHERE rowid>=? AND timestamp>=? ORDER BY rowid`);
+	const legacyMembers = source.prepare('SELECT car_id FROM event_cars WHERE event_id=?');
+	for (const row of firstRecentRow == null ? [] : query.iterate(firstRecentRow, historyStart)) {
+		let event;
+		try { event = JSON.parse(row.data); } catch { event = null; }
+		// Live observations store the same car IDs in the payload and event_cars.
+		// Reading them here avoids an indexed join for every recent event.
+		const cars = Array.isArray(event?.cars) && event.cars.every(id => typeof id === 'string')
+			? event.cars : legacyMembers.all(row.id).map(member => member.car_id);
+		const members = [...new Set(cars.filter(id => selected.has(id)))].sort();
+		if (!members.length) continue;
+		if (!event) throw new Error('Invalid selected fleet event payload');
+		await line(['event', row.id, row.timestamp, row.data, members]);
 		counts.events++; counts.eventCars += members.length;
-		const consistId = JSON.parse(current.data).consistId;
-		if (typeof consistId === 'string') usedConsists.add(consistId);
+		if (typeof event.consistId === 'string') usedConsists.add(event.consistId);
 		if (usedConsists.size > 250_000) throw new Error('Offline fleet pack has too many historical formations');
 	}
-	for (const row of query.iterate(historyStart)) {
-		if (current?.id !== row.id) { await flush(); current = { id: row.id, timestamp: row.timestamp, data: row.data }; members = []; }
-		members.push(row.car_id);
-	}
-	await flush();
 	for (const car of cars) if (selected.has(car.id)) {
 		const consist = currentConsist(car, generatedAt);
 		if (consist) usedConsists.add(consist);

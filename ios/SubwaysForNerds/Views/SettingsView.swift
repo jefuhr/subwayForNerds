@@ -21,13 +21,6 @@ struct SettingsView: View {
 				.listRowInsets(.vertical, 8)
 			}
 			Section {
-				// Five columns fit all ten themes in two rows on wider screens.
-				LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: dynamicType.isAccessibilitySize ? 1 : sizeClass == .regular ? 5 : 2), spacing: 6) {
-					ForEach(AppTheme.all) { theme in themeTile(theme) }
-				}
-				.listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
-			} header: { ListHeader("Theme") }
-			Section {
 				NavigationLink("Combined stations") { CombinedStationsView() }.accessibilityIdentifier("combinedStationsSettings")
 				NavigationLink("Lines") { LineVisibilityView() }.accessibilityIdentifier("lineVisibilitySettings")
 				NavigationLink { StationSelectionSettingsView() } label: { LabeledContent("Station selection", value: app.stationSelection.mode.title) }
@@ -35,15 +28,16 @@ struct SettingsView: View {
 				NavigationLink("Favorite trains") { FavoriteTrainsSettingsView() }.accessibilityIdentifier("favoriteTrainsSettings")
 			} header: { ListHeader("Board") }
 			Section {
-				Picker("Distance units", selection: Binding(get: { app.units.distance }, set: { app.setDistanceUnit($0) })) {
-					ForEach(DistanceUnit.allCases) { unit in Text(unit.title).tag(unit) }
-				}.accessibilityIdentifier("distanceUnits")
-				Picker("Time format", selection: Binding(get: { app.units.time }, set: { app.setTimeFormat($0) })) {
-					ForEach(TimeFormat.allCases) { format in Text(format.title).tag(format) }
-				}.accessibilityIdentifier("timeFormat")
-			} header: { ListHeader("Units") } footer: { Text("Applies throughout the app and Home and Lock Screen widgets. Times use New York time. Automatic shows nearby distances in meters or kilometers and favorite radii in feet and miles.") }
-			.tint(app.theme.selection)
-			.id(app.themeID)
+				choiceRow(DistanceUnit.allCases, selected: app.units.distance, title: "Distance units", identifier: "distanceUnits", label: { $0.shortTitle }, spoken: { $0.title }) { app.setDistanceUnit($0) }
+				choiceRow(TimeFormat.allCases, selected: app.units.time, title: "Time format", identifier: "timeFormat", label: { $0.title }, spoken: { $0.title }) { app.setTimeFormat($0) }
+			} header: { ListHeader("Units") } footer: { Text("Applies to the app and widgets. Times are New York time. Automatic uses m/km nearby and ft/mi for favorite radius.") }
+			Section {
+				// Five columns fit all ten themes in two rows on wider screens.
+				LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: dynamicType.isAccessibilitySize ? 1 : sizeClass == .regular ? 5 : 2), spacing: 6) {
+					ForEach(AppTheme.all) { theme in themeTile(theme) }
+				}
+				.listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
+			} header: { ListHeader("Theme") }
 
 			Section {
 				NavigationLink { StationSelectionSettingsView(widget: true) } label: {
@@ -62,16 +56,16 @@ struct SettingsView: View {
 				if app.favorites.isEmpty && (app.widgetPreferences.stationSelection.followApp ? app.stationSelection : app.widgetPreferences.stationSelection.selection).mode == .favorite { Text("Add a favorite station or choose Closest station above.").font(.footnote).foregroundStyle(.secondary) }
 				if app.widgetStore == nil { Notice(text: "Widget sharing is unavailable. Build both targets with the same App Group enabled.") }
 			} header: { ListHeader("Widgets") } footer: {
-				Text("Home and Lock Screen widgets use your station selection and show both directions. Match app filters uses that station’s lines and grouping. iOS schedules updates; use the widget’s refresh button for a new report.")
+				Text("Widgets use your station selection and show both directions. iOS schedules updates; tap the widget’s refresh button for a new report.")
 			}
 			Section {
 				NavigationLink { OfflineSettingsView() } label: {
 					LabeledContent("Offline boards and trains", value: app.savedTrips.isEmpty ? "\(app.offlinePreferences.departuresPerLineDirection) per line" : "\(app.savedTrips.count) saved")
 				}.accessibilityIdentifier("offlineSettings")
-			} header: { ListHeader("Offline") } footer: { Text("Boards you view, nearby boards and trains you save stay available without a connection, with clearly labeled estimates.") }
+			} header: { ListHeader("Offline") } footer: { Text("Boards you view, nearby boards, and saved trains work offline, with estimates clearly labeled.") }
+			offlineSection
 			SettingsTransferSection()
 			AccountSettingsSection()
-			offlineSection
 			#if DEBUG
 			Section { NavigationLink("Widget previews") { WidgetPreviewView() }.accessibilityIdentifier("widgetPreviews") }
 			Section {
@@ -128,6 +122,24 @@ struct SettingsView: View {
 		.buttonStyle(.plain)
 		.accessibilityIdentifier("theme_\(theme.id)")
 		.accessibilityAddTraits(selected ? .isSelected : [])
+	}
+
+	/// Direct choices instead of a menu, so the current value stays visible.
+	private func choiceRow<Value: Identifiable & Equatable>(_ values: [Value], selected: Value, title: String, identifier: String, label: @escaping (Value) -> String, spoken: @escaping (Value) -> String, set: @escaping (Value) -> Void) -> some View {
+		ScrollView(.horizontal) {
+			HStack(spacing: 6) {
+				ForEach(values) { value in
+					Button { set(value) } label: { Text(label(value)).chip(selected: value == selected) }
+						.buttonStyle(.plain)
+						.accessibilityLabel(spoken(value))
+						.accessibilityIdentifier("\(identifier)_\(value.id)")
+						.accessibilityAddTraits(value == selected ? .isSelected : [])
+				}
+			}
+		}
+		.scrollIndicators(.hidden)
+		.accessibilityElement(children: .contain)
+		.accessibilityLabel(title)
 	}
 
 	private var offlineSection: some View {
@@ -240,8 +252,8 @@ private struct StationSelectionControls: View {
 		Section {
 			Picker("Open automatically", selection: $selection.mode) {
 				ForEach(StationSelection.Mode.allCases) { mode in Text(mode.title).tag(mode) }
-			}.accessibilityIdentifier(identifier + "StationMode")
-		} footer: { Text(identifier == "widget" ? "Uses your latest available location when Home and Lock Screen widgets refresh." : "Uses your location when the board opens. Choosing a station yourself always takes priority.") }
+			}.pickerStyle(.inline).labelsHidden().accessibilityIdentifier(identifier + "StationMode")
+		} header: { ListHeader("Open automatically") } footer: { Text(identifier == "widget" ? "Uses your latest available location when Home and Lock Screen widgets refresh." : "Uses your location when the board opens. Choosing a station yourself always takes priority.") }
 		if selection.mode == .nearbyFavorite {
 			Section {
 				HStack {
@@ -291,8 +303,8 @@ struct FavoriteTrainsSettingsView: View {
 			Section {
 				Picker("Match saved consists", selection: Binding(get: { app.trainFavorites.match }, set: { app.setTrainMatch($0) })) {
 					ForEach(TrainFavorites.Match.allCases) { match in Text(match.title).tag(match) }
-				}.accessibilityIdentifier("favoriteTrainMatch")
-			} footer: { Text("Exact consist requires every saved car, in any order. Any member car highlights a train with at least one car from a saved consist. Individually saved cars always match. Changing this keeps all your favorites.") }
+				}.pickerStyle(.inline).labelsHidden().accessibilityIdentifier("favoriteTrainMatch")
+			} header: { ListHeader("Match saved consists") } footer: { Text("Exact consist requires every saved car, in any order. Any member car highlights a train with at least one car from a saved consist. Individually saved cars always match. Changing this keeps all your favorites.") }
 			Section {
 				ForEach(app.trainFavorites.cars, id: \.self) { id in
 					HStack {

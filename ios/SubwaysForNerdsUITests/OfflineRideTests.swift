@@ -122,10 +122,19 @@ final class OfflineRideTests: XCTestCase {
 	}
 
 	/// Settings may open scrolled anywhere; look below first, then above.
+	/// Hittable alone is not enough: a row under the translucent navigation bar or the
+	/// floating tab bar passes that check, but a tap there lands on the bar instead.
 	private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
-		for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeUp() }
-		for _ in 0..<16 where !(element.exists && element.isHittable) { app.swipeDown() }
-		XCTAssertTrue(element.isHittable)
+		let visible = {
+			guard element.exists && element.isHittable else { return false }
+			let navigationBar = app.navigationBars.firstMatch, tabBar = app.tabBars.firstMatch
+			let top = navigationBar.exists ? navigationBar.frame.maxY : 0
+			let bottom = tabBar.exists ? tabBar.frame.minY : app.frame.maxY
+			return element.frame.minY >= top && element.frame.maxY <= bottom
+		}
+		for _ in 0..<8 where !visible() { app.swipeUp() }
+		for _ in 0..<16 where !visible() { app.swipeDown() }
+		XCTAssertTrue(visible())
 	}
 
 	private func screenshot(_ name: String, app: XCUIApplication) {

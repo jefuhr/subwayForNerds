@@ -18,6 +18,10 @@ struct UnitsTests {
 		#expect(DistanceUnit.ft.radiusFeet(from: "1.5") == 2)
 		#expect(DistanceUnit.mi.radiusFeet(from: "5.0001") == nil)
 	}
+	@Test func shortTitlesAreCompactAndUnique() {
+		#expect(DistanceUnit.allCases.map(\.shortTitle) == ["Auto", "mi", "ft", "m", "km"])
+		#expect(Set(DistanceUnit.allCases.map(\.shortTitle)).count == DistanceUnit.allCases.count)
+	}
 	@Test func nearbyDistanceLabelsRespectUnitsAndTinyDistances() {
 		#expect(DistanceUnit.auto.distanceLabel(meters: 50) == "50 m")
 		#expect(DistanceUnit.auto.distanceLabel(meters: 1609.344) == "1.6 km")

@@ -147,8 +147,10 @@ class DeploymentTests(unittest.TestCase):
 				   DEPLOY_TEST_APP=APP, DEPLOY_TEST_FAIL=fail, DEPLOY_TEST_OLD_SHA=self.previous)
 		env[APP.upper() + '_REPO'] = str(self.repo)
 		env.pop(APP.upper() + '_BRANCH', None)
+		# The HTTPS failure fixture exercises every retry; self-hosted CI can be busy
+		# compiling iOS at the same time, so allow the simulated retries to finish.
 		return subprocess.run(['/bin/bash', str(SCRIPT), '--branch', self.sha, *args],
-							  env=env, stdin=subprocess.DEVNULL, text=True, capture_output=True, timeout=20)
+							  env=env, stdin=subprocess.DEVNULL, text=True, capture_output=True, timeout=60)
 
 	def events(self):
 		file = self.root / 'events.jsonl'

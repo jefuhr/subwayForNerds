@@ -11,7 +11,7 @@ struct ActiveRideBanner: View {
 		if let ride = app.activeRide {
 			let trip = app.activeRideTrip
 			let source = trip?.sourceTimestamp
-			let cached = !app.connected || Display.freshness(source, now: app.now) != .live
+			let cached = !app.connected || Display.freshness(source, now: app.now, staleAfter: trip?.train.map { Display.predictionStaleAfter($0.staleAfter, feed: $0.feed) }) != .live
 			let stops = trip?.stops ?? []
 			let withdrawn = ["CANCELED", "DELETED"].contains(trip?.train?.relationship ?? "") ? "Canceled in the last report · no estimate"
 				: trip?.train?.assigned == false ? "Not assigned to a train in the last report · no estimate" : nil
@@ -26,7 +26,7 @@ struct ActiveRideBanner: View {
 						} else if let next {
 							// Always an estimate: the next stop comes from predictions, never an observed position.
 							let stop = stops[next]
-							let countdown = OfflineDisplay.countdown(stop: stop, sourceTimestamp: source, now: app.now, cached: cached, preferences: app.offlinePreferences, timeFormat: app.units.time)
+							let countdown = OfflineDisplay.countdown(stop: stop, sourceTimestamp: source, now: app.now, cached: cached, preferences: app.offlinePreferences, timeFormat: app.units.time, staleAfter: trip?.train.map { Display.predictionStaleAfter($0.staleAfter, feed: $0.feed) })
 							Text("Estimated next stop \(stop.name) · \(countdown.unit == "min" ? "\(countdown.value) min" : "\(countdown.value) \(countdown.unit)")")
 								.font(.caption.monospacedDigit())
 								.accessibilityIdentifier("rideNextStop")

@@ -45,9 +45,9 @@ public func groupDepartures(_ board: Board, direction: String = "ALL", routes: [
 		let label: String
 	}
 	let selected = board.departures.filter {
-		(direction == "ALL" || $0.direction == direction) &&
+		($0.relationship != "NO_DATA") && (direction == "ALL" || $0.direction == direction) &&
 		(routes.isEmpty || routes.contains(Display.displayRoute($0.route))) &&
-		(cached || Display.freshness($0.timestamp, now: now) != .live || ($0.time ?? .infinity) >= now - 30)
+		(cached || Display.freshness($0, now: now) != .live || ($0.time ?? .infinity) >= now - 30)
 	}
 	let groups = Dictionary(grouping: selected) { departure in
 		let direction = boardDirections.contains(departure.direction) ? departure.direction : "UNKNOWN"

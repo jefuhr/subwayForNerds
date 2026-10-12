@@ -2,6 +2,44 @@ import XCTest
 
 @MainActor
 final class SubwaysForNerdsUITests: XCTestCase {
+	func testNJTConnectedBoardsAndOfflineFavorite() throws {
+		guard ProcessInfo.processInfo.environment["SFN_NJT_UI_FIXTURE"] == "1" else { throw XCTSkip("Requires FIXTURE_NJT=1 fixture server") }
+		var app = launch()
+		func select(_ id: String, query: String) {
+			app.buttons["findStation"].tap()
+			let search = app.searchFields.firstMatch
+			XCTAssertTrue(search.waitForExistence(timeout: 5))
+			search.tap(); search.typeText(query)
+			let station = app.buttons["station_" + id]
+			XCTAssertTrue(station.waitForExistence(timeout: 5))
+			station.tap()
+			XCTAssertTrue(app.buttons["direction_ALL"].waitForExistence(timeout: 10))
+		}
+		select("njt-lr-30829", query: "Hoboken")
+		let departure = app.buttons["departure_njt-ui-njt-lr-30829"]
+		XCTAssertTrue(departure.waitForExistence(timeout: 10))
+		app.buttons["toggleFavorite"].tap()
+		screenshot("njt-hblr-connected", app: app)
+		departure.tap()
+		XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'GPS report' AND label CONTAINS 'Not reported'")).firstMatch.waitForExistence(timeout: 10))
+		app.navigationBars.buttons.firstMatch.tap()
+		select("njt-lr-30771", query: "Newark Penn")
+		XCTAssertTrue(app.descendants(matching: .any)["boardNoPredictions"].waitForExistence(timeout: 10))
+		XCTAssertFalse(app.staticTexts["boardFreshness"].label.lowercased().contains("live feed"))
+		scrollTo(app.descendants(matching: .any)["njtPosition_njt-bus-g2|NJT-NLR|fixture"], in: app)
+		XCTAssertTrue(app.descendants(matching: .any)["njtPosition_njt-bus-g2|NJT-NLR|fixture"].label.contains("Last known"))
+		screenshot("njt-newark-empty-gps", app: app)
+		select("njt-lr-30855", query: "Trenton")
+		XCTAssertTrue(app.buttons["departure_njt-ui-njt-lr-30855"].waitForExistence(timeout: 10))
+		screenshot("njt-river-connected", app: app)
+		app.terminate()
+		app = launch(reset: false, offline: true)
+		app.buttons["favoriteStation_njt-lr-30829"].tap()
+		XCTAssertTrue(app.buttons["departure_njt-ui-njt-lr-30829"].waitForExistence(timeout: 10))
+		XCTAssertTrue(app.staticTexts["boardOfflineEstimate"].exists)
+		screenshot("njt-hblr-offline-favorite", app: app)
+	}
+
 	private func launch(reset: Bool = true, offline: Bool = false, location: String? = nil, systemLocation: Bool = false, settingsFile: String? = nil) -> XCUIApplication {
 		continueAfterFailure = false
 		let app = XCUIApplication()

@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AlertTriangle, ArrowUpRight, Accessibility, Clock3 } from 'lucide-react';
 import type { Board, StationContext, Train, StopPrediction, TransferResult } from '../shared/types';
-import { ageLabel, clockTime, sourceClockText, freshness } from '../shared/display';
+import { ageLabel, clockTime, sourceClockText, freshness, vehiclePositionDisplay } from '../shared/display';
+import { NJT_LINES } from '../shared/njt';
 import { api } from './platform';
 import Modal from './Modal';
 import { currentConsist } from '../shared/consist';
@@ -26,18 +27,19 @@ export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: strin
     return () => { controller.abort(); clearInterval(timer); };
   }, [tripKey]);
   const train = data?.train;
+  const gps = vehiclePositionDisplay(train?.vehiclePosition, now, !!error);
   const ids = train && currentConsist(train.consist, now) ? consistCarIDs(train.consist, train.feed) : undefined;
   const match = train ? favoriteTrainMatch(train.consist, train.feed, favorites, now, !!error) : null;
   return <Modal title={train ? `${train.route} → ${train.destination}` : 'Train details'} eyebrow="THE WHOLE PICTURE" close={close}>
     {error && <p className="notice"><AlertTriangle size={16} />{error}</p>}
     {!train && !error && <p className="empty">Loading train details…</p>}
     {train && <div ref={trainView} hidden={!!selected}>
-      <div className="detail-summary"><span className={'status-pill ' + freshness(train.timestamp, now)}>{freshness(train.timestamp, now)} · {ageLabel(train.timestamp, now)}</span><span className="muted">{train.direction.toLowerCase()} · {train.stops.length} reported stops</span></div>
+      <div className="detail-summary"><span className={'status-pill ' + freshness(train.timestamp, now, train.staleAfter)}>{freshness(train.timestamp, now, train.staleAfter)} · {ageLabel(train.timestamp, now)}</span><span className="muted">{train.direction.toLowerCase()} · {train.stops.length} reported stops</span></div>
       <dl className="fact-grid">
         <div><dt>Operations ID</dt><dd>{train.trainId || 'Not reported'}</dd></div>
         <div><dt>Assignment</dt><dd>{train.assigned === true ? 'Assigned to a train' : train.assigned === false ? 'Not yet assigned' : 'Not reported'}</dd></div>
         <div><dt>Service date</dt><dd>{train.serviceDate || 'Not reported'}</dd></div>
-        <div><dt>Position report</dt><dd>{train.position ? `${train.position.name} · ${ageLabel(train.position.timestamp, now)}` : 'Not reported'}</dd></div>
+        <div><dt>Position report</dt><dd>{NJT_LINES[train.route] ? gps ? `${gps.lastKnown ? 'Last known: ' : ''}${gps.location} · ${gps.age}` : train.vehiclePosition ? 'GPS report expired or unavailable' : 'GPS position not reported' : train.position ? `${train.position.name} · ${ageLabel(train.position.timestamp, now)}` : 'Not reported'}</dd></div>
       </dl>
       <section className="consist-detail">
         <div className="section-label">CAR NUMBERS <span>{currentConsist(train.consist, now) ? `Helium · reported ${ageLabel(train.consist.updatedAt, now)}` : 'Not currently available'}</span></div>
@@ -78,8 +80,8 @@ function TransferView({ tripKey, stop, now, back }: { tripKey: string; stop: Sto
     return () => { controller.abort(); clearInterval(timer); };
   }, [tripKey, stop.id, stop.sequence]);
   const groups = new Map<string, TransferResult['connections']>();
-  const stale = !!data && (freshness(data.originTimestamp, now) !== 'live' || (data.arrival != null && data.arrival < now));
-  for (const d of error || stale ? [] : (data?.connections || []).filter(d => freshness(d.timestamp, now) === 'live' && d.time != null && d.time >= now)) { const key = [d.route, d.direction, d.area].join('|'); const a = groups.get(key) || []; a.push(d); groups.set(key, a); }
+  const stale = !!data && (freshness(data.originTimestamp, now, data.originStaleAfter) !== 'live' || (data.arrival != null && data.arrival < now));
+  for (const d of error || stale ? [] : (data?.connections || []).filter(d => freshness(d.timestamp, now, d.staleAfter) === 'live' && d.time != null && d.time >= now)) { const key = [d.route, d.direction, d.area].join('|'); const a = groups.get(key) || []; a.push(d); groups.set(key, a); }
   return <section className="transfer-view"><button className="text-button" onClick={back}>← Back to train</button><h3>Transfers at {stop.name}</h3>
     {error && <p className="notice">{error}</p>}{!data && !error && <p className="empty">Checking connecting departures…</p>}
     {data && <><p>Your train: {clockTime(data.arrival, units.time)} estimated {data.basis}{data.basis === 'departure' ? ' (arrival unavailable)' : ''} · updated {ageLabel(data.originTimestamp, now)}</p>{stale && !data.message && <p className="notice">Predictions are stale or the arrival estimate has passed. Awaiting an update.</p>}<p className="fine-print">Next 30 minutes · raw time gaps, no walking allowance. Boarding areas may require stairs, passageways, or different platform access. Connections are not guaranteed.</p>

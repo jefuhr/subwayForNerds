@@ -113,7 +113,11 @@ public func widgetTrainDetails(_ row: Departure, options: WidgetDisplayOptions, 
 		if options.fields.contains(.carNumbers), !consist.cars.isEmpty { values.append(Display.consistSummary(consist.cars)) }
 		if values.count > beforeCars, Display.freshness(consist.updatedAt, now: now) != .live { values.append("last reported") }
 	}
-	if options.fields.contains(.location), !row.location.isEmpty { values.append(row.location + (cached ? " · last reported" : "")) }
+	if options.fields.contains(.location) {
+		if let position = row.vehiclePosition {
+			if let current = Display.currentVehiclePositions([position], now: now).first { values.append(Display.vehiclePositionLabel(current, now: now, cached: cached)) }
+		} else if !row.feed.hasPrefix("njt-"), !row.location.isEmpty { values.append(row.location + (cached ? " · last reported" : "")) }
+	}
 	return values.joined(separator: " · ")
 }
 
@@ -212,7 +216,7 @@ public func widgetDepartures(_ board: Board, preference: StationPreference, limi
 	var filtered = board
 	filtered.departures = board.departures.filter {
 		Display.boardable($0) && (preference.routes.isEmpty || preference.routes.contains(Display.displayRoute($0.route))) &&
-		(cached || Display.freshness($0.timestamp, now: now) != .live || ($0.time ?? .infinity) >= now - 30)
+		(cached || Display.freshness($0, now: now) != .live || ($0.time ?? .infinity) >= now - 30)
 	}
 	let selected = Dictionary(grouping: filtered.departures, by: \.direction).values.flatMap { departures in
 		departures.sorted {
@@ -228,7 +232,7 @@ public func widgetDepartures(_ board: Board, preference: StationPreference, limi
 /// Local timeline transitions keep rounded minutes and departed trains current
 /// without consuming a network refresh. Source expiry always ends live estimates.
 public func widgetTimelineDates(_ board: Board, now: TimeInterval) -> [TimeInterval] {
-	guard let expiry = board.departures.map({ $0.timestamp + 91 }).filter({ $0 > now }).min() else { return [] }
+	guard let expiry = board.departures.map({ $0.timestamp + Display.predictionStaleAfter($0.staleAfter, feed: $0.feed) + 1 }).filter({ $0 > now }).min() else { return [] }
 	var dates: Set<TimeInterval> = [expiry]
 	for row in board.departures {
 		guard let arrival = row.time else { continue }
@@ -254,10 +258,17 @@ public func widgetOfflineTimelineDates(_ board: Board, now: TimeInterval, maximu
 		if (left >= now) != (right >= now) { return left >= now }
 		return left == right ? $0.key < $1.key : left < right
 	}.prefix(28))
-	guard let end = rows.map({ $0.timestamp + age + 1 }).max(), end > now else { return [] }
-	var dates: Set<TimeInterval> = [end]
+	let positions = (board.vehiclePositions ?? []) + rows.compactMap(\.vehiclePosition)
+	let positionDates = Display.currentVehiclePositions(positions, now: now).flatMap { [$0.timestamp + 61, $0.timestamp + 301] }.filter { $0 > now }
+	let sourceDates = board.njt.flatMap { state -> TimeInterval? in
+		guard state.configured, let timestamp = state.predictions.timestamp, timestamp > 0, timestamp <= now else { return nil }
+		let expiry = timestamp + Display.predictionStaleAfter(state.predictions.staleAfter, feed: state.predictions.id) + 1
+		return expiry > now ? expiry : nil
+	}.map { [$0] } ?? []
+	guard let end = (rows.map({ $0.timestamp + age + 1 }) + positionDates + sourceDates).max(), end > now else { return [] }
+	var dates: Set<TimeInterval> = Set(positionDates + sourceDates + [end])
 	for row in rows {
-		for boundary in [row.timestamp + 91, row.timestamp + age + 1] where boundary > now { dates.insert(boundary) }
+		for boundary in [row.timestamp + Display.predictionStaleAfter(row.staleAfter, feed: row.feed) + 1, row.timestamp + age + 1] where boundary > now { dates.insert(boundary) }
 		if let time = row.time, time.isFinite, time + 1 > now, time + 1 < end { dates.insert(time + 1) }
 	}
 	var minute = floor(now / 60) * 60 + 60

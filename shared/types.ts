@@ -7,7 +7,7 @@ export interface Station {
   id: string; name: string; borough: string; routes: string[]; lat: number; lon: number; parts: StationPart[];
 }
 export interface SourceState {
-  id: string; timestamp: number | null; fetchedAt: number | null; error: string | null;
+  id: string; timestamp: number | null; fetchedAt: number | null; error: string | null; staleAfter?: number;
 }
 export interface StopPrediction {
   changes?: TripChange[];
@@ -16,7 +16,7 @@ export interface StopPrediction {
   scheduledTrack?: string; actualTrack?: string; relationship?: string;
 }
 export interface TransferResult {
-  originTimestamp?: number;
+  originTimestamp?: number; originStaleAfter?: number;
   station?: Station; arrival: number | null; basis: 'arrival' | 'departure'; message?: string;
   connections: (Departure & { gap: number; basis: 'arrival' | 'departure' })[]; sources: SourceState[];
 }
@@ -24,7 +24,18 @@ export interface Consist {
   cars: { number: string; type?: string }[];
   updatedAt: number; fetchedAt: number; source: 'helium';
 }
+export interface VehiclePosition {
+	id: string; provider: 'njt-bus-g2'; vehicleId: string; route: string;
+	tripId?: string; serviceDate?: string; startTime?: string;
+	lat: number; lon: number; stopId?: string; stopName?: string; status?: string;
+	timestamp: number; fetchedAt: number;
+}
+export interface NjtState {
+	configured: boolean; predictions: SourceState; positions: SourceState; cacheError: string | null;
+}
 export interface Train {
+  staleAfter?: number;
+  vehiclePosition?: VehiclePosition;
   changes?: TripChange[];
   startTime?: string;
   key: string; feed: string; tripId: string; serviceDate?: string; route: string;
@@ -35,6 +46,8 @@ export interface Train {
   scheduledPattern?: { shape: string; headsign: string; stops: string[]; source: string };
 }
 export interface Departure {
+  staleAfter?: number;
+  vehiclePosition?: VehiclePosition;
   changes?: TripChange[];
   departure?: number | null;
   key: string; tripKey: string; route: string; destination: string; direction: string;
@@ -69,6 +82,7 @@ export interface TripChange {
   advisory?: boolean;
 }
 export interface Board {
+  njt?: NjtState; vehiclePositions?: VehiclePosition[];
   station: Station; generatedAt: number; sources: SourceState[];
   departures: Departure[]; alerts: ServiceAlert[];
 }

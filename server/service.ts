@@ -13,6 +13,7 @@ import { FleetOfflineService } from './fleet-offline';
 import { ChangeDetector } from './changes';
 
 import { PATH_URL, normalizePath } from './path';
+import { NjtLiveService } from './njt-live';
 
 const upstream = 'https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/';
 export interface FeedSlot { state: SourceState; raw?: any; trains: Map<string, Train>; digest?: string }
@@ -37,8 +38,18 @@ export class TransitService {
   scheduleWorker?: Worker;
   changeDetector = new ChangeDetector();
   readonly cacheDir: string;
-  constructor(readonly options: { fixtureDir?: string; cacheDir?: string; fetcher?: typeof fetch } = {}) {
+  readonly njt: NjtLiveService;
+  constructor(readonly options: { fixtureDir?: string; cacheDir?: string; fetcher?: typeof fetch; njtCredentials?: { username: string; password: string } } = {}) {
     this.cacheDir = options.cacheDir || process.env.STATE_DIR || 'state';
+    const credentials = options.njtCredentials ?? (process.env.NJT_ENABLED === '0' ? undefined : {
+      username: process.env.NJT_USERNAME || '', password: process.env.NJT_PASSWORD || '',
+    });
+    this.njt = new NjtLiveService({ cacheDir: this.cacheDir, credentials, fetcher: options.fetcher, onUpdate: () => this.refreshBoards() });
+    if (this.njt.enabled) this.catalog = this.catalog.map(station => {
+      if (!station.id.startsWith('njt-lr-')) return station;
+      const { departureMode: _directory, ...connected } = station;
+      return connected;
+    });
     for (const id of [...Object.keys(FEED_ROUTES), 'subway-alerts', 'path']) this.slots.set(id, { state: { id, timestamp: null, fetchedAt: null, error: null }, trains: new Map() });
   }
   async request(url: string) {
@@ -72,13 +83,14 @@ export class TransitService {
       }
     }
     const boards = new Map<string, Board>();
-    for (const s of this.catalog) boards.set(s.id, buildBoard(s, byStation.get(s.id) || [], states, this.alerts, this.catalog, now));
+    for (const s of this.catalog) boards.set(s.id, this.njt.enabled && s.id.startsWith('njt-lr-') ? this.njt.board(s, now) : buildBoard(s, byStation.get(s.id) || [], states, this.alerts, this.catalog, now));
     this.boards = boards;
     this.details.clear();
     for (const slot of this.slots.values()) for (const train of slot.trains.values()) {
       const raw = slot.raw?.entity?.filter((e: any) => (e.trip_update?.trip?.trip_id || e.vehicle?.trip?.trip_id) === train.tripId);
       this.details.set(train.key, { train, raw, source: { state: { ...slot.state }, header: slot.raw?.header } });
     }
+    if (this.njt.enabled) for (const [key, detail] of this.njt.details()) this.details.set(key, detail);
     this.revision++;
   }
   acceptConsists(raw: unknown, fetchedAt: number) {
@@ -137,6 +149,7 @@ export class TransitService {
       this.refreshBoards();
       return;
     }
+    this.startNjt();
     this.startFleet();
     const restoredSchedules = this.refreshSchedules(true).catch(() => { /* Missing/old cache is rebuilt by the independent poller. */ });
     await Promise.all([...this.slots.keys()].map(async id => {
@@ -165,6 +178,19 @@ export class TransitService {
     this.schedule(() => this.refreshConsists(), 10000);
     this.schedule(async () => { await restoredSchedules; await this.refreshSchedules(); }, 3600000);
   }
+  startNjt() {
+    if (!this.njt.enabled) return;
+    // Restore independently of MTA. Product GTFS supplies identities only.
+    const initialized = this.njt.restore().then(() => this.njt.refreshStatic());
+    initialized.catch(() => { /* Independent pollers expose their own failures. */ });
+    let initialStaticPoll = true;
+    this.schedule(async () => {
+      if (initialStaticPoll) { initialStaticPoll = false; await initialized; return; }
+      await this.njt.refreshStatic();
+    }, 86400000);
+    this.schedule(async () => { await initialized.catch(() => {}); await this.njt.refreshPredictions(); }, 30000);
+    this.schedule(async () => { await initialized.catch(() => {}); await this.njt.refreshPositions(); }, 30000);
+  }
   startFleet() {
     if (this.fleet) return;
     const fleetFile = path.join(this.cacheDir, 'fleet.sqlite');
@@ -184,7 +210,11 @@ export class TransitService {
     const jobs: { id: string; url: string; interval: number; apply: (r: any) => void }[] = [
       { id: 'stations', url: 'https://data.ny.gov/resource/39hk-dx4f.json?$limit=1000', interval: 86400000, apply: r => {
         const next = makeCatalog(r.map(fromSocrata)); if (next.length < 400) throw new Error('Incomplete station catalog');
-        next.push(...regionalCatalog);
+        next.push(...regionalCatalog.map(station => {
+          if (!this.njt.enabled || !station.id.startsWith('njt-lr-')) return station;
+          const { departureMode: _directory, ...connected } = station;
+          return connected;
+        }));
         this.catalog = next;
         for (const [id, slot] of this.slots) if (slot.raw && id !== 'subway-alerts') {
           slot.trains = id === 'path' ? normalizePath(slot.raw) : normalizeFeed(id, slot.raw, next);
@@ -244,7 +274,7 @@ export class TransitService {
   }
   context(id: string): StationContext | undefined {
     const station = this.catalog.find(s => s.id === id); if (!station) return;
-    if (id.startsWith('path-') || station.departureMode === 'external') return { entrances: [], equipment: [], outages: [], sources: [] };
+    if (id.startsWith('path-') || id.startsWith('njt-lr-') || station.departureMode === 'external') return { entrances: [], equipment: [], outages: [], sources: [] };
     const equipment = this.equipment.filter(e => String(e.stationcomplexid) === id || station.parts.some(p => e.elevatorsgtfsstopid?.split(/[ ,/]+/).includes(p.id)));
     const ids = new Set(equipment.map(e => e.equipmentno));
     return { entrances: this.entrances.filter(e => String(e.complex_id) === id), equipment,

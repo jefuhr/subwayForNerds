@@ -1,11 +1,11 @@
-import type { Departure } from './types';
+import type { Departure, VehiclePosition } from './types';
 import type { UnitSettings } from './settings';
 
-export const freshness = (timestamp: number | null | undefined, now: number) =>
-  !timestamp ? 'unavailable' : now - timestamp > 300 ? 'expired' : now - timestamp > 90 ? 'stale' : 'live';
-export function countdown(time: number | null, timestamp: number, now: number, cached = false, format: UnitSettings['time'] = '12h') {
+export const freshness = (timestamp: number | null | undefined, now: number, staleAfter = 90) =>
+  !timestamp ? 'unavailable' : now - timestamp > 300 ? 'expired' : now - timestamp > staleAfter ? 'stale' : 'live';
+export function countdown(time: number | null, timestamp: number, now: number, cached = false, format: UnitSettings['time'] = '12h', staleAfter = 90) {
   if (time == null) return { value: '—', unit: 'no estimate' };
-  if (cached || freshness(timestamp, now) !== 'live') return { value: clockTime(time, format), unit: 'last estimate' };
+  if (cached || freshness(timestamp, now, staleAfter) !== 'live') return { value: clockTime(time, format), unit: 'last estimate' };
   const seconds = time - now;
   if (seconds < -30) return { value: '—', unit: 'awaiting update' };
   if (seconds < 60) return { value: '<1', unit: 'min' };
@@ -56,7 +56,19 @@ export function ageLabel(timestamp: number | null | undefined, now: number) {
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   return `${Math.floor(seconds / 3600)}h ago`;
 }
-export const boardable = (d: Departure) => !['SKIPPED', 'CANCELED', 'DELETED'].includes(d.relationship || '');
+/** GPS source age is independent of prediction age and the time we fetched it. */
+export function vehiclePositionDisplay(position: VehiclePosition | undefined, now: number, cached = false) {
+	if (!position || !Number.isFinite(position.timestamp) || position.timestamp <= 0 || position.timestamp > now + 60 || now - position.timestamp > 300
+		|| !Number.isFinite(position.lat) || Math.abs(position.lat) > 90 || !Number.isFinite(position.lon) || Math.abs(position.lon) > 180 || (position.lat === 0 && position.lon === 0)) return null;
+	return {
+		location: position.stopName?.trim() || `${position.lat.toFixed(5)}, ${position.lon.toFixed(5)}`,
+		age: ageLabel(position.timestamp, now), lastKnown: cached || freshness(position.timestamp, now, 60) !== 'live',
+	};
+}
+export function currentVehiclePositions(positions: VehiclePosition[] | undefined, routes: string[], now: number) {
+	return (positions || []).filter(position => routes.includes(position.route) && vehiclePositionDisplay(position, now));
+}
+export const boardable = (d: Departure) => !['SKIPPED', 'CANCELED', 'DELETED', 'NO_DATA'].includes(d.relationship || '');
 export function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
   const rad = Math.PI / 180, dlat = (lat2 - lat1) * rad, dlon = (lon2 - lon1) * rad;
   const a = Math.sin(dlat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dlon / 2) ** 2;

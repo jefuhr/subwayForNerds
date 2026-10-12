@@ -3,6 +3,10 @@ import { createFixtureService, fixtureNow } from './fixture-service';
 
 Date.now = () => fixtureNow * 1000;
 const fixture = await createFixtureService();
+if (process.env.FIXTURE_NJT === '1') {
+  const { installNjtUIFixture } = await import('./njt-ui-fixture');
+  installNjtUIFixture(fixture.service);
+}
 // Analytics writes beside the temporary fleet database, never into ./state.
 process.env.STATE_DIR = fixture.directory;
 const app = await createServer(fixture.service, { exemptLoopbackRateLimits: true });

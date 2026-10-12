@@ -41,7 +41,7 @@ public struct CachedTrip: Codable, Sendable, Equatable, Identifiable {
 	public var train: Train? {
 		if let detail { return detail.train }
 		guard let departure else { return nil }
-		return Train(changes: departure.changes, key: tripKey, feed: departure.feed, tripId: tripKey, route: departure.route, destination: departure.destination, direction: departure.direction, assigned: departure.assigned, timestamp: departure.timestamp, position: nil, stops: stops, relationship: departure.relationship, alerts: departure.alerts, consist: departure.consist, scheduledPattern: nil)
+		return Train(changes: departure.changes, key: tripKey, feed: departure.feed, tripId: tripKey, route: departure.route, destination: departure.destination, direction: departure.direction, assigned: departure.assigned, timestamp: departure.timestamp, position: nil, stops: stops, relationship: departure.relationship, alerts: departure.alerts, consist: departure.consist, scheduledPattern: nil, staleAfter: departure.staleAfter, vehiclePosition: departure.vehiclePosition)
 	}
 
 	public var stops: [StopPrediction] {

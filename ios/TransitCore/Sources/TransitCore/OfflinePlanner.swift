@@ -70,7 +70,7 @@ public enum OfflinePlanner {
 			let takeNew = newTime.map { new in oldTime.map { new >= $0 } ?? true } ?? false
 			if let newTime, oldTime.map({ newTime > $0 }) ?? true {
 				advanced = true
-				if !ancillaryBoardSources.contains(id) { predictionsAdvanced = true }
+				if !ancillaryBoardSources.contains(id), id != fetched.njt?.positions.id, id != stored.njt?.positions.id { predictionsAdvanced = true }
 			}
 			// A recovered feed clears its stored error; that alone never renews the save time.
 			if takeNew, oldSource?.error != nil, newSource?.error == nil { advanced = true }
@@ -92,7 +92,25 @@ public enum OfflinePlanner {
 			return left == right ? lhs.offset < rhs.offset : left < right
 		}.map(\.element)
 		let alerts = (alertsFromFetched ?? advanced) ? fetched.alerts : stored.alerts
-		return OfflineBoardMerge(board: Board(station: fetched.station, generatedAt: fetched.generatedAt, sources: sources, departures: departures, alerts: alerts), advanced: advanced, predictionsAdvanced: predictionsAdvanced)
+		// GPS advances independently of arrival predictions, including GPS-only boards.
+		// Retain older reports on disk; presentation applies the five-minute ceiling.
+		var positions = Dictionary((stored.vehiclePositions ?? []).map { ($0.id, $0) }, uniquingKeysWith: { left, right in left.timestamp >= right.timestamp ? left : right })
+		for position in fetched.vehiclePositions ?? [] where position.timestamp >= (positions[position.id]?.timestamp ?? 0) { positions[position.id] = position }
+		let vehiclePositions = fetched.vehiclePositions == nil && stored.vehiclePositions == nil ? nil : positions.values.sorted { $0.id < $1.id }
+		var njt = fetched.njt ?? stored.njt
+		if var next = njt, let previous = stored.njt {
+			func retainedSource(_ incoming: SourceState, _ previous: SourceState) -> SourceState {
+				guard incoming.error == nil, (incoming.timestamp ?? 0) >= (previous.timestamp ?? 0) else {
+					var retained = previous; retained.error = incoming.error ?? retained.error; return retained
+				}
+				return incoming
+			}
+			next.predictions = retainedSource(next.predictions, previous.predictions)
+			next.positions = retainedSource(next.positions, previous.positions)
+			njt = next
+		}
+		if vehiclePositions != stored.vehiclePositions || njt != stored.njt { advanced = true }
+		return OfflineBoardMerge(board: Board(station: fetched.station, generatedAt: fetched.generatedAt, sources: sources, departures: departures, alerts: alerts, njt: njt, vehiclePositions: vehiclePositions), advanced: advanced, predictionsAdvanced: predictionsAdvanced)
 	}
 
 	/// Other stations within `nearbyRadiusFeet` of the viewed station, nearest first.

@@ -54,7 +54,8 @@ struct SubwayTimelineProvider: TimelineProvider {
 				for date in dates {
 					var saved = entry
 					saved.date = Date(timeIntervalSince1970: date)
-					saved.cached = entry.cached || board.departures.contains { Display.freshness($0.timestamp, now: date) != .live }
+					saved.cached = entry.cached || board.departures.contains { Display.freshness($0, now: date) != .live }
+					if entry.ride == nil { saved.message = Display.njtPredictionMessage(board, now: date, cached: saved.cached) ?? entry.message }
 					entries.append(saved)
 				}
 			}
@@ -144,7 +145,6 @@ enum WidgetBoardLoader {
 		entry.station = station
 		entry.preference = state.widgets.preference(for: station.id, app: state.appFilters)
 		entry.locationNotice = coordinate == nil ? "Location unavailable · saved station" : nil
-		if station.departureMode == "external" { entry.message = "Open station for departure times."; return entry }
 		do {
 			let board = try await client.board(stationID: station.id)
 			entry.cached = false
@@ -154,6 +154,12 @@ enum WidgetBoardLoader {
 			entry.cached = true
 			entry.message = entry.board == nil ? "Train feed unavailable. Tap to open the app." : nil
 		}
+		if let board = entry.board {
+			if board.usesExternalDepartures {
+				entry.board = nil
+				entry.message = "Open station for departure times."
+			} else { entry.message = Display.njtPredictionMessage(board, now: Date().timeIntervalSince1970, cached: entry.cached) }
+		} else if station.departureMode == "external" { entry.message = "Open station for departure times." }
 		// Include the location lookup and network wait in the age of the entry.
 		entry.date = .now
 		return entry

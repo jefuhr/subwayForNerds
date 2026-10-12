@@ -31,14 +31,18 @@ struct SubwayWidgetView: View {
 	}
 	private var groups: [DepartureGroup] { groups(limit: entry.lockScreen.candidateCounts[0]) }
 	private var sourceTime: TimeInterval? { entry.board?.departures.map(\.timestamp).min() }
-	private var estimated: Bool { entry.cached || (sourceTime ?? 0) > entry.date.timeIntervalSince1970 || Display.freshness(sourceTime, now: entry.date.timeIntervalSince1970) != .live }
+	private var estimated: Bool {
+		guard !entry.cached, let board = entry.board else { return true }
+		let now = entry.date.timeIntervalSince1970
+		return !Display.hasLivePredictions(board, now: now) || board.departures.contains { Display.freshness($0, now: now) != .live }
+	}
 	private var savedLabel: String {
 		OfflineDisplay.isEstimateUsable(timestamp: sourceTime, now: entry.date.timeIntervalSince1970, preferences: entry.offline) ? "Offline estimate" : "Last known times"
 	}
 	private var sourceAge: String { Display.ageLabel(sourceTime, now: entry.date.timeIntervalSince1970) }
 	private func countdown(_ row: Departure) -> Countdown {
 		let value = OfflineDisplay.countdown(departure: row, now: entry.date.timeIntervalSince1970,
-			cached: entry.cached || row.timestamp > entry.date.timeIntervalSince1970 || Display.freshness(row.timestamp, now: entry.date.timeIntervalSince1970) != .live,
+			cached: entry.cached || row.timestamp > entry.date.timeIntervalSince1970 || Display.freshness(row, now: entry.date.timeIntervalSince1970) != .live,
 			preferences: entry.offline, timeFormat: entry.units.time)
 		return widgetIntervalCountdown(value, time: row.time, now: entry.date.timeIntervalSince1970, displayUntil: entry.displayUntil?.timeIntervalSince1970)
 	}
@@ -76,7 +80,7 @@ struct SubwayWidgetView: View {
 	private var homeContent: some View {
 		VStack(alignment: .leading, spacing: metrics.headerSpacing) {
 			homeHeader
-			if let message = entry.message, entry.board == nil {
+			if let message = entry.message, entry.board?.departures.isEmpty != false {
 				messageView(message).frame(maxHeight: .infinity, alignment: .top)
 			} else {
 				ViewThatFits(in: .vertical) {
@@ -238,7 +242,7 @@ struct SubwayWidgetView: View {
 	// MARK: Lock Screen
 
 	@ViewBuilder private var accessoryContent: some View {
-		if entry.station == nil || entry.board == nil {
+		if entry.station == nil || entry.board == nil || (entry.board?.departures.isEmpty == true && entry.message != nil) {
 			Label(entry.message ?? "Open Subway Nerds", systemImage: "tram.fill").font(.caption).lineLimit(2)
 		} else if family == .accessoryInline {
 			ViewThatFits(in: .horizontal) {

@@ -48,3 +48,43 @@ test('MTA catalog refresh keeps configured NJT stations connected and favorites 
 	assert.ok(stations.every(s => s.departureMode === undefined));
 	assert.equal(service.boards.get('njt-lr-30855')!.njt?.configured, true);
 });
+
+test('initial NJT connection waits for local feed restoration to release startup work', async () => {
+	const service = new TransitService({ njtCredentials: { username: 'fixture', password: 'fixture' } });
+	let release!: () => void;
+	const restored = new Promise<void>(resolve => { release = resolve; });
+	let started = 0;
+	service.restore = async () => { await restored; return undefined; };
+	service.refreshSchedules = async () => {};
+	service.startFleet = () => {};
+	service.startContext = () => {};
+	service.schedule = () => {};
+	service.startNjt = () => { started++; };
+	const startup = service.start();
+	assert.equal(started, 0);
+	release();
+	await startup;
+	assert.equal(started, 1);
+});
+
+test('successful daily polls retain their interval and failures use bounded recovery delays', async t => {
+	const service = new TransitService({ njtCredentials: { username: '', password: '' } });
+	const pending: { callback: () => void; delay: number }[] = [];
+	t.mock.method(globalThis, 'setTimeout', (callback: () => void, delay: number) => {
+		pending.push({ callback, delay });
+		return { unref() {} };
+	});
+	t.mock.method(console, 'warn', () => {});
+	let failed = false;
+	service.schedule(async () => { if (failed) throw Error('fixture failure'); }, 86_400_000);
+	await new Promise<void>(resolve => setImmediate(resolve));
+	assert.equal(pending[0].delay, 86_400_000);
+	failed = true;
+	pending[0].callback();
+	await new Promise<void>(resolve => setImmediate(resolve));
+	assert.equal(pending[1].delay, 300_000);
+	failed = false;
+	pending[1].callback();
+	await new Promise<void>(resolve => setImmediate(resolve));
+	assert.equal(pending[2].delay, 86_400_000);
+});

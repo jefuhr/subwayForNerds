@@ -1,24 +1,34 @@
-/** The public .nerds v2 contract, with v1 migration. Keep Swift in lockstep. */
+/** The public .nerds v3 contract, with v1/v2 migration. Keep Swift in lockstep. */
 export const MAX_SETTINGS_BYTES = 1024 * 1024;
 export type UnitSettings = { distance: 'auto' | 'mi' | 'ft' | 'm' | 'km'; time: '12h' | '24h' };
 export const defaultUnits = (): UnitSettings => ({ distance: 'auto', time: '12h' });
 export type TrainFavorites = { cars: string[]; consists: string[][]; match: 'exact' | 'anyCar' };
 export type StationSelection = { mode: 'favorite' | 'closest' | 'nearbyFavorite'; radiusFeet: number };
 export const defaultStationSelection = (): StationSelection => ({ mode: 'favorite', radiusFeet: 5280 });
+/** Offline caching preferences. Cached content and the active ride never sync. */
+export type OfflineSettings = {
+	departuresPerLineDirection: number; tripDetailsPerLineDirection: number; saveOpenedTrips: boolean;
+	nearbyRadiusFeet: number; preloadOtherStationTrips: boolean; estimateLimitMinutes: 5 | 15 | 30 | 60 | 120;
+	retentionHours: 1 | 6 | 12 | 24; storageLimitMiB: 25 | 50 | 100 | 250; widgetsFollowActiveRide: boolean;
+};
+export const defaultOffline = (): OfflineSettings => ({
+	departuresPerLineDirection: 5, tripDetailsPerLineDirection: 2, saveOpenedTrips: true, nearbyRadiusFeet: 2640, preloadOtherStationTrips: false,
+	estimateLimitMinutes: 30, retentionHours: 6, storageLimitMiB: 50, widgetsFollowActiveRide: false,
+});
 export type StationSettings = { direction: string; routes: string[]; view: 'track' | 'direction' | 'family' | 'corridor' | 'service' };
 export type WidgetDisplay = { fields: string[]; compact: boolean; trainsPerDirection: number; timeStyle: 'countdown' | 'minutes' | 'clock'; refreshInterval?: 1 | 2 | 5 | 10 | 15 | 30 | 60 };
 export type Settings = {
 	favorites: string[]; theme: string; stations: Record<string, StationSettings>;
-	trainFavorites: TrainFavorites; stationSelection: StationSelection; units: UnitSettings;
+	trainFavorites: TrainFavorites; stationSelection: StationSelection; units: UnitSettings; offline: OfflineSettings;
 	widgets: { stationSelection: { followApp: boolean; selection: StationSelection }; matchAppFilters: boolean; stations: Record<string, StationSettings>; display: WidgetDisplay; lockScreen: { display: WidgetDisplay; directionOrder: 'downtownLeft' | 'uptownLeft'; showService: boolean } };
 };
-export type NerdsFile = { format: 'subways-for-nerds'; version: 1 | 2; exportedAt: string; lastStation: string; settings: Settings };
+export type NerdsFile = { format: 'subways-for-nerds'; version: 1 | 2 | 3; exportedAt: string; lastStation: string; settings: Settings };
 export type SettingsRevision = { revision: number; settings: Settings | null };
 export type Conflict = { path: string; local: unknown; remote: unknown };
 export type Resolutions = Record<string, 'local' | 'remote'>;
 export const widgetFields = ['stationName', 'destination', 'track', 'service', 'carType', 'carCount', 'carNumbers', 'location', 'updatedAt', 'refreshButton', 'groupHeaders'];
 export function defaults(): Settings {
-	return { favorites: [], theme: 'subway', stations: {}, trainFavorites: { cars: [], consists: [], match: 'exact' }, stationSelection: defaultStationSelection(), units: defaultUnits(), widgets: { stationSelection: { followApp: true, selection: defaultStationSelection() }, matchAppFilters: false, stations: {}, lockScreen: { display: { fields: ['carType', 'stationName'], compact: true, trainsPerDirection: 2, timeStyle: 'minutes' }, directionOrder: 'downtownLeft', showService: true }, display: {
+	return { favorites: [], theme: 'subway', stations: {}, trainFavorites: { cars: [], consists: [], match: 'exact' }, stationSelection: defaultStationSelection(), units: defaultUnits(), offline: defaultOffline(), widgets: { stationSelection: { followApp: true, selection: defaultStationSelection() }, matchAppFilters: false, stations: {}, lockScreen: { display: { fields: ['carType', 'stationName'], compact: true, trainsPerDirection: 2, timeStyle: 'minutes' }, directionOrder: 'downtownLeft', showService: true }, display: {
 		fields: ['stationName', 'destination', 'track', 'carType', 'updatedAt', 'refreshButton', 'groupHeaders'].sort(), compact: true, trainsPerDirection: 0, timeStyle: 'countdown',
 	} } };
 }
@@ -55,6 +65,20 @@ function units(value: unknown): UnitSettings {
 	if (!['auto', 'mi', 'ft', 'm', 'km'].includes(v.distance) || !['12h', '24h'].includes(v.time)) invalid();
 	return { distance: v.distance, time: v.time };
 }
+function integer(v: unknown, min: number, max: number): number { if (!Number.isInteger(v) || (v as number) < min || (v as number) > max) invalid(); return v as number; }
+function choice<T extends number>(v: unknown, choices: readonly T[]): T { if (!choices.includes(v as T)) invalid(); return v as T; }
+function offline(value: unknown): OfflineSettings {
+	const v = object(value); keys(v, Object.keys(defaultOffline()));
+	// Each field validates independently so synced edits to one never strand another;
+	// the trip-detail count is clamped to the departure count where it is used.
+	return {
+		departuresPerLineDirection: integer(v.departuresPerLineDirection, 1, 20), tripDetailsPerLineDirection: integer(v.tripDetailsPerLineDirection, 0, 20),
+		saveOpenedTrips: boolean(v.saveOpenedTrips), nearbyRadiusFeet: integer(v.nearbyRadiusFeet, 0, 26400), preloadOtherStationTrips: boolean(v.preloadOtherStationTrips),
+		estimateLimitMinutes: choice(v.estimateLimitMinutes, [5, 15, 30, 60, 120] as const), retentionHours: choice(v.retentionHours, [1, 6, 12, 24] as const),
+		storageLimitMiB: choice(v.storageLimitMiB, [25, 50, 100, 250] as const), widgetsFollowActiveRide: boolean(v.widgetsFollowActiveRide),
+	};
+}
+export const effectiveTripDetailsPerLineDirection = (value: OfflineSettings): number => Math.min(value.tripDetailsPerLineDirection, value.departuresPerLineDirection);
 function stations(value: unknown): Record<string, StationSettings> {
 	const entries = Object.entries(object(value)); if (entries.length > 2000) invalid();
 	return Object.fromEntries(entries.map(([id, raw]) => {
@@ -73,7 +97,7 @@ function validateDisplay(value: unknown): WidgetDisplay {
 }
 export function validateSettings(value: unknown): Settings {
 	if (new TextEncoder().encode(JSON.stringify(value)).length > MAX_SETTINGS_BYTES) throw new Error('Settings files must be smaller than 1 MiB.');
-	const v = object(value); keys(v, ['favorites', 'theme', 'stations', 'widgets', ...['trainFavorites', 'stationSelection', 'units'].filter(k => Object.hasOwn(v, k))]);
+	const v = object(value); keys(v, ['favorites', 'theme', 'stations', 'widgets', ...['trainFavorites', 'stationSelection', 'units', 'offline'].filter(k => Object.hasOwn(v, k))]);
 	const w = object(v.widgets); keys(w, ['matchAppFilters', 'stations', 'display', ...['lockScreen', 'stationSelection'].filter(k => Object.hasOwn(w, k))]);
 	const display = validateDisplay(w.display);
 	const lock = w.lockScreen === undefined ? { display: { fields: display.fields.filter(f => ['stationName', 'carType', 'carCount'].includes(f)), compact: true, trainsPerDirection: 2, timeStyle: display.timeStyle }, directionOrder: 'downtownLeft', showService: true } : object(w.lockScreen);
@@ -83,6 +107,7 @@ export function validateSettings(value: unknown): Settings {
 	keys(widgetSelection, ['followApp', 'selection']);
 	return { favorites: strings(v.favorites), theme: string(v.theme), stations: stations(v.stations),
 		units: Object.hasOwn(v, 'units') ? units(v.units) : defaultUnits(),
+		offline: Object.hasOwn(v, 'offline') ? offline(v.offline) : defaultOffline(),
 		trainFavorites: Object.hasOwn(v, 'trainFavorites') ? trainFavorites(v.trainFavorites) : { cars: [], consists: [], match: 'exact' },
 		stationSelection: Object.hasOwn(v, 'stationSelection') ? stationSelection(v.stationSelection) : defaultStationSelection(), widgets: {
 		stationSelection: { followApp: boolean(widgetSelection.followApp), selection: stationSelection(widgetSelection.selection) },
@@ -94,14 +119,16 @@ export function decodeNerds(text: string): NerdsFile {
 	if (new TextEncoder().encode(text).length > MAX_SETTINGS_BYTES) throw new Error('Settings files must be smaller than 1 MiB.');
 	let v: Record<string, any>; try { v = object(JSON.parse(text)); } catch { return invalid(); }
 	if (v.format !== 'subways-for-nerds') invalid();
-	if (v.version !== 1 && v.version !== 2) throw new Error('This settings version is not supported. Update Subway Nerds and try again.');
+	if (v.version !== 1 && v.version !== 2 && v.version !== 3) throw new Error('This settings version is not supported. Update Subway Nerds and try again.');
 	keys(v, ['format', 'version', 'exportedAt', 'lastStation', 'settings']);
 	if (typeof v.exportedAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(v.exportedAt) || !Number.isFinite(Date.parse(v.exportedAt))) invalid();
-	if (v.version === 2 && (!Object.hasOwn(object(v.settings), 'trainFavorites') || !Object.hasOwn(v.settings, 'stationSelection') || !Object.hasOwn(object(v.settings.widgets), 'stationSelection'))) invalid();
+	// Offline preferences arrived in v3: required there, and never part of an older file.
+	if (Object.hasOwn(object(v.settings), 'offline') !== (v.version === 3)) invalid();
+	if (v.version >= 2 && (!Object.hasOwn(object(v.settings), 'trainFavorites') || !Object.hasOwn(v.settings, 'stationSelection') || !Object.hasOwn(object(v.settings.widgets), 'stationSelection'))) invalid();
 	return { format: 'subways-for-nerds', version: v.version, exportedAt: v.exportedAt, lastStation: string(v.lastStation), settings: validateSettings(v.settings) };
 }
 export function encodeNerds(settings: Settings, lastStation: string): string {
-	const text = JSON.stringify({ format: 'subways-for-nerds', version: 2, exportedAt: new Date().toISOString(), lastStation: string(lastStation), settings: validateSettings(settings) }, null, 2);
+	const text = JSON.stringify({ format: 'subways-for-nerds', version: 3, exportedAt: new Date().toISOString(), lastStation: string(lastStation), settings: validateSettings(settings) }, null, 2);
 	decodeNerds(text); return text;
 }
 export function equal(a: unknown, b: unknown): boolean {

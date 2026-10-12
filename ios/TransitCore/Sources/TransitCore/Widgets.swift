@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 public enum WidgetField: String, Codable, Sendable, CaseIterable, Identifiable {
 	case stationName, destination, track, service, carType, carCount, carNumbers, location, updatedAt, refreshButton, groupHeaders
@@ -112,7 +113,7 @@ public func widgetTrainDetails(_ row: Departure, options: WidgetDisplayOptions, 
 		if options.fields.contains(.carNumbers), !consist.cars.isEmpty { values.append(Display.consistSummary(consist.cars)) }
 		if values.count > beforeCars, Display.freshness(consist.updatedAt, now: now) != .live { values.append("last reported") }
 	}
-	if options.fields.contains(.location), !row.location.isEmpty { values.append(row.location) }
+	if options.fields.contains(.location), !row.location.isEmpty { values.append(row.location + (cached ? " · last reported" : "")) }
 	return values.joined(separator: " · ")
 }
 
@@ -178,12 +179,14 @@ public struct WidgetSharedState: Codable, Sendable, Equatable {
 	public var appLocation: WidgetCoordinate?
 	public var stationSelection: StationSelection
 	public var units: UnitPreferences
-	public init(favorites: [String] = [], stations: [Station] = [], appFilters: [String: StationPreference] = [:], widgets: WidgetPreferences = WidgetPreferences(), themeID: String = "subway", endpoint: String = TransitAPI.productionBaseURL.absoluteString, appLocation: WidgetCoordinate? = nil, stationSelection: StationSelection = StationSelection(), units: UnitPreferences = UnitPreferences()) {
+	public var offline: OfflinePreferences
+	public init(favorites: [String] = [], stations: [Station] = [], appFilters: [String: StationPreference] = [:], widgets: WidgetPreferences = WidgetPreferences(), themeID: String = "subway", endpoint: String = TransitAPI.productionBaseURL.absoluteString, appLocation: WidgetCoordinate? = nil, stationSelection: StationSelection = StationSelection(), units: UnitPreferences = UnitPreferences(), offline: OfflinePreferences = OfflinePreferences()) {
 		self.favorites = favorites; self.stations = stations; self.appFilters = appFilters
 		self.widgets = widgets; self.themeID = themeID; self.endpoint = endpoint; self.appLocation = appLocation
 		self.stationSelection = stationSelection; self.units = units
+		self.offline = offline
 	}
-	private enum CodingKeys: String, CodingKey { case favorites, stations, appFilters, widgets, themeID, endpoint, appLocation, stationSelection, units }
+	private enum CodingKeys: String, CodingKey { case favorites, stations, appFilters, widgets, themeID, endpoint, appLocation, stationSelection, units, offline }
 	public init(from decoder: Decoder) throws {
 		let values = try decoder.container(keyedBy: CodingKeys.self)
 		favorites = try values.decode([String].self, forKey: .favorites)
@@ -195,6 +198,7 @@ public struct WidgetSharedState: Codable, Sendable, Equatable {
 		appLocation = try values.decodeIfPresent(WidgetCoordinate.self, forKey: .appLocation)
 		stationSelection = try values.decodeIfPresent(StationSelection.self, forKey: .stationSelection) ?? StationSelection()
 		units = values.contains(.units) ? try values.decode(UnitPreferences.self, forKey: .units) : UnitPreferences()
+		offline = try values.decodeIfPresent(OfflinePreferences.self, forKey: .offline) ?? OfflinePreferences()
 	}
 	public var effectiveStationSelection: StationSelection { widgets.stationSelection.followApp ? stationSelection : widgets.stationSelection.selection }
 	public func selectedStation(location: WidgetCoordinate?, previous: String?, now: TimeInterval = Date().timeIntervalSince1970) -> Station? {
@@ -212,6 +216,7 @@ public func widgetDepartures(_ board: Board, preference: StationPreference, limi
 	}
 	let selected = Dictionary(grouping: filtered.departures, by: \.direction).values.flatMap { departures in
 		departures.sorted {
+			if cached, (($0.time ?? -.infinity) >= now) != (($1.time ?? -.infinity) >= now) { return ($0.time ?? -.infinity) >= now }
 			let a = $0.time ?? .infinity, b = $1.time ?? .infinity
 			return a == b ? $0.key < $1.key : a < b
 		}.prefix(max(0, limit))
@@ -237,7 +242,50 @@ public func widgetTimelineDates(_ board: Board, now: TimeInterval) -> [TimeInter
 	return dates.sorted()
 }
 
+/// Saved predictions continue to age while the extension has no network budget.
+/// The final entry always expires the original reports, never the HTTP fetch time.
+public func widgetOfflineTimelineDates(_ board: Board, now: TimeInterval, maximumAgeMinutes: Int) -> [TimeInterval] {
+	guard now.isFinite else { return [] }
+	let age = Double(min(120, max(0, maximumAgeMinutes))) * 60
+	// No family can show more than 28 rows. Bound transitions before expanding
+	// them, so a crowded board cannot evict a visible row's passed/expiry entry.
+	let rows = Array(board.departures.filter { $0.timestamp.isFinite && $0.timestamp > 0 && $0.timestamp <= now && $0.timestamp + age >= now }.sorted {
+		let left = $0.time ?? -.infinity, right = $1.time ?? -.infinity
+		if (left >= now) != (right >= now) { return left >= now }
+		return left == right ? $0.key < $1.key : left < right
+	}.prefix(28))
+	guard let end = rows.map({ $0.timestamp + age + 1 }).max(), end > now else { return [] }
+	var dates: Set<TimeInterval> = [end]
+	for row in rows {
+		for boundary in [row.timestamp + 91, row.timestamp + age + 1] where boundary > now { dates.insert(boundary) }
+		if let time = row.time, time.isFinite, time + 1 > now, time + 1 < end { dates.insert(time + 1) }
+	}
+	var minute = floor(now / 60) * 60 + 60
+	while minute < end { dates.insert(minute); minute += 60 }
+	return dates.sorted()
+}
+
+/// A static minute value must remain conservative until the next local entry.
+/// Classification (passed/expired) is decided at `now`; only usable minutes are
+/// rounded at the end of this interval. Timers, when live, use the exact time.
+public func widgetIntervalCountdown(_ value: Countdown, time: TimeInterval?, now: TimeInterval, displayUntil: TimeInterval?) -> Countdown {
+	guard value.unit == "min", let time, time.isFinite, let displayUntil, displayUntil.isFinite, displayUntil > now else { return value }
+	let seconds = time - max(now, displayUntil - 1)
+	return Countdown(value: seconds < 60 ? "<1" : String(Int(floor(seconds / 60))), unit: "min")
+}
+
 public enum WidgetLink {
+	public static func ride(tripKey: String) -> URL {
+		var components = URLComponents()
+		components.scheme = "subwaynerds"; components.host = "ride"
+		components.queryItems = [URLQueryItem(name: "key", value: tripKey)]
+		return components.url!
+	}
+	public static func tripKey(from url: URL) -> String? {
+		guard url.scheme == "subwaynerds", url.host == "ride", let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+			let key = components.queryItems?.first(where: { $0.name == "key" })?.value, !key.isEmpty else { return nil }
+		return key
+	}
 	public static func board(stationID: String) -> URL {
 		var components = URLComponents()
 		components.scheme = "subwaynerds"; components.host = "board"
@@ -268,17 +316,72 @@ public struct WidgetSharedStore: Sendable {
 		public let savedAt: TimeInterval
 	}
 	private struct CachedBoard: Codable { let board: Board; let endpoint: String }
+	private struct RideEnvelope: Codable { let endpoint: String; let ride: ActiveRide?; let trip: CachedTrip? }
 	public func load() throws -> WidgetSharedState { try read(WidgetSharedState.self, name: "state.json") }
 	public func save(_ state: WidgetSharedState) throws { try write(state, name: "state.json") }
 	public func board(stationID: String, endpoint: String = TransitAPI.productionBaseURL.absoluteString) -> Board? {
-		guard let saved = try? read(CachedBoard.self, name: boardName(stationID)), saved.endpoint == endpoint else { return nil }
+		let saved = (try? read(CachedBoard.self, name: boardName(stationID, endpoint: endpoint)))
+			?? (try? read(CachedBoard.self, name: legacyBoardName(stationID)))
+		guard let saved, OfflineEndpoint.key(saved.endpoint) == OfflineEndpoint.key(endpoint) else { return nil }
 		return saved.board
 	}
-	public func saveBoard(_ board: Board, endpoint: String = TransitAPI.productionBaseURL.absoluteString) throws {
-		try coordinate(name: boardName(board.station.id)) { url in
-			if let previous = self.board(stationID: board.station.id, endpoint: endpoint), previous.generatedAt > board.generatedAt { return }
-			try encode(CachedBoard(board: board, endpoint: endpoint), at: url)
+	/// Returns the merged live board before applying the offline storage quota.
+	/// Large live widgets must retain all available rows even with a small cache limit.
+	@discardableResult
+	public func saveBoard(_ board: Board, endpoint: String = TransitAPI.productionBaseURL.absoluteString) throws -> Board {
+		var displayed = board
+		try coordinate(name: boardName(board.station.id, endpoint: endpoint)) { url in
+			let previous = self.board(stationID: board.station.id, endpoint: endpoint)
+			let merged = OfflinePlanner.mergeBoard(board, into: previous)
+			displayed = merged.board
+			let preferences = (try? load())?.offline ?? OfflinePreferences()
+			var saved = OfflinePlanner.retainedBoard(merged.board, preferences: preferences)
+			if let previous, !merged.advanced {
+				saved.generatedAt = previous.generatedAt
+				saved.sources = saved.sources.map { source in
+					var source = source
+					if let old = previous.sources.first(where: { $0.id == source.id }), old.timestamp == source.timestamp { source.fetchedAt = old.fetchedAt }
+					return source
+				}
+			}
+			// The extension renders arrival rows, not complete stop lists or raw alerts.
+			// Keep its shared copy small; full trip snapshots live in the app's store.
+			saved.alerts = []
+			saved.departures = saved.departures.map { row in var row = row; row.onward = []; row.alerts = []; return row }
+			guard saved != previous else { return }
+			try encode(CachedBoard(board: saved, endpoint: endpoint), at: url)
 		}
+		return displayed
+	}
+	public func ride(endpoint: String = TransitAPI.productionBaseURL.absoluteString) -> WidgetRideSnapshot? {
+		guard let saved = try? read(RideEnvelope.self, name: "active-ride.json"),
+			OfflineEndpoint.key(saved.endpoint) == OfflineEndpoint.key(endpoint), let ride = saved.ride, let trip = saved.trip,
+			trip.tripKey == ride.tripKey, OfflineEndpoint.key(trip.endpoint) == OfflineEndpoint.key(endpoint) else { return nil }
+		return WidgetRideSnapshot(ride: ride, trip: trip)
+	}
+	/// App-owned selection. A tombstone prevents a late widget fetch reviving a ride.
+	public func saveRide(_ ride: ActiveRide?, trip: CachedTrip?, endpoint: String = TransitAPI.productionBaseURL.absoluteString) throws {
+		try coordinate(name: "active-ride.json") { url in
+			guard let ride, let trip, ride.tripKey == trip.tripKey, OfflineEndpoint.key(trip.endpoint) == OfflineEndpoint.key(endpoint) else {
+				try encode(RideEnvelope(endpoint: endpoint, ride: nil, trip: nil), at: url); return
+			}
+			if let previous = self.ride(endpoint: endpoint), previous.ride == ride,
+				(previous.trip.sourceTimestamp ?? 0) > (trip.sourceTimestamp ?? 0) || (previous.trip.isComplete && !trip.isComplete) { return }
+			try encode(RideEnvelope(endpoint: endpoint, ride: ride, trip: WidgetRideSnapshot(ride: ride, trip: trip).trip), at: url)
+		}
+	}
+	/// Both processes coordinate on the selection file and compare the full ride ID.
+	@discardableResult public func updateRideTrip(_ trip: CachedTrip, for ride: ActiveRide, endpoint: String) throws -> Bool {
+		var updated = false
+		try coordinate(name: "active-ride.json") { url in
+			guard let current = self.ride(endpoint: endpoint), current.ride == ride,
+				trip.tripKey == ride.tripKey, OfflineEndpoint.key(trip.endpoint) == OfflineEndpoint.key(endpoint),
+				!current.trip.isComplete || trip.isComplete,
+				(trip.sourceTimestamp ?? 0) >= (current.trip.sourceTimestamp ?? 0) else { return }
+			try encode(RideEnvelope(endpoint: endpoint, ride: ride, trip: WidgetRideSnapshot(ride: ride, trip: trip).trip), at: url)
+			updated = true
+		}
+		return updated
 	}
 	public func selection() -> Selection? { try? read(Selection.self, name: "selection.json") }
 	/// Return the winning selection so a slower refresh also renders the newer fix.
@@ -298,7 +401,11 @@ public struct WidgetSharedStore: Sendable {
 		}
 		return accepted
 	}
-	private func boardName(_ id: String) -> String { "board-" + Data(id.utf8).base64EncodedString().replacingOccurrences(of: "/", with: "_") + ".json" }
+	private func legacyBoardName(_ id: String) -> String { "board-" + Data(id.utf8).base64EncodedString().replacingOccurrences(of: "/", with: "_") + ".json" }
+	private func boardName(_ id: String, endpoint: String) -> String {
+		let identity = OfflineEndpoint.key(endpoint) + "\u{0}" + id
+		return "board-" + SHA256.hash(data: Data(identity.utf8)).map { String(format: "%02x", $0) }.joined() + ".json"
+	}
 	private func read<T: Decodable>(_ type: T.Type, name: String) throws -> T {
 		try JSONDecoder().decode(type, from: Data(contentsOf: directory.appendingPathComponent(name)))
 	}

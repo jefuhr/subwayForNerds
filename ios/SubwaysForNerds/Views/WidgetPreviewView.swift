@@ -40,6 +40,21 @@ struct WidgetPreviewView: View {
 		value.units = app.units
 		value.display = app.widgetPreferences.display
 		value.lockScreen = app.widgetPreferences.lockScreen
+		if ["Saved ride", "Expired ride", "Partial ride", "Finished estimates"].contains(scenario), var row = value.board?.departures.first {
+			let now = value.date.timeIntervalSince1970
+			row.timestamp = now - (scenario == "Expired ride" ? 3600 : 300)
+			let offset: TimeInterval = scenario == "Finished estimates" ? -1800 : 0
+			let stops = ["14 St–Union Sq", "34 St–Herald Sq", "Times Sq–42 St", "57 St–7 Av"].enumerated().map { index, name in
+				StopPrediction(sequence: index + 1, id: "preview-\(index)", name: name, arrival: now + offset + Double(index + 1) * 180)
+			}
+			row.onward = stops.map { OnwardStop(stationId: $0.id, stopId: $0.id, name: $0.name, time: $0.arrival) }
+			let train = Train(key: row.tripKey, feed: row.feed, tripId: "preview", route: row.route,
+				destination: row.destination, direction: row.direction, timestamp: row.timestamp, stops: stops)
+			let trip = CachedTrip(tripKey: row.tripKey, endpoint: TransitAPI.productionBaseURL.absoluteString,
+				detail: scenario == "Partial ride" ? nil : TripDetail(train: train), departure: row, savedAt: row.timestamp, accessedAt: now)
+			value.ride = WidgetRideSnapshot(ride: ActiveRide(tripKey: row.tripKey, startedAt: now - 300), trip: trip)
+			value.cached = true
+		}
 		if scenario == "Saved", var board = value.board { value.cached = true; board.departures = board.departures.map { var row = $0; row.timestamp -= 600; return row }; value.board = board }
 		if scenario == "No favorites" { value.station = nil; value.board = nil; value.message = "Add a favorite in the app." }
 		if scenario == "No matches" { value.preference.routes = ["A"] }
@@ -57,7 +72,7 @@ struct WidgetPreviewView: View {
 			VStack(spacing: 18) {
 				Picker("Size", selection: $family) { ForEach(families, id: \.self) { Text(name($0)).tag($0) } }
 					.accessibilityIdentifier("widgetPreviewFamily")
-				Picker("Scenario", selection: $scenario) { ForEach(["Live", "Saved", "No favorites", "No matches", "Long name", "Regional", "Location unavailable", "Track groups"], id: \.self) { Text($0).tag($0) } }
+				Picker("Scenario", selection: $scenario) { ForEach(["Live", "Saved", "Saved ride", "Expired ride", "Partial ride", "Finished estimates", "No favorites", "No matches", "Long name", "Regional", "Location unavailable", "Track groups"], id: \.self) { Text($0).tag($0) } }
 					.accessibilityIdentifier("widgetPreviewScenario")
 				Toggle("Tinted", isOn: $tinted).accessibilityIdentifier("widgetPreviewTinted")
 				Toggle("Large text", isOn: $largeText).accessibilityIdentifier("widgetPreviewLargeText")

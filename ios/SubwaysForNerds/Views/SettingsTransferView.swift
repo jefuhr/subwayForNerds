@@ -29,7 +29,7 @@ struct SettingsTransferSection: View {
 			Button("Import settings") { importing = true }.accessibilityIdentifier("importSettings")
 			if let message = error ?? app.settingsError { Text(message).foregroundStyle(.red).font(.footnote).accessibilityIdentifier("settingsError") }
 		} header: { ListHeader("Move your settings") } footer: {
-			Text("Move favorite stations and trains, station selection, themes, filters, and widget preferences between devices with a .nerds file. No account is needed.")
+			Text("Move favorite stations and trains, station selection, themes, filters, widget and offline preferences between devices with a .nerds file. Offline boards, saved trains and your ride stay on this device. No account is needed.")
 		}
 		.fileImporter(isPresented: $importing, allowedContentTypes: [.nerdsSettings]) { result in
 			switch result { case .success(let url): app.previewSettingsFile(url); case .failure(let failure): error = failure.localizedDescription }
@@ -40,7 +40,8 @@ struct SettingsTransferSection: View {
 	}
 }
 @MainActor func settingsLabel(_ path: String, app: AppModel) -> String {
-	let labels = ["units": "Units", "distance": "Distance units", "time": "Time format", "favorites": "Favorite stations", "trainFavorites": "Favorite trains", "cars": "Cars", "consists": "Consists", "match": "Consist matching", "stationSelection": "Station selection", "mode": "Mode", "radiusFeet": "Radius (ft)", "followApp": "Follow app", "selection": "Station choice", "theme": "Theme", "stations": "Stations", "widgets": "Widgets", "display": "Display", "lockScreen": "Lock Screen", "directionOrder": "Direction order", "showService": "Service icons", "fields": "Shown information", "compact": "Compact rows", "trainsPerDirection": "Trains per direction", "timeStyle": "Arrival display", "matchAppFilters": "Match app filters", "direction": "Direction", "routes": "Lines", "view": "Board grouping"]
+	let labels = ["offline": "Offline transit", "departuresPerLineDirection": "Departures per line and direction", "tripDetailsPerLineDirection": "Full trips per line and direction", "saveOpenedTrips": "Save opened trips", "nearbyRadiusFeet": "Nearby station distance (ft)", "preloadOtherStationTrips": "Preload trips at other stations", "estimateLimitMinutes": "Offline estimate window (minutes)", "retentionHours": "Automatic retention (hours)", "storageLimitMiB": "Storage limit (MiB)", "widgetsFollowActiveRide": "Widgets follow active ride",
+		"units": "Units", "distance": "Distance units", "time": "Time format", "favorites": "Favorite stations", "trainFavorites": "Favorite trains", "cars": "Cars", "consists": "Consists", "match": "Consist matching", "stationSelection": "Station selection", "mode": "Mode", "radiusFeet": "Radius (ft)", "followApp": "Follow app", "selection": "Station choice", "theme": "Theme", "stations": "Stations", "widgets": "Widgets", "display": "Display", "lockScreen": "Lock Screen", "directionOrder": "Direction order", "showService": "Service icons", "fields": "Shown information", "compact": "Compact rows", "trainsPerDirection": "Trains per direction", "timeStyle": "Arrival display", "matchAppFilters": "Match app filters", "direction": "Direction", "routes": "Lines", "view": "Board grouping"]
 	return path.split(separator: "/").map { part in
 		let key = part.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "~1", with: "/").replacingOccurrences(of: "~0", with: "~")
 		return app.stations.first(where: { $0.id == key })?.name ?? labels[key] ?? key.capitalized

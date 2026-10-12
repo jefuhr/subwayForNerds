@@ -8,19 +8,63 @@ private enum CarTarget: Hashable {
 
 struct TrainDetailView: View {
 	let tripKey: String
+	/// Shows only the saved snapshot and never fetches. Saved PATH keys name a station
+	/// arrival, so fetching them again would show whichever train holds that slot now.
+	var snapshotOnly = false
 	@Environment(AppModel.self) private var app
-	@Environment(\.scenePhase) private var phase
-	@State private var data: TripDetail?
-	@State private var error: String?
-	@State private var requestGeneration = 0
+	/// The stored snapshot, shown whenever live data is unavailable.
+	@State private var saved: CachedTrip?
 	@State private var carTarget: CarTarget?
+	@State private var confirmRemove = false
+	@State private var confirmReplaceRide = false
+	@State private var working = false
+	@State private var registration: OpenTripRegistration?
+	@State private var savedLoaded = false
 	private var now: TimeInterval { app.now }
+	private var live: LiveTrip? { snapshotOnly ? nil : app.liveTrips[tripKey] }
+	/// The latest details fetched while this view was open; kept after the connection drops.
+	private var data: TripDetail? { live?.detail }
+	/// Live data only while connected and the last request succeeded; otherwise every
+	/// time is an offline estimate counted down from a stored source prediction.
+	private var cached: Bool { data == nil || live?.failure != nil || !app.connected }
+	/// Offline, whichever copy has the newer source wins: the details in memory or the saved snapshot.
+	private var memoryIsNewer: Bool {
+		guard let data else { return false }
+		guard let saved, saved.isComplete, let savedTime = saved.sourceTimestamp else { return true }
+		return data.train.timestamp > savedTime
+	}
+	private var showingSnapshot: Bool { cached && !memoryIsNewer && saved != nil }
+	private var train: Train? { showingSnapshot ? saved?.train : data?.train }
+	private var shownDetail: TripDetail? { showingSnapshot ? saved?.detail : data }
+	private var sourceTimestamp: TimeInterval? { showingSnapshot ? saved?.sourceTimestamp : data?.train.timestamp }
+	private var isRide: Bool { app.activeRide?.tripKey == tripKey }
+	private var isSaved: Bool { app.isTripSaved(tripKey) }
+	/// A canceled or unassigned train never gets a countdown from saved data.
+	private var noEstimate: String? {
+		guard let train else { return nil }
+		if ["CANCELED", "DELETED"].contains(train.relationship ?? "") { return "canceled when saved" }
+		return train.assigned == false ? "not assigned when saved" : nil
+	}
+	private var nextStopIndex: Int? { cached && noEstimate == nil ? train.flatMap { OfflineDisplay.estimatedNextStopIndex($0.stops, now: now) } : nil }
+	private var error: String? {
+		if snapshotOnly { return savedLoaded && saved == nil ? "This saved arrival is no longer stored on this device." : nil }
+		let hasSnapshot = saved != nil || data != nil
+		// A trip missing from the feed is not reported as canceled; any snapshot stays.
+		switch live?.failure {
+		case .notFound?: return hasSnapshot ? "No longer in the current feed. Showing the last report, which may be out of date." : "This train is no longer in the current feed."
+		case .unavailable(let message)?: return hasSnapshot ? (app.connected ? "Train update unavailable. Showing offline estimates." : "No connection. Showing offline estimates.") : message
+		case nil: break
+		}
+		if !app.connected { return hasSnapshot ? "No connection. Showing offline estimates." : "No connection, and this train was not saved offline." }
+		return nil
+	}
 
 	var body: some View {
 		List {
 			if let error { Section { Notice(text: error) } }
-			if let train = data?.train {
-				let consist = app.connected && error == nil && Display.currentConsist(train.consist, now: now) ? train.consist : nil
+			if let train {
+				let consist = OfflineDisplay.currentConsist(train.consist, now: now, cached: cached) ? train.consist : nil
+				if cached { offlineSection }
 				Section {
 					VStack(alignment: .leading, spacing: 12) {
 						HStack(alignment: .center, spacing: 10) {
@@ -30,10 +74,12 @@ struct TrainDetailView: View {
 								Text(Display.directionLabel(train.direction)).font(.caption).foregroundStyle(.secondary)
 							}
 							Spacer(minLength: 4)
-							Text("\(Display.freshness(train.timestamp, now: now).rawValue) · \(Display.ageLabel(train.timestamp, now: now))")
+							// Saved data is never labeled live, however recent its source time.
+							let freshness = cached ? "offline" : Display.freshness(train.timestamp, now: now).rawValue
+							Text("\(freshness) · \(Display.ageLabel(train.timestamp, now: now))")
 								.font(.caption.weight(.semibold).monospacedDigit())
-								.foregroundStyle(Display.freshness(train.timestamp, now: now) == .live ? app.theme.accent : app.theme.ink.opacity(0.7))
-								.accessibilityLabel("Feed \(Display.freshness(train.timestamp, now: now).rawValue), \(Display.ageLabel(train.timestamp, now: now))")
+								.foregroundStyle(freshness == "live" ? app.theme.accent : app.theme.ink.opacity(0.7))
+								.accessibilityLabel("Feed \(freshness), \(Display.ageLabel(train.timestamp, now: now))")
 						}
 						FactGrid(facts: facts(train, consist: consist))
 					}
@@ -43,22 +89,26 @@ struct TrainDetailView: View {
 				if !train.alerts.isEmpty {
 					Section { ForEach(Array(train.alerts.enumerated()), id: \.offset) { _, alert in Notice(text: alert) } } header: { ListHeader("Alerts") }
 				}
-				ChangesSection(changes: Display.changesAhead(train.changes, index: 0), now: now, cached: error != nil || !app.connected)
+				rideActions
+				ChangesSection(changes: Display.changesAhead(train.changes, index: 0), now: now, cached: cached)
 				Section {
-					ForEach(Array(train.stops.enumerated()), id: \.offset) { _, stop in
+					ForEach(Array(train.stops.enumerated()), id: \.offset) { index, stop in
+						let row = StopRow(stop: stop, now: now, offline: cached ? OfflineStopEstimate(sourceTimestamp: sourceTimestamp, estimatedNext: index == nextStopIndex, noEstimate: noEstimate) : nil)
 						Group {
-							if stop.relationship != "SKIPPED", stop.stationId != nil, (stop.arrival ?? stop.departure ?? .infinity) >= now {
-								NavigationLink { TransferView(tripKey: tripKey, stop: stop) } label: { StopRow(stop: stop, now: now) }
+							if !cached, stop.relationship != "SKIPPED", stop.stationId != nil, (stop.arrival ?? stop.departure ?? .infinity) >= now {
+								NavigationLink { TransferView(tripKey: tripKey, stop: stop) } label: { row }
 									.accessibilityLabel("Connections at \(stop.name)")
 							} else {
 								// A disabled link keeps the chevron column so every time lines up.
-								NavigationLink { EmptyView() } label: { StopRow(stop: stop, now: now) }.disabled(true)
+								NavigationLink { EmptyView() } label: { row }.disabled(true)
 							}
 						}
 						.listRowInsets(.vertical, 6)
 					}
-				} header: { ListHeader("Remaining stopping pattern") } footer: {
-					Text("Arrival / departure · Eastern. Patterns reflect remaining feed predictions. Future track fields describe that stop, not the current train position. Operations IDs identify trips, not physical cars.")
+				} header: { ListHeader(cached ? "Saved stopping pattern" : "Remaining stopping pattern") } footer: {
+					Text(cached
+						? "Offline estimates count down the saved predictions on this device's clock. They are not observed positions; delays, reroutes and cancellations after the source time are unknown. Connections need a live feed."
+						: "Arrival / departure · Eastern. Patterns reflect remaining feed predictions. Future track fields describe that stop, not the current train position. Operations IDs identify trips, not physical cars.")
 				}
 				if let pattern = train.scheduledPattern {
 					Section {
@@ -72,7 +122,7 @@ struct TrainDetailView: View {
 						}
 					}
 				}
-				if let data { Section { RawJSONView(value: data) } }
+				if let shownDetail { Section { RawJSONView(value: shownDetail) } }
 			} else if error == nil { ProgressView("Loading train details…") }
 		}
 		.themedList().navigationTitle("Train details").navigationBarTitleDisplayMode(.inline)
@@ -82,9 +132,108 @@ struct TrainDetailView: View {
 			case .search(let number): FleetView(initialSearch: number)
 			}
 		}
-		.refreshable { await refresh() }
-		.task(id: "\(phase)|\(app.endpoint)|\(app.connected)") { if phase == .active { await poll(every: 10) { await refresh() } } }
+		.refreshable {
+			if !snapshotOnly { await app.refreshTrip(tripKey) }
+			saved = await app.cachedTrip(tripKey)
+		}
+		// Registered for the view's lifetime; the prefetcher refreshes open trips on the
+		// selected cadence and pauses itself offline or in the background.
+		.onAppear { if !snapshotOnly, registration == nil { registration = OpenTripRegistration(app: app, tripKey: tripKey) } }
+		.task(id: app.endpoint) {
+			saved = await app.cachedTrip(tripKey)
+			savedLoaded = true
+			// Opening details is an explicit request: it joins a matching fetch and
+			// returns at once without a connection.
+			if !snapshotOnly { await app.refreshTrip(tripKey) }
+		}
+		.onChange(of: data?.train.timestamp) { Task { saved = await app.cachedTrip(tripKey) } }
+		.onChange(of: app.activeRideTrip) { _, trip in if trip?.tripKey == tripKey { saved = trip } }
 		.accessibilityIdentifier("trainDetails")
+	}
+
+	/// Provenance for every cached time: offline estimate, source age, and completeness.
+	private var offlineSection: some View {
+		Section {
+			VStack(alignment: .leading, spacing: 3) {
+				Label(OfflineDisplay.estimateLabel(timestamp: sourceTimestamp, now: now, preferences: app.offlinePreferences), systemImage: "icloud.slash")
+					.font(.subheadline.weight(.semibold))
+					.accessibilityIdentifier("offlineEstimateLabel")
+				if snapshotOnly {
+					Text("Saved PATH arrival · historical. PATH reports name a station arrival, not one train, so this copy is never refreshed.")
+						.font(.caption.weight(.semibold)).accessibilityIdentifier("savedPathSnapshot")
+				}
+				if !showingSnapshot {
+					Text(saved == nil ? "Last report from this visit · not saved offline" : "Last report from this visit · newer than the saved copy")
+						.font(.caption).foregroundStyle(.secondary)
+				} else if let saved {
+					Text("Saved \(Display.ageLabel(saved.savedAt, now: now))\(saved.manuallySaved ? " · kept until you remove it" : isRide ? " · kept for your ride" : "")")
+						.font(.caption).foregroundStyle(.secondary)
+					if let label = OfflineDisplay.completenessLabel(saved) {
+						Text(label).font(.caption.weight(.semibold)).accessibilityIdentifier("partialTripLabel")
+					}
+				}
+				Text("Car numbers and the train's current position are not shown offline.").font(.caption2).foregroundStyle(.secondary)
+			}
+		}
+	}
+
+	/// "Save trip offline" and "I'm on this train" are separate: saving keeps a snapshot;
+	/// a ride also keeps it current while connected and shows it on the board.
+	private var rideActions: some View {
+		Section {
+			HStack(spacing: 8) {
+				if snapshotOnly {
+					// A frozen arrival can only be kept or removed.
+					if isSaved {
+						Button { confirmRemove = true } label: { Label("Saved offline", systemImage: "checkmark.circle.fill").chip(selected: true) }
+							.buttonStyle(.plain).accessibilityIdentifier("removeSavedTrip")
+							.confirmationDialog("Remove this saved arrival?", isPresented: $confirmRemove, titleVisibility: .visible) {
+								Button("Remove saved arrival", role: .destructive) { Task { await app.removeSavedTrip(tripKey) } }
+								Button("Cancel", role: .cancel) {}
+							} message: { Text("Its offline snapshot may then expire with other cached trips.") }
+					}
+				} else if isSaved {
+					Button { confirmRemove = true } label: { Label("Saved offline", systemImage: "checkmark.circle.fill").chip(selected: true) }
+						.buttonStyle(.plain).accessibilityIdentifier("removeSavedTrip")
+						.accessibilityHint("Removes this train from saved trips")
+						.confirmationDialog("Remove this saved train?", isPresented: $confirmRemove, titleVisibility: .visible) {
+							Button("Remove saved train", role: .destructive) { Task { await app.removeSavedTrip(tripKey) } }
+							Button("Cancel", role: .cancel) {}
+						} message: { Text("Its offline snapshot may then expire with other cached trips.") }
+				} else {
+					Button { Task { working = true; await app.saveTripOffline(tripKey, detail: data); saved = await app.cachedTrip(tripKey); working = false } } label: {
+						Label("Save trip offline", systemImage: "arrow.down.circle").chip()
+					}
+					.buttonStyle(.plain).disabled(working).accessibilityIdentifier("saveTripOffline")
+				}
+				if isRide {
+					Button { Task { await app.endRide() } } label: { Label("End ride", systemImage: "xmark.circle").chip(selected: true) }
+						.buttonStyle(.plain).accessibilityIdentifier("endRide")
+				} else if !OfflineIdentity.isPositionalTrip(tripKey) {
+					Button {
+						if app.activeRide != nil { confirmReplaceRide = true }
+						else { Task { await startRide() } }
+					} label: { Label("I'm on this train", systemImage: "tram.fill").chip() }
+						.buttonStyle(.plain).disabled(working).accessibilityIdentifier("startRide")
+						.confirmationDialog("Replace your current ride?", isPresented: $confirmReplaceRide, titleVisibility: .visible) {
+							Button("Ride this train instead") { Task { await startRide() } }
+							Button("Cancel", role: .cancel) {}
+						} message: { Text("Only one ride is followed at a time. The other train stays saved only if you saved it.") }
+				}
+				Spacer(minLength: 0)
+			}
+			if OfflineIdentity.isPositionalTrip(tripKey) {
+				Text("PATH reports identify a station arrival, not one train, so rides can't follow them.").font(.caption2).foregroundStyle(.secondary)
+			}
+			if let message = app.offlineActionError { Notice(text: message).accessibilityIdentifier("offlineActionError") }
+		}
+	}
+
+	private func startRide() async {
+		working = true
+		await app.startRide(tripKey, detail: data)
+		saved = await app.cachedTrip(tripKey)
+		working = false
 	}
 
 	private func consistSection(_ consist: Consist, feed: String) -> some View {
@@ -122,32 +271,41 @@ struct TrainDetailView: View {
 			("Operations ID", train.trainId ?? "Not reported"),
 			("Assignment", train.assigned.map { $0 ? "Assigned to a train" : "Not yet assigned" } ?? "Not reported"),
 			("Service date", train.serviceDate ?? "Not reported"),
-			("Position report", train.position.map { "\($0.name) · \(Display.ageLabel($0.timestamp, now: now))" } ?? "Not reported")
+			(cached ? "Last position report" : "Position report", train.position.map { "\($0.name) · \(Display.ageLabel($0.timestamp, now: now))" } ?? "Not reported")
 		]
-		if consist == nil { facts.append(("Car numbers", "Not currently available")) }
+		if consist == nil { facts.append(("Car numbers", cached ? "Not shown offline" : "Not currently available")) }
 		return facts
 	}
+}
 
-	private func refresh() async {
-		let requestedEndpoint = app.endpoint
-		requestGeneration += 1
-		let generation = requestGeneration
-		do {
-			let value = try await app.api.trip(key: tripKey)
-			try Task.checkCancellation()
-			guard requestedEndpoint == app.endpoint, generation == requestGeneration else { return }
-			data = value
-			error = nil
-		} catch {
-			if !Task.isCancelled, requestedEndpoint == app.endpoint, generation == requestGeneration { self.error = data == nil ? error.localizedDescription : "Train update unavailable. Previous reports may be stale." }
-		}
+/// Keeps a trip open in the model while its details view exists, so pushing
+/// connections over it or losing the connection keeps its fetched details.
+@MainActor
+final class OpenTripRegistration {
+	private weak var app: AppModel?
+	private let tripKey: String
+	init(app: AppModel, tripKey: String) {
+		self.app = app
+		self.tripKey = tripKey
+		app.openTrip(tripKey)
 	}
+	isolated deinit { app?.closeTrip(tripKey) }
+}
+
+/// Offline context for one saved stop.
+struct OfflineStopEstimate {
+	let sourceTimestamp: TimeInterval?
+	/// The first saved stop still ahead: an estimate, never the observed position.
+	let estimatedNext: Bool
+	/// Why saved times get no countdown, such as a train canceled when saved.
+	var noEstimate: String?
 }
 
 private struct StopRow: View {
 	@Environment(AppModel.self) private var app
 	let stop: StopPrediction
 	let now: TimeInterval
+	var offline: OfflineStopEstimate?
 	private var details: String {
 		var parts = [stop.id]
 		if let scheduled = stop.scheduledTrack { parts.append("scheduled track \(scheduled)") }
@@ -163,11 +321,24 @@ private struct StopRow: View {
 					ChangeIcons(changes: stop.changes ?? [], now: now)
 				}
 				Text(details).font(.caption2).foregroundStyle(.secondary)
+				if offline?.estimatedNext == true {
+					Text(OfflineDisplay.estimatedNextStopLabel).font(.caption2.weight(.semibold)).accessibilityIdentifier("estimatedNextStop")
+				}
 			}
 			Spacer(minLength: 4)
 			VStack(alignment: .trailing, spacing: 1) {
-				Text(Display.clockTime(stop.arrival, format: app.units.time)).font(.subheadline.monospacedDigit())
-				if let departure = stop.departure, departure != stop.arrival { Text("dep \(Display.clockTime(departure, format: app.units.time))").font(.caption2.monospacedDigit()).foregroundStyle(.secondary) }
+				if let offline, let reason = offline.noEstimate {
+					Text(Display.clockTime(stop.arrival ?? stop.departure, format: app.units.time)).font(.subheadline.monospacedDigit())
+					Text(reason).font(.caption2).foregroundStyle(.secondary)
+				} else if let offline {
+					let countdown = OfflineDisplay.countdown(stop: stop, sourceTimestamp: offline.sourceTimestamp, now: now, cached: true, preferences: app.offlinePreferences, timeFormat: app.units.time)
+					Text(countdown.unit == "min" ? "\(countdown.value) min" : countdown.value).font(.subheadline.monospacedDigit())
+					Text(countdown.unit == "min" ? "offline est. \(Display.clockTime(stop.arrival ?? stop.departure, format: app.units.time))" : countdown.unit)
+						.font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+				} else {
+					Text(Display.clockTime(stop.arrival, format: app.units.time)).font(.subheadline.monospacedDigit())
+					if let departure = stop.departure, departure != stop.arrival { Text("dep \(Display.clockTime(departure, format: app.units.time))").font(.caption2.monospacedDigit()).foregroundStyle(.secondary) }
+				}
 			}
 		}
 		.accessibilityElement(children: .combine)
@@ -256,6 +427,8 @@ struct TransferView: View {
 			.task(id: "\(phase)|\(app.endpoint)|\(app.connected)") { if phase == .active { await poll(every: 10) { await refresh() } } }
 	}
 	private func refresh() async {
+		// Connections need live predictions; offline there is nothing honest to show.
+		guard app.connected else { error = "Connections need a live feed. Reconnect for current estimates."; return }
 		let requestedEndpoint = app.endpoint
 		requestGeneration += 1
 		let generation = requestGeneration

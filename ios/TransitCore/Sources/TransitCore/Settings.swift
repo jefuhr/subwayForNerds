@@ -8,8 +8,9 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 	public var trainFavorites = TrainFavorites()
 	public var stationSelection = StationSelection()
 	public var units = UnitPreferences()
+	public var offline = OfflinePreferences()
 	public init() {}
-	private enum CodingKeys: String, CodingKey { case favorites, theme, stations, widgets, trainFavorites, stationSelection, units }
+	private enum CodingKeys: String, CodingKey { case favorites, theme, stations, widgets, trainFavorites, stationSelection, units, offline }
 	public init(from decoder: Decoder) throws {
 		let values = try decoder.container(keyedBy: CodingKeys.self)
 		favorites = try values.decode([String].self, forKey: .favorites)
@@ -19,6 +20,7 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 		trainFavorites = try values.decodeIfPresent(TrainFavorites.self, forKey: .trainFavorites) ?? TrainFavorites()
 		stationSelection = try values.decodeIfPresent(StationSelection.self, forKey: .stationSelection) ?? StationSelection()
 		units = values.contains(.units) ? try values.decode(UnitPreferences.self, forKey: .units) : UnitPreferences()
+		offline = values.contains(.offline) ? try values.decode(OfflinePreferences.self, forKey: .offline) : OfflinePreferences()
 	}
 	public static func == (lhs: PortableSettings, rhs: PortableSettings) -> Bool { (try? lhs.json()) == (try? rhs.json()) }
 	public func validated() throws -> PortableSettings {
@@ -48,7 +50,8 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 public struct NerdsSettingsFile: Codable, Sendable, Identifiable {
 	public static let maxBytes = 1_048_576
 	public var format = "subways-for-nerds"
-	public var version = 2
+	public static let currentVersion = 3
+	public var version = NerdsSettingsFile.currentVersion
 	public var exportedAt: String
 	public var lastStation: String
 	public var settings: PortableSettings
@@ -63,22 +66,26 @@ public struct NerdsSettingsFile: Codable, Sendable, Identifiable {
 		let value = try JSONDecoder().decode(JSONValue.self, from: data)
 		let root = try SettingsValidation.object(value, keys: ["format", "version", "exportedAt", "lastStation", "settings"])
 		guard root["format"] == .string("subways-for-nerds") else { throw SettingsError.invalid }
-		guard root["version"] == .number(1) || root["version"] == .number(2) else { throw SettingsError.message("This settings version is not supported. Update Subway Nerds and try again.") }
+		guard case .number(let version) = root["version"], [1, 2, 3].contains(version) else { throw SettingsError.message("This settings version is not supported. Update Subway Nerds and try again.") }
 		let timestamp = try SettingsValidation.string(root["exportedAt"])
 		let formatter = ISO8601DateFormatter(); formatter.formatOptions.insert(.withFractionalSeconds)
 		guard formatter.date(from: timestamp) != nil || ISO8601DateFormatter().date(from: timestamp) != nil else { throw SettingsError.invalid }
 		_ = try SettingsValidation.string(root["lastStation"])
 		try SettingsValidation.settings(root["settings"])
-		if root["version"] == .number(2) {
-			let settings = try SettingsValidation.object(root["settings"])
+		let settings = try SettingsValidation.object(root["settings"])
+		if version >= 2 {
 			let widgets = try SettingsValidation.object(settings["widgets"])
 			guard settings["trainFavorites"] != nil, settings["stationSelection"] != nil, widgets["stationSelection"] != nil else { throw SettingsError.invalid }
 		}
+		// Offline preferences arrived in v3: required there, and never part of an older file.
+		guard (settings["offline"] != nil) == (version >= 3) else { throw SettingsError.invalid }
 		return try JSONDecoder().decode(Self.self, from: data)
 	}
 	public func data() throws -> Data {
 		let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-		let data = try encoder.encode(self); _ = try Self.decode(data); return data
+		// Exports always use the current format, including re-exports of migrated older files.
+		var current = self; current.version = Self.currentVersion
+		let data = try encoder.encode(current); _ = try Self.decode(data); return data
 	}
 }
 public enum SettingsError: LocalizedError {
@@ -109,7 +116,8 @@ private enum SettingsValidation {
 	static func settings(_ value: JSONValue?) throws {
 		let rawRoot = try object(value)
 		let rootKeys: Set<String> = ["favorites", "theme", "stations", "widgets"]
-		let root = try object(value, keys: rootKeys.union(["trainFavorites", "stationSelection", "units"].filter { rawRoot[$0] != nil }))
+		let root = try object(value, keys: rootKeys.union(["trainFavorites", "stationSelection", "units", "offline"].filter { rawRoot[$0] != nil }))
+		if let value = root["offline"] { try offline(value) }
 		if let value = root["trainFavorites"] { try trainFavorites(value) }
 		if let value = root["stationSelection"] { try stationSelection(value) }
 		if let value = root["units"] {
@@ -131,6 +139,17 @@ private enum SettingsValidation {
 			try display(lock["display"]); try boolean(lock["showService"])
 			guard LockScreenDirectionOrder(rawValue: try string(lock["directionOrder"])) != nil else { throw SettingsError.invalid }
 		}
+	}
+	static func offline(_ value: JSONValue?) throws {
+		let raw = try object(value, keys: OfflinePreferences.keys)
+		for (key, field) in raw {
+			switch field {
+			case .bool: guard ["saveOpenedTrips", "preloadOtherStationTrips", "widgetsFollowActiveRide"].contains(key) else { throw SettingsError.invalid }
+			case .number(let number): guard number.rounded() == number, abs(number) <= 1_000_000 else { throw SettingsError.invalid }
+			default: throw SettingsError.invalid
+			}
+		}
+		_ = try JSONDecoder().decode(OfflinePreferences.self, from: JSONEncoder().encode(value))
 	}
 	static func trainFavorites(_ value: JSONValue?) throws {
 		let saved = try object(value, keys: ["cars", "consists", "match"])

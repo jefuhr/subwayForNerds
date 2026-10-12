@@ -53,6 +53,35 @@ final class AppModel {
 	var endpoint: String
 	var api: TransitAPI
 	let offlineStore: OfflineFleetStore?
+	var offlinePreferences: OfflinePreferences
+	/// When the displayed board came from the offline cache, the time it was saved.
+	var boardSavedAt: TimeInterval?
+	var activeRide: ActiveRide?
+	var activeRideTrip: CachedTrip?
+	var savedTrips: [CachedTrip] = []
+	var offlineUsage: OfflineStorageUsage?
+	/// Saves that could not be written. Shown until the user dismisses them.
+	var offlineFailures: [OfflineSaveFailure] = []
+	var offlineActionError: String?
+	/// Trip keys the selected board wants saved, and those already saved in full.
+	var readiness = OfflineReadiness()
+	/// A trip to open on the board tab, independent of the selected station.
+	var openTripKey: String?
+	/// Latest fetched details for trips whose details are open, kept after the
+	/// connection drops so a save or ride can use them.
+	var liveTrips: [String: LiveTrip] = [:]
+	@ObservationIgnored private var openTrips: [String: Int] = [:]
+	/// Trips fetched as automatic next-trip snapshots, stored regardless of "save opened trips".
+	@ObservationIgnored private var snapshotKeys = Set<String>()
+	/// DEBUG outage simulation keeps the same endpoint so its cache stays in use.
+	private(set) var outageSimulated = false
+	@ObservationIgnored let transitStore: OfflineTransitStore?
+	@ObservationIgnored private var prefetcher: OfflinePrefetcher?
+	@ObservationIgnored private var apiBeforeOutage: TransitAPI?
+	@ObservationIgnored private var restoreTask: Task<Void, Never>?
+	@ObservationIgnored private var networkConnected = true
+	/// Next-trip keys of favorite and nearby boards, kept only when other-station trips are preloaded.
+	@ObservationIgnored private var surroundingTrips: [String: [String]] = [:]
 	@ObservationIgnored private var recent: [String]
 	@ObservationIgnored private let directory: URL
 	@ObservationIgnored private let locator = LocationProvider()
@@ -110,6 +139,7 @@ final class AppModel {
 		themeID = portable?.settings.theme ?? (AppTheme.all.contains(where: { $0.id == saved.theme }) ? saved.theme : "subway")
 		stationPreferences = portable?.settings.stations ?? saved.stations
 		widgetPreferences = portable?.settings.widgets ?? Self.read(WidgetPreferences.self, at: directory.appendingPathComponent("widgets.json")) ?? WidgetPreferences()
+		offlinePreferences = portable?.settings.offline ?? OfflinePreferences()
 		settingsSync = portable?.sync
 		#if DEBUG
 		let base = environment["SFN_API_BASE_URL"].flatMap(URL.init(string:)) ?? (portable?.endpoint ?? saved.endpoint).flatMap(URL.init(string:)) ?? TransitAPI.productionBaseURL
@@ -119,11 +149,18 @@ final class AppModel {
 		endpoint = base.absoluteString
 		api = TransitAPI(baseURL: base)
 		offlineStore = try? OfflineFleetStore(directory: directory.appendingPathComponent("FleetDownload", isDirectory: true))
+		transitStore = OfflineTransitStore(directory: directory.appendingPathComponent("OfflineTransit", isDirectory: true))
 		stations = Self.read([Station].self, at: directory.appendingPathComponent("stations.json")) ?? []
-		board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: stationID))
+		#if DEBUG
+		// Same-endpoint outage for tests; SFN_TEST_OFFLINE is the UI-test spelling.
+		outageSimulated = environment["SFN_SIMULATE_OUTAGE"] == "1" || environment["SFN_TEST_OFFLINE"] == "1"
+		#endif
 		widgetLocation = (try? widgetStore?.load())?.appLocation
-		for id in Set(favorites + [stationID]) {
-			if let board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id)) { try? widgetStore?.saveBoard(board, endpoint: endpoint) }
+		// Legacy board files have no endpoint; they only ever came from production.
+		if Self.isProduction(endpoint) {
+			for id in Set(favorites + [stationID]) {
+				if let board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id)) { _ = try? widgetStore?.saveBoard(board, endpoint: endpoint) }
+			}
 		}
 		durableSettings = portableSettings
 		if !FileManager.default.fileExists(atPath: directory.appendingPathComponent("settings.json").path) { persist() }
@@ -136,6 +173,9 @@ final class AppModel {
 		}
 		#endif
 		syncWidgets(reload: true)
+		if outageSimulated { beginSimulatedOutage(); connected = false }
+		prefetcher = makePrefetcher()
+		restoreTask = Task { await restoreOffline() }
 	}
 
 	var station: Station? { board?.station ?? stations.first { $0.id == stationID } }
@@ -150,17 +190,20 @@ final class AppModel {
 		guard id != stationID else { selectedTab = 0; return }
 		stationID = id
 		selectedTab = 0
-		board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id))
+		board = nil
+		boardSavedAt = nil
 		boardIsCached = true
 		boardError = nil
 		recordRecent(id)
 		persist()
+		Task { await loadCachedBoard(id) }
+		planOffline()
 	}
 
 	func toggleFavorite(_ id: String) {
 		if favorites.contains(id) { favorites.removeAll { $0 == id } } else { favorites.append(id) }
 		persist()
-		pruneBoards()
+		planOffline()
 	}
 	func toggleFavoriteCar(_ id: String) {
 		guard TrainFavorites.validCarID(id) else { return }
@@ -242,6 +285,13 @@ final class AppModel {
 		syncWidgets(reload: true)
 	}
 	func openWidgetURL(_ url: URL) {
+		if let key = WidgetLink.tripKey(from: url) {
+			// A ride link opens its trip without changing the selected station.
+			favoriteStartupAttempted = true
+			selectedTab = 0
+			openTripKey = key
+			return
+		}
 		guard let id = WidgetLink.stationID(from: url), favorites.contains(id) || stations.contains(where: { $0.id == id }) else { return }
 		selectStation(id)
 	}
@@ -256,16 +306,31 @@ final class AppModel {
 		boardGeneration += 1
 		catalogGeneration += 1
 		api = TransitAPI(baseURL: URL(string: endpoint)!)
+		apiBeforeOutage = nil
+		if outageSimulated { beginSimulatedOutage() }
 		boardIsCached = true
 		availableManifest = nil
 		lastCatalogAttempt = 0
 		persist()
-		Task { await refreshCatalog(); await refreshBoard() }
+		// Cached content belongs to one endpoint; restore this endpoint's ride and boards.
+		board = nil; boardSavedAt = nil; activeRide = nil; activeRideTrip = nil; savedTrips = []; surroundingTrips = [:]; liveTrips = [:]
+		readiness = OfflineReadiness()
+		planOffline()
+		Task {
+			await restoreOffline()
+			planOffline()
+			await refreshCatalog(); await refreshBoard()
+		}
 	}
 
 	func suspend(background: Bool) {
 		active = false
 		activeGeneration += 1
+		// Prefetch is foreground-only; the active ride stays saved for the next visit.
+		Task {
+			await prefetcher?.setForeground(false)
+			if background { try? await transitStore?.flushAccessTimes() }
+		}
 		if background {
 			// A new foreground visit should start at the nearest favorite again.
 			// Inactive transitions (including the location prompt) are still the same visit.
@@ -290,26 +355,21 @@ final class AppModel {
 				let connected = path.status == .satisfied
 				Task { @MainActor [weak self] in
 					guard let self else { return }
-					self.connected = connected
-					guard self.active else { return }
-					if connected {
-						async let catalog: Void = self.refreshCatalog()
-						async let board: Void = self.refreshBoard()
-						_ = await (catalog, board)
-					} else {
-						self.boardIsCached = true
-						self.boardError = "No connection. Saved reports are historical; reconnect for current predictions."
-					}
+					self.networkConnected = connected
+					await self.connectionChanged()
 				}
 			}
 			network.start(queue: DispatchQueue(label: "nyc.juliet.subways.network"))
 		}
 		offlineManifest = await offlineStore?.manifest()
+		await restoreTask?.value
+		await expireOfflineEntries()
+		await prefetcher?.setConnected(connected)
+		await prefetcher?.setForeground(true)
+		planOffline()
 		await withTaskGroup(of: Void.self) { group in
 			group.addTask { await self.clockLoop() }
 			group.addTask { await self.loadInitialCatalog() }
-			group.addTask { await self.boardLoop() }
-			group.addTask { await self.favoritesLoop() }
 			group.addTask { await self.widgetLocationLoop() }
 		}
 	}
@@ -325,18 +385,6 @@ final class AppModel {
 		// Cached favorites can be selected without waiting for the network.
 		await openClosestFavoriteOnce()
 		await catalog
-	}
-	private func boardLoop() async {
-		while !Task.isCancelled {
-			await refreshBoard()
-			do { try await Task.sleep(for: .seconds(10)) } catch { return }
-		}
-	}
-	private func favoritesLoop() async {
-		while !Task.isCancelled {
-			await refreshFavorites()
-			do { try await Task.sleep(for: .seconds(30)) } catch { return }
-		}
 	}
 	private func widgetLocationLoop() async {
 		while !Task.isCancelled {
@@ -375,43 +423,428 @@ final class AppModel {
 		}
 	}
 
+	/// Fetches the selected board now, ahead of automatic work. It joins a matching
+	/// fetch already queued or in flight, and returns at once without a connection.
 	func refreshBoard() async {
 		guard station?.departureMode != "external" else { return }
 		let id = stationID
-		boardGeneration += 1
-		let generation = boardGeneration
+		let outcome = await prefetcher?.request(OfflineFetchRequest(endpoint: endpoint, target: .board(stationID: id), priority: .explicit)) ?? .paused
+		if outcome == .paused, id == stationID { await showSavedBoard(id, failed: false) }
+	}
+
+	/// Fetches a trip now, for opening details or pulling to refresh. Periodic
+	/// refreshes of open trips come from the prefetcher's shared cadence.
+	@discardableResult
+	func refreshTrip(_ key: String) async -> OfflineFetchOutcome {
+		await prefetcher?.request(OfflineFetchRequest(endpoint: endpoint, target: .trip(key: key), priority: .explicit)) ?? .paused
+	}
+
+	/// Train details register for their whole lifetime, including while the connection
+	/// is lost or another view is pushed over them, so their fetched details stay in
+	/// memory for saving and the trip refreshes on the selected cadence.
+	func openTrip(_ key: String) {
+		openTrips[key, default: 0] += 1
+		if openTrips[key] == 1 { planOffline() }
+	}
+	func closeTrip(_ key: String) {
+		guard let count = openTrips[key] else { return }
+		if count > 1 { openTrips[key] = count - 1; return }
+		openTrips[key] = nil
+		liveTrips[key] = nil
+		planOffline()
+	}
+
+	// MARK: - Offline transit cache
+
+	func isTripSaved(_ key: String) -> Bool { savedTrips.contains { $0.tripKey == key } }
+
+	static func isProduction(_ endpoint: String) -> Bool {
+		OfflineEndpoint.key(endpoint) == OfflineEndpoint.key(TransitAPI.productionBaseURL.absoluteString)
+	}
+
+	/// Applies retention when the app returns, before persisted entries are served.
+	/// An expired automatic board on screen is dropped; saved trips and the ride are protected.
+	private func expireOfflineEntries() async {
+		guard let transitStore else { return }
 		let requestedEndpoint = endpoint
-		do {
-			let value = try await api.board(stationID: id)
-			try Task.checkCancellation()
-			guard generation == boardGeneration, requestedEndpoint == endpoint, id == stationID else { return }
-			Self.write(value, at: Self.boardURL(directory: directory, id: id))
-			try? widgetStore?.saveBoard(value, endpoint: requestedEndpoint)
-			board = value
-			boardIsCached = !connected
-			boardError = nil
-			now = fixedNow ?? Date().timeIntervalSince1970
-			recordRecent(id)
-			persist()
-			pruneBoards()
-		} catch {
-			guard id == stationID, !Task.isCancelled, generation == boardGeneration, requestedEndpoint == endpoint else { return }
-			boardIsCached = true
-			boardError = board == nil ? "Could not reach the train feed. Pull to retry or choose a saved station." : "Showing a saved board. Reconnect for current predictions."
+		_ = try? await transitStore.evict()
+		let id = stationID
+		let stillSaved = await transitStore.board(stationID: id, endpoint: requestedEndpoint) != nil
+		guard requestedEndpoint == endpoint, id == stationID else { return }
+		if boardIsCached, boardSavedAt != nil, !stillSaved { board = nil; boardSavedAt = nil }
+		await reloadOfflineStatus()
+	}
+
+	/// The age offline estimates are based on: the oldest prediction on the board,
+	/// never an alerts or car-assignment feed that updates more often.
+	static func predictionSourceTimestamp(_ board: Board) -> TimeInterval? {
+		if let oldest = board.departures.map(\.timestamp).filter({ $0 > 0 }).min() { return oldest }
+		return board.sources.filter { !OfflinePlanner.ancillaryBoardSources.contains($0.id) }.compactMap(\.timestamp).filter { $0 > 0 }.min()
+	}
+
+	/// Restores this endpoint's cached board, active ride and saved trips. Legacy
+	/// board files are imported once and never deleted.
+	func restoreOffline() async {
+		guard let transitStore else { return }
+		let requestedEndpoint = endpoint
+		await transitStore.setPreferences(offlinePreferences)
+		// Legacy board files carry no endpoint; importing them elsewhere would mix servers.
+		if Self.isProduction(requestedEndpoint) { await transitStore.importLegacyBoards(from: directory, endpoint: requestedEndpoint) }
+		// Retention applies before anything persisted is shown, including offline relaunches.
+		_ = try? await transitStore.evict()
+		guard requestedEndpoint == endpoint else { return }
+		if board == nil { await loadCachedBoard(stationID) }
+		let ride = await transitStore.activeRide(endpoint: requestedEndpoint)
+		let rideTrip: CachedTrip? = if let ride { await transitStore.trip(key: ride.tripKey, endpoint: requestedEndpoint) } else { nil }
+		guard requestedEndpoint == endpoint else { return }
+		activeRide = ride
+		activeRideTrip = rideTrip
+		publishRide()
+		await reloadOfflineStatus()
+		for id in Set(favorites + [stationID]) {
+			let cached = await transitStore.board(stationID: id, endpoint: requestedEndpoint)
+			guard requestedEndpoint == endpoint else { return }
+			if let cached { _ = try? widgetStore?.saveBoard(cached.board, endpoint: requestedEndpoint) }
 		}
 	}
 
-	private func refreshFavorites() async {
+	/// Shows a station's saved board until a live one arrives. Never replaces live data.
+	func loadCachedBoard(_ id: String) async {
 		let requestedEndpoint = endpoint
-		let client = api
-		for id in favorites where id != stationID && stations.first(where: { $0.id == id })?.departureMode != "external" {
-			guard !Task.isCancelled else { return }
-			if let value = try? await client.board(stationID: id), requestedEndpoint == endpoint, favorites.contains(id), !Task.isCancelled {
-				Self.write(value, at: Self.boardURL(directory: directory, id: id))
-				try? widgetStore?.saveBoard(value, endpoint: requestedEndpoint)
-				syncWidgets(reload: false)
+		guard let cached = await transitStore?.board(stationID: id, endpoint: requestedEndpoint),
+			id == stationID, requestedEndpoint == endpoint, board == nil || boardIsCached && board?.station.id != id else { return }
+		board = cached.board
+		boardSavedAt = cached.savedAt
+		boardIsCached = true
+		updateReadiness()
+	}
+
+	/// Keeps the board on screen as offline estimates when it cannot be refreshed.
+	private func showSavedBoard(_ id: String, failed: Bool) async {
+		boardIsCached = true
+		if board == nil { await loadCachedBoard(id) }
+		guard id == stationID else { return }
+		if board == nil {
+			boardError = connected ? "Could not reach the train feed. Pull to retry or choose a saved station." : "No connection and no saved board for this station. Choose a saved station or reconnect."
+		} else {
+			boardError = connected ? "Showing a saved board. Reconnect for current predictions." : "No connection. Showing a saved board; times are offline estimates."
+		}
+	}
+
+	func reloadOfflineStatus() async {
+		guard let transitStore else { return }
+		let requestedEndpoint = endpoint
+		let saved = await transitStore.savedTrips(endpoint: requestedEndpoint)
+		let failures = await transitStore.failures()
+		let usage = await transitStore.usage()
+		guard requestedEndpoint == endpoint else { return }
+		savedTrips = saved
+		offlineFailures = failures
+		offlineUsage = usage
+		await refreshReadiness()
+	}
+
+	func setOfflinePreferences(_ value: OfflinePreferences) {
+		guard value.isValid else { return }
+		offlinePreferences = value
+		persist()
+		let saved = offlinePreferences
+		Task {
+			await transitStore?.setPreferences(saved)
+			_ = try? await transitStore?.evict()
+			await reloadOfflineStatus()
+		}
+		if !offlinePreferences.preloadOtherStationTrips { surroundingTrips = [:] }
+		planOffline()
+		syncWidgets(reload: true)
+	}
+
+	func cachedTrip(_ key: String) async -> CachedTrip? { await transitStore?.trip(key: key, endpoint: endpoint) }
+
+	/// "Save trip offline": kept until removed. Pass any detail still in memory, even
+	/// after the connection drops; the store keeps whichever source is newer. Without
+	/// one, the board's onward stops are saved as a labeled partial trip.
+	func saveTripOffline(_ key: String, detail: TripDetail?) async {
+		guard let transitStore else { offlineActionError = "Offline storage is unavailable on this device."; return }
+		let requestedEndpoint = endpoint
+		do {
+			if let detail { try await transitStore.saveTrip(detail, endpoint: requestedEndpoint, departure: boardDeparture(key), manuallySaved: true) }
+			else if await transitStore.trip(key: key, endpoint: requestedEndpoint) == nil {
+				guard let departure = boardDeparture(key) else { throw AppError.message("No train details are available to save yet. Reconnect and try again.") }
+				try await transitStore.savePartialTrip(departure, endpoint: requestedEndpoint, manuallySaved: true, station: board?.station)
+			}
+			try await transitStore.setManuallySaved(true, tripKey: key, endpoint: requestedEndpoint)
+			offlineActionError = nil
+		} catch { offlineActionError = "Could not save this train offline. " + error.localizedDescription }
+		await reloadOfflineStatus()
+	}
+
+	/// Explicit removal from the saved list. The snapshot may then expire automatically.
+	func removeSavedTrip(_ key: String) async {
+		do { try await transitStore?.setManuallySaved(false, tripKey: key, endpoint: endpoint); offlineActionError = nil }
+		catch { offlineActionError = "Could not remove this saved train. " + error.localizedDescription }
+		await reloadOfflineStatus()
+	}
+
+	/// "I'm on this train". One active ride; it stays protected across relaunch until ended.
+	func startRide(_ key: String, detail: TripDetail?) async {
+		guard let transitStore else { offlineActionError = "Offline storage is unavailable on this device."; return }
+		guard !OfflineIdentity.isPositionalTrip(key) else { offlineActionError = "PATH reports identify a station arrival, not one train, so rides can't follow them."; return }
+		let requestedEndpoint = endpoint
+		let departure = boardDeparture(key)
+		do {
+			if let detail { try await transitStore.saveTrip(detail, endpoint: requestedEndpoint, departure: departure) }
+			else if await transitStore.trip(key: key, endpoint: requestedEndpoint) == nil, let departure { try await transitStore.savePartialTrip(departure, endpoint: requestedEndpoint, station: board?.station) }
+			let ride = ActiveRide(tripKey: key, boardingStationID: departure == nil ? nil : stationID, startedAt: Date().timeIntervalSince1970)
+			try await transitStore.setActiveRide(ride, endpoint: requestedEndpoint)
+			let trip = await transitStore.trip(key: key, endpoint: requestedEndpoint)
+			guard requestedEndpoint == endpoint else { return }
+			activeRide = ride
+			activeRideTrip = trip
+			offlineActionError = nil
+		} catch { offlineActionError = "Could not start this ride. " + error.localizedDescription }
+		publishRide()
+		planOffline()
+		await reloadOfflineStatus()
+	}
+
+	func endRide() async {
+		do {
+			try await transitStore?.setActiveRide(nil, endpoint: endpoint)
+			activeRide = nil
+			activeRideTrip = nil
+			offlineActionError = nil
+		} catch { offlineActionError = "Could not end this ride. " + error.localizedDescription }
+		publishRide()
+		planOffline()
+		await reloadOfflineStatus()
+	}
+
+	/// Clears automatic boards and trips for this endpoint. Saved trains and the
+	/// active ride are kept.
+	func removeAutomaticOfflineData() async {
+		do { _ = try await transitStore?.removeAutomaticEntries(endpoint: endpoint); offlineActionError = nil }
+		catch { offlineActionError = "Could not clear automatic downloads. " + error.localizedDescription }
+		surroundingTrips = [:]
+		await reloadOfflineStatus()
+	}
+
+	func dismissOfflineFailures() async {
+		await transitStore?.clearFailures()
+		offlineFailures = []
+	}
+
+	private func boardDeparture(_ key: String) -> Departure? { board?.departures.first { $0.tripKey == key } }
+
+	@discardableResult
+	private func storeBoard(_ value: Board, endpoint requestedEndpoint: String, viewed: String? = nil, distance: Double? = nil) async -> Bool {
+		guard let transitStore else { return false }
+		let saved = (try? await transitStore.saveBoard(value, endpoint: requestedEndpoint, viewedStationID: viewed, distanceMeters: distance)) != nil
+		let failures = await transitStore.failures()
+		let savedAt = saved ? await transitStore.board(stationID: value.station.id, endpoint: requestedEndpoint)?.savedAt : nil
+		guard requestedEndpoint == endpoint else { return saved }
+		offlineFailures = failures
+		if viewed == nil, value.station.id == stationID {
+			// The live board is now also the saved copy offline estimates come from.
+			if saved { boardSavedAt = savedAt }
+			updateReadiness()
+			readiness.boardSaved = saved
+			readiness.boardFailed = !saved
+		}
+		return saved
+	}
+
+	private func storeTrip(_ detail: TripDetail, key: String) async {
+		guard let transitStore else { return }
+		let requestedEndpoint = endpoint
+		_ = try? await transitStore.saveTrip(detail, endpoint: requestedEndpoint, departure: boardDeparture(key))
+		let failures = await transitStore.failures()
+		guard requestedEndpoint == endpoint else { return }
+		offlineFailures = failures
+		guard activeRide?.tripKey == key else { return }
+		let trip = await transitStore.trip(key: key, endpoint: requestedEndpoint)
+		// The endpoint or ride may have changed while the store was read.
+		guard requestedEndpoint == endpoint, activeRide?.tripKey == key else { return }
+		activeRideTrip = trip
+		publishRide()
+	}
+
+	/// The automatic fetch set. Only the active ride and the selected board refresh
+	/// every 10 s; next-trip snapshots, favorites and boards near the viewed station
+	/// (never GPS) use the 30 s background cadence so they cannot starve each other.
+	func planOffline() {
+		guard let prefetcher else { return }
+		let requests = plannedRequests()
+		updateReadiness()
+		Task { await prefetcher.track(requests) }
+	}
+
+	func plannedRequests() -> [OfflineFetchRequest] {
+		var requests: [OfflineFetchRequest] = []
+		var seen = Set<OfflineFetchTarget>()
+		var snapshots = Set<String>()
+		func add(_ target: OfflineFetchTarget, _ priority: OfflineFetchPriority) {
+			if seen.insert(target).inserted { requests.append(OfflineFetchRequest(endpoint: endpoint, target: target, priority: priority)) }
+		}
+		if let ride = activeRide { add(.trip(key: ride.tripKey), .activeRide) }
+		if station?.departureMode != "external" { add(.board(stationID: stationID), .selected) }
+		for key in openTrips.keys.sorted() { add(.trip(key: key), .selected) }
+		if let board, board.station.id == stationID {
+			for key in OfflinePlanner.tripKeysToSnapshot(board, preferences: offlinePreferences) { add(.trip(key: key), .background); snapshots.insert(key) }
+		}
+		var others: [String] = []
+		for id in favorites where stations.first(where: { $0.id == id })?.departureMode != "external" { others.append(id) }
+		if let viewed = station {
+			for (nearby, _) in OfflinePlanner.surroundingStations(of: viewed, catalog: stations, preferences: offlinePreferences) where nearby.departureMode != "external" { others.append(nearby.id) }
+		}
+		for id in others where id != stationID { add(.board(stationID: id), .background) }
+		// Other stations means favorites at any distance and nearby stations, even with the radius off.
+		if offlinePreferences.preloadOtherStationTrips {
+			for id in others where id != stationID {
+				for key in surroundingTrips[id] ?? [] { add(.trip(key: key), .background); snapshots.insert(key) }
 			}
 		}
+		snapshotKeys = snapshots
+		return requests
+	}
+
+	private func makePrefetcher() -> OfflinePrefetcher {
+		OfflinePrefetcher { [weak self] request in await self?.performFetch(request) }
+	}
+
+	/// The prefetcher's only network path. It calls the private fetchers directly;
+	/// calling the public refresh methods here would join this same request and wait forever.
+	private func performFetch(_ request: OfflineFetchRequest) async {
+		guard request.endpoint == endpoint else { return }
+		switch request.target {
+		case .board(let id): await performBoard(id)
+		case .trip(let key): await performTrip(key)
+		}
+	}
+
+	/// Only newer source data replaces a snapshot; the store keeps the previous
+	/// source time for unchanged responses.
+	private func performBoard(_ id: String) async {
+		let requestedEndpoint = endpoint
+		let generation = boardGeneration
+		let client = api
+		do {
+			let value = try await client.board(stationID: id)
+			try Task.checkCancellation()
+			guard requestedEndpoint == endpoint else { return }
+			if id == stationID, generation == boardGeneration {
+				_ = try? widgetStore?.saveBoard(value, endpoint: requestedEndpoint)
+				board = value
+				boardIsCached = !connected
+				boardError = nil
+				now = fixedNow ?? Date().timeIntervalSince1970
+				recordRecent(id)
+				persist()
+				await storeBoard(value, endpoint: requestedEndpoint)
+				planOffline()
+				return
+			}
+			let viewed = station
+			let distance = viewed.map { Display.distanceMeters(lat1: $0.lat, lon1: $0.lon, lat2: value.station.lat, lon2: value.station.lon) }
+			await storeBoard(value, endpoint: requestedEndpoint, viewed: viewed?.id, distance: distance)
+			if favorites.contains(id) {
+				_ = try? widgetStore?.saveBoard(value, endpoint: requestedEndpoint)
+				syncWidgets(reload: false)
+			}
+			if offlinePreferences.preloadOtherStationTrips {
+				let keys = OfflinePlanner.tripKeysToSnapshot(value, preferences: offlinePreferences)
+				if surroundingTrips[id] != keys { surroundingTrips[id] = keys; planOffline() }
+			}
+		} catch {
+			guard id == stationID, requestedEndpoint == endpoint, generation == boardGeneration, !Task.isCancelled else { return }
+			await showSavedBoard(id, failed: true)
+		}
+	}
+
+	private func performTrip(_ key: String) async {
+		let requestedEndpoint = endpoint
+		let client = api
+		do {
+			let value = try await client.trip(key: key)
+			try Task.checkCancellation()
+			guard requestedEndpoint == endpoint else { return }
+			let open = openTrips[key] != nil
+			if open { liveTrips[key] = LiveTrip(detail: value) }
+			if !OfflineIdentity.isPositionalTrip(key), snapshotKeys.contains(key) || activeRide?.tripKey == key || isTripSaved(key) || open && offlinePreferences.saveOpenedTrips {
+				await storeTrip(value, key: key)
+			}
+		} catch {
+			// A trip missing from the feed is not a cancellation; any snapshot stays as saved.
+			guard requestedEndpoint == endpoint, openTrips[key] != nil, !Task.isCancelled else { return }
+			liveTrips[key, default: LiveTrip()].failure = (error as? TransitAPIError) == .notFound ? .notFound : .unavailable(error.localizedDescription)
+		}
+		if readiness.wanted.contains(key) { await refreshReadiness() }
+	}
+
+	private func updateReadiness() {
+		if readiness.stationID != stationID { readiness = OfflineReadiness(stationID: stationID) }
+		guard let board, board.station.id == stationID else { readiness.wanted = []; return }
+		if boardSavedAt != nil { readiness.boardSaved = true }
+		readiness.wanted = OfflinePlanner.tripKeysToSnapshot(board, preferences: offlinePreferences)
+	}
+
+	private func refreshReadiness() async {
+		updateReadiness()
+		guard let transitStore, !readiness.wanted.isEmpty else { return }
+		let requestedEndpoint = endpoint
+		let id = stationID
+		var saved = Set<String>()
+		var partial = Set<String>()
+		for key in readiness.wanted {
+			guard let trip = await transitStore.trip(key: key, endpoint: requestedEndpoint) else { continue }
+			if trip.isComplete { saved.insert(key) } else { partial.insert(key) }
+		}
+		guard id == stationID, requestedEndpoint == endpoint else { return }
+		readiness.saved = saved
+		readiness.partial = partial
+	}
+
+	private func connectionChanged() async {
+		let isConnected = networkConnected && !outageSimulated
+		guard isConnected != connected else { return }
+		connected = isConnected
+		// Reconnecting makes every tracked fetch due at once (recovery refresh).
+		await prefetcher?.setConnected(isConnected)
+		guard active else { return }
+		if isConnected {
+			async let catalog: Void = refreshCatalog()
+			async let board: Void = refreshBoard()
+			_ = await (catalog, board)
+		} else {
+			await showSavedBoard(stationID, failed: false)
+		}
+	}
+
+	/// The widget follows the ride only when that preference is on; the snapshot is shared either way.
+	private func publishRide() {
+		try? widgetStore?.saveRide(activeRide, trip: activeRideTrip, endpoint: endpoint)
+		if widgetReloadEnabled { WidgetCenter.shared.reloadTimelines(ofKind: WidgetSharedStore.kind) }
+	}
+
+	#if DEBUG
+	/// Simulates losing the network on the same endpoint: requests fail and the
+	/// app reports no connection, so this endpoint's cache stays in use.
+	func setSimulatedOutage(_ value: Bool) async {
+		guard value != outageSimulated else { return }
+		outageSimulated = value
+		if value { beginSimulatedOutage() }
+		else if let saved = apiBeforeOutage { api = saved; apiBeforeOutage = nil }
+		await connectionChanged()
+	}
+	#endif
+
+	private func beginSimulatedOutage() {
+		#if DEBUG
+		if apiBeforeOutage == nil { apiBeforeOutage = api }
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [SimulatedOutage.self]
+		api = TransitAPI(baseURL: baseURL, session: URLSession(configuration: configuration))
+		#endif
 	}
 
 	func locateNearby() async {
@@ -451,7 +884,9 @@ final class AppModel {
 	}
 
 	private func openClosestFavoriteOnce() async {
-		guard active, !Task.isCancelled, !locationDisabled, !favoriteStartupAttempted, !stations.isEmpty,
+		// A rider passes a different closest favorite at nearly every stop; returning
+		// to the app must not navigate away from their ride.
+		guard activeRide == nil, active, !Task.isCancelled, !locationDisabled, !favoriteStartupAttempted, !stations.isEmpty,
 			stationSelection.mode != .favorite || !favoriteStations.isEmpty else { return }
 		let initialStation = stationID
 		// A permission sheet briefly deactivates the scene. Reuse the same one-shot
@@ -468,7 +903,7 @@ final class AppModel {
 		let location = await closestFavoriteTask?.value
 		guard active, !Task.isCancelled, !favoriteStartupAttempted else { return }
 		closestFavoriteTask = nil
-		guard let location, initialStation == stationID else { return }
+		guard let location, initialStation == stationID, activeRide == nil else { return }
 		let coordinate = WidgetCoordinate(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, timestamp: location.timestamp.timeIntervalSince1970)
 		guard coordinate.isUsable(now: Date().timeIntervalSince1970) else { return }
 		if let closest = stationSelection.select(stations: stations, favorites: favorites, location: coordinate, previous: stationID) {
@@ -526,7 +961,7 @@ final class AppModel {
 	var portableSettings: PortableSettings {
 		var value = PortableSettings(); value.favorites = favorites; value.theme = themeID
 		value.trainFavorites = trainFavorites; value.stationSelection = stationSelection; value.units = units
-		value.stations = stationPreferences; value.widgets = widgetPreferences; return value
+		value.stations = stationPreferences; value.widgets = widgetPreferences; value.offline = offlinePreferences; return value
 	}
 	private var settingsStore: DeviceSettingsStore { DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json")) }
 	private func record(settings: PortableSettings, lastStation: String, sync: SettingsSyncState?) -> DeviceSettings {
@@ -542,7 +977,7 @@ final class AppModel {
 			if let saved = durableSettings {
 				favorites = saved.favorites; themeID = saved.theme
 				trainFavorites = saved.trainFavorites; stationSelection = saved.stationSelection; units = saved.units
-				stationPreferences = saved.stations; widgetPreferences = saved.widgets
+				stationPreferences = saved.stations; widgetPreferences = saved.widgets; offlinePreferences = saved.offline
 			}
 			settingsError = "Settings could not be saved on this device. Your previous preferences are unchanged. " + error.localizedDescription
 		}
@@ -552,14 +987,24 @@ final class AppModel {
 		try settingsStore.save(record(settings: settings, lastStation: selected, sync: sync), replacingUnreadable: replacingUnreadable)
 		favorites = settings.favorites; themeID = settings.theme; stationPreferences = settings.stations; widgetPreferences = settings.widgets; settingsSync = sync; settingsError = nil
 		trainFavorites = settings.trainFavorites; stationSelection = settings.stationSelection; units = settings.units
+		let offlineChanged = offlinePreferences != settings.offline
+		offlinePreferences = settings.offline
 		if lastStation != nil { favoriteStartupAttempted = true }
 		durableSettings = settings
 		if selected != stationID {
 			stationID = selected; favoriteStartupAttempted = true; boardGeneration += 1
-			board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: selected)); boardIsCached = true; boardError = nil
+			board = nil; boardSavedAt = nil; boardIsCached = true; boardError = nil
+			Task { await loadCachedBoard(selected) }
 		}
-		for id in Set(favorites + [stationID]) {
-			if let board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id)) { try? widgetStore?.saveBoard(board, endpoint: endpoint) }
+		if offlineChanged {
+			let saved = offlinePreferences
+			Task { await transitStore?.setPreferences(saved); _ = try? await transitStore?.evict(); await reloadOfflineStatus() }
+		}
+		planOffline()
+		if Self.isProduction(endpoint) {
+			for id in Set(favorites + [stationID]) {
+				if let board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id)) { _ = try? widgetStore?.saveBoard(board, endpoint: endpoint) }
+			}
 		}
 		syncWidgets(reload: true)
 		if notify { settingsDidChange?() }
@@ -579,19 +1024,15 @@ final class AppModel {
 	}
 	private func syncWidgets(reload: Bool) {
 		guard let widgetStore else { return }
-		let state = WidgetSharedState(favorites: favorites, stations: stations, appFilters: stationPreferences, widgets: widgetPreferences, themeID: themeID, endpoint: endpoint, appLocation: widgetLocation, stationSelection: stationSelection, units: units)
+		let state = WidgetSharedState(favorites: favorites, stations: stations, appFilters: stationPreferences, widgets: widgetPreferences, themeID: themeID, endpoint: endpoint, appLocation: widgetLocation, stationSelection: stationSelection, units: units, offline: offlinePreferences)
 		let previous = try? widgetStore.load()
 		try? widgetStore.save(state)
-		let changed = previous?.favorites != state.favorites || previous?.appFilters != state.appFilters || previous?.themeID != state.themeID || previous?.endpoint != state.endpoint || previous?.stationSelection != state.stationSelection || previous?.widgets != state.widgets || previous?.units != state.units
+		let changed = previous?.favorites != state.favorites || previous?.appFilters != state.appFilters || previous?.themeID != state.themeID || previous?.endpoint != state.endpoint || previous?.stationSelection != state.stationSelection || previous?.widgets != state.widgets || previous?.units != state.units || previous?.offline != state.offline
 		let time = Date().timeIntervalSince1970
 		if reload || changed || time - lastWidgetReload >= 60 {
 			lastWidgetReload = time
 			if widgetReloadEnabled { WidgetCenter.shared.reloadTimelines(ofKind: WidgetSharedStore.kind) }
 		}
-	}
-	private func pruneBoards() {
-		let keep = Set((favorites + recent + [stationID]).map { Self.boardURL(directory: directory, id: $0).lastPathComponent })
-		for url in (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [] where url.lastPathComponent.hasPrefix("board-") && !keep.contains(url.lastPathComponent) { try? FileManager.default.removeItem(at: url) }
 	}
 	private static func boardURL(directory: URL, id: String) -> URL {
 		let safe = Data(id.utf8).base64EncodedString().replacingOccurrences(of: "/", with: "_")
@@ -600,6 +1041,35 @@ final class AppModel {
 	private static func read<T: Decodable>(_ type: T.Type, at url: URL) -> T? { (try? Data(contentsOf: url)).flatMap { try? JSONDecoder().decode(type, from: $0) } }
 	private static func write<T: Encodable>(_ value: T, at url: URL) { if let data = try? JSONEncoder().encode(value) { try? data.write(to: url, options: .atomic) } }
 }
+
+/// Live details for an open trip, and why the latest refresh failed.
+struct LiveTrip: Equatable {
+	enum Failure: Equatable { case notFound, unavailable(String) }
+	var detail: TripDetail?
+	var failure: Failure?
+}
+
+/// How much of the selected station is saved for offline use.
+struct OfflineReadiness: Equatable {
+	var stationID: String?
+	var boardSaved = false
+	var boardFailed = false
+	/// Next trips per route and direction the preferences ask to keep.
+	var wanted: [String] = []
+	var saved: Set<String> = []
+	var partial: Set<String> = []
+	var savedCount: Int { wanted.filter(saved.contains).count }
+}
+
+#if DEBUG
+/// Fails every request immediately, as when the device has no connection.
+final class SimulatedOutage: URLProtocol, @unchecked Sendable {
+	override class func canInit(with request: URLRequest) -> Bool { true }
+	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+	override func startLoading() { client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet)) }
+	override func stopLoading() {}
+}
+#endif
 
 enum AppError: LocalizedError {
 	case message(String)

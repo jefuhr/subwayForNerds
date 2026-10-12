@@ -175,3 +175,24 @@ test('auth rate limits apply to loopback clients unless a test fixture exempts t
 	const limited=await statuses(false);assert.equal(limited[119],200);assert.equal(limited[120],429);
 	assert.ok((await statuses(true)).every(code=>code===200));
 });
+test('offline preferences survive clients that predate them and permit omission only at defaults', async () => {
+	const app = await fixture();
+	try {
+		const challenge = (await app.inject({ method: 'POST', url: '/api/v1/auth/challenges', payload: { provider: 'apple', platform: 'native', intent: 'login' } })).json();
+		const login = (await app.inject({ method: 'POST', url: '/api/v1/auth/apple/exchange', payload: { challenge: challenge.id, identityToken: 'valid-' + challenge.nonce, code: 'x' } })).json();
+		const headers = { authorization: 'Bearer ' + login.token };
+		const settings = { ...defaults(), offline: { ...defaults().offline, retentionHours: 24, widgetsFollowActiveRide: true } };
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"0"' }, payload: settings })).statusCode, 200);
+		assert.deepEqual((await app.inject({ url: '/api/v1/account/settings', headers })).json().settings.offline, settings.offline);
+		const legacy: any = defaults(); delete legacy.offline; legacy.theme = 'hello-kitty';
+		const rejected = await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"1"' }, payload: legacy });
+		assert.equal(rejected.statusCode, 409);
+		assert.match(rejected.json().error, /offline settings/);
+		assert.deepEqual((await app.inject({ url: '/api/v1/account/settings', headers })).json(), { revision: 1, settings });
+		const invalid = { ...defaults(), offline: { ...defaults().offline, storageLimitMiB: 75 } };
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"1"' }, payload: invalid })).statusCode, 400);
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"1"' }, payload: defaults() })).statusCode, 200);
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"2"' }, payload: legacy })).statusCode, 200);
+		assert.deepEqual((await app.inject({ url: '/api/v1/account/settings', headers })).json().settings, { ...defaults(), theme: 'hello-kitty' });
+	} finally { await app.close(); }
+});

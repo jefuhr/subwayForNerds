@@ -608,3 +608,84 @@ predate this merge; the merged UI suite is left to PR CI. Logs are retained as
   `phone-refresh-signature.log`. Its installation remains pending: the phone
   became unavailable, and CoreDevice rejected installation with error 4016.
   Evidence: `phone-refresh-install.log` and `phone-refresh-device-final.json`.
+
+## October 11, 2026 — Offline stations and saved rides
+
+- Failure modes covered by the new native tests include partial and older feed
+  responses, missing source times, expired/passed estimates, endpoint isolation,
+  interrupted snapshot/index writes, protected manual saves and rides, storage
+  pressure, legacy migration, and duplicate or starved prefetch requests.
+- `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+  --package-path ios/TransitCore --jobs 2` passed 156 tests in 22 suites.
+  The existing FleetOffline suite passed all 17 tests through
+  `npm run test:native`. Logs: `artifacts/offline-work/transitcore-integrated-final.log`
+  and `artifacts/offline-work/native-packages.log`.
+- `bash scripts/test-native-startup.sh` passed all 31 AppModel integration
+  scenarios, including same-endpoint outages and relaunch, immediate reconnect,
+  saved full/partial details, ride persistence, protected clearing, preference
+  persistence, source age, prefetch cadence/deduplication, retention, and
+  production-only legacy migration. The final review regression first reproduced
+  an automatically saved positional PATH trip, then passed after excluding it.
+  Evidence: `artifacts/offline-work/startup-final.log` and
+  `startup-review-red.log`.
+- `npm run check` passed the TypeScript/Vite build and all 120 server/shared tests.
+  The settings and favorites browser specs passed all 13 desktop Chromium cases
+  on fixture port 8093. Repeat with `SFN_TEST_PORT=8093 npm run test:browser --
+  test/browser/settings.spec.ts test/browser/favorites.spec.ts --project=desktop`.
+  Evidence: `artifacts/offline-work/web-check.log`, `browser.log`, and
+  `browser-report/`.
+- Independent Claude code review covered the core store, scheduler, settings,
+  widgets, and integrated app views. All reported P0/P1/P2 findings were fixed
+  and rechecked by the reviewer. The lead then fixed its final three P3 findings:
+  legacy widget import on a custom endpoint, endpoint changes during widget
+  restoration, and automatic saving of opened positional PATH trips. The final
+  harness covers the legacy-import and PATH regressions; the endpoint guard was
+  inspected. These final P3 changes did not receive another Claude pass.
+  The read-only review did not run tests. Reports and reviewed snapshots are
+  preserved under `artifacts/offline-work/claude-review/`.
+- The integrated iPhone run passed the offline widget gallery and three existing
+  favorites/Lock Screen regressions. Its new ride test reached reconnect but
+  selected the `boardFreshness` image (label `Radio`) instead of the status text;
+  the captured hierarchy already contained `Live feed`. A subsequent run passed
+  reconnect and protected clearing, then exposed a second test-selector issue:
+  SwiftUI's adjustable Stepper is a leaf without Increment button children. Both
+  selectors were corrected. The original results remain at
+  `artifacts/native-ui-20261011-165144.xcresult` and
+  `artifacts/native-ui-20261011-170108.xcresult`, with exported diagnostics under
+  `artifacts/offline-work/iphone-initial-attachments/` and
+  `iphone-control-attachments/`.
+- The corrected ride UI flow passed on iPhone: save a train, start a ride,
+  relaunch without connectivity on the same endpoint, inspect the cached board
+  and details, reconnect, clear automatic downloads while retaining the ride and
+  manual save, then change and relaunch with the departure count, nearby radius,
+  and estimate window preserved. Repeat with
+  `SFN_SIMULATOR_ID=4B471BAD-EFE7-4069-B98F-F42C73364FC4 bash
+  scripts/test-ios.sh -only-testing:SubwaysForNerdsUITests/OfflineRideTests`.
+  Evidence: `artifacts/native-ui-20261011-170505.xcresult`,
+  `artifacts/offline-work/iphone-ride-controls-final.log`, and six retained
+  screenshots under `artifacts/offline-work/iphone-ride-screenshots/`.
+- The same complete ride/settings flow also passed on iPad using
+  `SFN_SIMULATOR_ID=FDA922E7-1BC7-496C-96F0-5B1EBD1EC33C bash
+  scripts/test-ios.sh -only-testing:SubwaysForNerdsUITests/OfflineRideTests`.
+  Evidence: `artifacts/native-ui-20261011-170758.xcresult`,
+  `artifacts/offline-work/ipad-ride-final.log`, and six retained screenshots
+  under `artifacts/offline-work/ipad-ride-screenshots/`.
+- The real widget SwiftUI previews passed on the dedicated iPhone and iPad
+  simulators, including all seven families on iPad, saved/expired/partial trips,
+  and trips whose saved predictions have passed. Run
+  `SFN_SIMULATOR_ID=<device> bash scripts/test-ios.sh
+  -only-testing:SubwaysForNerdsUITests/OfflineWidgetUITests`. Screenshots are
+  exported under `artifacts/offline-work/widget-screenshots/` and
+  `widget-ipad-screenshots/`; results are
+  `artifacts/native-ui-20261011-161624.xcresult` and
+  `artifacts/native-ui-20261011-162453.xcresult`. Visual review found and fixed
+  source-label clipping in the circular widget.
+- The first preview run crashed while entering the gallery during an incremental
+  development build (`native-ui-20261011-161105.xcresult`). A clean rebuild and
+  both subsequent simulator runs passed. The original failure log is preserved
+  as `artifacts/offline-work/widget-ui.log`; the crash cause was not independently
+  proven.
+- These checks do not establish physical-device background delivery, WidgetKit
+  refresh timing, or real subway connectivity. No device installation or production
+  deployment was performed. Ship the settings server/web update before the new
+  native account-sync client.

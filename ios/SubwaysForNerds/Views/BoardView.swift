@@ -5,6 +5,7 @@ import TransitCore
 enum BoardDetail: Hashable {
 	case train(String)
 	case station
+	case savedTrips
 }
 
 /// Regular widths keep the board beside train details or station info; compact widths push them.
@@ -25,6 +26,7 @@ struct BoardSplitView: View {
 			NavigationStack {
 				switch selection {
 				case .train(let key): TrainDetailView(tripKey: key)
+				case .savedTrips: SavedTripsView()
 				// Side by side, station info fills the detail column until a train is chosen.
 				case .station, nil:
 					if let station = app.station, selection != nil || sizeClass == .regular { ContextView(station: station) }
@@ -34,6 +36,13 @@ struct BoardSplitView: View {
 		}
 		.navigationSplitViewStyle(.balanced)
 		.background(app.theme.background)
+		// A ride link opens its trip without changing the selected station.
+		.task(id: app.openTripKey) {
+			guard let key = app.openTripKey else { return }
+			selection = .train(key)
+			column = .detail
+			app.openTripKey = nil
+		}
 	}
 }
 
@@ -62,11 +71,25 @@ struct BoardView: View {
 			if let error = app.settingsError {
 				Section { Notice(text: error).accessibilityIdentifier("boardSettingsError") }
 			}
+			if app.activeRide != nil {
+				Section { ActiveRideBanner { show(.train($0)) } }
+			}
+			if !app.offlineFailures.isEmpty {
+				Section {
+					HStack(alignment: .firstTextBaseline) {
+						Notice(text: "Offline save failed: " + (app.offlineFailures.last?.message ?? "storage unavailable") + (app.offlineFailures.count > 1 ? " (+\(app.offlineFailures.count - 1) more)" : "") + ". Saved data from before is unchanged.")
+						Spacer(minLength: 4)
+						Button("Dismiss") { Task { await app.dismissOfflineFailures() } }.buttonStyle(.borderless).actionStyle().font(.footnote)
+					}
+					.accessibilityIdentifier("offlineSaveFailure")
+				}
+			}
 			if externalDepartures, let station = app.station {
 				NjtDeparturesSection(station: station)
 			} else {
-				if let error = app.boardError { Section { Notice(text: error) } }
+				if let error = app.boardError { Section { Notice(text: error).accessibilityIdentifier("boardError") } }
 				else if degraded { Section { Notice(text: "Some feeds are stale or unavailable. Check source ages below.") } }
+				if app.board != nil { Section { offlineStatus } }
 				Section {
 					VStack(alignment: .leading, spacing: 0) {
 						HStack(spacing: 0) {
@@ -156,8 +179,30 @@ struct BoardView: View {
 			.font(.caption2).foregroundStyle(.secondary)
 	}
 
+	/// Saved boards always say they are offline estimates and how old their source is;
+	/// live boards say how much of this station is ready for offline use.
+	private var offlineStatus: some View {
+		let readiness = app.readiness
+		// The oldest prediction, not the newest alerts or car-assignment report.
+		let source = app.board.flatMap(AppModel.predictionSourceTimestamp)
+		return VStack(alignment: .leading, spacing: 2) {
+			if app.boardIsCached {
+				Label(OfflineDisplay.estimateLabel(timestamp: source, now: app.now, preferences: app.offlinePreferences), systemImage: "icloud.slash")
+					.font(.caption.weight(.semibold))
+					.accessibilityIdentifier("boardOfflineEstimate")
+				Text(app.boardSavedAt.map { "Board saved \(Display.ageLabel($0, now: app.now)). Countdowns use this device's clock; trains that left are marked estimate passed." } ?? "Showing the last board from this visit; it was not saved offline.")
+					.font(.caption2).foregroundStyle(.secondary)
+			} else {
+				let trips = readiness.wanted.isEmpty ? "" : " · \(readiness.savedCount) of \(readiness.wanted.count) next trips\(readiness.partial.isEmpty ? "" : ", \(readiness.partial.count) partial")"
+				Label(readiness.boardFailed ? "Offline copy failed to save" : readiness.boardSaved ? "Saved for offline\(trips)" : "Saving for offline…", systemImage: readiness.boardFailed ? "exclamationmark.icloud" : readiness.boardSaved ? "checkmark.icloud" : "icloud.and.arrow.down")
+					.font(.caption2).foregroundStyle(.secondary)
+					.accessibilityIdentifier("offlineReadiness")
+			}
+		}
+	}
+
 	private var freshnessLabel: some View {
-		Label(externalDepartures ? "Station directory" : live ? (degraded ? "Partial live data" : "Live feed") : app.boardIsCached && app.board != nil ? "Cached board" : "Awaiting live data", systemImage: externalDepartures ? "map" : live ? "dot.radiowaves.left.and.right" : "clock")
+		Label(externalDepartures ? "Station directory" : live ? (degraded ? "Partial live data" : "Live feed") : app.boardIsCached && app.board != nil ? (app.boardSavedAt == nil ? "Last board" : "Saved board · offline") : "Awaiting live data", systemImage: externalDepartures ? "map" : live ? "dot.radiowaves.left.and.right" : "clock")
 			.font(.caption2.weight(.semibold)).foregroundStyle(live ? app.theme.accent : app.theme.ink.opacity(0.7))
 			.accessibilityIdentifier("boardFreshness")
 	}
@@ -186,6 +231,12 @@ struct BoardView: View {
 						}.chip()
 					}
 					.buttonStyle(.plain).accessibilityIdentifier("stationAlerts")
+				}
+				if !app.savedTrips.isEmpty {
+					Button { show(.savedTrips) } label: {
+						HStack(spacing: 4) { Image(systemName: "arrow.down.circle"); Text("Saved trains (\(app.savedTrips.count))") }.chip()
+					}
+					.buttonStyle(.plain).accessibilityIdentifier("savedTrips")
 				}
 				ForEach(app.favoriteStations.filter { $0.id != app.stationID }) { station in
 					Button { app.selectStation(station.id) } label: {
@@ -364,7 +415,12 @@ struct DepartureRow: View {
 	var cached = false
 	var previous: Departure?
 	var showPlatform = false
-	private var countdown: Countdown { Display.countdown(departure.time, timestamp: departure.timestamp, now: now, cached: cached, timeFormat: app.units.time) }
+	/// Cached rows count down the saved prediction on the device clock and say so.
+	private var countdown: Countdown {
+		// An unassigned train has no saved prediction to count down from.
+		if cached, departure.assigned == false, Display.boardable(departure) { return Countdown(value: Display.clockTime(departure.time, format: app.units.time), unit: "not assigned") }
+		return OfflineDisplay.countdown(departure: departure, now: now, cached: cached, preferences: app.offlinePreferences, timeFormat: app.units.time)
+	}
 	private var historical: Bool { cached || Display.freshness(departure.timestamp, now: now) != .live || departure.locationTimestamp.map { now - $0 > 90 } == true }
 	private var favoriteMatch: TrainFavoriteMatch? { app.trainFavorites.match(departure.consist, feed: departure.feed, now: now, cached: cached) }
 	private var gap: Int? {
@@ -432,7 +488,7 @@ struct DepartureRow: View {
 					Text(countdown.value).font(.title2.weight(.bold).monospacedDigit())
 					if countdown.unit == "min" { Text("min").font(.caption2.weight(.semibold)) }
 				}
-				Text(countdown.unit == "min" ? Display.clockTime(departure.time, format: app.units.time) : countdown.unit)
+				Text(countdown.unit == "min" ? (cached ? "offline est. " : "") + Display.clockTime(departure.time, format: app.units.time) : countdown.unit)
 					.font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
 			} else {
 				Text("—").font(.title2.weight(.bold))

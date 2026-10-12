@@ -5,7 +5,8 @@ import TransitCore
 import WidgetKit
 
 struct SubwayWidgetEntry: TimelineEntry, Sendable {
-	let date: Date
+	var date: Date
+	var displayUntil: Date?
 	var station: Station?
 	var board: Board?
 	var preference = StationPreference(view: .direction)
@@ -13,10 +14,12 @@ struct SubwayWidgetEntry: TimelineEntry, Sendable {
 	var lockScreen = LockScreenWidgetOptions()
 	var themeID = "subway"
 	var units = UnitPreferences()
+	var offline = OfflinePreferences()
+	var ride: WidgetRideSnapshot?
 	var cached = false
 	var locationNotice: String?
 	var message: String?
-	var url: URL { station.map { WidgetLink.board(stationID: $0.id) } ?? URL(string: "subwaynerds://board")! }
+	var url: URL { ride.map { WidgetLink.ride(tripKey: $0.ride.tripKey) } ?? station.map { WidgetLink.board(stationID: $0.id) } ?? URL(string: "subwaynerds://board")! }
 	/// Mixed car types give previews the longer details that real boards often have.
 	static func example(date: Date = .now) -> SubwayWidgetEntry {
 		let station = Station(id: "44", name: "Church Av", borough: "Bk", routes: ["B", "Q"], lat: 40.65, lon: -73.96)
@@ -42,12 +45,21 @@ struct SubwayTimelineProvider: TimelineProvider {
 		Task {
 			let entry = await WidgetBoardLoader.load()
 			var entries = [entry]
-			if !entry.cached, let board = entry.board {
-				let dates = widgetTimelineDates(board, now: entry.date.timeIntervalSince1970)
+			if let board = entry.ride?.timelineBoard() ?? entry.board {
+				var visible = board
+				if entry.ride == nil {
+					visible.departures = widgetDepartures(board, preference: entry.preference, limit: 14, now: entry.date.timeIntervalSince1970, cached: true).flatMap(\.departures)
+				}
+				let dates = widgetOfflineTimelineDates(visible, now: entry.date.timeIntervalSince1970, maximumAgeMinutes: entry.offline.estimateLimitMinutes)
 				for date in dates {
-					let saved = SubwayWidgetEntry(date: Date(timeIntervalSince1970: date), station: entry.station, board: board, preference: entry.preference, display: entry.display, lockScreen: entry.lockScreen, themeID: entry.themeID, units: entry.units, cached: date == dates.last, locationNotice: entry.locationNotice, message: entry.message)
+					var saved = entry
+					saved.date = Date(timeIntervalSince1970: date)
+					saved.cached = entry.cached || board.departures.contains { Display.freshness($0.timestamp, now: date) != .live }
 					entries.append(saved)
 				}
+			}
+			for index in entries.indices {
+				entries[index].displayUntil = index + 1 < entries.count ? entries[index + 1].date : entries[index].date.addingTimeInterval(60)
 			}
 			let interval = (isLockScreen ? entry.lockScreen.display : entry.display).refreshInterval.seconds
 			completion(Timeline(entries: entries, policy: .after(entry.date.addingTimeInterval(interval))))
@@ -62,6 +74,48 @@ enum WidgetBoardLoader {
 			entry.message = "Open the app to set up your widgets."
 			return entry
 		}
+		entry.themeID = state.themeID
+		entry.units = state.units
+		entry.display = state.widgets.display
+		entry.lockScreen = state.widgets.lockScreen
+		entry.offline = state.offline
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.timeoutIntervalForRequest = 8
+		configuration.timeoutIntervalForResource = 8
+		#if DEBUG
+		let endpoint = URL(string: state.endpoint) ?? TransitAPI.productionBaseURL
+		#else
+		let endpoint = TransitAPI.productionBaseURL
+		#endif
+		let session = URLSession(configuration: configuration)
+		defer { session.finishTasksAndInvalidate() }
+		let client = TransitAPI(baseURL: endpoint, session: session)
+		if state.offline.widgetsFollowActiveRide, let saved = store.ride(endpoint: endpoint.absoluteString) {
+			entry.ride = saved
+			entry.cached = true
+			// PATH rows are not stable trip identities. Such rows cannot be pinned.
+			if saved.trip.train?.feed != "path" {
+				do {
+					let detail = try await client.trip(key: saved.ride.tripKey)
+					if detail.train.key == saved.ride.tripKey, detail.train.timestamp >= (saved.trip.sourceTimestamp ?? 0) {
+						var trip = saved.trip
+						trip.detail = detail
+						if detail.train.timestamp > (saved.trip.sourceTimestamp ?? 0) { trip.savedAt = Date().timeIntervalSince1970 }
+						if try store.updateRideTrip(trip, for: saved.ride, endpoint: endpoint.absoluteString) { entry.cached = false }
+					}
+				} catch { /* A saved ride remains useful when its live trip disappears. */ }
+			}
+			// Re-read after awaiting: the app may have ended or replaced this ride.
+			state = (try? store.load()) ?? state
+			entry.offline = state.offline
+			entry.ride = state.offline.widgetsFollowActiveRide ? store.ride(endpoint: endpoint.absoluteString) : nil
+			if let current = entry.ride {
+				if current.ride != saved.ride { entry.cached = true }
+				// The source may have advanced during the fetch; age it at completion.
+				entry.date = .now
+				return entry
+			}
+		}
 		let location: WidgetCoordinate?
 		if state.effectiveStationSelection.mode == .favorite && state.favorites.isEmpty { location = nil }
 		else {
@@ -74,6 +128,7 @@ enum WidgetBoardLoader {
 		entry.units = state.units
 		entry.display = state.widgets.display
 		entry.lockScreen = state.widgets.lockScreen
+		entry.offline = state.offline
 		guard state.effectiveStationSelection.mode != .favorite || !state.favorites.isEmpty else { entry.message = "Add a favorite or choose Closest station in Settings."; return entry }
 		let previous = store.selection()
 		let now = Date().timeIntervalSince1970
@@ -90,25 +145,17 @@ enum WidgetBoardLoader {
 		entry.preference = state.widgets.preference(for: station.id, app: state.appFilters)
 		entry.locationNotice = coordinate == nil ? "Location unavailable · saved station" : nil
 		if station.departureMode == "external" { entry.message = "Open station for departure times."; return entry }
-		let configuration = URLSessionConfiguration.ephemeral
-		configuration.timeoutIntervalForRequest = 8
-		configuration.timeoutIntervalForResource = 8
-		#if DEBUG
-		let endpoint = URL(string: state.endpoint) ?? TransitAPI.productionBaseURL
-		#else
-		let endpoint = TransitAPI.productionBaseURL
-		#endif
-		let session = URLSession(configuration: configuration)
-		defer { session.finishTasksAndInvalidate() }
 		do {
-			let board = try await TransitAPI(baseURL: endpoint, session: session).board(stationID: station.id)
-			entry.board = board
-			try? store.saveBoard(board, endpoint: endpoint.absoluteString)
+			let board = try await client.board(stationID: station.id)
+			entry.cached = false
+			entry.board = (try? store.saveBoard(board, endpoint: endpoint.absoluteString)) ?? board
 		} catch {
 			entry.board = store.board(stationID: station.id, endpoint: endpoint.absoluteString)
 			entry.cached = true
 			entry.message = entry.board == nil ? "Train feed unavailable. Tap to open the app." : nil
 		}
+		// Include the location lookup and network wait in the age of the entry.
+		entry.date = .now
 		return entry
 	}
 }

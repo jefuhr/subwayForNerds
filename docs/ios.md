@@ -65,8 +65,9 @@ See [portable settings and account setup](accounts.md).
 | Download full fleet and retained movement history | Online fleet browsing | Optional download with local search and history |
 
 Times are always displayed in America/New_York. A successful HTTP response does
-not renew source timestamps. Cached/stale boards use last-estimate clock times;
-cached car assignments are hidden. Offline fleet reports are always historical.
+not renew source timestamps. Saved predictions use the configurable offline estimate
+window, then last-known clock times. Cached car assignments are never presented as
+current. Offline fleet reports are always historical.
 Location permission denial leaves manual station search available.
 
 The compact board keeps station actions and other favorite stations in one row and leaves
@@ -117,8 +118,8 @@ refreshes widgets every 15–60 minutes; a shorter selection does not guarantee
 that frequency. Countdown timers and source-expiry transitions continue between
 data reloads. Home Screen widgets have a
 refresh button. Feed timestamps retain their existing 90-second freshness limit;
-old or offline predictions display labeled last-estimate clock times rather than
-continuing to imply fresh arrival predictions. See Apple's
+saved predictions use labeled offline estimates within the configured estimate window,
+then last-known clock times. See Apple's
 [refresh guidance](https://developer.apple.com/documentation/widgetkit/keeping-a-widget-up-to-date)
 and [widget location guidance](https://developer.apple.com/documentation/widgetkit/accessing-location-information-in-widgets).
 
@@ -190,6 +191,64 @@ selected app theme and WidgetKit's default 16-point content margins; circular pr
 are drawn as circles.
 This layout harness complements testing actual widgets in SpringBoard; it does not
 simulate WidgetKit's refresh budget, timer layout, or tinted rendering.
+
+## Offline stations and saved rides
+
+The iPhone and iPad app saves the viewed station, favorite stations, and stations
+within the configured distance of the viewed station. Nearby caching is centered
+on that station, even when the phone's location is unavailable underground.
+Opening a train saves its details by default. **Save trip offline** keeps a trip
+until you remove it; **I'm on this train** separately pins one active ride. The
+active ride and saved trips remain available after changing stations or restarting
+the app. Ending a ride releases its automatic protection but keeps a manual save.
+
+**Settings > Offline** controls:
+
+| Setting | Default | Choices |
+| --- | --- | --- |
+| Departures per line and direction | 5 | 1–20 |
+| Full trips per line and direction | 2 | 0–departure limit |
+| Save opened trips | On | On/off |
+| Nearby station distance | 0.5 mile | Off–5 miles, displayed in selected units |
+| Preload trips at other stations | Off | On/off |
+| Offline estimate window | 30 minutes | 5, 15, 30, 60, 120 minutes |
+| Automatic retention | 6 hours | 1, 6, 12, 24 hours |
+| Storage limit | 50 MiB | 25, 50, 100, 250 MiB |
+| Widgets follow active ride | Off | On/off |
+
+Quotas apply independently to each line and direction. Full trip preloading is
+bounded by the departure limit. Background work pauses when the app is backgrounded
+or disconnected; foreground requests are deduplicated and limited to three at a time.
+Background downloads use at most two slots, leaving room for a selected station,
+open train, active ride, or explicit refresh.
+Automatic entries are evicted by age and least recent use. Manual saves and the
+active ride are protected; the app reports storage pressure rather than silently
+deleting them. Clearing automatic data also preserves those protected trips.
+
+Offline countdowns extrapolate the last source prediction. The source age stays
+visible, and a passed prediction is marked as passed rather than as an observed
+arrival. Beyond the estimate window, the original clock time remains available.
+Cached positions and car assignments are historical. If only the station board's
+onward stops were available, the trip is explicitly marked partial. A network
+response with older data cannot replace a newer saved prediction; a failed feed
+does not erase another feed's saved departures.
+
+PATH's feed uses positional row identifiers rather than stable train identities.
+PATH trips can be saved as historical snapshots, but cannot be pinned as active
+rides. Reusing the same row identifier never replaces a manually saved PATH train.
+
+When **Widgets follow active ride** is enabled, widgets show the ride's estimated
+next stop and open that saved trip. Otherwise they retain their station-board
+behavior. Local timeline entries age the saved predictions between refreshes;
+WidgetKit still controls actual reload scheduling. Debug widget previews include
+saved, expired, partial, and finished-estimate ride scenarios.
+
+The cache and active ride stay on this device. Only preferences synchronize through
+accounts or `.nerds` v3 files; v1/v2 imports receive the defaults above. Deploy the
+server's new settings validation and old-client downgrade guard before distributing
+the new syncing client. Existing legacy production board files are imported without deleting
+their originals. The known old and new production API addresses share one cache
+identity; custom development endpoints remain separate.
 
 ## Offline fleet
 

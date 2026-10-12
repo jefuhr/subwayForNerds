@@ -30,7 +30,8 @@ public struct StationPart: Codable, Sendable, Equatable, Identifiable {
 }
 
 public struct Station: Codable, Sendable, Equatable, Identifiable {
-	public var isNjt: Bool { id.hasPrefix("njt-") || routes.contains { $0.hasPrefix("NJT-") } }
+	public var isCombined: Bool { id.hasPrefix("combined:") }
+	public var isNjt: Bool { !isCombined && (id.hasPrefix("njt-") || routes.contains { $0.hasPrefix("NJT-") }) }
 	public var municipality: String?
 	public var departureMode: String?
 	public var id: String
@@ -425,7 +426,7 @@ public struct ServiceAlert: Codable, Sendable, Equatable, Identifiable {
 public struct Board: Codable, Sendable, Equatable {
 	public var njt: NjtState?
 	public var vehiclePositions: [VehiclePosition]?
-	public var usesExternalDepartures: Bool { (station.departureMode == "external" || station.isNjt) && njt?.configured != true }
+	public var usesExternalDepartures: Bool { !station.isCombined && (station.departureMode == "external" || station.isNjt) && njt?.configured != true }
 	public var station: Station
 	public var generatedAt: TimeInterval
 	public var sources: [SourceState]

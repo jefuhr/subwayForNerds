@@ -38,7 +38,7 @@ test('car and complete-consist favorites highlight live feed, support any-member
 	await page.getByRole('button', { name: 'Open settings' }).click();
 	await page.getByLabel('Match saved consists').selectOption('anyCar');
 	const saved = await exportSettings(page);
-	expect(saved.version).toBe(3); expect(saved.settings.trainFavorites.match).toBe('anyCar');
+	expect(saved.version).toBe(4); expect(saved.settings.trainFavorites.match).toBe('anyCar');
 	expect(saved.settings.trainFavorites.consists).toEqual([['nyct:R211A:4148', 'nyct:R211A:4149']]);
 	await page.getByRole('button', { name: 'Close panel' }).click();
 	await expect(page.locator('.train-row').first()).toHaveClass(/favorite-train/);

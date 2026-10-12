@@ -15,6 +15,13 @@ struct SubwayWidgetEntry: TimelineEntry, Sendable {
 	var themeID = "subway"
 	var units = UnitPreferences()
 	var offline = OfflinePreferences()
+	var hiddenRoutes: [String] = []
+	var combined: CombinedBoardSnapshot?
+	func isCached(_ row: Departure) -> Bool { combined?.origins[row.key]?.cached ?? cached }
+	func boardingLabel(_ row: Departure) -> String? {
+		guard let origin = combined?.origins[row.key] else { return nil }
+		return origin.station.parts.first { $0.id == origin.departure.partId }?.name ?? origin.station.name
+	}
 	var ride: WidgetRideSnapshot?
 	var cached = false
 	var locationNotice: String?
@@ -48,7 +55,7 @@ struct SubwayTimelineProvider: TimelineProvider {
 			if let board = entry.ride?.timelineBoard() ?? entry.board {
 				var visible = board
 				if entry.ride == nil {
-					visible.departures = widgetDepartures(board, preference: entry.preference, limit: 14, now: entry.date.timeIntervalSince1970, cached: true).flatMap(\.departures)
+					visible.departures = widgetDepartures(board, preference: entry.preference, limit: 14, now: entry.date.timeIntervalSince1970, cached: true, hiddenRoutes: entry.hiddenRoutes).flatMap(\.departures)
 				}
 				let dates = widgetOfflineTimelineDates(visible, now: entry.date.timeIntervalSince1970, maximumAgeMinutes: entry.offline.estimateLimitMinutes)
 				for date in dates {
@@ -80,6 +87,8 @@ enum WidgetBoardLoader {
 		entry.display = state.widgets.display
 		entry.lockScreen = state.widgets.lockScreen
 		entry.offline = state.offline
+		entry.hiddenRoutes = state.hiddenRoutes
+		let configuredEndpoint = state.endpoint
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.timeoutIntervalForRequest = 8
 		configuration.timeoutIntervalForResource = 8
@@ -109,6 +118,7 @@ enum WidgetBoardLoader {
 			// Re-read after awaiting: the app may have ended or replaced this ride.
 			state = (try? store.load()) ?? state
 			entry.offline = state.offline
+			guard state.endpoint == configuredEndpoint else { entry.ride = nil; entry.message = "Server settings changed. Tap to open the app."; return entry }
 			entry.ride = state.offline.widgetsFollowActiveRide ? store.ride(endpoint: endpoint.absoluteString) : nil
 			if let current = entry.ride {
 				if current.ride != saved.ride { entry.cached = true }
@@ -125,17 +135,19 @@ enum WidgetBoardLoader {
 			// The app may publish a newer location or settings while Core Location waits.
 			state = (try? store.load()) ?? state
 		}
+		guard state.endpoint == configuredEndpoint else { entry.message = "Server settings changed. Tap to open the app."; return entry }
 		entry.themeID = state.themeID
 		entry.units = state.units
 		entry.display = state.widgets.display
 		entry.lockScreen = state.widgets.lockScreen
 		entry.offline = state.offline
+		entry.hiddenRoutes = state.hiddenRoutes
 		guard state.effectiveStationSelection.mode != .favorite || !state.favorites.isEmpty else { entry.message = "Add a favorite or choose Closest station in Settings."; return entry }
 		let previous = store.selection()
 		let now = Date().timeIntervalSince1970
 		let coordinate = WidgetCoordinate.newestUsable(in: [location, state.appLocation, previous?.location], now: now)
 		guard var station = state.selectedStation(location: coordinate, previous: previous?.stationID, now: now) else {
-			entry.message = "Open the app to load your stations."
+			entry.message = state.hiddenRoutes.isEmpty ? "Open the app to load your stations." : "No enabled stations match. Open Lines in settings."
 			return entry
 		}
 		if let saved = try? store.saveSelection(stationID: station.id, location: coordinate) {
@@ -145,6 +157,21 @@ enum WidgetBoardLoader {
 		entry.station = station
 		entry.preference = state.widgets.preference(for: station.id, app: state.appFilters)
 		entry.locationNotice = coordinate == nil ? "Location unavailable · saved station" : nil
+		if let definition = state.combinedStations[station.id] {
+			let snapshot = await loadCombined(station: station, definition: definition, state: state, client: client, store: store, endpoint: endpoint.absoluteString)
+			// Settings may change during network waits; never publish a deleted or edited group.
+			guard let latest = try? store.load(), latest.combinedStations[station.id] == definition, latest.endpoint == configuredEndpoint else {
+				entry.station = nil; entry.message = "Station settings changed. Tap to open the app."; return entry
+			}
+			entry.hiddenRoutes = latest.hiddenRoutes
+			entry.preference = latest.widgets.preference(for: station.id, app: latest.appFilters)
+			entry.combined = snapshot
+			entry.board = snapshot.board
+			entry.cached = !snapshot.members.contains { $0.board != nil && !$0.cached }
+			entry.message = snapshot.warnings.isEmpty ? nil : "Partial board · " + snapshot.warnings.joined(separator: "; ")
+			entry.date = .now
+			return entry
+		}
 		do {
 			let board = try await client.board(stationID: station.id)
 			entry.cached = false
@@ -161,8 +188,44 @@ enum WidgetBoardLoader {
 			} else { entry.message = Display.njtPredictionMessage(board, now: Date().timeIntervalSince1970, cached: entry.cached) }
 		} else if station.departureMode == "external" { entry.message = "Open station for departure times." }
 		// Include the location lookup and network wait in the age of the entry.
+		if let latest = try? store.load() { entry.hiddenRoutes = latest.hiddenRoutes; entry.preference = latest.widgets.preference(for: station.id, app: latest.appFilters) }
 		entry.date = .now
 		return entry
+	}
+
+	/// The extension has a short execution budget. Start at most three requests,
+	/// stop scheduling after eight seconds, and retain every member's saved fallback.
+	private static func loadCombined(station: Station, definition: CombinedStation, state: WidgetSharedState, client: TransitAPI, store: WidgetSharedStore, endpoint: String) async -> CombinedBoardSnapshot {
+		var members = definition.stationIDs.map { id -> MemberBoardSnapshot in
+			let cached = store.board(stationID: id, endpoint: endpoint)
+			let member = state.stations.first { $0.id == id } ?? cached?.station ?? Station(id: id, name: id, borough: "", lat: 0, lon: 0)
+			return MemberBoardSnapshot(station: member, board: cached, cached: true, error: cached == nil ? "Departures unavailable" : nil)
+		}
+		let eligible = members.indices.filter { members[$0].station.departureMode != "external" && state.stations.contains(members[$0].station) }
+		let deadline = Date().addingTimeInterval(8)
+		await withTaskGroup(of: (Int, Board?).self) { tasks in
+			var remaining = eligible.makeIterator()
+			var inFlight = 0
+			tasks.addTask { try? await Task.sleep(for: .seconds(8)); return (-1, nil) }
+			func schedule(_ index: Int) {
+				let id = members[index].station.id
+				inFlight += 1
+				tasks.addTask { (index, try? await client.board(stationID: id)) }
+			}
+			for _ in 0..<3 { if let index = remaining.next() { schedule(index) } }
+			if inFlight == 0 { tasks.cancelAll(); return }
+			while let (index, board) = await tasks.next() {
+				guard index >= 0 else { tasks.cancelAll(); break }
+				inFlight -= 1
+				if let board {
+					let saved = (try? store.saveBoard(board, endpoint: endpoint)) ?? board
+					members[index] = MemberBoardSnapshot(station: board.station, board: saved, cached: false)
+				} else { members[index].error = "Feed unavailable" }
+				if Date() < deadline, let index = remaining.next() { schedule(index) }
+				if inFlight == 0 { tasks.cancelAll(); break }
+			}
+		}
+		return CombinedBoardSnapshot(station: station, members: members)
 	}
 }
 

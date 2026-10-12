@@ -55,7 +55,7 @@ struct UnitsTests {
 			var root = try JSONSerialization.jsonObject(with: NerdsSettingsFile(settings: PortableSettings(), lastStation: "602").data()) as! [String: Any]
 			root["version"] = version
 			var settings = root["settings"] as! [String: Any]
-			settings.removeValue(forKey: "units"); settings.removeValue(forKey: "offline"); root["settings"] = settings
+			settings.removeValue(forKey: "units"); settings.removeValue(forKey: "offline"); settings.removeValue(forKey: "combinedStations"); settings.removeValue(forKey: "hiddenRoutes"); root["settings"] = settings
 			#expect(try JSONDecoder().decode(PortableSettings.self, from: JSONSerialization.data(withJSONObject: settings)).units == UnitPreferences())
 			#expect(try NerdsSettingsFile.decode(JSONSerialization.data(withJSONObject: root)).settings.units == UnitPreferences())
 			for invalid: Any in [["distance": "meters", "time": "24h"], ["distance": "m", "time": "24"], ["distance": "m"], ["distance": "m", "time": "24h", "extra": true], NSNull()] {

@@ -1,0 +1,85 @@
+{
+  "format": "subways-for-nerds",
+  "version": 4,
+  "exportedAt": "2026-10-11T12:00:00Z",
+  "lastStation": "combined:6d9542db-9ab7-422e-9548-fd66c1d4a384",
+  "settings": {
+    "favorites": [
+      "602",
+      "combined:6d9542db-9ab7-422e-9548-fd66c1d4a384"
+    ],
+    "theme": "subway",
+    "stations": {},
+    "trainFavorites": {
+      "cars": [],
+      "consists": [],
+      "match": "exact"
+    },
+    "stationSelection": {
+      "mode": "favorite",
+      "radiusFeet": 5280
+    },
+    "units": {
+      "distance": "auto",
+      "time": "24h"
+    },
+    "offline": {
+      "departuresPerLineDirection": 20,
+      "tripDetailsPerLineDirection": 0,
+      "saveOpenedTrips": false,
+      "nearbyRadiusFeet": 0,
+      "preloadOtherStationTrips": true,
+      "estimateLimitMinutes": 120,
+      "retentionHours": 24,
+      "storageLimitMiB": 250,
+      "widgetsFollowActiveRide": true
+    },
+    "widgets": {
+      "stationSelection": {
+        "followApp": true,
+        "selection": {
+          "mode": "favorite",
+          "radiusFeet": 5280
+        }
+      },
+      "matchAppFilters": false,
+      "stations": {},
+      "display": {
+        "fields": [
+          "destination",
+          "stationName"
+        ],
+        "compact": true,
+        "trainsPerDirection": 0,
+        "timeStyle": "countdown"
+      },
+      "lockScreen": {
+        "display": {
+          "fields": [
+            "stationName"
+          ],
+          "compact": true,
+          "trainsPerDirection": 2,
+          "timeStyle": "minutes"
+        },
+        "directionOrder": "downtownLeft",
+        "showService": true
+      }
+    },
+    "combinedStations": {
+      "combined:6d9542db-9ab7-422e-9548-fd66c1d4a384": {
+        "name": "Downtown",
+        "stationIDs": [
+          "328",
+          "624",
+          "628",
+          "path-wtc"
+        ]
+      }
+    },
+    "hiddenRoutes": [
+      "A",
+      "NJT-NLR"
+    ]
+  }
+}

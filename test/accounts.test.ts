@@ -34,6 +34,23 @@ async function fixture() {
 	}};
 	await registerAccounts(app,'/api/v1',options); return app;
 }
+test('legacy clients cannot erase combined stations or global line exclusions', async () => {
+	const app = await fixture();
+	try {
+		const challenge = (await app.inject({ method: 'POST', url: '/api/v1/auth/challenges', payload: { provider: 'apple', platform: 'native', intent: 'login' } })).json();
+		const login = (await app.inject({ method: 'POST', url: '/api/v1/auth/apple/exchange', payload: { challenge: challenge.id, identityToken: 'valid-' + challenge.nonce, code: 'x' } })).json();
+		const headers = { authorization: 'Bearer ' + login.token };
+		const settings = defaults();
+		settings.combinedStations['combined:6d9542db-9ab7-422e-9548-fd66c1d4a384'] = { name: 'Downtown', stationIDs: ['328', '624', '628'] };
+		settings.hiddenRoutes = ['A'];
+		assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"0"' }, payload: settings })).statusCode, 200);
+		for (const key of ['combinedStations', 'hiddenRoutes']) {
+			const old: any = structuredClone(settings); delete old[key];
+			assert.equal((await app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': '"1"' }, payload: old })).statusCode, 409);
+		}
+		assert.deepEqual((await app.inject({ url: '/api/v1/account/settings', headers })).json(), { revision: 1, settings });
+	} finally { await app.close(); }
+});
 test('legacy account writes cannot erase saved train favorites or station selection', async () => {
 	const app = await fixture();
 	try {

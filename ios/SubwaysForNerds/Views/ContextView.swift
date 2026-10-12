@@ -13,7 +13,17 @@ struct ContextView: View {
 	private var outageFresh: Bool { app.connected && error == nil && (outageSource?.timestamp ?? 0) > 0 && outageSource?.error == nil && app.now - (outageSource?.fetchedAt ?? 0) <= 120 }
 	var body: some View {
 		List {
-			if station.departureMode == "external" {
+			if let definition = app.combinedStations[station.id] {
+				Section {
+					ForEach(definition.stationIDs, id: \.self) { id in
+						if let member = app.stations.first(where: { $0.id == id }) {
+							NavigationLink { ContextView(station: member) } label: {
+								VStack(alignment: .leading, spacing: 4) { Text(member.name); RouteStrip(routes: LineVisibility.routes(member.routes, hiddenRoutes: app.hiddenRoutes)) }
+							}
+						} else { Text("Unavailable station \(id)").foregroundStyle(.secondary) }
+					}
+				} header: { ListHeader("Member stations") } footer: { Text("Open a station for its entrances, accessibility, and equipment reports.") }
+			} else if station.departureMode == "external" {
 				Section {
 					VStack(alignment: .leading, spacing: 3) {
 						Text(station.parts.first?.line ?? "NJ Transit light rail").font(.headline)
@@ -78,7 +88,7 @@ struct ContextView: View {
 			}
 		}.themedList().navigationTitle(station.name).navigationBarTitleDisplayMode(.inline)
 			.refreshable { await refresh() }
-			.task(id: "\(phase)|\(app.endpoint)|\(app.connected)") { if phase == .active && station.departureMode != "external" { await poll(every: 60) { await refresh() } } }
+			.task(id: "\(phase)|\(app.endpoint)|\(app.connected)") { if phase == .active && !station.isCombined && station.departureMode != "external" { await poll(every: 60) { await refresh() } } }
 			.accessibilityIdentifier("stationContext")
 	}
 
@@ -106,7 +116,7 @@ struct ContextView: View {
 		return URL(string: "https://www.openstreetmap.org/?mlat=\(lat)&mlon=\(lon)#map=19/\(lat)/\(lon)")
 	}
 	private func refresh() async {
-		guard station.departureMode != "external" else { return }
+		guard !station.isCombined, station.departureMode != "external" else { return }
 		let requestedEndpoint = app.endpoint
 		requestGeneration += 1
 		let generation = requestGeneration

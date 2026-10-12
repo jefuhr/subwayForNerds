@@ -19,6 +19,10 @@ struct SubwayWidgetView: View {
 	private var accent: Color { fullColor ? theme.accent : .primary }
 	/// Secondary text keeps the theme's ink hue rather than a system gray.
 	private var muted: Color { ink.opacity(0.62) }
+	private var mixedCombined: Bool {
+		entry.combined != nil && entry.station?.routes.contains { $0.hasPrefix("PATH-") } == true && entry.station?.routes.contains { !$0.hasPrefix("PATH-") } == true
+	}
+	private func rowEstimated(_ row: Departure) -> Bool { entry.isCached(row) || Display.freshness(row, now: entry.date.timeIntervalSince1970) != .live }
 	private var directions: [String] {
 		let regional = entry.station?.routes.contains(where: { $0.hasPrefix("PATH-") }) == true
 		return accessory ? entry.lockScreen.orderedDirections(regional: regional) : (regional ? ["TO_NY", "TO_NJ"] : ["NORTH", "SOUTH"])
@@ -27,11 +31,12 @@ struct SubwayWidgetView: View {
 	private func shows(_ field: WidgetField) -> Bool { options.fields.contains(field) }
 	private func groups(limit: Int) -> [DepartureGroup] {
 		guard let board = entry.board else { return [] }
-		return widgetDepartures(board, preference: entry.preference, limit: limit, now: entry.date.timeIntervalSince1970, cached: entry.cached)
+		return widgetDepartures(board, preference: entry.preference, limit: limit, now: entry.date.timeIntervalSince1970, cached: entry.cached, hiddenRoutes: entry.hiddenRoutes, cachedDepartureKeys: entry.combined?.cachedDepartureKeys)
 	}
 	private var groups: [DepartureGroup] { groups(limit: entry.lockScreen.candidateCounts[0]) }
 	private var sourceTime: TimeInterval? { entry.board?.departures.map(\.timestamp).min() }
 	private var estimated: Bool {
+		if let combined = entry.combined { return combined.board.departures.isEmpty || combined.board.departures.allSatisfy { rowEstimated($0) } }
 		guard !entry.cached, let board = entry.board else { return true }
 		let now = entry.date.timeIntervalSince1970
 		return !Display.hasLivePredictions(board, now: now) || board.departures.contains { Display.freshness($0, now: now) != .live }
@@ -42,7 +47,7 @@ struct SubwayWidgetView: View {
 	private var sourceAge: String { Display.ageLabel(sourceTime, now: entry.date.timeIntervalSince1970) }
 	private func countdown(_ row: Departure) -> Countdown {
 		let value = OfflineDisplay.countdown(departure: row, now: entry.date.timeIntervalSince1970,
-			cached: entry.cached || row.timestamp > entry.date.timeIntervalSince1970 || Display.freshness(row, now: entry.date.timeIntervalSince1970) != .live,
+			cached: entry.isCached(row) || row.timestamp > entry.date.timeIntervalSince1970 || Display.freshness(row, now: entry.date.timeIntervalSince1970) != .live,
 			preferences: entry.offline, timeFormat: entry.units.time)
 		return widgetIntervalCountdown(value, time: row.time, now: entry.date.timeIntervalSince1970, displayUntil: entry.displayUntil?.timeIntervalSince1970)
 	}
@@ -50,6 +55,8 @@ struct SubwayWidgetView: View {
 	var body: some View {
 		Group {
 			if entry.ride != nil { SubwayRideWidgetView(entry: entry, family: family) }
+			else if mixedCombined && family == .accessoryInline { mixedInlineContent }
+			else if mixedCombined { mixedCombinedContent }
 			else if accessory { accessoryContent }
 			else { homeContent }
 		}
@@ -63,6 +70,59 @@ struct SubwayWidgetView: View {
 	}
 
 	// MARK: Home Screen
+
+	/// Subway and PATH directions cannot share a pair of compass columns. A merged
+	/// list keeps their actual directions and boarding locations on every row.
+	private var mixedDepartures: [Departure] {
+		groups(limit: options.trainsPerDirection == 0 ? 14 : options.trainsPerDirection).flatMap(\.departures).sorted {
+			($0.time ?? .infinity) == ($1.time ?? .infinity) ? $0.key < $1.key : ($0.time ?? .infinity) < ($1.time ?? .infinity)
+		}
+	}
+	@ViewBuilder private var mixedInlineContent: some View {
+		if let row = mixedDepartures.first {
+			Text("\(compactArrival(row)) \(shortDirection(row.direction)) · \(entry.boardingLabel(row) ?? "")\(rowEstimated(row) ? " · offline" : "")")
+				.font(.caption).lineLimit(1).minimumScaleFactor(0.7)
+				.accessibilityLabel("\(compactArrival(row)), \(Display.directionLabel(row.direction)), board at \(entry.boardingLabel(row) ?? ""), \(rowEstimated(row) ? "offline estimate" : "estimated arrival")")
+				.accessibilityIdentifier("widgetCombinedDeparture_\(row.key)")
+		} else { Text("No matching departures") }
+	}
+
+	private var mixedCombinedContent: some View {
+		ViewThatFits(in: [.vertical, .horizontal]) {
+			ForEach(accessory ? [2, 1] : [10, 8, 6, 4, 2, 1], id: \.self) { count in
+				mixedRows(count: count).fixedSize(horizontal: false, vertical: true)
+			}
+		}
+	}
+	private func mixedRows(count: Int) -> some View {
+		let candidates = mixedDepartures
+		let rows = Array(candidates.prefix(family == .accessoryInline || family == .accessoryCircular ? 1 : count))
+		return VStack(alignment: .leading, spacing: accessory ? 2 : 6) {
+			if !accessory { homeHeader }
+			if rows.isEmpty { Text("No matching departures").font(.caption) }
+			ForEach(rows) { row in
+				VStack(alignment: .leading, spacing: 1) {
+					HStack(spacing: 3) {
+						Text(Display.routeLabel(row.route)).fontWeight(.bold)
+						Text(compactArrival(row, includeRoute: false)).monospacedDigit()
+						if family != .accessoryCircular { Text(shortDirection(row.direction)).foregroundStyle(muted) }
+					}
+					.font(.system(size: accessory ? 10 : 13)).lineLimit(1).minimumScaleFactor(0.7)
+					Text([entry.boardingLabel(row), family == .accessoryCircular ? shortDirection(row.direction) : nil].compactMap { $0 }.joined(separator: " · "))
+						.font(.system(size: accessory ? 8 : 11)).foregroundStyle(muted).lineLimit(1).minimumScaleFactor(0.7)
+					if !accessory, shows(.destination) { Text(row.destination).font(.caption2).lineLimit(1) }
+					if rowEstimated(row) { Text("Offline estimate").font(.system(size: accessory ? 7 : 10)).foregroundStyle(muted) }
+				}
+				.accessibilityElement(children: .ignore)
+				.accessibilityLabel("\(Display.routeLabel(row.route)), \(Display.directionLabel(row.direction)), \(compactArrival(row)), board at \(entry.boardingLabel(row) ?? ""), \(rowEstimated(row) ? "offline estimate" : "estimated arrival")")
+				.accessibilityIdentifier("widgetCombinedDeparture_\(row.key)")
+			}
+			if !accessory, entry.message != nil { Text("Partial board · tap for station status").font(.caption2).foregroundStyle(muted).lineLimit(1) }
+		}
+	}
+	private func shortDirection(_ direction: String) -> String {
+		switch direction { case "NORTH": "↑ N"; case "SOUTH": "↓ S"; case "TO_NY": "→ NY"; case "TO_NJ": "← NJ"; default: "?" }
+	}
 
 	private var metrics: HomeMetrics { HomeMetrics(small: family == .systemSmall, compact: options.compact, scale: family == .systemSmall ? 1 : min(homeTextScale, 1.35)) }
 	/// Each size starts one train above what it usually holds; the layout keeps the most
@@ -182,7 +242,8 @@ struct SubwayWidgetView: View {
 	}
 
 	private func homeRow(_ departure: Departure, direction: String, index: Int) -> some View {
-		let details = widgetTrainDetails(departure, options: options, now: entry.date.timeIntervalSince1970, cached: entry.cached)
+		let optionalDetails = widgetTrainDetails(departure, options: options, now: entry.date.timeIntervalSince1970, cached: entry.isCached(departure))
+		let details = [entry.boardingLabel(departure), optionalDetails.isEmpty ? nil : optionalDetails].compactMap { $0 }.joined(separator: " · ")
 		let countdown = countdown(departure)
 		return Group {
 			if family == .systemSmall {
@@ -209,7 +270,7 @@ struct SubwayWidgetView: View {
 			}
 		}
 		.accessibilityElement(children: .ignore)
-		.accessibilityLabel("\(Display.displayRoute(departure.route)) to \(departure.destination), \(countdown.value) \(countdown.unit), \(estimated ? "offline estimate" : "estimated arrival"), \(details)")
+		.accessibilityLabel("\(Display.displayRoute(departure.route)) to \(departure.destination), \(countdown.value) \(countdown.unit), \(rowEstimated(departure) ? "offline estimate" : "estimated arrival"), \(details)")
 		.accessibilityIdentifier("widgetDeparture_\(direction)_\(index)")
 	}
 
@@ -223,7 +284,7 @@ struct SubwayWidgetView: View {
 		let now = entry.date.timeIntervalSince1970
 		let value = Font.system(size: metrics.time, weight: .semibold).monospacedDigit()
 		let unit = Font.system(size: metrics.time * 0.62, weight: .semibold)
-		if !estimated, options.timeStyle == .countdown, countdown.unit == "min", let arrival = departure.time, arrival > now {
+		if !rowEstimated(departure), options.timeStyle == .countdown, countdown.unit == "min", let arrival = departure.time, arrival > now {
 			// WidgetKit lays timers out at an unpredictable width, so a hidden sample
 			// of the widest value sizes the box and the digits keep to its trailing edge.
 			Text(arrival - now >= 600 ? "00:00" : "0:00").font(value).lineLimit(1).fixedSize().hidden()
@@ -321,11 +382,12 @@ struct SubwayWidgetView: View {
 								}.font(.system(size: arrivalSize))
 							}
 							// Secondary lines shorten to fit, so circular layouts measure only the arrivals.
+							if let origin = entry.boardingLabel(row) { Text(origin).font(.system(size: max(7, accessoryDetailSize))).lineLimit(1).minimumScaleFactor(0.7) }
 							if !simplified, shows(.destination) { Text(row.destination).font(.system(size: accessoryDetailSize)).lineLimit(1).minimumScaleFactor(0.7).frame(idealWidth: circular ? 0 : nil) }
 							if !simplified, !inlineDetails, !details.isEmpty { Text(details).font(.system(size: accessoryDetailSize)).opacity(0.8).lineLimit(1).minimumScaleFactor(0.7).frame(idealWidth: circular ? 0 : nil) }
 						}
 						.accessibilityElement(children: previewFamily == nil ? .ignore : .contain)
-						.accessibilityLabel("\(direction), \(routeName(row.route)) to \(row.destination), \(compactArrival(row)), \(estimated ? "last estimate" : "estimated arrival"), \(accessoryDetails(row))")
+						.accessibilityLabel("\(direction), \(routeName(row.route)) to \(row.destination), \(compactArrival(row)), \(rowEstimated(row) ? "last estimate" : "estimated arrival"), \(entry.boardingLabel(row) ?? ""), \(accessoryDetails(row))")
 						.accessibilityIdentifier("widgetDeparture_\(direction)_\(index)")
 					}
 				}.frame(maxWidth: circular ? nil : .infinity, alignment: .leading)
@@ -363,21 +425,21 @@ struct SubwayWidgetView: View {
 	private func accessoryDetails(_ row: Departure) -> String {
 		var selected = options
 		selected.fields = options.fields.intersection(Set(LockScreenWidgetOptions.fields))
-		return widgetTrainDetails(row, options: selected, now: entry.date.timeIntervalSince1970, cached: entry.cached)
+		return widgetTrainDetails(row, options: selected, now: entry.date.timeIntervalSince1970, cached: entry.isCached(row))
 	}
 	@ViewBuilder private func time(_ departure: Departure) -> some View {
 		let countdown = countdown(departure)
 		if countdown.unit == "estimate passed" { Text("Passed") }
 		else if accessory, options.compact, departure.time != nil, options.timeStyle == .clock || countdown.unit != "min" { Text(shortClockTime(departure.time)) }
 		else if options.timeStyle == .clock, let arrival = departure.time { Text(Display.clockTime(arrival, format: entry.units.time)) }
-		else if options.timeStyle == .minutes || estimated { Text(countdown.value + (countdown.unit == "min" ? "m" : "")) }
+		else if options.timeStyle == .minutes || rowEstimated(departure) { Text(countdown.value + (countdown.unit == "min" ? "m" : "")) }
 		else if countdown.unit == "min", let arrival = departure.time, arrival > entry.date.timeIntervalSince1970 {
 			Text(timerInterval: entry.date...Date(timeIntervalSince1970: arrival), countsDown: true, showsHours: false)
 		} else { Text(countdown.value) }
 	}
 	private func inline(_ direction: String, limit: Int) -> String {
 		let rows = nextDepartures(direction, limit: limit)
-		return arrow(direction) + (rows.isEmpty ? "—" : rows.map { compactArrival($0) }.joined(separator: " "))
+		return arrow(direction) + (rows.isEmpty ? "—" : rows.map { compactArrival($0) + (entry.boardingLabel($0).map { " \($0)" } ?? "") }.joined(separator: " "))
 	}
 	private func inlineSummary(limit: Int) -> String {
 		directions.map { inline($0, limit: limit) }.joined(separator: "  ") + (estimated ? " · \(savedLabel) · \(sourceAge)" : "")
@@ -397,6 +459,7 @@ struct SubwayWidgetView: View {
 					text = Text("\(text)\(badge)")
 				}
 				text = Text("\(text)\(compactArrival(row, includeRoute: false))")
+				if let origin = entry.boardingLabel(row) { text = Text("\(text) \(origin)") }
 			}
 		}
 		if estimated { text = Text("\(text) · offline \(sourceAge)") }

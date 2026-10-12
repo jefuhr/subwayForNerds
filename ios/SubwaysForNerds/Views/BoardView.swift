@@ -4,6 +4,7 @@ import TransitCore
 /// What the board's detail column shows.
 enum BoardDetail: Hashable {
 	case train(String)
+	case departure(String, String)
 	case station
 	case savedTrips
 }
@@ -26,6 +27,7 @@ struct BoardSplitView: View {
 			NavigationStack {
 				switch selection {
 				case .train(let key): TrainDetailView(tripKey: key)
+					case .departure(let key, let row): TrainDetailView(tripKey: key, origin: app.departureOrigin(row))
 				case .savedTrips: SavedTripsView()
 				// Side by side, station info fills the detail column until a train is chosen.
 				case .station, nil:
@@ -53,13 +55,17 @@ struct BoardView: View {
 	let show: (BoardDetail) -> Void
 	@State private var stationPicker: StationPickerMode?
 	@State private var showAlerts = false
+	@State private var showLines = false
 	private var groups: [DepartureGroup] {
-		guard let board = app.board else { return [] }
-		return groupDepartures(board, direction: app.preference.direction, routes: app.preference.routes, order: app.preference.view, now: app.now, cached: app.boardIsCached)
+		guard let board = app.displayBoard else { return [] }
+		return groupDepartures(board, direction: app.preference.direction, routes: app.preference.routes, order: app.preference.view, now: app.now, cached: app.boardIsCached, cachedDepartureKeys: app.cachedDepartureKeys)
 	}
 	private var trainSources: [SourceState] { app.board?.sources.filter { !["subway-alerts", "helium"].contains($0.id) } ?? [] }
-	private var live: Bool { app.board.map { Display.hasLivePredictions($0, now: app.now, cached: app.boardIsCached) } ?? false }
-	private var degraded: Bool { trainSources.contains { Display.freshness($0, now: app.now) != .live || $0.error != nil } }
+	private var live: Bool {
+		if let combined = app.combinedBoard { return app.connected && combined.members.contains { !$0.cached && $0.board.map { Display.hasLivePredictions($0, now: app.now) } == true } }
+		return app.board.map { Display.hasLivePredictions($0, now: app.now, cached: app.boardIsCached) } ?? false
+	}
+	private var degraded: Bool { app.combinedBoard?.members.contains { $0.cached || $0.board == nil || $0.error != nil } == true || trainSources.contains { Display.freshness($0, now: app.now) != .live || $0.error != nil } }
 	private var externalDepartures: Bool { app.board?.usesExternalDepartures ?? app.station.map { $0.departureMode == "external" || $0.isNjt } ?? false }
 	private var configuredNJT: Bool { app.board?.njt?.configured == true }
 
@@ -85,7 +91,12 @@ struct BoardView: View {
 					.accessibilityIdentifier("offlineSaveFailure")
 				}
 			}
-			if externalDepartures, let station = app.station {
+			if let station = app.station, !station.routes.isEmpty, LineVisibility.routes(station.routes, hiddenRoutes: app.hiddenRoutes).isEmpty {
+				Section {
+					Text("All lines at this station are hidden.")
+					Button("Manage lines") { showLines = true }.actionStyle().accessibilityIdentifier("manageLines")
+				}
+			} else if externalDepartures, let station = app.station {
 				NjtDeparturesSection(station: station)
 			} else {
 				if let error = app.boardError { Section { Notice(text: error).accessibilityIdentifier("boardError") } }
@@ -112,12 +123,16 @@ struct BoardView: View {
 						ContentUnavailableView(configuredNJT && app.board?.departures.isEmpty == true ? "No arrival predictions" : "No departures match", systemImage: "tram", description: Text(app.board.flatMap { Display.njtPredictionMessage($0, now: app.now, cached: app.boardIsCached) } ?? "An empty board does not mean service is suspended. Try all directions and lines, or refresh the feed."))
 							.accessibilityIdentifier("boardNoPredictions")
 						Button("Reset filters") { app.resetFilters() }.actionStyle()
+						if !app.hiddenRoutes.isEmpty {
+							Text("Some lines are hidden in settings. Resetting station filters keeps those lines hidden.").font(.footnote).foregroundStyle(.secondary)
+							Button("Manage lines") { showLines = true }.actionStyle().accessibilityIdentifier("manageLines")
+						}
 					}
 				}
 				ForEach(groups) { group in
 					PlatformSection(group: group, station: app.station, order: app.preference.view, now: app.now, cached: app.boardIsCached)
 				}
-				if configuredNJT, let board = app.board {
+				if configuredNJT, let board = app.displayBoard {
 					NjtPositionsSection(board: board, now: app.now, cached: app.boardIsCached)
 					NjtDeparturesSection(station: board.station, configured: true)
 					if let error = board.njt?.cacheError { Section { Notice(text: "NJ Transit cache: " + error) } }
@@ -152,7 +167,8 @@ struct BoardView: View {
 		.refreshable { await app.refreshBoard() }
 		.task(id: app.stationID) { await app.refreshBoard() }
 		.sheet(item: $stationPicker) { mode in NavigationStack { StationPickerView(mode: mode) } }
-		.sheet(isPresented: $showAlerts) { NavigationStack { AlertsView(alerts: app.board?.alerts ?? [], sources: app.board?.sources ?? [], cached: app.boardIsCached) } }
+		.sheet(isPresented: $showAlerts) { NavigationStack { AlertsView(alerts: app.displayBoard?.alerts ?? [], sources: app.board?.sources ?? [], cached: app.boardIsCached) } }
+		.sheet(isPresented: $showLines) { NavigationStack { LineVisibilityView().toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showLines = false } } } } }
 	}
 
 	private var stationHeading: some View {
@@ -182,7 +198,7 @@ struct BoardView: View {
 	}
 
 	private var stationMetadata: some View {
-		Text("\(app.station?.municipality.map { "\($0), " } ?? "")\(boroughName(app.station?.borough ?? "NYC")) · Station \(app.stationID)")
+		Text(app.combinedStations[app.stationID].map { "Combined station · \($0.stationIDs.count) stations" } ?? "\(app.station?.municipality.map { "\($0), " } ?? "")\(boroughName(app.station?.borough ?? "NYC")) · Station \(app.stationID)")
 			.font(.caption2).foregroundStyle(.secondary)
 	}
 
@@ -230,7 +246,7 @@ struct BoardView: View {
 					}
 					.buttonStyle(.plain)
 				} else {
-					let count = app.board?.alerts.count ?? 0
+					let count = app.displayBoard?.alerts.count ?? 0
 					Button { showAlerts = true } label: {
 						HStack(spacing: 4) {
 							Image(systemName: "exclamationmark.triangle").foregroundStyle(count > 0 ? Color.orange : app.theme.ink)
@@ -260,7 +276,9 @@ struct BoardView: View {
 	}
 
 	private var directionFilters: some View {
-		let options = app.stationID.hasPrefix("path-")
+		let mixed = app.station?.isCombined == true && app.station?.routes.contains { $0.hasPrefix("PATH-") } == true && app.station?.routes.contains { !$0.hasPrefix("PATH-") } == true
+		let regional = app.station?.routes.contains { $0.hasPrefix("PATH-") } == true
+		let options = mixed ? [DirectionOption(id: "ALL", name: "All directions", icon: "arrow.left.arrow.right"), DirectionOption(id: "NORTH", name: "Northbound", icon: "arrow.up"), DirectionOption(id: "SOUTH", name: "Southbound", icon: "arrow.down"), DirectionOption(id: "TO_NY", name: "To New York", text: "NY"), DirectionOption(id: "TO_NJ", name: "To New Jersey", text: "NJ")] : regional
 			? [DirectionOption(id: "ALL", name: "All directions", icon: "arrow.left.arrow.right"), DirectionOption(id: "TO_NY", name: "To New York", text: "NY"), DirectionOption(id: "TO_NJ", name: "To New Jersey", text: "NJ")]
 			: [DirectionOption(id: "ALL", name: "All directions", icon: "arrow.up.arrow.down"), DirectionOption(id: "NORTH", name: "Northbound", icon: "arrow.up"), DirectionOption(id: "SOUTH", name: "Southbound", icon: "arrow.down")]
 		return HStack(spacing: 6) {
@@ -283,7 +301,7 @@ struct BoardView: View {
 	}
 
 	private var routeFilters: some View {
-		let routes = Array(Set(((app.station?.routes ?? []) + (app.board?.departures.map(\.route) ?? [])).map(Display.displayRoute))).sorted()
+		let routes = LineVisibility.routes(Array(Set(((app.station?.routes ?? []) + (app.board?.departures.map(\.route) ?? [])).map(Display.displayRoute))).sorted(), hiddenRoutes: app.hiddenRoutes)
 		let selected = app.preference.routes
 		return ScrollView(.horizontal) {
 			HStack(spacing: 0) {
@@ -369,12 +387,17 @@ private struct PlatformSection: View {
 	var body: some View {
 		Section {
 			ForEach(Array((expanded ? group.departures : Array(group.departures.prefix(5))).enumerated()), id: \.element.key) { index, departure in
-				NavigationLink(value: BoardDetail.train(departure.tripKey)) {
-					DepartureRow(departure: departure, now: now, cached: cached,
+				NavigationLink(value: BoardDetail.departure(departure.tripKey, departure.key)) {
+					VStack(alignment: .leading, spacing: 3) {
+						if station?.isCombined == true, let origin = app.departureOrigin(departure.key) {
+							Text("Board at \(origin.station.name)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+						}
+					DepartureRow(departure: departure, now: now, cached: app.departureIsCached(departure.key),
 						previous: group.departures.prefix(index).last { candidate in
 							Display.boardable(candidate) && candidate.direction == departure.direction && candidate.partId == departure.partId &&
 							(candidate.actualTrack ?? candidate.scheduledTrack) == (departure.actualTrack ?? departure.scheduledTrack)
 						}, showPlatform: order != .track)
+					}
 				}.accessibilityIdentifier("departure_\(departure.key)")
 					.listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 14))
 			}

@@ -5,7 +5,7 @@ are optional. File transfer works offline and before provider configuration.
 
 ## File format and migration
 
-`.nerds` is UTF-8 JSON with `format: "subways-for-nerds"`, `version: 2`, an ISO
+`.nerds` is UTF-8 JSON with `format: "subways-for-nerds"`, `version: 3`, an ISO
 `exportedAt` timestamp, `lastStation`, and `settings`. The latter contains ordered
 favorites, theme ID, station preferences, and widget preferences. Station
 preferences contain direction, route IDs, and board grouping. Widget settings
@@ -39,16 +39,27 @@ a 5,280-foot radius, and widgets following the app. Older v1 files without Lock
 Screen settings use the native legacy-display migration. Version 2 files require
 the train-favorite and station-selection fields; malformed or partial records
 are rejected before replacement.
+Version 3 adds the complete `offline` preferences object for native station caching
+and saved rides. Versions 1 and 2 import with offline defaults; they cannot contain
+a version 3 `offline` field. New exports always write version 3. Full trip limits
+validate independently, with the effective count capped by the departure limit,
+so concurrent settings merges cannot create an invalid combination. See the
+[offline settings table](ios.md#offline-stations-and-saved-rides).
 The TypeScript/Swift fixtures in `test/fixtures/settings.nerds` and
 `ios/TransitCore/Tests/TransitCoreTests/Fixtures/settings.nerds` must remain identical.
 The corresponding `favorites.nerds` fixtures exercise the shared v2 fields,
 including one-foot and 26,400-foot radii, and must also remain identical.
+The `offline.nerds` fixture in each directory checks version 3 parity.
 
 Imports validate the full structure and a 1 MiB limit before showing a replacement
 preview. Unknown station IDs survive offline import and cross-platform round trips.
 Unknown theme IDs remain stored and display the default palette until supported.
 Future format versions are rejected. Files exclude credentials, precise location,
-recent-board bookkeeping, downloaded fleet data, and development API addresses.
+recent-board bookkeeping, cached boards and trips, the active ride, downloaded
+fleet data, and development API addresses. Only offline preferences synchronize.
+Deploy server validation and the old-client downgrade guard before releasing the
+new native syncing client. Older clients that cannot read the new settings need
+an update; the server rejects their attempts to erase non-default offline preferences.
 
 The native app migrates `preferences.json` and `widgets.json` into an atomic
 `settings.json` record. The website migrates legacy `sfn:` preference keys into

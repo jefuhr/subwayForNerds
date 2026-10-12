@@ -5,9 +5,9 @@ final class SubwaysForNerdsUITests: XCTestCase {
 	private func launch(reset: Bool = true, offline: Bool = false, location: String? = nil, systemLocation: Bool = false, settingsFile: String? = nil) -> XCUIApplication {
 		continueAfterFailure = false
 		let app = XCUIApplication()
-		app.launchEnvironment["SFN_API_BASE_URL"] = offline
-			? "http://127.0.0.1:1/subwaysForNerds/api/v1/"
-			: (ProcessInfo.processInfo.environment["SFN_WIDGET_QA_API"] ?? "http://127.0.0.1:8092/subwaysForNerds/api/v1/")
+		// Offline keeps the fixture endpoint and simulates the outage, so that endpoint's cache stays in use.
+		app.launchEnvironment["SFN_API_BASE_URL"] = ProcessInfo.processInfo.environment["SFN_WIDGET_QA_API"] ?? "http://127.0.0.1:8092/subwaysForNerds/api/v1/"
+		app.launchEnvironment["SFN_SIMULATE_OUTAGE"] = offline ? "1" : "0"
 		app.launchEnvironment["SFN_TEST_SETTINGS_FILE"] = settingsFile
 		app.launchEnvironment["SFN_RESET_STATE"] = reset ? "1" : "0"
 		app.launchEnvironment["SFN_DISABLE_LOCATION"] = location == nil && !systemLocation ? "1" : "0"
@@ -249,7 +249,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 			screenshot("widget-two-departures-\(family)", app: app)
 		}
 		app.buttons["widgetPreviewScenario"].tap(); app.buttons["Saved"].tap()
-		XCTAssertTrue(app.staticTexts["last est."].exists)
+		XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Offline · ")).firstMatch.exists)
 		assertLockScreenDeparturesFit(in: app, minimumPerDirection: 2)
 		screenshot("widget-two-departures-saved", app: app)
 		app.navigationBars.buttons.firstMatch.tap()
@@ -319,14 +319,14 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		screenshot("lock-maximum-density-Inline", app: app)
 		app.buttons["widgetPreviewFamily"].tap(); app.buttons["Rectangular"].tap()
 		app.buttons["widgetPreviewScenario"].tap(); app.buttons["Saved"].tap()
-		XCTAssertTrue(app.staticTexts["last est."].isHittable, "Saved predictions must retain their freshness label at maximum density")
+		XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Offline · ")).firstMatch.isHittable, "Saved predictions must retain their freshness label at maximum density")
 		assertLockScreenDeparturesFit(in: app, minimumPerDirection: 1)
 		screenshot("lock-maximum-density-saved", app: app)
 		app.switches["widgetPreviewLargeText"].tap()
 		for family in ["Rectangular", "Circular"] {
 			app.buttons["widgetPreviewFamily"].tap(); app.buttons[family].tap()
 			assertLockScreenDeparturesFit(in: app, minimumPerDirection: 1)
-			XCTAssertTrue(app.staticTexts["last est."].isHittable)
+			XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Offline · ")).firstMatch.isHittable)
 			screenshot("lock-large-text-\(family)", app: app)
 		}
 	}

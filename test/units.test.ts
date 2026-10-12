@@ -4,7 +4,7 @@ import { clockTime, clockDateTime, sourceClockText, countdown, distanceLabel, ra
 import { decodeNerds, defaults, encodeNerds, mergeSettings, validateSettings, type UnitSettings } from '../shared/settings';
 
 test('missing units migrate in stored settings and both supported file versions', () => {
-	const settings: any = defaults(); delete settings.units;
+	const settings: any = defaults(); delete settings.units; delete settings.offline;
 	assert.deepEqual(validateSettings(settings).units, { distance: 'auto', time: '12h' });
 	for (const version of [1, 2]) {
 		const file = { format: 'subways-for-nerds', version, exportedAt: '2026-10-10T12:00:00Z', lastStation: '602', settings };
@@ -19,7 +19,7 @@ test('unit settings are strict, portable, and merge independently', () => {
 	for (const distance of ['auto', 'mi', 'ft', 'm', 'km'] as const) {
 		const settings = defaults(); settings.units = { distance, time: '24h' };
 		const file = decodeNerds(encodeNerds(settings, '602'));
-		assert.equal(file.version, 2); assert.deepEqual(file.settings.units, settings.units);
+		assert.equal(file.version, 3); assert.deepEqual(file.settings.units, settings.units);
 	}
 	const base = defaults(), local = defaults(), remote = defaults();
 	local.units.distance = 'mi'; remote.units.time = '24h';

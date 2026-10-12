@@ -43,7 +43,7 @@ struct SettingsTests {
 			#expect(throws: (any Error).self) { try NerdsSettingsFile.decode(data) }
 		}
 		var file = NerdsSettingsFile(settings: PortableSettings(), lastStation: "602")
-		file.version = 3
+		file.version = 4
 		#expect(throws: (any Error).self) { try NerdsSettingsFile.decode(JSONEncoder().encode(file)) }
 	}
 	@Test func mergeCombinesIndependentChangesAndRequiresConflictingChoices() throws {

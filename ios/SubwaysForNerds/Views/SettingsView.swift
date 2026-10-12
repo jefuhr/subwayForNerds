@@ -62,6 +62,11 @@ struct SettingsView: View {
 			} header: { ListHeader("Widgets") } footer: {
 				Text("Home and Lock Screen widgets use your station selection and show both directions. Match app filters uses that station’s lines and grouping. iOS schedules updates; use the widget’s refresh button for a new report.")
 			}
+			Section {
+				NavigationLink { OfflineSettingsView() } label: {
+					LabeledContent("Offline boards and trains", value: app.savedTrips.isEmpty ? "\(app.offlinePreferences.departuresPerLineDirection) per line" : "\(app.savedTrips.count) saved")
+				}.accessibilityIdentifier("offlineSettings")
+			} header: { ListHeader("Offline") } footer: { Text("Boards you view, nearby boards and trains you save stay available without a connection, with clearly labeled estimates.") }
 			SettingsTransferSection()
 			AccountSettingsSection()
 			offlineSection
@@ -83,6 +88,8 @@ struct SettingsView: View {
 				}
 				.buttonStyle(.borderless).actionStyle().font(.subheadline)
 				if let error = endpointError { Notice(text: error) }
+				Toggle("Simulate no connection", isOn: Binding(get: { app.outageSimulated }, set: { value in Task { await app.setSimulatedOutage(value) } }))
+					.font(.subheadline).accessibilityIdentifier("simulateOutage")
 			} header: { ListHeader("Development server") } footer: { Text("Use a reachable API base address ending in /api/v1/. Your favorites, filters, and theme are saved on this device.") }
 			#endif
 			Section {

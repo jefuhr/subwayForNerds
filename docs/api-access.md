@@ -1,6 +1,6 @@
 # Transit API access research
 
-Checked October 10, 2026. This records published documentation and the remaining
+Checked October 11, 2026. This records published documentation and the remaining
 verification work; it does not establish a license or add an NJ TRANSIT integration.
 
 ## Helium
@@ -52,9 +52,105 @@ feed alteration, cap requests at 100,000 per day without written consent, and
 describe the public service as unsuitable for reliance for commercial purposes.
 Product-specific documentation may impose tighter limits.
 
-Account approval was confirmed, but not product entitlement or a
-working token. No authenticated request was made. A later integration should
-first verify BUSDATA entitlement and actual light rail response coverage with
-the account, then map official stop/route/trip identities against the rail GTFS
-archive and label schedule-only results accordingly. This change intentionally
-leaves the existing light rail behavior in place.
+## Repeatable BUSDATA coverage probe
+
+Run `npm run --silent njt:probe` from the repository root. The command reads
+`NJT_USERNAME` and `NJT_PASSWORD` from the server environment or the ignored
+`.env` file. Do not use `VITE_` prefixes or put credentials on the command line.
+Credentials were configured locally and authenticated successfully on October
+11, 2026. Keep the `.env` file and its editor swap files out of source control.
+
+The probe makes one authentication request followed by separate departure and
+vehicle requests for HBLR, NLR, and River LINE, with no automatic retries.
+It samples Hoboken, Newark Penn, and Trenton, with a one-mile vehicle search
+around each station. This is a bounded initial sample, not system-wide coverage.
+Authentication is performed once per invocation; avoid repeated invocations
+when investigating account limits.
+
+To preserve a report:
+
+```sh
+mkdir -p artifacts
+npm run --silent njt:probe > artifacts/njt-coverage.json
+```
+
+Exit code 1 means missing credentials, authentication failure, or a failed
+sample. Exit code 0 only means all six sample responses were structurally
+readable, not that realtime coverage was established. Reports contain counts,
+allowlisted field names, request timestamps, and HTTP statuses. They omit
+credentials, tokens, arbitrary response text, and vehicle observations.
+`fetchedAt` is a request timestamp, never a vehicle observation timestamp.
+
+A nonempty response is `unverified`, an empty list is `empty`, and a malformed
+or inaccessible response is `failed`. Neither empty responses nor failures
+prove that a system is unsupported. Scheduled departure values and vehicle IDs
+alone cannot establish realtime predictions or recent vehicle observations.
+The probe deliberately never sets `integrationReady` to true.
+
+## Authenticated Coverage Check: October 11, 2026
+
+Production requests were checked at approximately 11:55-11:57 PM Eastern.
+BUSDATA, rail GTFS-RT, and bus G2 all authenticated successfully. This is a
+late-night snapshot; absence of data does not establish lack of daytime coverage.
+
+| Product | Observed light rail evidence | Interpretation |
+| --- | --- | --- |
+| BUSDATA | One departure at Hoboken and one at Newark Penn; no Trenton departures; all three one-mile vehicle searches empty | Access confirmed; realtime departure semantics remain unverified |
+| Rail GTFS-RT | Its authenticated static archive contains no route type 0 routes | Rail route `13` is Pascack Valley, not the public archive's Newark Light Rail route `13` |
+| Bus G2 | Static routes `HBLR`, `NLR`, and `RvLN`, all route type 0; two `RvLN` vehicle positions matched exact static trips | River LINE GPS observations verified, with source timestamps six seconds behind the feed header |
+| Bus G2 trip updates | Four exact NLR trip matches, all stop updates marked `NO_DATA`, without predicted arrival/departure times | These rows cannot populate live arrival boards |
+
+The River LINE vehicles were `Train 3501` and `Train 3511`. Recent GPS timestamps
+do not establish that a vehicle is currently carrying passengers or that its
+assigned trip still has future stops. No HBLR observations or River LINE trip
+updates were present in this snapshot. Live arrival coverage remains unverified
+for all three systems; position coverage was observed only for River LINE.
+
+The local ignored `artifacts/` directory preserves the BUSDATA summary,
+GTFS-RT reports, authenticated product static archives, and protobuf feed samples.
+No authentication responses, credentials, or tokens were saved. The repeatable
+read-only commands used for the supplementary check were:
+
+```sh
+npx tsx --env-file=.env artifacts/probe-njt-rt.ts > artifacts/njt-gtfsrt-coverage.json
+npx tsx artifacts/analyze-njt-g2.ts
+```
+
+Those local diagnostic scripts are verification artifacts, not production
+pollers. Product-specific static feeds must supply each feed's identity mapping;
+public rail route IDs cannot be reused for rail GTFS-RT or bus G2.
+
+## Remaining verification and integration gates
+
+Before enabling live boards, inspect authenticated samples during service at
+terminals and intermediate stations and establish source observation timestamps,
+actual prediction semantics, and route/stop/trip identity mappings. The probe
+is an initial access and shape check; it does not perform that acceptance review.
+Prefer an official GTFS-RT source if light rail coverage can be verified. Also
+check the rail GTFS-RT and bus G2 products independently; BUSDATA access does not
+establish entitlement or coverage for those products. These authenticated
+GTFS-RT checks are not yet automated by this probe.
+
+The [bus G2 manual](https://developer.njtransit.com/registration/files/NJTRANSIT_BUS_GTFSRT_G2%203.pdf)
+documents `https://pcsdata.njtransit.com/api/GTFSG2/`. The rail GTFS-RT base is
+`https://raildata.njtransit.com/api/GTFSRT/`. Both expose trip updates and vehicle
+positions, but neither manual establishes live coverage for the three light
+rail systems. Public schedule feeds, GIS station data, and the NJ TRANSIT
+website's undocumented departure interface are not accepted as proof of live
+coverage or used as production realtime dependencies.
+
+After source verification, implement independently gated predictions and
+positions in the server, web, iOS, and widgets. Cache only the latest actual
+observation per provider/system/vehicle under `STATE_DIR`, atomically across
+restarts, retaining source timestamps and trip identity. Reject timestamp
+regression, invalid coordinates, and joins to a different trip. Repeated polls
+and restarts must not reset observation age. No position history or scheduled
+movement interpolation is planned.
+
+Use a 60-second NJT live threshold and explicit last-known labels after that;
+suppress positions older than five minutes from current-location displays.
+Position freshness must remain independent of prediction freshness, including
+widget timeline aging. Arrival boards must never fall back to scheduled times.
+Until the source gate passes, all 62 light rail stations retain their existing
+external departure links. No live-position cache or client integration has been
+implemented in this verification milestone.

@@ -11,6 +11,7 @@
     "build": "tsc --noEmit && vite build",
     "start": "tsx server/index.ts",
     "test": "tsx --test test/*.test.ts",
+    "njt:probe": "tsx --env-file-if-exists=.env scripts/probe-njt.ts",
     "test:browser": "playwright test",
     "test:native": "bash scripts/test-native.sh",
     "test:ios": "bash scripts/test-ios.sh",

@@ -133,7 +133,8 @@ export class TransitService {
       if (this.stopped) return;
       try { await task(); failures = 0; } catch (error) { failures++; console.warn(String(error)); }
       if (this.stopped) return;
-      const timer = setTimeout(() => { this.timers.delete(timer); void run(); }, Math.min(interval * 2 ** Math.min(failures, 4), 300000));
+      const delay = failures ? Math.min(interval * 2 ** Math.min(failures, 4), 300000) : interval;
+      const timer = setTimeout(() => { this.timers.delete(timer); void run(); }, delay);
       this.timers.add(timer);
     };
     void run();
@@ -149,7 +150,6 @@ export class TransitService {
       this.refreshBoards();
       return;
     }
-    this.startNjt();
     this.startFleet();
     const restoredSchedules = this.refreshSchedules(true).catch(() => { /* Missing/old cache is rebuilt by the independent poller. */ });
     await Promise.all([...this.slots.keys()].map(async id => {
@@ -157,6 +157,9 @@ export class TransitService {
       if (cached) try { this.accept(id, cached.raw, cached.fetchedAt); } catch { /* Ignore corrupt cache. */ }
     }));
     this.refreshBoards();
+    // Large cached feeds are decoded synchronously during restoration. Open the
+    // first NJT connection afterward so startup work cannot consume its timeout.
+    this.startNjt();
     for (const id of this.slots.keys()) this.schedule(async () => {
       const slot = this.slots.get(id)!;
       try {

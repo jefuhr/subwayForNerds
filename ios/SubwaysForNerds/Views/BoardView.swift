@@ -58,9 +58,10 @@ struct BoardView: View {
 		return groupDepartures(board, direction: app.preference.direction, routes: app.preference.routes, order: app.preference.view, now: app.now, cached: app.boardIsCached)
 	}
 	private var trainSources: [SourceState] { app.board?.sources.filter { !["subway-alerts", "helium"].contains($0.id) } ?? [] }
-	private var live: Bool { !app.boardIsCached && trainSources.contains { Display.freshness($0.timestamp, now: app.now) == .live } }
-	private var degraded: Bool { trainSources.contains { Display.freshness($0.timestamp, now: app.now) != .live || $0.error != nil } }
-	private var externalDepartures: Bool { app.station?.departureMode == "external" }
+	private var live: Bool { app.board.map { Display.hasLivePredictions($0, now: app.now, cached: app.boardIsCached) } ?? false }
+	private var degraded: Bool { trainSources.contains { Display.freshness($0, now: app.now) != .live || $0.error != nil } }
+	private var externalDepartures: Bool { app.board?.usesExternalDepartures ?? app.station.map { $0.departureMode == "external" || $0.isNjt } ?? false }
+	private var configuredNJT: Bool { app.board?.njt?.configured == true }
 
 	var body: some View {
 		List(selection: $selection) {
@@ -108,12 +109,18 @@ struct BoardView: View {
 					}
 				} else if groups.isEmpty {
 					Section {
-						ContentUnavailableView("No departures match", systemImage: "tram", description: Text("An empty board does not mean service is suspended. Try all directions and lines, or refresh the feed."))
+						ContentUnavailableView(configuredNJT && app.board?.departures.isEmpty == true ? "No arrival predictions" : "No departures match", systemImage: "tram", description: Text(app.board.flatMap { Display.njtPredictionMessage($0, now: app.now, cached: app.boardIsCached) } ?? "An empty board does not mean service is suspended. Try all directions and lines, or refresh the feed."))
+							.accessibilityIdentifier("boardNoPredictions")
 						Button("Reset filters") { app.resetFilters() }.actionStyle()
 					}
 				}
 				ForEach(groups) { group in
 					PlatformSection(group: group, station: app.station, order: app.preference.view, now: app.now, cached: app.boardIsCached)
+				}
+				if configuredNJT, let board = app.board {
+					NjtPositionsSection(board: board, now: app.now, cached: app.boardIsCached)
+					NjtDeparturesSection(station: board.station, configured: true)
+					if let error = board.njt?.cacheError { Section { Notice(text: "NJ Transit cache: " + error) } }
 				}
 				if let board = app.board {
 					Section {
@@ -394,17 +401,39 @@ private struct PlatformSection: View {
 
 private struct NjtDeparturesSection: View {
 	let station: Station
+	var configured = false
 	var body: some View {
 		Section {
 			VStack(alignment: .leading, spacing: 3) {
 				Text(station.routes.first.flatMap(Display.regionalRoute)?.name ?? "NJ Transit light rail").font(.headline)
 				if let part = station.parts.first { Text("\(station.municipality.map { "\($0) · " } ?? "")NJ Transit station \(part.stationId)").font(.subheadline) }
-				Text("Live light rail departures are not connected in this app. Check NJ Transit for upcoming trains, schedules, and service changes.").font(.footnote).foregroundStyle(.secondary)
+				if !configured { Text("Live light rail departures are not connected in this app. Check NJ Transit for upcoming trains, schedules, and service changes.").font(.footnote).foregroundStyle(.secondary) }
 			}
 			Link("NJ Transit departures", destination: TransitLinks.njtDepartures).actionStyle().accessibilityIdentifier("njtDepartures")
 			Link("Light rail schedules", destination: TransitLinks.njtSchedules).actionStyle()
 			Link("Service alerts", destination: TransitLinks.njtAlerts).actionStyle()
 		} header: { ListHeader("Official departure tools") }
+	}
+}
+
+private struct NjtPositionsSection: View {
+	let board: Board
+	let now: TimeInterval
+	let cached: Bool
+	private var positions: [VehiclePosition] { Display.currentVehiclePositions(board.vehiclePositions ?? [], now: now) }
+	var body: some View {
+		Section {
+			if positions.isEmpty { Text("No recent vehicle locations are reported.").font(.footnote).foregroundStyle(.secondary) }
+			ForEach(positions) { position in
+				HStack(alignment: .top, spacing: 8) {
+					RouteBullet(route: position.route, small: true)
+					VStack(alignment: .leading, spacing: 2) {
+						Text("Vehicle \(position.vehicleId)").font(.subheadline.weight(.semibold))
+						Text(Display.vehiclePositionLabel(position, now: now, cached: cached)).font(.caption).foregroundStyle(.secondary)
+					}
+				}.accessibilityElement(children: .combine).accessibilityIdentifier("njtPosition_" + position.id)
+			}
+		} header: { ListHeader("Reported vehicle locations") } footer: { Text("GPS reports age independently of arrival estimates. Locations over five minutes old are hidden.") }
 	}
 }
 
@@ -421,11 +450,11 @@ struct DepartureRow: View {
 		if cached, departure.assigned == false, Display.boardable(departure) { return Countdown(value: Display.clockTime(departure.time, format: app.units.time), unit: "not assigned") }
 		return OfflineDisplay.countdown(departure: departure, now: now, cached: cached, preferences: app.offlinePreferences, timeFormat: app.units.time)
 	}
-	private var historical: Bool { cached || Display.freshness(departure.timestamp, now: now) != .live || departure.locationTimestamp.map { now - $0 > 90 } == true }
+	private var historical: Bool { cached || Display.freshness(departure, now: now) != .live || departure.locationTimestamp.map { now - $0 > 90 } == true }
 	private var favoriteMatch: TrainFavoriteMatch? { app.trainFavorites.match(departure.consist, feed: departure.feed, now: now, cached: cached) }
 	private var gap: Int? {
-		guard !cached, Display.boardable(departure), let previous, Display.freshness(previous.timestamp, now: now) == .live,
-			  Display.freshness(departure.timestamp, now: now) == .live, let before = previous.time, let after = departure.time else { return nil }
+		guard !cached, Display.boardable(departure), let previous, Display.freshness(previous, now: now) == .live,
+			  Display.freshness(departure, now: now) == .live, let before = previous.time, let after = departure.time else { return nil }
 		return Int(((after - before) / 60).rounded())
 	}
 	// Built in steps: as one expression this exceeded CI's type-checking time limit.
@@ -457,9 +486,15 @@ struct DepartureRow: View {
 					Text(Display.boardingLabel(departure))
 						.font(.caption2).foregroundStyle(.secondary).accessibilityIdentifier("boardingPlatform_\(departure.key)")
 				}
-				Text((historical ? "Last report: " : "") + departure.location).font(.caption)
+				if let position = departure.vehiclePosition {
+					if let current = Display.currentVehiclePositions([position], now: now).first {
+						Text(Display.vehiclePositionLabel(current, now: now, cached: cached)).font(.caption)
+					}
+				} else if !departure.feed.hasPrefix("njt-"), !departure.location.isEmpty {
+					Text((historical ? "Last report: " : "") + departure.location).font(.caption)
+				}
 				HStack(alignment: .firstTextBaseline) {
-					Text(positionDetail)
+					if !departure.feed.hasPrefix("njt-") { Text(positionDetail) }
 					Spacer(minLength: 4)
 					if let gap, gap > 0 { Text("+\(gap)m after previous") }
 				}

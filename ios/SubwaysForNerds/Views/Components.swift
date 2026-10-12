@@ -62,7 +62,7 @@ struct SourcesView: View {
 			ForEach(sources) { source in
 				GridRow {
 					Circle()
-						.fill(source.error == nil && Display.freshness(source.timestamp, now: now) == .live ? app.theme.accent : Color.orange)
+						.fill(source.error == nil && Display.freshness(source, now: now) == .live ? app.theme.accent : Color.orange)
 						.frame(width: 6, height: 6)
 					Text(source.id).fontWeight(.semibold)
 					Text(Display.ageLabel(source.timestamp, now: now)).gridColumnAlignment(.trailing)

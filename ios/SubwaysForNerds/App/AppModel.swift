@@ -426,7 +426,7 @@ final class AppModel {
 	/// Fetches the selected board now, ahead of automatic work. It joins a matching
 	/// fetch already queued or in flight, and returns at once without a connection.
 	func refreshBoard() async {
-		guard station?.departureMode != "external" else { return }
+		guard station?.departureMode != "external" || board?.njt?.configured == true else { return }
 		let id = stationID
 		let outcome = await prefetcher?.request(OfflineFetchRequest(endpoint: endpoint, target: .board(stationID: id), priority: .explicit)) ?? .paused
 		if outcome == .paused, id == stationID { await showSavedBoard(id, failed: false) }
@@ -687,7 +687,7 @@ final class AppModel {
 			if seen.insert(target).inserted { requests.append(OfflineFetchRequest(endpoint: endpoint, target: target, priority: priority)) }
 		}
 		if let ride = activeRide { add(.trip(key: ride.tripKey), .activeRide) }
-		if station?.departureMode != "external" { add(.board(stationID: stationID), .selected) }
+		if station?.departureMode != "external" || board?.njt?.configured == true { add(.board(stationID: stationID), .selected) }
 		for key in openTrips.keys.sorted() { add(.trip(key: key), .selected) }
 		if let board, board.station.id == stationID {
 			for key in OfflinePlanner.tripKeysToSnapshot(board, preferences: offlinePreferences) { add(.trip(key: key), .background); snapshots.insert(key) }

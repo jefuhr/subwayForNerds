@@ -11,7 +11,7 @@ public struct WidgetRideSnapshot: Codable, Sendable, Equatable {
 		self.trip.detail?.source = nil
 	}
 	public func nextStop(now: TimeInterval) -> StopPrediction? {
-		guard !["CANCELED", "DELETED"].contains(trip.train?.relationship ?? ""), trip.train?.assigned != false,
+		guard !["CANCELED", "DELETED", "NO_DATA"].contains(trip.train?.relationship ?? ""), trip.train?.assigned != false,
 			let index = OfflineDisplay.estimatedNextStopIndex(trip.stops, now: now) else { return nil }
 		return trip.stops[index]
 	}
@@ -21,7 +21,7 @@ public struct WidgetRideSnapshot: Codable, Sendable, Equatable {
 		let rows = trip.stops.enumerated().map { index, stop in
 			Departure(key: "\(trip.tripKey)|\(index)", tripKey: trip.tripKey, route: train?.route ?? "", destination: stop.name,
 				direction: train?.direction ?? "UNKNOWN", stopId: stop.id, partId: stop.stationId ?? "", area: "", time: stop.arrival ?? stop.departure,
-				pattern: "", patternSource: "static", location: "", feed: train?.feed ?? "", timestamp: trip.sourceTimestamp ?? 0, relationship: stop.relationship)
+				pattern: "", patternSource: "static", location: "", feed: train?.feed ?? "", timestamp: trip.sourceTimestamp ?? 0, relationship: stop.relationship, staleAfter: train?.staleAfter, vehiclePosition: train?.vehiclePosition)
 		}
 		return Board(station: station, generatedAt: trip.savedAt, departures: rows)
 	}

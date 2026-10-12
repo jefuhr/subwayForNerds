@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
+import { loadEnvFile } from 'node:process';
 import { TransitService } from './service';
 import { nowSeconds } from './transit';
 import { transfers } from './transfers';
@@ -94,7 +95,7 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
 			status: arrivalsOk && alertsOk ? 'ok' : 'degraded',
 			arrivals: { status: arrivalsOk ? 'ok' : 'degraded' },
 			alerts: { status: alertsOk ? 'ok' : 'degraded', freshness: alertsFresh ? 'live' : 'uncertain' },
-			feeds, stationCount: service.catalog.length,
+			feeds, stationCount: service.catalog.length, njt: service.njt.health(now),
 		};
 	});
   app.get('/healthz', () => ({ status: 'ok' }));
@@ -108,6 +109,7 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
   return app;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  if (existsSync('.env')) loadEnvFile('.env');
   const service = new TransitService({ fixtureDir: process.env.FIXTURE_DIR });
   // Empty station boards are available before any upstream request completes.
   service.refreshBoards();

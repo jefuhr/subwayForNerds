@@ -30,6 +30,7 @@ public struct StationPart: Codable, Sendable, Equatable, Identifiable {
 }
 
 public struct Station: Codable, Sendable, Equatable, Identifiable {
+	public var isNjt: Bool { id.hasPrefix("njt-") || routes.contains { $0.hasPrefix("NJT-") } }
 	public var municipality: String?
 	public var departureMode: String?
 	public var id: String
@@ -58,12 +59,50 @@ public struct SourceState: Codable, Sendable, Equatable, Identifiable {
 	public var timestamp: TimeInterval?
 	public var fetchedAt: TimeInterval?
 	public var error: String?
+	public var staleAfter: TimeInterval?
 
-	public init(id: String, timestamp: TimeInterval? = nil, fetchedAt: TimeInterval? = nil, error: String? = nil) {
+	public init(id: String, timestamp: TimeInterval? = nil, fetchedAt: TimeInterval? = nil, error: String? = nil, staleAfter: TimeInterval? = nil) {
+		self.staleAfter = staleAfter
 		self.id = id
 		self.timestamp = timestamp
 		self.fetchedAt = fetchedAt
 		self.error = error
+	}
+}
+
+/// Actual NJ Transit GPS reports; timestamps are Unix seconds, independent of predictions.
+public struct VehiclePosition: Codable, Sendable, Equatable, Identifiable {
+	public var id: String
+	public var provider: String
+	public var vehicleId: String
+	public var route: String
+	public var tripId: String?
+	public var serviceDate: String?
+	public var startTime: String?
+	public var lat: Double
+	public var lon: Double
+	public var stopId: String?
+	public var stopName: String?
+	public var status: String?
+	public var timestamp: TimeInterval
+	public var fetchedAt: TimeInterval
+
+	public init(id: String, provider: String, vehicleId: String, route: String, tripId: String? = nil, serviceDate: String? = nil, startTime: String? = nil, lat: Double, lon: Double, stopId: String? = nil, stopName: String? = nil, status: String? = nil, timestamp: TimeInterval, fetchedAt: TimeInterval) {
+		self.id = id; self.provider = provider; self.vehicleId = vehicleId; self.route = route
+		self.tripId = tripId; self.serviceDate = serviceDate; self.startTime = startTime
+		self.lat = lat; self.lon = lon; self.stopId = stopId; self.stopName = stopName; self.status = status
+		self.timestamp = timestamp; self.fetchedAt = fetchedAt
+	}
+}
+
+public struct NjtState: Codable, Sendable, Equatable {
+	public var configured: Bool
+	public var predictions: SourceState
+	public var positions: SourceState
+	public var cacheError: String?
+
+	public init(configured: Bool, predictions: SourceState, positions: SourceState, cacheError: String? = nil) {
+		self.configured = configured; self.predictions = predictions; self.positions = positions; self.cacheError = cacheError
 	}
 }
 
@@ -192,6 +231,8 @@ public struct ScheduledPattern: Codable, Sendable, Equatable {
 }
 
 public struct Train: Codable, Sendable, Equatable, Identifiable {
+	public var staleAfter: TimeInterval?
+	public var vehiclePosition: VehiclePosition?
 	public var changes: [TripChange]?
 	public var startTime: String?
 	public var key: String
@@ -212,7 +253,9 @@ public struct Train: Codable, Sendable, Equatable, Identifiable {
 	public var scheduledPattern: ScheduledPattern?
 	public var id: String { key }
 
-	public init(changes: [TripChange]? = nil, startTime: String? = nil, key: String, feed: String, tripId: String, serviceDate: String? = nil, route: String, destination: String, direction: String, trainId: String? = nil, assigned: Bool? = nil, timestamp: TimeInterval, position: TrainPosition? = nil, stops: [StopPrediction] = [], relationship: String? = nil, alerts: [String] = [], consist: Consist? = nil, scheduledPattern: ScheduledPattern? = nil) {
+	public init(changes: [TripChange]? = nil, startTime: String? = nil, key: String, feed: String, tripId: String, serviceDate: String? = nil, route: String, destination: String, direction: String, trainId: String? = nil, assigned: Bool? = nil, timestamp: TimeInterval, position: TrainPosition? = nil, stops: [StopPrediction] = [], relationship: String? = nil, alerts: [String] = [], consist: Consist? = nil, scheduledPattern: ScheduledPattern? = nil, staleAfter: TimeInterval? = nil, vehiclePosition: VehiclePosition? = nil) {
+		self.staleAfter = staleAfter
+		self.vehiclePosition = vehiclePosition
 		self.changes = changes
 		self.startTime = startTime
 		self.key = key
@@ -249,6 +292,8 @@ public struct OnwardStop: Codable, Sendable, Equatable {
 }
 
 public struct Departure: Codable, Sendable, Equatable, Identifiable {
+	public var staleAfter: TimeInterval?
+	public var vehiclePosition: VehiclePosition?
 	public var changes: [TripChange]?
 	public var departure: TimeInterval?
 	public var key: String
@@ -279,7 +324,9 @@ public struct Departure: Codable, Sendable, Equatable, Identifiable {
 	public var basis: String?
 	public var id: String { key }
 
-	public init(changes: [TripChange]? = nil, departure: TimeInterval? = nil, key: String, tripKey: String, route: String, destination: String, direction: String, stopId: String, partId: String, area: String, time: TimeInterval? = nil, arrival: TimeInterval? = nil, scheduledTrack: String? = nil, actualTrack: String? = nil, pattern: String, patternSource: String, location: String, locationTimestamp: TimeInterval? = nil, stopsAway: Int? = nil, assigned: Bool? = nil, feed: String, timestamp: TimeInterval, relationship: String? = nil, alerts: [String] = [], consist: Consist? = nil, onward: [OnwardStop] = [], gap: Double? = nil, basis: String? = nil) {
+	public init(changes: [TripChange]? = nil, departure: TimeInterval? = nil, key: String, tripKey: String, route: String, destination: String, direction: String, stopId: String, partId: String, area: String, time: TimeInterval? = nil, arrival: TimeInterval? = nil, scheduledTrack: String? = nil, actualTrack: String? = nil, pattern: String, patternSource: String, location: String, locationTimestamp: TimeInterval? = nil, stopsAway: Int? = nil, assigned: Bool? = nil, feed: String, timestamp: TimeInterval, relationship: String? = nil, alerts: [String] = [], consist: Consist? = nil, onward: [OnwardStop] = [], gap: Double? = nil, basis: String? = nil, staleAfter: TimeInterval? = nil, vehiclePosition: VehiclePosition? = nil) {
+		self.staleAfter = staleAfter
+		self.vehiclePosition = vehiclePosition
 		self.changes = changes
 		self.departure = departure
 		self.key = key
@@ -376,13 +423,18 @@ public struct ServiceAlert: Codable, Sendable, Equatable, Identifiable {
 }
 
 public struct Board: Codable, Sendable, Equatable {
+	public var njt: NjtState?
+	public var vehiclePositions: [VehiclePosition]?
+	public var usesExternalDepartures: Bool { (station.departureMode == "external" || station.isNjt) && njt?.configured != true }
 	public var station: Station
 	public var generatedAt: TimeInterval
 	public var sources: [SourceState]
 	public var departures: [Departure]
 	public var alerts: [ServiceAlert]
 
-	public init(station: Station, generatedAt: TimeInterval, sources: [SourceState] = [], departures: [Departure] = [], alerts: [ServiceAlert] = []) {
+	public init(station: Station, generatedAt: TimeInterval, sources: [SourceState] = [], departures: [Departure] = [], alerts: [ServiceAlert] = [], njt: NjtState? = nil, vehiclePositions: [VehiclePosition]? = nil) {
+		self.njt = njt
+		self.vehiclePositions = vehiclePositions
 		self.station = station
 		self.generatedAt = generatedAt
 		self.sources = sources
@@ -413,6 +465,7 @@ public struct TripSource: Codable, Sendable, Equatable {
 }
 
 public struct TransferResult: Codable, Sendable, Equatable {
+	public var originStaleAfter: TimeInterval?
 	public var originTimestamp: TimeInterval?
 	public var station: Station?
 	public var arrival: TimeInterval?
@@ -421,7 +474,8 @@ public struct TransferResult: Codable, Sendable, Equatable {
 	public var connections: [Departure]
 	public var sources: [SourceState]
 
-	public init(originTimestamp: TimeInterval? = nil, station: Station? = nil, arrival: TimeInterval? = nil, basis: String, message: String? = nil, connections: [Departure] = [], sources: [SourceState] = []) {
+	public init(originTimestamp: TimeInterval? = nil, station: Station? = nil, arrival: TimeInterval? = nil, basis: String, message: String? = nil, connections: [Departure] = [], sources: [SourceState] = [], originStaleAfter: TimeInterval? = nil) {
+		self.originStaleAfter = originStaleAfter
 		self.originTimestamp = originTimestamp
 		self.station = station
 		self.arrival = arrival

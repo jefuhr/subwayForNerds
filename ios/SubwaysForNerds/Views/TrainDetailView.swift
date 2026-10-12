@@ -42,6 +42,7 @@ struct TrainDetailView: View {
 	/// A canceled or unassigned train never gets a countdown from saved data.
 	private var noEstimate: String? {
 		guard let train else { return nil }
+		if train.relationship == "NO_DATA" { return "no estimate" }
 		if ["CANCELED", "DELETED"].contains(train.relationship ?? "") { return "canceled when saved" }
 		return train.assigned == false ? "not assigned when saved" : nil
 	}
@@ -75,7 +76,7 @@ struct TrainDetailView: View {
 							}
 							Spacer(minLength: 4)
 							// Saved data is never labeled live, however recent its source time.
-							let freshness = cached ? "offline" : Display.freshness(train.timestamp, now: now).rawValue
+							let freshness = cached ? "offline" : Display.freshness(train, now: now).rawValue
 							Text("\(freshness) · \(Display.ageLabel(train.timestamp, now: now))")
 								.font(.caption.weight(.semibold).monospacedDigit())
 								.foregroundStyle(freshness == "live" ? app.theme.accent : app.theme.ink.opacity(0.7))
@@ -95,7 +96,7 @@ struct TrainDetailView: View {
 					ForEach(Array(train.stops.enumerated()), id: \.offset) { index, stop in
 						let row = StopRow(stop: stop, now: now, offline: cached ? OfflineStopEstimate(sourceTimestamp: sourceTimestamp, estimatedNext: index == nextStopIndex, noEstimate: noEstimate) : nil)
 						Group {
-							if !cached, stop.relationship != "SKIPPED", stop.stationId != nil, (stop.arrival ?? stop.departure ?? .infinity) >= now {
+							if !cached, Display.freshness(train, now: now) == .live, !["SKIPPED", "NO_DATA"].contains(stop.relationship ?? ""), stop.stationId != nil, (stop.arrival ?? stop.departure ?? .infinity) >= now {
 								NavigationLink { TransferView(tripKey: tripKey, stop: stop) } label: { row }
 									.accessibilityLabel("Connections at \(stop.name)")
 							} else {
@@ -273,6 +274,14 @@ struct TrainDetailView: View {
 			("Service date", train.serviceDate ?? "Not reported"),
 			(cached ? "Last position report" : "Position report", train.position.map { "\($0.name) · \(Display.ageLabel($0.timestamp, now: now))" } ?? "Not reported")
 		]
+		if let position = train.vehiclePosition {
+			facts.removeAll { $0.label == "Position report" || $0.label == "Last position report" }
+			facts.append(("Vehicle", position.vehicleId))
+			facts.append(("GPS report", Display.currentVehiclePositions([position], now: now).first.map { Display.vehiclePositionLabel($0, now: now, cached: cached) } ?? "No recent vehicle location reported"))
+		} else if train.feed.hasPrefix("njt-") {
+			facts.removeAll { $0.label == "Position report" || $0.label == "Last position report" }
+			facts.append(("GPS report", "Not reported"))
+		}
 		if consist == nil { facts.append(("Car numbers", cached ? "Not shown offline" : "Not currently available")) }
 		return facts
 	}
@@ -363,11 +372,11 @@ struct TransferView: View {
 	@State private var requestGeneration = 0
 	private var stale: Bool {
 		guard let data else { return true }
-		return !app.connected || Display.freshness(data.originTimestamp, now: app.now) != .live || data.arrival.map { $0 < app.now } == true
+		return !app.connected || Display.freshness(data.originTimestamp, now: app.now, staleAfter: data.originStaleAfter) != .live || data.arrival.map { $0 < app.now } == true
 	}
 	private var groups: [ConnectionGroup] {
 		guard let data, !stale, error == nil else { return [] }
-		let usable = data.connections.filter { Display.freshness($0.timestamp, now: app.now) == .live && ($0.time ?? -.infinity) >= app.now }
+		let usable = data.connections.filter { Display.freshness($0, now: app.now) == .live && ($0.time ?? -.infinity) >= app.now }
 		return Dictionary(grouping: usable) { "\(Display.routeLabel($0.route)) · \(Display.directionLabel($0.direction)) · \($0.area)" }
 			.map { key, departures in
 				let sorted = departures.sorted { ($0.time ?? 0) < ($1.time ?? 0) }

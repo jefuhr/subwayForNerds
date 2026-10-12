@@ -120,37 +120,16 @@ Those local diagnostic scripts are verification artifacts, not production
 pollers. Product-specific static feeds must supply each feed's identity mapping;
 public rail route IDs cannot be reused for rail GTFS-RT or bus G2.
 
-## Remaining verification and integration gates
+## Integration
 
-Before enabling live boards, inspect authenticated samples during service at
-terminals and intermediate stations and establish source observation timestamps,
-actual prediction semantics, and route/stop/trip identity mappings. The probe
-is an initial access and shape check; it does not perform that acceptance review.
-Prefer an official GTFS-RT source if light rail coverage can be verified. Also
-check the rail GTFS-RT and bus G2 products independently; BUSDATA access does not
-establish entitlement or coverage for those products. These authenticated
-GTFS-RT checks are not yet automated by this probe.
+The bus G2 integration is implemented in the server, web client, iOS app, and
+widgets. See [NJT setup, cache behavior, and coverage](njt.md). This initial
+coverage snapshot does not promise that every system currently publishes live
+predictions. The integration admits explicit realtime timestamps and actual GPS
+observations independently, with no schedule fallback.
 
-The [bus G2 manual](https://developer.njtransit.com/registration/files/NJTRANSIT_BUS_GTFSRT_G2%203.pdf)
-documents `https://pcsdata.njtransit.com/api/GTFSG2/`. The rail GTFS-RT base is
-`https://raildata.njtransit.com/api/GTFSRT/`. Both expose trip updates and vehicle
-positions, but neither manual establishes live coverage for the three light
-rail systems. Public schedule feeds, GIS station data, and the NJ TRANSIT
-website's undocumented departure interface are not accepted as proof of live
-coverage or used as production realtime dependencies.
-
-After source verification, implement independently gated predictions and
-positions in the server, web, iOS, and widgets. Cache only the latest actual
-observation per provider/system/vehicle under `STATE_DIR`, atomically across
-restarts, retaining source timestamps and trip identity. Reject timestamp
-regression, invalid coordinates, and joins to a different trip. Repeated polls
-and restarts must not reset observation age. No position history or scheduled
-movement interpolation is planned.
-
-Use a 60-second NJT live threshold and explicit last-known labels after that;
-suppress positions older than five minutes from current-location displays.
-Position freshness must remain independent of prediction freshness, including
-widget timeline aging. Arrival boards must never fall back to scheduled times.
-Until the source gate passes, all 62 light rail stations retain their existing
-external departure links. No live-position cache or client integration has been
-implemented in this verification milestone.
+Rail GTFS-RT and BUSDATA remain researched alternatives. Their different route
+identities and ambiguous departure semantics must be verified before any future
+source switch. Current production base URLs are
+`https://pcsdata.njtransit.com/api/GTFSG2/` and
+`https://raildata.njtransit.com/api/GTFSRT/`.

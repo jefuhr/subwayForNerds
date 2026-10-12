@@ -16,9 +16,9 @@ public enum OfflineDisplay {
 	/// Live (uncached) data uses `Display.countdown` unchanged. Cached data counts down
 	/// in minutes while usable, then shows the last clock time; a passed time says so
 	/// instead of implying the train is still coming.
-	public static func countdown(time: TimeInterval?, timestamp: TimeInterval?, now: TimeInterval, cached: Bool, preferences: OfflinePreferences, timeFormat: TimeFormat = .twelveHour) -> Countdown {
+	public static func countdown(time: TimeInterval?, timestamp: TimeInterval?, now: TimeInterval, cached: Bool, preferences: OfflinePreferences, timeFormat: TimeFormat = .twelveHour, staleAfter: TimeInterval? = nil) -> Countdown {
 		guard let time else { return Countdown(value: "—", unit: "no estimate") }
-		guard cached else { return Display.countdown(time, timestamp: timestamp ?? 0, now: now, cached: false, timeFormat: timeFormat) }
+		guard cached else { return Display.countdown(time, timestamp: timestamp ?? 0, now: now, cached: false, timeFormat: timeFormat, staleAfter: staleAfter) }
 		let seconds = time - now
 		if seconds < 0 { return Countdown(value: Display.clockTime(time, format: timeFormat), unit: "estimate passed") }
 		guard isEstimateUsable(timestamp: timestamp, now: now, preferences: preferences) else { return Countdown(value: Display.clockTime(time, format: timeFormat), unit: "last estimate") }
@@ -28,12 +28,12 @@ public enum OfflineDisplay {
 	/// Explicitly canceled or skipped service never receives an estimate.
 	public static func countdown(departure: Departure, now: TimeInterval, cached: Bool, preferences: OfflinePreferences, timeFormat: TimeFormat = .twelveHour) -> Countdown {
 		if let unit = withdrawn(departure.relationship) { return Countdown(value: "—", unit: unit) }
-		return countdown(time: departure.time, timestamp: departure.timestamp, now: now, cached: cached, preferences: preferences, timeFormat: timeFormat)
+		return countdown(time: departure.time, timestamp: departure.timestamp, now: now, cached: cached, preferences: preferences, timeFormat: timeFormat, staleAfter: Display.predictionStaleAfter(departure.staleAfter, feed: departure.feed))
 	}
 
-	public static func countdown(stop: StopPrediction, sourceTimestamp: TimeInterval?, now: TimeInterval, cached: Bool, preferences: OfflinePreferences, timeFormat: TimeFormat = .twelveHour) -> Countdown {
+	public static func countdown(stop: StopPrediction, sourceTimestamp: TimeInterval?, now: TimeInterval, cached: Bool, preferences: OfflinePreferences, timeFormat: TimeFormat = .twelveHour, staleAfter: TimeInterval? = nil) -> Countdown {
 		if let unit = withdrawn(stop.relationship) { return Countdown(value: "—", unit: unit) }
-		return countdown(time: stop.arrival ?? stop.departure, timestamp: sourceTimestamp, now: now, cached: cached, preferences: preferences, timeFormat: timeFormat)
+		return countdown(time: stop.arrival ?? stop.departure, timestamp: sourceTimestamp, now: now, cached: cached, preferences: preferences, timeFormat: timeFormat, staleAfter: staleAfter)
 	}
 
 	/// The provenance line that must accompany every cached time.
@@ -64,6 +64,7 @@ public enum OfflineDisplay {
 		switch relationship ?? "" {
 		case "CANCELED", "DELETED": "canceled"
 		case "SKIPPED": "skipped"
+		case "NO_DATA": "no estimate"
 		default: nil
 		}
 	}

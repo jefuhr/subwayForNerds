@@ -22,17 +22,60 @@ public enum TransitLinks {
 }
 
 public enum Display {
-	public static func freshness(_ timestamp: TimeInterval?, now: TimeInterval) -> Freshness {
-		guard let timestamp, timestamp != 0 else { return .unavailable }
-		return now - timestamp > 300 ? .expired : now - timestamp > 90 ? .stale : .live
+	public static func freshness(_ timestamp: TimeInterval?, now: TimeInterval, staleAfter: TimeInterval? = nil) -> Freshness {
+		guard let timestamp, timestamp.isFinite, timestamp > 0, timestamp <= now else { return .unavailable }
+		return now - timestamp > 300 ? .expired : now - timestamp > (staleAfter ?? 90) ? .stale : .live
 	}
 
-	public static func countdown(_ time: TimeInterval?, timestamp: TimeInterval, now: TimeInterval, cached: Bool = false, timeFormat: TimeFormat = .twelveHour) -> Countdown {
+	public static func countdown(_ time: TimeInterval?, timestamp: TimeInterval, now: TimeInterval, cached: Bool = false, timeFormat: TimeFormat = .twelveHour, staleAfter: TimeInterval? = nil) -> Countdown {
 		guard let time else { return Countdown(value: "—", unit: "no estimate") }
-		guard !cached, freshness(timestamp, now: now) == .live else { return Countdown(value: clockTime(time, format: timeFormat), unit: "last estimate") }
+		guard !cached, freshness(timestamp, now: now, staleAfter: staleAfter) == .live else { return Countdown(value: clockTime(time, format: timeFormat), unit: "last estimate") }
 		let seconds = time - now
 		if seconds < -30 { return Countdown(value: "—", unit: "awaiting update") }
 		return Countdown(value: seconds < 60 ? "<1" : String(Int(floor(seconds / 60))), unit: "min")
+	}
+
+	public static func predictionStaleAfter(_ staleAfter: TimeInterval?, feed: String) -> TimeInterval {
+		staleAfter ?? (feed.hasPrefix("njt-") ? 60 : 90)
+	}
+	public static func freshness(_ row: Departure, now: TimeInterval) -> Freshness {
+		freshness(row.timestamp, now: now, staleAfter: predictionStaleAfter(row.staleAfter, feed: row.feed))
+	}
+	public static func freshness(_ train: Train, now: TimeInterval) -> Freshness {
+		freshness(train.timestamp, now: now, staleAfter: predictionStaleAfter(train.staleAfter, feed: train.feed))
+	}
+	public static func freshness(_ source: SourceState, now: TimeInterval) -> Freshness {
+		freshness(source.timestamp, now: now, staleAfter: predictionStaleAfter(source.staleAfter, feed: source.id))
+	}
+
+	/// A fresh poll alone cannot establish arrivals. GPS never supplies an arrival time.
+	public static func hasLivePredictions(_ board: Board, now: TimeInterval, cached: Bool = false) -> Bool {
+		guard !cached, !board.usesExternalDepartures else { return false }
+		if let njt = board.njt, njt.configured {
+			guard njt.predictions.error == nil, freshness(njt.predictions, now: now) == .live else { return false }
+		}
+		return board.departures.contains { boardable($0) && $0.time != nil && freshness($0, now: now) == .live && ($0.time ?? 0) >= now - 30 }
+	}
+
+	public static func njtPredictionMessage(_ board: Board, now: TimeInterval, cached: Bool = false) -> String? {
+		guard let njt = board.njt, njt.configured, board.departures.isEmpty else { return nil }
+		if cached || njt.predictions.error != nil || freshness(njt.predictions, now: now) != .live {
+			return "NJ Transit arrival predictions are unavailable. Check official departure tools for current information."
+		}
+		return "No arrival predictions are currently reported. Check official departure tools for upcoming trains."
+	}
+
+	/// Keep older GPS on disk but exclude it from current location views.
+	public static func currentVehiclePositions(_ positions: [VehiclePosition], now: TimeInterval) -> [VehiclePosition] {
+		positions.filter {
+			$0.timestamp.isFinite && $0.timestamp > 0 && $0.timestamp <= now && now - $0.timestamp <= 300 &&
+			$0.lat.isFinite && $0.lon.isFinite && abs($0.lat) <= 90 && abs($0.lon) <= 180
+		}
+	}
+	public static func vehiclePositionLabel(_ position: VehiclePosition, now: TimeInterval, cached: Bool = false) -> String {
+		let name = position.stopName?.trimmingCharacters(in: .whitespacesAndNewlines)
+		let place = name.flatMap { $0.isEmpty ? nil : $0 } ?? String(format: "GPS %.5f, %.5f", position.lat, position.lon)
+		return (cached || now - position.timestamp > 60 ? "Last known · " : "") + place + " · source " + ageLabel(position.timestamp, now: now)
 	}
 
 	/// Widgets format every row of every timeline entry, so the formatter is created once.
@@ -75,7 +118,7 @@ public enum Display {
 	}
 
 	public static func boardable(_ departure: Departure) -> Bool {
-		!["SKIPPED", "CANCELED", "DELETED"].contains(departure.relationship ?? "")
+		!["SKIPPED", "CANCELED", "DELETED", "NO_DATA"].contains(departure.relationship ?? "")
 	}
 
 	/// The API's area usually already ends in its track; preserve that boarding

@@ -44,3 +44,18 @@ test('fallback time bases are explicit and absolute times survive midnight and D
     assert.equal(result.basis, 'departure'); assert.equal(result.connections[0].basis, 'arrival'); assert.equal(result.connections[0].gap, 40);
   }
 });
+
+test('NJT transfer estimates expire at 60 seconds while MTA retains its existing threshold', () => {
+  const own = train('own', now + 120), connection = train('connection', now + 180);
+  own.timestamp = now - 61;
+  assert.equal(transfers(own, board([connection]), 'AN', 3, now).connections.length, 1);
+  own.staleAfter = 60;
+  assert.match(transfers(own, board([connection]), 'AN', 3, now).message!, /stale/);
+  own.timestamp = now;
+  const b = board([connection]);
+  b.get('s')!.departures[0].timestamp = now - 61;
+  b.get('s')!.departures[0].staleAfter = 60;
+  const result = transfers(own, b, 'AN', 3, now);
+  assert.equal(result.connections.length, 0);
+  assert.equal(result.originStaleAfter, 60);
+});

@@ -263,10 +263,13 @@ paging and nearby sorting work as usual. Names distinguish these stations from
 nearby PATH stations. The route badges represent the three systems, not individual
 branch service patterns.
 
-This is station-directory support: NJ Transit live arrivals, schedules and alerts
-are not ingested. These station pages say so explicitly and link to NJ Transit's
-DepartureVision, light rail schedules and alerts rather than showing an empty
-live board or MTA data.
+With server credentials configured, these stations use the authenticated NJ Transit
+bus G2 feed for explicit live predictions and actual vehicle GPS reports. Static
+GTFS supplies identities only; no timetable arrivals or inferred movement are
+shown. Prediction and GPS freshness are independent, with a 60-second live window.
+The server saves only each vehicle's latest reported position across restarts.
+Without credentials, the station directory and official NJ Transit links remain
+available. See [NJT setup and coverage](docs/njt.md) for details.
 
 Station IDs, system membership and coordinates were imported on 2026-09-21 from
 [NJ TRANSIT GIS's light rail station layer](https://services6.arcgis.com/M0t0HPE53pFK525U/arcgis/rest/services/NJTransit_Light_Rail_Stations/FeatureServer/0).

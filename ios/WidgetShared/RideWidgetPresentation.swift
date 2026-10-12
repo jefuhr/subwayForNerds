@@ -11,7 +11,7 @@ struct SubwayRideWidgetView: View {
 	private var now: TimeInterval { entry.date.timeIntervalSince1970 }
 	private var train: Train? { ride?.trip.train }
 	private var next: StopPrediction? { ride?.nextStop(now: now) }
-	private var historical: Bool { entry.cached || (ride?.trip.sourceTimestamp ?? 0) > now || Display.freshness(ride?.trip.sourceTimestamp, now: now) != .live }
+	private var historical: Bool { entry.cached || (ride?.trip.sourceTimestamp ?? 0) > now || Display.freshness(ride?.trip.sourceTimestamp, now: now, staleAfter: train.map { Display.predictionStaleAfter($0.staleAfter, feed: $0.feed) }) != .live }
 	private var isLarge: Bool { family == .systemLarge || family == .systemExtraLarge }
 	private var canceled: Bool { ["CANCELED", "DELETED"].contains(train?.relationship ?? "") }
 	private var emptyMessage: String {
@@ -25,7 +25,7 @@ struct SubwayRideWidgetView: View {
 	}
 	private func estimate(_ stop: StopPrediction) -> Countdown {
 		let value = OfflineDisplay.countdown(stop: stop, sourceTimestamp: ride?.trip.sourceTimestamp, now: now,
-			cached: historical, preferences: entry.offline, timeFormat: entry.units.time)
+			cached: historical, preferences: entry.offline, timeFormat: entry.units.time, staleAfter: train.map { Display.predictionStaleAfter($0.staleAfter, feed: $0.feed) })
 		return widgetIntervalCountdown(value, time: stop.arrival ?? stop.departure, now: now, displayUntil: entry.displayUntil?.timeIntervalSince1970)
 	}
 	private var compactEstimate: String {

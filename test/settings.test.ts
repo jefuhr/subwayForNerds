@@ -10,7 +10,7 @@ test('nerds files round trip native-only preferences and unknown station referen
 	assert.deepEqual(decodeNerds(encodeNerds(file.settings, file.lastStation)).settings, file.settings);
 });
 test('invalid, oversized and unsupported imports fail before replacement', () => {
-	for (const text of ['{}', 'null', '{', ' '.repeat(1048577), encodeNerds(defaults(), '602').replace('"version": 3', '"version": 4')]) assert.throws(() => decodeNerds(text));
+	for (const text of ['{}', 'null', '{', ' '.repeat(1048577), encodeNerds(defaults(), '602').replace('"version": 4', '"version": 5')]) assert.throws(() => decodeNerds(text));
 	const value = defaults(); value.widgets.display.trainsPerDirection = 9;
 	assert.throws(() => validateSettings(value));
 	assert.throws(() => validateSettings({ ...defaults(), stations: JSON.parse('{"__proto__":{}}') }));
@@ -26,7 +26,7 @@ test('v2 exports preserve train favorites and independent widget station selecti
 	settings.stationSelection = { mode: 'closest', radiusFeet: 1 };
 	settings.widgets.stationSelection = { followApp: false, selection: { mode: 'nearbyFavorite', radiusFeet: 26400 } };
 	const file = decodeNerds(encodeNerds(settings, 'future:station'));
-	assert.equal(file.version, 3);
+	assert.equal(file.version, 4);
 	assert.deepEqual(file.settings, validateSettings(settings));
 	assert.deepEqual(file.settings.trainFavorites.consists, [['nyct:R160:001', 'nyct:R160:002']]);
 });
@@ -126,7 +126,7 @@ test('v3 exports offline preferences and v1/v2 files migrate to offline defaults
 	const settings = defaults();
 	settings.offline = { ...settings.offline, departuresPerLineDirection: 20, nearbyRadiusFeet: 0, estimateLimitMinutes: 120, widgetsFollowActiveRide: true };
 	const exported = JSON.parse(encodeNerds(settings, '602'));
-	assert.equal(exported.version, 3);
+	assert.equal(exported.version, 4);
 	assert.deepEqual(exported.settings.offline, settings.offline);
 	assert.deepEqual(decodeNerds(JSON.stringify(exported)).settings.offline, settings.offline);
 	// Settings without offline (older sync baselines and clients) migrate in place.
@@ -165,7 +165,7 @@ test('offline preferences are required in v3 files and never part of older versi
 		const older = JSON.parse(encodeNerds(defaults(), '602'));
 		older.version = version;
 		assert.throws(() => decodeNerds(JSON.stringify(older)));
-		delete older.settings.offline;
+		delete older.settings.offline; delete older.settings.combinedStations; delete older.settings.hiddenRoutes;
 		assert.deepEqual(decodeNerds(JSON.stringify(older)).settings.offline, defaultOffline());
 	}
 	const invalid = JSON.parse(encodeNerds(defaults(), '602'));

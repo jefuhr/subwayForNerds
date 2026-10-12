@@ -20,7 +20,10 @@ public struct StationSelection: Codable, Sendable, Equatable {
 		guard let location, location.isUsable(now: now) else { return fallback }
 		func nearest(_ options: [Station]) -> (station: Station, distance: Double)? {
 			options.map { (station: $0, distance: location.distanceMeters(to: $0)) }.filter { $0.distance.isFinite }.min {
-				$0.distance == $1.distance ? $0.station.id < $1.station.id : $0.distance < $1.distance
+				if $0.distance != $1.distance { return $0.distance < $1.distance }
+				if $0.station.isCombined != $1.station.isCombined { return $0.station.isCombined }
+				if $0.station.isCombined, ($0.station.id == previous) != ($1.station.id == previous) { return $0.station.id == previous }
+				return $0.station.id < $1.station.id
 			}
 		}
 		if mode == .nearbyFavorite, let favorite = nearest(favoriteStations), includesFavorite(distanceMeters: favorite.distance) { return favorite.station }

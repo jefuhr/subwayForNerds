@@ -25,6 +25,10 @@ final class AppModel {
 	var units: UnitPreferences
 	var themeID: String
 	var stationPreferences: [String: StationPreference]
+	var combinedStations: [String: CombinedStation]
+	var hiddenRoutes: [String]
+	var combinedBoard: CombinedBoardSnapshot?
+	private var memberBoards: [String: MemberBoardSnapshot] = [:]
 	var settingsError: String?
 	var pendingSettingsImport: NerdsSettingsFile?
 	var settingsSync: SettingsSyncState?
@@ -138,6 +142,8 @@ final class AppModel {
 		recent = portable?.recent ?? saved.recent
 		themeID = portable?.settings.theme ?? (AppTheme.all.contains(where: { $0.id == saved.theme }) ? saved.theme : "subway")
 		stationPreferences = portable?.settings.stations ?? saved.stations
+		combinedStations = portable?.settings.combinedStations ?? [:]
+		hiddenRoutes = portable?.settings.hiddenRoutes ?? []
 		widgetPreferences = portable?.settings.widgets ?? Self.read(WidgetPreferences.self, at: directory.appendingPathComponent("widgets.json")) ?? WidgetPreferences()
 		offlinePreferences = portable?.settings.offline ?? OfflinePreferences()
 		settingsSync = portable?.sync
@@ -178,10 +184,33 @@ final class AppModel {
 		restoreTask = Task { await restoreOffline() }
 	}
 
-	var station: Station? { board?.station ?? stations.first { $0.id == stationID } }
+	var allStations: [Station] {
+		stations + combinedStations.keys.sorted().compactMap { id in
+			guard let value = combinedStations[id] else { return nil }
+			return CombinedStationResolver.station(id: id, name: value.name, stationIDs: value.stationIDs, catalog: stations)
+		}
+	}
+	var visibleStations: [Station] {
+		let visible = stations.compactMap { LineVisibility.station($0, hiddenRoutes: hiddenRoutes) }
+		return visible + combinedStations.keys.sorted().compactMap { id in
+			guard let value = combinedStations[id] else { return nil }
+			return CombinedStationResolver.station(id: id, name: value.name, stationIDs: value.stationIDs, catalog: visible)
+		}
+	}
+	var station: Station? { board?.station ?? allStations.first { $0.id == stationID } }
+	var displayBoard: Board? { board.map { LineVisibility.board($0, hiddenRoutes: hiddenRoutes) } }
+	var cachedDepartureKeys: Set<String>? { combinedBoard.map { !connected ? Set($0.board.departures.map(\.key)) : $0.cachedDepartureKeys } }
+	var selectedMemberIDs: [String] { combinedStations[stationID]?.stationIDs ?? [stationID] }
+	func departureOrigin(_ key: String) -> DepartureOrigin? {
+		if let origin = combinedBoard?.origins[key] { return origin }
+		guard combinedBoard == nil, let board, let departure = board.departures.first(where: { $0.key == key }) else { return nil }
+		return DepartureOrigin(station: board.station, departure: departure, cached: boardIsCached, savedAt: boardSavedAt)
+	}
+	func departureIsCached(_ key: String) -> Bool { !connected || (combinedBoard?.origins[key]?.cached ?? boardIsCached) }
+	func realStationIDs(_ ids: [String]) -> [String] { Array(Set(ids.flatMap { combinedStations[$0]?.stationIDs ?? [$0] })).sorted() }
 	var theme: AppTheme { AppTheme.all.first { $0.id == themeID } ?? AppTheme.all[0] }
-	var preference: StationPreference { stationPreferences[stationID] ?? StationPreference() }
-	var favoriteStations: [Station] { favorites.compactMap { id in stations.first { $0.id == id } } }
+	var preference: StationPreference { stationPreferences[stationID] ?? StationPreference(view: combinedStations[stationID] == nil ? .track : .direction) }
+	var favoriteStations: [Station] { favorites.compactMap { id in visibleStations.first { $0.id == id } } }
 	var isDownloading: Bool { downloadTask != nil }
 	var baseURL: URL { URL(string: endpoint) ?? TransitAPI.productionBaseURL }
 
@@ -189,6 +218,9 @@ final class AppModel {
 		favoriteStartupAttempted = true
 		guard id != stationID else { selectedTab = 0; return }
 		stationID = id
+		boardGeneration += 1
+		memberBoards = [:]
+		combinedBoard = nil
 		selectedTab = 0
 		board = nil
 		boardSavedAt = nil
@@ -292,7 +324,7 @@ final class AppModel {
 			openTripKey = key
 			return
 		}
-		guard let id = WidgetLink.stationID(from: url), favorites.contains(id) || stations.contains(where: { $0.id == id }) else { return }
+		guard let id = WidgetLink.stationID(from: url), combinedStations[id] != nil || stations.contains(where: { $0.id == id }) || (!id.hasPrefix("combined:") && favorites.contains(id)) else { return }
 		selectStation(id)
 	}
 
@@ -305,6 +337,8 @@ final class AppModel {
 		endpoint = url.absoluteString.hasSuffix("/") ? url.absoluteString : url.absoluteString + "/"
 		boardGeneration += 1
 		catalogGeneration += 1
+		memberBoards = [:]
+		combinedBoard = nil
 		api = TransitAPI(baseURL: URL(string: endpoint)!)
 		apiBeforeOutage = nil
 		if outageSimulated { beginSimulatedOutage() }
@@ -413,6 +447,7 @@ final class AppModel {
 			try Task.checkCancellation()
 			guard generation == catalogGeneration, requestedEndpoint == endpoint else { return }
 			stations = value
+			rebuildCombinedBoard()
 			Self.write(value, at: directory.appendingPathComponent("stations.json"))
 			syncWidgets(reload: true)
 			catalogError = nil
@@ -426,6 +461,20 @@ final class AppModel {
 	/// Fetches the selected board now, ahead of automatic work. It joins a matching
 	/// fetch already queued or in flight, and returns at once without a connection.
 	func refreshBoard() async {
+		if combinedStations[stationID] != nil {
+			let id = stationID
+			await loadCachedBoard(id)
+			guard let prefetcher else { return }
+			let requestedEndpoint = endpoint
+			let members = selectedMemberIDs.filter { member in stations.contains { $0.id == member && $0.departureMode != "external" } }
+			await withTaskGroup(of: Void.self) { group in
+				for member in members {
+					group.addTask { _ = await prefetcher.request(OfflineFetchRequest(endpoint: requestedEndpoint, target: .board(stationID: member), priority: .explicit)) }
+				}
+			}
+			if id == stationID, requestedEndpoint == endpoint { rebuildCombinedBoard() }
+			return
+		}
 		guard station?.departureMode != "external" || board?.njt?.configured == true else { return }
 		let id = stationID
 		let outcome = await prefetcher?.request(OfflineFetchRequest(endpoint: endpoint, target: .board(stationID: id), priority: .explicit)) ?? .paused
@@ -469,6 +518,16 @@ final class AppModel {
 		let requestedEndpoint = endpoint
 		_ = try? await transitStore.evict()
 		let id = stationID
+		if combinedStations[id] != nil {
+			for member in selectedMemberIDs {
+				let saved = await transitStore.board(stationID: member, endpoint: requestedEndpoint)
+				guard requestedEndpoint == endpoint, id == stationID else { return }
+				if memberBoards[member]?.cached == true, memberBoards[member]?.savedAt != nil, saved == nil { memberBoards[member] = nil }
+			}
+			rebuildCombinedBoard()
+			await reloadOfflineStatus()
+			return
+		}
 		let stillSaved = await transitStore.board(stationID: id, endpoint: requestedEndpoint) != nil
 		guard requestedEndpoint == endpoint, id == stationID else { return }
 		if boardIsCached, boardSavedAt != nil, !stillSaved { board = nil; boardSavedAt = nil }
@@ -501,7 +560,7 @@ final class AppModel {
 		activeRideTrip = rideTrip
 		publishRide()
 		await reloadOfflineStatus()
-		for id in Set(favorites + [stationID]) {
+		for id in realStationIDs(favorites + [stationID]) {
 			let cached = await transitStore.board(stationID: id, endpoint: requestedEndpoint)
 			guard requestedEndpoint == endpoint else { return }
 			if let cached { _ = try? widgetStore?.saveBoard(cached.board, endpoint: requestedEndpoint) }
@@ -511,6 +570,18 @@ final class AppModel {
 	/// Shows a station's saved board until a live one arrives. Never replaces live data.
 	func loadCachedBoard(_ id: String) async {
 		let requestedEndpoint = endpoint
+		if let definition = combinedStations[id] {
+			let generation = boardGeneration
+			for member in definition.stationIDs {
+				let cached = await transitStore?.board(stationID: member, endpoint: requestedEndpoint)
+				guard id == stationID, generation == boardGeneration, requestedEndpoint == endpoint, combinedStations[id] == definition else { return }
+				if memberBoards[member]?.board == nil, let cached {
+					memberBoards[member] = MemberBoardSnapshot(station: cached.board.station, board: cached.board, cached: true, savedAt: cached.savedAt, error: nil)
+				}
+			}
+			rebuildCombinedBoard()
+			return
+		}
 		guard let cached = await transitStore?.board(stationID: id, endpoint: requestedEndpoint),
 			id == stationID, requestedEndpoint == endpoint, board == nil || boardIsCached && board?.station.id != id else { return }
 		board = cached.board
@@ -521,6 +592,15 @@ final class AppModel {
 
 	/// Keeps the board on screen as offline estimates when it cannot be refreshed.
 	private func showSavedBoard(_ id: String, failed: Bool) async {
+		if combinedStations[id] != nil {
+			guard id == stationID else { return }
+			for member in selectedMemberIDs {
+				if var saved = memberBoards[member] { saved.cached = true; memberBoards[member] = saved }
+			}
+			await loadCachedBoard(id)
+			rebuildCombinedBoard()
+			return
+		}
 		boardIsCached = true
 		if board == nil { await loadCachedBoard(id) }
 		guard id == stationID else { return }
@@ -564,14 +644,14 @@ final class AppModel {
 	/// "Save trip offline": kept until removed. Pass any detail still in memory, even
 	/// after the connection drops; the store keeps whichever source is newer. Without
 	/// one, the board's onward stops are saved as a labeled partial trip.
-	func saveTripOffline(_ key: String, detail: TripDetail?) async {
+	func saveTripOffline(_ key: String, detail: TripDetail?, origin: DepartureOrigin? = nil) async {
 		guard let transitStore else { offlineActionError = "Offline storage is unavailable on this device."; return }
 		let requestedEndpoint = endpoint
 		do {
-			if let detail { try await transitStore.saveTrip(detail, endpoint: requestedEndpoint, departure: boardDeparture(key), manuallySaved: true) }
+			if let detail { try await transitStore.saveTrip(detail, endpoint: requestedEndpoint, departure: origin?.departure ?? boardDeparture(key), manuallySaved: true) }
 			else if await transitStore.trip(key: key, endpoint: requestedEndpoint) == nil {
-				guard let departure = boardDeparture(key) else { throw AppError.message("No train details are available to save yet. Reconnect and try again.") }
-				try await transitStore.savePartialTrip(departure, endpoint: requestedEndpoint, manuallySaved: true, station: board?.station)
+				guard let departure = origin?.departure ?? boardDeparture(key) else { throw AppError.message("No train details are available to save yet. Reconnect and try again.") }
+				try await transitStore.savePartialTrip(departure, endpoint: requestedEndpoint, manuallySaved: true, station: origin?.station ?? board?.station)
 			}
 			try await transitStore.setManuallySaved(true, tripKey: key, endpoint: requestedEndpoint)
 			offlineActionError = nil
@@ -587,15 +667,15 @@ final class AppModel {
 	}
 
 	/// "I'm on this train". One active ride; it stays protected across relaunch until ended.
-	func startRide(_ key: String, detail: TripDetail?) async {
+	func startRide(_ key: String, detail: TripDetail?, origin: DepartureOrigin? = nil) async {
 		guard let transitStore else { offlineActionError = "Offline storage is unavailable on this device."; return }
 		guard !OfflineIdentity.isPositionalTrip(key) else { offlineActionError = "PATH reports identify a station arrival, not one train, so rides can't follow them."; return }
 		let requestedEndpoint = endpoint
-		let departure = boardDeparture(key)
+		let departure = origin?.departure ?? boardDeparture(key)
 		do {
 			if let detail { try await transitStore.saveTrip(detail, endpoint: requestedEndpoint, departure: departure) }
-			else if await transitStore.trip(key: key, endpoint: requestedEndpoint) == nil, let departure { try await transitStore.savePartialTrip(departure, endpoint: requestedEndpoint, station: board?.station) }
-			let ride = ActiveRide(tripKey: key, boardingStationID: departure == nil ? nil : stationID, startedAt: Date().timeIntervalSince1970)
+			else if await transitStore.trip(key: key, endpoint: requestedEndpoint) == nil, let departure { try await transitStore.savePartialTrip(departure, endpoint: requestedEndpoint, station: origin?.station ?? board?.station) }
+			let ride = ActiveRide(tripKey: key, boardingStationID: departure == nil ? nil : origin?.station.id ?? (combinedStations[stationID] == nil ? stationID : nil), startedAt: Date().timeIntervalSince1970)
 			try await transitStore.setActiveRide(ride, endpoint: requestedEndpoint)
 			let trip = await transitStore.trip(key: key, endpoint: requestedEndpoint)
 			guard requestedEndpoint == endpoint else { return }
@@ -634,7 +714,10 @@ final class AppModel {
 		offlineFailures = []
 	}
 
-	private func boardDeparture(_ key: String) -> Departure? { board?.departures.first { $0.tripKey == key } }
+	private func boardDeparture(_ key: String) -> Departure? {
+		guard let departure = board?.departures.first(where: { $0.tripKey == key }) else { return nil }
+		return combinedBoard?.origins[departure.key]?.departure ?? departure
+	}
 
 	@discardableResult
 	private func storeBoard(_ value: Board, endpoint requestedEndpoint: String, viewed: String? = nil, distance: Double? = nil) async -> Bool {
@@ -687,13 +770,15 @@ final class AppModel {
 			if seen.insert(target).inserted { requests.append(OfflineFetchRequest(endpoint: endpoint, target: target, priority: priority)) }
 		}
 		if let ride = activeRide { add(.trip(key: ride.tripKey), .activeRide) }
-		if station?.departureMode != "external" || board?.njt?.configured == true { add(.board(stationID: stationID), .selected) }
+		if combinedStations[stationID] != nil {
+			for id in selectedMemberIDs where stations.contains(where: { $0.id == id && $0.departureMode != "external" }) { add(.board(stationID: id), .selected) }
+		} else if station?.departureMode != "external" || board?.njt?.configured == true { add(.board(stationID: stationID), .selected) }
 		for key in openTrips.keys.sorted() { add(.trip(key: key), .selected) }
 		if let board, board.station.id == stationID {
 			for key in OfflinePlanner.tripKeysToSnapshot(board, preferences: offlinePreferences) { add(.trip(key: key), .background); snapshots.insert(key) }
 		}
 		var others: [String] = []
-		for id in favorites where stations.first(where: { $0.id == id })?.departureMode != "external" { others.append(id) }
+		for id in realStationIDs(favorites) where stations.contains(where: { $0.id == id && $0.departureMode != "external" }) { others.append(id) }
 		if let viewed = station {
 			for (nearby, _) in OfflinePlanner.surroundingStations(of: viewed, catalog: stations, preferences: offlinePreferences) where nearby.departureMode != "external" { others.append(nearby.id) }
 		}
@@ -732,6 +817,16 @@ final class AppModel {
 			let value = try await client.board(stationID: id)
 			try Task.checkCancellation()
 			guard requestedEndpoint == endpoint else { return }
+			if combinedStations[stationID] != nil, selectedMemberIDs.contains(id), generation == boardGeneration {
+				_ = try? widgetStore?.saveBoard(value, endpoint: requestedEndpoint)
+				let saved = await storeBoard(value, endpoint: requestedEndpoint)
+				let savedAt = saved ? await transitStore?.board(stationID: id, endpoint: requestedEndpoint)?.savedAt : nil
+				guard requestedEndpoint == endpoint, generation == boardGeneration, selectedMemberIDs.contains(id) else { return }
+				memberBoards[id] = MemberBoardSnapshot(station: value.station, board: value, cached: !connected, savedAt: savedAt, error: nil)
+				rebuildCombinedBoard()
+				planOffline()
+				return
+			}
 			if id == stationID, generation == boardGeneration {
 				_ = try? widgetStore?.saveBoard(value, endpoint: requestedEndpoint)
 				board = value
@@ -747,7 +842,7 @@ final class AppModel {
 			let viewed = station
 			let distance = viewed.map { Display.distanceMeters(lat1: $0.lat, lon1: $0.lon, lat2: value.station.lat, lon2: value.station.lon) }
 			await storeBoard(value, endpoint: requestedEndpoint, viewed: viewed?.id, distance: distance)
-			if favorites.contains(id) {
+			if realStationIDs(favorites).contains(id) {
 				_ = try? widgetStore?.saveBoard(value, endpoint: requestedEndpoint)
 				syncWidgets(reload: false)
 			}
@@ -756,6 +851,15 @@ final class AppModel {
 				if surroundingTrips[id] != keys { surroundingTrips[id] = keys; planOffline() }
 			}
 		} catch {
+			if combinedStations[stationID] != nil, selectedMemberIDs.contains(id), requestedEndpoint == endpoint, generation == boardGeneration, !Task.isCancelled {
+				let cached = await transitStore?.board(stationID: id, endpoint: requestedEndpoint)
+				guard requestedEndpoint == endpoint, generation == boardGeneration, selectedMemberIDs.contains(id) else { return }
+				if let member = stations.first(where: { $0.id == id }) {
+					memberBoards[id] = MemberBoardSnapshot(station: member, board: cached?.board ?? memberBoards[id]?.board, cached: true, savedAt: cached?.savedAt ?? memberBoards[id]?.savedAt, error: "Feed unavailable")
+				}
+				rebuildCombinedBoard()
+				return
+			}
 			guard id == stationID, requestedEndpoint == endpoint, generation == boardGeneration, !Task.isCancelled else { return }
 			await showSavedBoard(id, failed: true)
 		}
@@ -906,7 +1010,7 @@ final class AppModel {
 		guard let location, initialStation == stationID, activeRide == nil else { return }
 		let coordinate = WidgetCoordinate(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, timestamp: location.timestamp.timeIntervalSince1970)
 		guard coordinate.isUsable(now: Date().timeIntervalSince1970) else { return }
-		if let closest = stationSelection.select(stations: stations, favorites: favorites, location: coordinate, previous: stationID) {
+		if let closest = stationSelection.select(stations: visibleStations, favorites: favorites, location: coordinate, previous: stationID) {
 			selectStation(closest.id)
 			await refreshBoard()
 		}
@@ -957,16 +1061,74 @@ final class AppModel {
 		} catch { downloadError = error.localizedDescription }
 	}
 
+	private func rebuildCombinedBoard() {
+		guard let definition = combinedStations[stationID] else { return }
+		let station = CombinedStationResolver.station(id: stationID, name: definition.name, stationIDs: definition.stationIDs, catalog: stations)
+			?? Station(id: stationID, name: definition.name, borough: "", lat: 0, lon: 0)
+		let members = definition.stationIDs.map { id -> MemberBoardSnapshot in
+			if let value = memberBoards[id] { return value }
+			let member = stations.first { $0.id == id }
+			return MemberBoardSnapshot(station: member ?? Station(id: id, name: id, borough: "", lat: 0, lon: 0), board: nil, cached: true, savedAt: nil,
+				error: member == nil ? "Station missing from catalog" : member?.departureMode == "external" ? "Use official departure tools" : connected ? "Loading departures…" : "No saved board")
+		}
+		let value = CombinedBoardSnapshot(station: station, members: members)
+		combinedBoard = value
+		board = value.board
+		boardIsCached = !connected || !members.contains { $0.board != nil && !$0.cached }
+		boardError = value.warnings.isEmpty ? nil : value.warnings.joined(separator: "\n")
+		let supported = members.filter { $0.station.departureMode != "external" }
+		boardSavedAt = !supported.isEmpty && supported.allSatisfy { $0.savedAt != nil } ? supported.compactMap(\.savedAt).min() : nil
+		updateReadiness()
+		readiness.boardSaved = boardSavedAt != nil
+	}
+
+	var allLineKeys: [String] {
+		Array(Set((stations.flatMap(\.routes) + hiddenRoutes + (board?.departures.map(\.route) ?? [])).map(LineVisibility.key))).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+	}
+	func setLine(_ route: String, enabled: Bool) {
+		let key = LineVisibility.key(route)
+		setHiddenLines(enabled ? hiddenRoutes.filter { LineVisibility.key($0) != key } : Array(Set(hiddenRoutes + [key])))
+	}
+	func setHiddenLines(_ routes: [String]) {
+		var settings = portableSettings
+		settings.hiddenRoutes = Array(Set(routes.map(LineVisibility.key))).sorted()
+		do {
+			try acceptSettings(try settings.validated(), sync: settingsSync, notify: true)
+			favoriteStartupAttempted = true
+		} catch { settingsError = error.localizedDescription }
+	}
+	@discardableResult
+	func saveCombinedStation(id: String?, name: String, stationIDs: [String]) throws -> String {
+		let key = id ?? "combined:" + UUID().uuidString.lowercased()
+		var settings = portableSettings
+		settings.combinedStations[key] = CombinedStation(name: name.trimmingCharacters(in: .whitespacesAndNewlines), stationIDs: Array(Set(stationIDs)).sorted())
+		if id == nil { settings.stations[key] = StationPreference(view: .direction) }
+		try acceptSettings(try settings.validated(), lastStation: key, sync: settingsSync, notify: true)
+		selectedTab = 0
+		return key
+	}
+	func deleteCombinedStation(_ id: String) throws {
+		guard combinedStations[id] != nil else { return }
+		var settings = portableSettings
+		settings.combinedStations[id] = nil
+		settings.favorites.removeAll { $0 == id }
+		settings.stations[id] = nil
+		settings.widgets.stations[id] = nil
+		try acceptSettings(try settings.validated(), sync: settingsSync, notify: true)
+		recent.removeAll { $0 == id }
+	}
+
 	private func recordRecent(_ id: String) { recent.removeAll { $0 == id }; recent.insert(id, at: 0); recent = Array(recent.prefix(8)) }
 	var portableSettings: PortableSettings {
 		var value = PortableSettings(); value.favorites = favorites; value.theme = themeID
+		value.combinedStations = combinedStations; value.hiddenRoutes = hiddenRoutes
 		value.trainFavorites = trainFavorites; value.stationSelection = stationSelection; value.units = units
 		value.stations = stationPreferences; value.widgets = widgetPreferences; value.offline = offlinePreferences; return value
 	}
 	private var settingsStore: DeviceSettingsStore { DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json")) }
 	private func record(settings: PortableSettings, lastStation: String, sync: SettingsSyncState?) -> DeviceSettings {
 		var record = DeviceSettings(settings: settings, lastStation: lastStation)
-		record.recent = recent; record.endpoint = endpoint; record.sync = sync; return record
+		record.recent = recent.filter { !$0.hasPrefix("combined:") || settings.combinedStations[$0] != nil }; record.endpoint = endpoint; record.sync = sync; return record
 	}
 	private func persist() {
 		do {
@@ -978,21 +1140,29 @@ final class AppModel {
 				favorites = saved.favorites; themeID = saved.theme
 				trainFavorites = saved.trainFavorites; stationSelection = saved.stationSelection; units = saved.units
 				stationPreferences = saved.stations; widgetPreferences = saved.widgets; offlinePreferences = saved.offline
+				combinedStations = saved.combinedStations; hiddenRoutes = saved.hiddenRoutes
 			}
 			settingsError = "Settings could not be saved on this device. Your previous preferences are unchanged. " + error.localizedDescription
 		}
 	}
 	func acceptSettings(_ settings: PortableSettings, lastStation: String? = nil, sync: SettingsSyncState?, notify: Bool = false, replacingUnreadable: Bool = false) throws {
-		let selected = lastStation ?? stationID
+		var selected = lastStation ?? stationID
+		if selected.hasPrefix("combined:"), settings.combinedStations[selected] == nil {
+			let visible = stations.compactMap { LineVisibility.station($0, hiddenRoutes: settings.hiddenRoutes) }
+			selected = combinedStations[selected]?.stationIDs.first(where: { id in visible.contains { $0.id == id } }) ?? visible.first?.id ?? stations.first?.id ?? "602"
+		}
+		let definitionChanged = combinedStations[selected] != settings.combinedStations[selected]
 		try settingsStore.save(record(settings: settings, lastStation: selected, sync: sync), replacingUnreadable: replacingUnreadable)
+		combinedStations = settings.combinedStations; hiddenRoutes = settings.hiddenRoutes
 		favorites = settings.favorites; themeID = settings.theme; stationPreferences = settings.stations; widgetPreferences = settings.widgets; settingsSync = sync; settingsError = nil
 		trainFavorites = settings.trainFavorites; stationSelection = settings.stationSelection; units = settings.units
 		let offlineChanged = offlinePreferences != settings.offline
 		offlinePreferences = settings.offline
 		if lastStation != nil { favoriteStartupAttempted = true }
 		durableSettings = settings
-		if selected != stationID {
+		if selected != stationID || definitionChanged {
 			stationID = selected; favoriteStartupAttempted = true; boardGeneration += 1
+			memberBoards = [:]; combinedBoard = nil
 			board = nil; boardSavedAt = nil; boardIsCached = true; boardError = nil
 			Task { await loadCachedBoard(selected) }
 		}
@@ -1002,7 +1172,7 @@ final class AppModel {
 		}
 		planOffline()
 		if Self.isProduction(endpoint) {
-			for id in Set(favorites + [stationID]) {
+			for id in realStationIDs(favorites + [stationID]) {
 				if let board = Self.read(Board.self, at: Self.boardURL(directory: directory, id: id)) { _ = try? widgetStore?.saveBoard(board, endpoint: endpoint) }
 			}
 		}
@@ -1024,10 +1194,10 @@ final class AppModel {
 	}
 	private func syncWidgets(reload: Bool) {
 		guard let widgetStore else { return }
-		let state = WidgetSharedState(favorites: favorites, stations: stations, appFilters: stationPreferences, widgets: widgetPreferences, themeID: themeID, endpoint: endpoint, appLocation: widgetLocation, stationSelection: stationSelection, units: units, offline: offlinePreferences)
+		let state = WidgetSharedState(favorites: favorites, stations: stations, appFilters: stationPreferences, widgets: widgetPreferences, themeID: themeID, endpoint: endpoint, appLocation: widgetLocation, stationSelection: stationSelection, units: units, offline: offlinePreferences, combinedStations: combinedStations, hiddenRoutes: hiddenRoutes)
 		let previous = try? widgetStore.load()
 		try? widgetStore.save(state)
-		let changed = previous?.favorites != state.favorites || previous?.appFilters != state.appFilters || previous?.themeID != state.themeID || previous?.endpoint != state.endpoint || previous?.stationSelection != state.stationSelection || previous?.widgets != state.widgets || previous?.units != state.units || previous?.offline != state.offline
+		let changed = previous?.favorites != state.favorites || previous?.appFilters != state.appFilters || previous?.themeID != state.themeID || previous?.endpoint != state.endpoint || previous?.stationSelection != state.stationSelection || previous?.widgets != state.widgets || previous?.units != state.units || previous?.offline != state.offline || previous?.combinedStations != state.combinedStations || previous?.hiddenRoutes != state.hiddenRoutes
 		let time = Date().timeIntervalSince1970
 		if reload || changed || time - lastWidgetReload >= 60 {
 			lastWidgetReload = time

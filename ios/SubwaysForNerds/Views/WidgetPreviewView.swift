@@ -38,6 +38,7 @@ struct WidgetPreviewView: View {
 		var value = SubwayWidgetEntry.example()
 		value.themeID = app.themeID
 		value.units = app.units
+		value.hiddenRoutes = app.hiddenRoutes
 		value.display = app.widgetPreferences.display
 		value.lockScreen = app.widgetPreferences.lockScreen
 		if ["Saved ride", "Expired ride", "Partial ride", "Finished estimates"].contains(scenario), var row = value.board?.departures.first {
@@ -65,6 +66,23 @@ struct WidgetPreviewView: View {
 			value.station?.name = "Journal Square"; value.station?.routes = ["PATH-JSQ-33"]
 			if var board = value.board { board.departures = board.departures.map { var row = $0; row.route = "PATH-JSQ-33"; row.direction = row.direction == "NORTH" ? "TO_NY" : "TO_NJ"; return row }; value.board = board }
 		}
+		if ["Combined", "Mixed combined"].contains(scenario), let original = value.board {
+			let first = Station(id: "628", name: "Fulton St", borough: "M", routes: ["A", "C"], lat: 40.71, lon: -74.01)
+			let mixed = scenario == "Mixed combined"
+			let second = Station(id: mixed ? "path-wtc" : "328", name: mixed ? "World Trade Center" : "WTC Cortlandt", borough: "M", routes: mixed ? ["PATH-NWK-WTC"] : ["1"], lat: 40.71, lon: -74.01)
+			let station = CombinedStationResolver.station(id: "combined:preview", name: "Downtown", stationIDs: [first.id, second.id], catalog: [first, second])!
+			let members = [first, second].enumerated().map { index, station in
+				let rows = original.departures.enumerated().filter { $0.offset % 2 == index }.map { _, departure in
+					var row = departure; row.route = station.routes[0]
+					row.destination = index == 0 ? "Inwood–207 St" : "South Ferry"
+					if mixed && index == 1 { row.direction = "TO_NJ"; row.destination = "Newark" }
+					return row
+				}
+				return MemberBoardSnapshot(station: station, board: Board(station: station, generatedAt: original.generatedAt, departures: rows), cached: false)
+			}
+			let combined = CombinedBoardSnapshot(station: station, members: members)
+			value.station = station; value.board = combined.board; value.combined = combined
+		}
 		return value
 	}
 	var body: some View {
@@ -72,7 +90,7 @@ struct WidgetPreviewView: View {
 			VStack(spacing: 18) {
 				Picker("Size", selection: $family) { ForEach(families, id: \.self) { Text(name($0)).tag($0) } }
 					.accessibilityIdentifier("widgetPreviewFamily")
-				Picker("Scenario", selection: $scenario) { ForEach(["Live", "Saved", "Saved ride", "Expired ride", "Partial ride", "Finished estimates", "No favorites", "No matches", "Long name", "Regional", "Location unavailable", "Track groups"], id: \.self) { Text($0).tag($0) } }
+				Picker("Scenario", selection: $scenario) { ForEach(["Live", "Saved", "Saved ride", "Expired ride", "Partial ride", "Finished estimates", "No favorites", "No matches", "Long name", "Regional", "Combined", "Mixed combined", "Location unavailable", "Track groups"], id: \.self) { Text($0).tag($0) } }
 					.accessibilityIdentifier("widgetPreviewScenario")
 				Toggle("Tinted", isOn: $tinted).accessibilityIdentifier("widgetPreviewTinted")
 				Toggle("Large text", isOn: $largeText).accessibilityIdentifier("widgetPreviewLargeText")

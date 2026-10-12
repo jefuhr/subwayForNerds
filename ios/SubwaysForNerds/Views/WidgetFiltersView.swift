@@ -11,12 +11,12 @@ struct WidgetFiltersView: View {
 				Button { app.clearWidgetRoutes(stationID: station.id) } label: {
 					HStack { Text("All lines"); Spacer(); if preference.routes.isEmpty { Image(systemName: "checkmark") } }
 				}.accessibilityIdentifier("widgetAllLines")
-				ForEach(Array(Set(station.routes.map(Display.displayRoute))).sorted(), id: \.self) { route in
+				ForEach(LineVisibility.routes(Array(Set(station.routes.map(Display.displayRoute))).sorted(), hiddenRoutes: app.hiddenRoutes), id: \.self) { route in
 					Toggle(isOn: Binding(get: { preference.routes.contains(route) }, set: { app.setWidgetRoute(route, enabled: $0, stationID: station.id) })) {
 						HStack { RouteBullet(route: route, small: true); Text("Line \(route)") }
 					}.accessibilityIdentifier("widgetRoute_\(route)")
 				}
-			} header: { ListHeader("Widget lines") } footer: { Text("With no lines selected, all lines are shown. Both directions always stay visible.") }
+			} header: { ListHeader("Widget lines") } footer: { Text("With no lines selected, all globally enabled lines are shown. Global line settings always apply.") }
 			Section {
 				Picker("Grouping", selection: Binding(get: { preference.view }, set: { app.setWidgetView($0, stationID: station.id) })) {
 					ForEach(BoardSortOrder.allCases) { Text($0.title).tag($0) }

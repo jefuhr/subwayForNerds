@@ -11,6 +11,11 @@ struct TrainDetailView: View {
 	/// Shows only the saved snapshot and never fetches. Saved PATH keys name a station
 	/// arrival, so fetching them again would show whichever train holds that slot now.
 	var snapshotOnly = false
+	@State private var boardingOrigin: DepartureOrigin?
+	init(tripKey: String, snapshotOnly: Bool = false, origin: DepartureOrigin? = nil) {
+		self.tripKey = tripKey; self.snapshotOnly = snapshotOnly
+		_boardingOrigin = State(initialValue: origin)
+	}
 	@Environment(AppModel.self) private var app
 	/// The stored snapshot, shown whenever live data is unavailable.
 	@State private var saved: CachedTrip?
@@ -83,6 +88,7 @@ struct TrainDetailView: View {
 								.accessibilityLabel("Feed \(freshness), \(Display.ageLabel(train.timestamp, now: now))")
 						}
 						FactGrid(facts: facts(train, consist: consist))
+						if let origin = boardingOrigin { Text("Boarding at \(origin.station.name)").font(.subheadline).accessibilityIdentifier("boardingStation") }
 					}
 					.listRowInsets(.vertical, 12)
 				}
@@ -202,7 +208,7 @@ struct TrainDetailView: View {
 							Button("Cancel", role: .cancel) {}
 						} message: { Text("Its offline snapshot may then expire with other cached trips.") }
 				} else {
-					Button { Task { working = true; await app.saveTripOffline(tripKey, detail: data); saved = await app.cachedTrip(tripKey); working = false } } label: {
+					Button { Task { working = true; await app.saveTripOffline(tripKey, detail: data, origin: boardingOrigin); saved = await app.cachedTrip(tripKey); working = false } } label: {
 						Label("Save trip offline", systemImage: "arrow.down.circle").chip()
 					}
 					.buttonStyle(.plain).disabled(working).accessibilityIdentifier("saveTripOffline")
@@ -232,7 +238,7 @@ struct TrainDetailView: View {
 
 	private func startRide() async {
 		working = true
-		await app.startRide(tripKey, detail: data)
+		await app.startRide(tripKey, detail: data, origin: boardingOrigin)
 		saved = await app.cachedTrip(tripKey)
 		working = false
 	}
@@ -376,7 +382,7 @@ struct TransferView: View {
 	}
 	private var groups: [ConnectionGroup] {
 		guard let data, !stale, error == nil else { return [] }
-		let usable = data.connections.filter { Display.freshness($0, now: app.now) == .live && ($0.time ?? -.infinity) >= app.now }
+		let usable = data.connections.filter { LineVisibility.isEnabled($0.route, hiddenRoutes: app.hiddenRoutes) && Display.freshness($0, now: app.now) == .live && ($0.time ?? -.infinity) >= app.now }
 		return Dictionary(grouping: usable) { "\(Display.routeLabel($0.route)) · \(Display.directionLabel($0.direction)) · \($0.area)" }
 			.map { key, departures in
 				let sorted = departures.sorted { ($0.time ?? 0) < ($1.time ?? 0) }

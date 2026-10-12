@@ -1,6 +1,14 @@
 import Foundation
 
+public struct CombinedStation: Codable, Sendable, Equatable {
+	public var name: String
+	public var stationIDs: [String]
+	public init(name: String, stationIDs: [String]) { self.name = name; self.stationIDs = stationIDs }
+}
+
 public struct PortableSettings: Codable, Sendable, Equatable {
+	public var combinedStations: [String: CombinedStation] = [:]
+	public var hiddenRoutes: [String] = []
 	public var favorites: [String] = []
 	public var theme = "subway"
 	public var stations: [String: StationPreference] = [:]
@@ -10,9 +18,11 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 	public var units = UnitPreferences()
 	public var offline = OfflinePreferences()
 	public init() {}
-	private enum CodingKeys: String, CodingKey { case favorites, theme, stations, widgets, trainFavorites, stationSelection, units, offline }
+	private enum CodingKeys: String, CodingKey { case favorites, theme, stations, widgets, trainFavorites, stationSelection, units, offline, combinedStations, hiddenRoutes }
 	public init(from decoder: Decoder) throws {
 		let values = try decoder.container(keyedBy: CodingKeys.self)
+		combinedStations = values.contains(.combinedStations) ? try values.decode([String: CombinedStation].self, forKey: .combinedStations) : [:]
+		hiddenRoutes = values.contains(.hiddenRoutes) ? try values.decode([String].self, forKey: .hiddenRoutes) : []
 		favorites = try values.decode([String].self, forKey: .favorites)
 		theme = try values.decode(String.self, forKey: .theme)
 		stations = try values.decode([String: StationPreference].self, forKey: .stations)
@@ -30,6 +40,8 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 	}
 	public func json() throws -> JSONValue {
 		var normalized = self
+		normalized.hiddenRoutes.sort()
+		normalized.combinedStations = combinedStations.mapValues { var value = $0; value.stationIDs.sort(); return value }
 		normalized.trainFavorites.cars.sort()
 		normalized.trainFavorites.consists = trainFavorites.consists.map { $0.sorted() }.sorted { TrainFavorites.consistKey($0) < TrainFavorites.consistKey($1) }
 		normalized.stations = stations.mapValues { var value = $0; value.routes.sort(); return value }
@@ -50,7 +62,7 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 public struct NerdsSettingsFile: Codable, Sendable, Identifiable {
 	public static let maxBytes = 1_048_576
 	public var format = "subways-for-nerds"
-	public static let currentVersion = 3
+	public static let currentVersion = 4
 	public var version = NerdsSettingsFile.currentVersion
 	public var exportedAt: String
 	public var lastStation: String
@@ -66,7 +78,7 @@ public struct NerdsSettingsFile: Codable, Sendable, Identifiable {
 		let value = try JSONDecoder().decode(JSONValue.self, from: data)
 		let root = try SettingsValidation.object(value, keys: ["format", "version", "exportedAt", "lastStation", "settings"])
 		guard root["format"] == .string("subways-for-nerds") else { throw SettingsError.invalid }
-		guard case .number(let version) = root["version"], [1, 2, 3].contains(version) else { throw SettingsError.message("This settings version is not supported. Update Subway Nerds and try again.") }
+		guard case .number(let version) = root["version"], [1, 2, 3, 4].contains(version) else { throw SettingsError.message("This settings version is not supported. Update Subway Nerds and try again.") }
 		let timestamp = try SettingsValidation.string(root["exportedAt"])
 		let formatter = ISO8601DateFormatter(); formatter.formatOptions.insert(.withFractionalSeconds)
 		guard formatter.date(from: timestamp) != nil || ISO8601DateFormatter().date(from: timestamp) != nil else { throw SettingsError.invalid }
@@ -77,6 +89,7 @@ public struct NerdsSettingsFile: Codable, Sendable, Identifiable {
 			let widgets = try SettingsValidation.object(settings["widgets"])
 			guard settings["trainFavorites"] != nil, settings["stationSelection"] != nil, widgets["stationSelection"] != nil else { throw SettingsError.invalid }
 		}
+		guard (settings["combinedStations"] != nil) == (version >= 4), (settings["hiddenRoutes"] != nil) == (version >= 4) else { throw SettingsError.invalid }
 		// Offline preferences arrived in v3: required there, and never part of an older file.
 		guard (settings["offline"] != nil) == (version >= 3) else { throw SettingsError.invalid }
 		return try JSONDecoder().decode(Self.self, from: data)
@@ -104,6 +117,17 @@ private enum SettingsValidation {
 		let result = try values.map { try string($0) }; guard Set(result).count == result.count else { throw SettingsError.invalid }; return result
 	}
 	static func boolean(_ value: JSONValue?) throws { guard case .bool = value else { throw SettingsError.invalid } }
+	static func combinedStations(_ value: JSONValue?) throws {
+		let map = try object(value); guard map.count <= 2000 else { throw SettingsError.invalid }
+		for (id, value) in map {
+			guard id.range(of: "^combined:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", options: .regularExpression) != nil else { throw SettingsError.invalid }
+			let group = try object(value, keys: ["name", "stationIDs"])
+			let name = try string(group["name"])
+			guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, name == name.trimmingCharacters(in: .whitespacesAndNewlines) else { throw SettingsError.invalid }
+			let ids = try strings(group["stationIDs"])
+			guard ids.count >= 2, !ids.contains(where: { $0.hasPrefix("combined:") }) else { throw SettingsError.invalid }
+		}
+	}
 	static func stations(_ value: JSONValue?) throws {
 		let map = try object(value); guard map.count <= 2000 else { throw SettingsError.invalid }
 		for (key, value) in map {
@@ -116,7 +140,9 @@ private enum SettingsValidation {
 	static func settings(_ value: JSONValue?) throws {
 		let rawRoot = try object(value)
 		let rootKeys: Set<String> = ["favorites", "theme", "stations", "widgets"]
-		let root = try object(value, keys: rootKeys.union(["trainFavorites", "stationSelection", "units", "offline"].filter { rawRoot[$0] != nil }))
+		let root = try object(value, keys: rootKeys.union(["trainFavorites", "stationSelection", "units", "offline", "combinedStations", "hiddenRoutes"].filter { rawRoot[$0] != nil }))
+		if let value = root["combinedStations"] { try combinedStations(value) }
+		if let value = root["hiddenRoutes"] { _ = try strings(value, limit: 128) }
 		if let value = root["offline"] { try offline(value) }
 		if let value = root["trainFavorites"] { try trainFavorites(value) }
 		if let value = root["stationSelection"] { try stationSelection(value) }
@@ -257,14 +283,16 @@ public struct SettingsMerge: Sendable {
 		func memberships(_ b: [String], _ l: [String], _ r: [String], path: String) -> [String] {
 			Set(b + l + r).sorted().filter { mergeValue(.bool(b.contains($0)), .bool(l.contains($0)), .bool(r.contains($0)), path + "/" + $0) == .bool(true) }
 		}
+		let hiddenRoutes = memberships(base.hiddenRoutes, local.hiddenRoutes, remote.hiddenRoutes, path: "/hiddenRoutes")
 		let cars = memberships(base.trainFavorites.cars, local.trainFavorites.cars, remote.trainFavorites.cars, path: "/trainFavorites/cars")
 		let groups = [base, local, remote].map { $0.trainFavorites.consists.map(TrainFavorites.consistKey) }
 		let consists = memberships(groups[0], groups[1], groups[2], path: "/trainFavorites/consists").map { $0.components(separatedBy: "\u{1f}") }
 		var b = base, l = local, r = remote; b.favorites = []; l.favorites = []; r.favorites = []
+		b.hiddenRoutes = []; l.hiddenRoutes = []; r.hiddenRoutes = []
 		b.trainFavorites.cars = []; l.trainFavorites.cars = []; r.trainFavorites.cars = []
 		b.trainFavorites.consists = []; l.trainFavorites.consists = []; r.trainFavorites.consists = []
 		let merged = mergeValue(try b.json(), try l.json(), try r.json(), "")!
-		var settings = try JSONDecoder().decode(PortableSettings.self, from: JSONEncoder().encode(merged)); settings.favorites = favorites
+		var settings = try JSONDecoder().decode(PortableSettings.self, from: JSONEncoder().encode(merged)); settings.favorites = favorites; settings.hiddenRoutes = hiddenRoutes
 		settings.trainFavorites.cars = cars; settings.trainFavorites.consists = consists
 		return SettingsMerge(settings: try settings.validated(), conflicts: conflicts)
 	}

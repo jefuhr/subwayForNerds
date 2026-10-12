@@ -12,6 +12,7 @@ struct StationPickerView: View {
 	@Environment(AppModel.self) private var app
 	@Environment(\.dismiss) private var dismiss
 	@State private var query = ""
+	@State private var addingCombinedStation = false
 	@State private var nearbySort: Bool
 
 	init(mode: StationPickerMode = .search) {
@@ -27,7 +28,7 @@ struct StationPickerView: View {
 			?? location.distance(from: CLLocation(latitude: station.lat, longitude: station.lon))
 	}
 	private var matches: [Station] {
-		return app.stations.filter { Display.stationMatches($0, query: query) }.sorted {
+		return app.visibleStations.filter { Display.stationMatches($0, query: query) || (app.combinedStations[$0.id]?.stationIDs.contains { id in app.stations.first { $0.id == id }.map { Display.stationMatches($0, query: query) } ?? false } ?? false) }.sorted {
 			if nearbyLocation != nil { return (distance($0) ?? .infinity) < (distance($1) ?? .infinity) }
 			let a = app.favorites.contains($0.id), b = app.favorites.contains($1.id)
 			return a == b ? $0.name.localizedStandardCompare($1.name) == .orderedAscending : a
@@ -55,13 +56,14 @@ struct StationPickerView: View {
 			}
 			if query.isEmpty && !nearbySort {
 				Section {
-					ForEach(["602", "617", "611", "607"].compactMap { id in app.stations.first { $0.id == id } }) { station in
+					ForEach(["602", "617", "611", "607"].compactMap { id in app.visibleStations.first { $0.id == id } }) { station in
 						Button(station.name) { choose(station) }
 							.font(.subheadline)
 							.listRowInsets(.vertical, 8)
 					}
 				} header: { ListHeader("Quick switch") }
 			}
+			Section { Button { addingCombinedStation = true } label: { Label("Create combined station", systemImage: "plus") }.accessibilityIdentifier("addCombinedStation") }
 			Section {
 				ForEach(matches) { station in
 					HStack(spacing: 4) {
@@ -96,6 +98,7 @@ struct StationPickerView: View {
 		.searchable(text: $query, prompt: "Station, line, or borough")
 		.autocorrectionDisabled().textInputAutocapitalization(.never)
 		.toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+		.sheet(isPresented: $addingCombinedStation) { NavigationStack { CombinedStationEditor(onSaved: { dismiss() }) } }
 		.refreshable { await app.refreshCatalog() }
 		.task {
 			if mode == .nearby { await app.locateNearby() }

@@ -184,13 +184,16 @@ public struct WidgetSharedState: Codable, Sendable, Equatable {
 	public var stationSelection: StationSelection
 	public var units: UnitPreferences
 	public var offline: OfflinePreferences
-	public init(favorites: [String] = [], stations: [Station] = [], appFilters: [String: StationPreference] = [:], widgets: WidgetPreferences = WidgetPreferences(), themeID: String = "subway", endpoint: String = TransitAPI.productionBaseURL.absoluteString, appLocation: WidgetCoordinate? = nil, stationSelection: StationSelection = StationSelection(), units: UnitPreferences = UnitPreferences(), offline: OfflinePreferences = OfflinePreferences()) {
+	public var combinedStations: [String: CombinedStation]
+	public var hiddenRoutes: [String]
+	public init(favorites: [String] = [], stations: [Station] = [], appFilters: [String: StationPreference] = [:], widgets: WidgetPreferences = WidgetPreferences(), themeID: String = "subway", endpoint: String = TransitAPI.productionBaseURL.absoluteString, appLocation: WidgetCoordinate? = nil, stationSelection: StationSelection = StationSelection(), units: UnitPreferences = UnitPreferences(), offline: OfflinePreferences = OfflinePreferences(), combinedStations: [String: CombinedStation] = [:], hiddenRoutes: [String] = []) {
 		self.favorites = favorites; self.stations = stations; self.appFilters = appFilters
 		self.widgets = widgets; self.themeID = themeID; self.endpoint = endpoint; self.appLocation = appLocation
 		self.stationSelection = stationSelection; self.units = units
 		self.offline = offline
+		self.combinedStations = combinedStations; self.hiddenRoutes = hiddenRoutes
 	}
-	private enum CodingKeys: String, CodingKey { case favorites, stations, appFilters, widgets, themeID, endpoint, appLocation, stationSelection, units, offline }
+	private enum CodingKeys: String, CodingKey { case favorites, stations, appFilters, widgets, themeID, endpoint, appLocation, stationSelection, units, offline, combinedStations, hiddenRoutes }
 	public init(from decoder: Decoder) throws {
 		let values = try decoder.container(keyedBy: CodingKeys.self)
 		favorites = try values.decode([String].self, forKey: .favorites)
@@ -203,30 +206,37 @@ public struct WidgetSharedState: Codable, Sendable, Equatable {
 		stationSelection = try values.decodeIfPresent(StationSelection.self, forKey: .stationSelection) ?? StationSelection()
 		units = values.contains(.units) ? try values.decode(UnitPreferences.self, forKey: .units) : UnitPreferences()
 		offline = try values.decodeIfPresent(OfflinePreferences.self, forKey: .offline) ?? OfflinePreferences()
+		combinedStations = try values.decodeIfPresent([String: CombinedStation].self, forKey: .combinedStations) ?? [:]
+		hiddenRoutes = try values.decodeIfPresent([String].self, forKey: .hiddenRoutes) ?? []
 	}
 	public var effectiveStationSelection: StationSelection { widgets.stationSelection.followApp ? stationSelection : widgets.stationSelection.selection }
 	public func selectedStation(location: WidgetCoordinate?, previous: String?, now: TimeInterval = Date().timeIntervalSince1970) -> Station? {
-		effectiveStationSelection.select(stations: stations, favorites: favorites, location: WidgetCoordinate.newestUsable(in: [location, appLocation], now: now), previous: previous, now: now)
+		let visible = stations.compactMap { LineVisibility.station($0, hiddenRoutes: hiddenRoutes) }
+		let combined = combinedStations.keys.sorted().compactMap { id -> Station? in
+			guard let value = combinedStations[id] else { return nil }
+			return CombinedStationResolver.station(id: id, name: value.name, stationIDs: value.stationIDs, catalog: visible)
+		}
+		return effectiveStationSelection.select(stations: visible + combined, favorites: favorites, location: WidgetCoordinate.newestUsable(in: [location, appLocation], now: now), previous: previous, now: now)
 	}
 }
 
 /// Select the soonest trains in each direction before arranging them into the
 /// requested groups. A crowded northbound board cannot consume southbound space.
-public func widgetDepartures(_ board: Board, preference: StationPreference, limit: Int, now: TimeInterval, cached: Bool = false) -> [DepartureGroup] {
+public func widgetDepartures(_ board: Board, preference: StationPreference, limit: Int, now: TimeInterval, cached: Bool = false, hiddenRoutes: [String] = [], cachedDepartureKeys: Set<String>? = nil) -> [DepartureGroup] {
 	var filtered = board
 	filtered.departures = board.departures.filter {
-		Display.boardable($0) && (preference.routes.isEmpty || preference.routes.contains(Display.displayRoute($0.route))) &&
-		(cached || Display.freshness($0, now: now) != .live || ($0.time ?? .infinity) >= now - 30)
+		LineVisibility.isEnabled($0.route, hiddenRoutes: hiddenRoutes) && Display.boardable($0) && (preference.routes.isEmpty || preference.routes.contains(Display.displayRoute($0.route))) &&
+		((cachedDepartureKeys?.contains($0.key) ?? cached) || Display.freshness($0, now: now) != .live || ($0.time ?? .infinity) >= now - 30)
 	}
 	let selected = Dictionary(grouping: filtered.departures, by: \.direction).values.flatMap { departures in
 		departures.sorted {
-			if cached, (($0.time ?? -.infinity) >= now) != (($1.time ?? -.infinity) >= now) { return ($0.time ?? -.infinity) >= now }
+			if cached || cachedDepartureKeys?.isEmpty == false, (($0.time ?? -.infinity) >= now) != (($1.time ?? -.infinity) >= now) { return ($0.time ?? -.infinity) >= now }
 			let a = $0.time ?? .infinity, b = $1.time ?? .infinity
 			return a == b ? $0.key < $1.key : a < b
 		}.prefix(max(0, limit))
 	}
 	filtered.departures = Array(selected)
-	return groupDepartures(filtered, direction: "ALL", order: preference.view, now: now, cached: cached)
+	return groupDepartures(filtered, direction: "ALL", order: preference.view, now: now, cached: cached, cachedDepartureKeys: cachedDepartureKeys)
 }
 
 /// Local timeline transitions keep rounded minutes and departed trains current

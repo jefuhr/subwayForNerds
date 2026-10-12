@@ -205,7 +205,70 @@ struct NativeStartupTests {
 		print("PASS: a saved favorite widget deep link works without a cached catalog and wins over startup selection")
 		try await locationRegressions(directory: directory.appendingPathComponent("location"), stations: stations)
 		try await selectionRegressions(directory: directory.appendingPathComponent("selection"), stations: stations)
+		try await combinedRegressions(directory: directory.appendingPathComponent("combined"))
 		try await offlineRegressions(directory: directory.appendingPathComponent("offline"))
+	}
+
+	@MainActor static func combinedRegressions(directory: URL) async throws {
+		// Failure modes: synthetic network requests, collapsed boarding opportunities,
+		// lost physical ride origin, a failed member replacing the entire board, and
+		// hidden aliases that cannot be enabled again after import.
+		setenv("SFN_DISABLE_LOCATION", "1", 1)
+		setenv("SFN_API_BASE_URL", "https://fixture.test/subwaysForNerds/api/v1/", 1)
+		setenv("SFN_SIMULATE_OUTAGE", "0", 1)
+		URLProtocol.registerClass(FixtureAPI.self)
+		defer { URLProtocol.unregisterClass(FixtureAPI.self) }
+		FixtureAPI.reset()
+		let api = "/subwaysForNerds/api/v1/"
+		let id = "combined:6d9542db-9ab7-422e-9548-fd66c1d4a384"
+		let stations = [Station(id: "628", name: "Fulton St", borough: "M", routes: ["A"], lat: 40.71, lon: -74.01), Station(id: "624", name: "World Trade Center", borough: "M", routes: ["A"], lat: 40.71, lon: -74.01)]
+		let now = Date().timeIntervalSince1970
+		let boards = stations.enumerated().map { index, station in
+			Board(station: station, generatedAt: now, sources: [SourceState(id: "ace", timestamp: now)], departures: [Departure(key: "same", tripKey: "same-trip", route: "A", destination: "Uptown", direction: "NORTH", stopId: station.id, partId: station.id, area: "", time: now + Double(index + 1) * 120, pattern: "Local", patternSource: "feed", location: "", feed: "ace", timestamp: now)])
+		}
+		FixtureAPI.set(api + "stations", try JSONEncoder().encode(stations))
+		// The second member only has a saved board; its request deliberately fails.
+		FixtureAPI.set(api + "stations/628/board", try JSONEncoder().encode(boards[0]))
+		var settings = PortableSettings()
+		settings.combinedStations[id] = CombinedStation(name: "Downtown", stationIDs: ["628", "624"])
+		settings.stations["628"] = StationPreference(routes: ["C"], view: .service)
+		settings.offline.nearbyRadiusFeet = 0
+		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+		try JSONEncoder().encode(stations).write(to: directory.appendingPathComponent("stations.json"))
+		try DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json")).save(DeviceSettings(settings: settings, lastStation: id))
+		let cache = OfflineTransitStore(directory: directory.appendingPathComponent("OfflineTransit", isDirectory: true))
+		try await cache.saveBoard(boards[1], endpoint: "https://fixture.test/subwaysForNerds/api/v1/")
+		let model = AppModel(stateDirectory: directory)
+		let task = Task { await model.runWhileActive() }
+		try await waitFor("combined partial board", timeout: 1000) { model.combinedBoard?.board.departures.count == 2 && model.combinedBoard?.members.contains { $0.station.id == "624" && $0.error != nil } == true }
+		try expect(FixtureAPI.requests(api + "stations/" + id + "/board") == 0, "Combined IDs must never reach the server")
+		try expect(model.preference.routes.isEmpty && model.preference.view == .direction, "Groups use independent defaults")
+		let snapshot = try expectValue(model.combinedBoard, "Combined snapshot exists")
+		try expect(snapshot.cachedDepartureKeys.count == 1 && !model.boardIsCached, "Partial cache is tracked per member")
+		let key = try expectValue(snapshot.origins.first { $0.value.station.id == "624" }?.key, "Second boarding origin exists")
+		let origin = try expectValue(model.departureOrigin(key), "Presentation key resolves its physical origin")
+		await model.startRide("same-trip", detail: nil, origin: origin)
+		try expect(model.activeRide?.boardingStationID == "624", "Ride boards the selected physical member")
+		let backgroundMember = Station(id: "background", name: "Background member", borough: "M", routes: ["A"], lat: 41, lon: -74)
+		model.stations.append(backgroundMember)
+		FixtureAPI.set(api + "stations/background/board", try JSONEncoder().encode(Board(station: backgroundMember, generatedAt: now)))
+		var expanded = model.portableSettings
+		expanded.combinedStations[id]?.stationIDs.append(backgroundMember.id); expanded.favorites = [id]
+		try model.acceptSettings(expanded, sync: nil)
+		model.selectStation("628")
+		try await waitFor("favorite group member shared cache", timeout: 1000) { model.widgetStore?.board(stationID: "background", endpoint: model.endpoint) != nil }
+		model.selectStation(id)
+		await model.loadCachedBoard(id)
+		model.setHiddenLines(["A"])
+		try expect(model.displayBoard?.departures.isEmpty == true && model.activeRide != nil, "Global hiding preserves the active ride")
+		var aliases = model.portableSettings; aliases.hiddenRoutes = ["6X"]
+		try model.acceptSettings(aliases, sync: nil)
+		model.setLine("6", enabled: true)
+		try expect(model.hiddenRoutes.isEmpty, "Enabling a parent removes imported express aliases")
+		try model.deleteCombinedStation(id)
+		try expect(stations.contains { $0.id == model.stationID } && model.activeRide?.boardingStationID == "624", "Deleting a selected group falls back without losing its ride")
+		await stop(model, task: task, background: true)
+		print("PASS: combined boards use real member requests, preserve separate cached boarding opportunities and ride origins, and recover after deletion or line changes")
 	}
 
 	@MainActor static func settle() async throws {

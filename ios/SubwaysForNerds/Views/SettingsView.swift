@@ -28,6 +28,8 @@ struct SettingsView: View {
 				.listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
 			} header: { ListHeader("Theme") }
 			Section {
+				NavigationLink("Combined stations") { CombinedStationsView() }.accessibilityIdentifier("combinedStationsSettings")
+				NavigationLink("Lines") { LineVisibilityView() }.accessibilityIdentifier("lineVisibilitySettings")
 				NavigationLink { StationSelectionSettingsView() } label: { LabeledContent("Station selection", value: app.stationSelection.mode.title) }
 					.accessibilityIdentifier("stationSelectionSettings")
 				NavigationLink("Favorite trains") { FavoriteTrainsSettingsView() }.accessibilityIdentifier("favoriteTrainsSettings")

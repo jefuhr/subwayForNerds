@@ -38,7 +38,7 @@ public struct DepartureGroup: Identifiable, Sendable, Equatable {
 
 /// Filters first, then groups and sorts estimates within each group. Cached boards
 /// retain their last-known departures rather than aging them out as live trains.
-public func groupDepartures(_ board: Board, direction: String = "ALL", routes: [String] = [], order: BoardSortOrder = .track, now: TimeInterval, cached: Bool = false) -> [DepartureGroup] {
+public func groupDepartures(_ board: Board, direction: String = "ALL", routes: [String] = [], order: BoardSortOrder = .track, now: TimeInterval, cached: Bool = false, cachedDepartureKeys: Set<String>? = nil) -> [DepartureGroup] {
 	struct Key: Hashable {
 		let direction: String
 		let identity: [String]
@@ -47,7 +47,7 @@ public func groupDepartures(_ board: Board, direction: String = "ALL", routes: [
 	let selected = board.departures.filter {
 		($0.relationship != "NO_DATA") && (direction == "ALL" || $0.direction == direction) &&
 		(routes.isEmpty || routes.contains(Display.displayRoute($0.route))) &&
-		(cached || Display.freshness($0, now: now) != .live || ($0.time ?? .infinity) >= now - 30)
+		((cachedDepartureKeys?.contains($0.key) ?? cached) || Display.freshness($0, now: now) != .live || ($0.time ?? .infinity) >= now - 30)
 	}
 	let groups = Dictionary(grouping: selected) { departure in
 		let direction = boardDirections.contains(departure.direction) ? departure.direction : "UNKNOWN"

@@ -697,9 +697,11 @@ public struct FleetOfflineManifest: Codable, Sendable, Equatable, Identifiable {
 	public var compression: String?
 	public var compressedByteLength: Int64?
 	public var compressedSha256: String?
-	public var downloadByteLength: Int64 { compression == "gzip" ? compressedByteLength ?? byteLength : byteLength }
+	/// v2 transport information; absent in existing v1 saved pointers.
+	public var pack: FleetPackManifest?
+	public var downloadByteLength: Int64 { pack?.archiveByteLength ?? (compression == "gzip" ? compressedByteLength ?? byteLength : byteLength) }
 
-	public init(schemaVersion: Int, id: String, generatedAt: TimeInterval, historyStart: TimeInterval, historyEnd: TimeInterval, counts: FleetOfflineCounts, byteLength: Int64, sha256: String, downloadURL: String, observedAt: TimeInterval? = nil, compression: String? = nil, compressedByteLength: Int64? = nil, compressedSha256: String? = nil) {
+	public init(schemaVersion: Int, id: String, generatedAt: TimeInterval, historyStart: TimeInterval, historyEnd: TimeInterval, counts: FleetOfflineCounts, byteLength: Int64, sha256: String, downloadURL: String, observedAt: TimeInterval? = nil, compression: String? = nil, compressedByteLength: Int64? = nil, compressedSha256: String? = nil, pack: FleetPackManifest? = nil) {
 		self.schemaVersion = schemaVersion
 		self.id = id
 		self.generatedAt = generatedAt
@@ -713,5 +715,85 @@ public struct FleetOfflineManifest: Codable, Sendable, Equatable, Identifiable {
 		self.compression = compression
 		self.compressedByteLength = compressedByteLength
 		self.compressedSha256 = compressedSha256
+		self.pack = pack
+	}
+}
+
+public struct FleetPackSelection: Codable, Sendable, Equatable {
+	/// Empty lists include every value; nonempty lists match exact values.
+	public var equipment: [String]
+	public var yards: [String]
+	public var historyDays: Int
+	public init(equipment: [String] = [], yards: [String] = [], historyDays: Int = 7) {
+		self.equipment = equipment; self.yards = yards; self.historyDays = historyDays
+	}
+	public var isValid: Bool {
+		[7, 30].contains(historyDays) && [equipment, yards].allSatisfy {
+			$0.count <= 256 && Set($0).count == $0.count && $0.allSatisfy { !$0.isEmpty && $0.utf8.count <= 256 && !$0.contains("\0") }
+		}
+	}
+	public var scopeDescription: String {
+		let types = equipment.isEmpty ? "All car types" : equipment.joined(separator: ", ")
+		let homeYards = yards.isEmpty ? "All estimated home yards" : yards.map { $0 == "unknown" ? "Unknown home yard" : $0 }.joined(separator: ", ")
+		return "\(types) · \(homeYards) · \(historyDays) days of history"
+	}
+}
+
+public struct FleetPackCounts: Codable, Sendable, Equatable {
+	public var cars: Int
+	public var consists: Int
+	public var events: Int
+	public var assertions: Int
+	public var eventCars: Int
+	public var matchedCars: Int
+	public var linkedCars: Int
+	public init(cars: Int, consists: Int, events: Int, assertions: Int, eventCars: Int, matchedCars: Int, linkedCars: Int) {
+		self.cars = cars; self.consists = consists; self.events = events; self.assertions = assertions
+		self.eventCars = eventCars; self.matchedCars = matchedCars; self.linkedCars = linkedCars
+	}
+}
+
+public struct FleetPackManifest: Codable, Sendable, Equatable, Identifiable {
+	public var schemaVersion: Int
+	public var id: String
+	public var generatedAt: TimeInterval
+	public var historyStart: TimeInterval
+	public var historyEnd: TimeInterval
+	public var observedAt: TimeInterval?
+	public var selection: FleetPackSelection
+	public var counts: FleetPackCounts
+	public var archiveByteLength: Int64
+	public var archiveSha256: String
+	public var uncompressedByteLength: Int64
+	public var estimatedSavedByteLength: Int64
+	public var downloadURL: String
+	public var compression: String
+	public var format: String
+	public var isValid: Bool {
+		guard schemaVersion == 2, compression == "gzip", format == "fleet-jsonl-v2", selection.isValid,
+			id == archiveSha256, archiveSha256.count == 64, archiveSha256.allSatisfy({ $0.isASCII && $0.isHexDigit }),
+			[archiveByteLength, uncompressedByteLength, estimatedSavedByteLength].allSatisfy({ $0 > 0 && $0 < Int64.max / 8 }),
+			[generatedAt, historyStart, historyEnd].allSatisfy({ $0.isFinite && $0 >= 0 }),
+			historyStart <= historyEnd, historyEnd >= generatedAt, observedAt == nil || observedAt?.isFinite == true,
+			[counts.cars, counts.consists, counts.events, counts.assertions, counts.eventCars, counts.matchedCars, counts.linkedCars].allSatisfy({ $0 >= 0 && $0 < Int.max / 8 }) else { return false }
+		return counts.matchedCars + counts.linkedCars == counts.cars
+	}
+	public init(schemaVersion: Int = 2, id: String, generatedAt: TimeInterval, historyStart: TimeInterval, historyEnd: TimeInterval, observedAt: TimeInterval? = nil, selection: FleetPackSelection, counts: FleetPackCounts, archiveByteLength: Int64, archiveSha256: String, uncompressedByteLength: Int64, estimatedSavedByteLength: Int64, downloadURL: String, compression: String = "gzip", format: String = "fleet-jsonl-v2") {
+		self.schemaVersion = schemaVersion; self.id = id; self.generatedAt = generatedAt
+		self.historyStart = historyStart; self.historyEnd = historyEnd; self.observedAt = observedAt
+		self.selection = selection; self.counts = counts; self.archiveByteLength = archiveByteLength
+		self.archiveSha256 = archiveSha256; self.uncompressedByteLength = uncompressedByteLength
+		self.estimatedSavedByteLength = estimatedSavedByteLength; self.downloadURL = downloadURL
+		self.compression = compression; self.format = format
+	}
+}
+
+public struct FleetPackJob: Codable, Sendable, Equatable {
+	public enum State: String, Codable, Sendable { case preparing, ready }
+	public var jobId: String
+	public var state: State
+	public var manifest: FleetPackManifest?
+	public init(jobId: String, state: State, manifest: FleetPackManifest? = nil) {
+		self.jobId = jobId; self.state = state; self.manifest = manifest
 	}
 }

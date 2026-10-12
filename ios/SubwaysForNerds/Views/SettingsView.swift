@@ -105,7 +105,7 @@ struct SettingsView: View {
 				Text("Times are predictions, not promises. Location finds nearby and favorite stations in the app and, when allowed, widgets. Location and station search text stay on this device.").font(.caption).foregroundStyle(.secondary)
 			} header: { ListHeader("About") }
 		}.themedList().navigationTitle("Settings").navigationBarTitleDisplayMode(.inline)
-			.task { endpoint = app.endpoint; await app.checkDownload() }
+			.task { endpoint = app.endpoint; await app.loadFleetPackFacets() }
 	}
 
 	private func themeTile(_ theme: AppTheme) -> some View {
@@ -132,37 +132,58 @@ struct SettingsView: View {
 
 	private var offlineSection: some View {
 		Section {
+			NavigationLink { FleetPackSelectionView() } label: {
+				VStack(alignment: .leading, spacing: 3) {
+					Text("Download scope")
+					Text(app.fleetPackSelection.scopeDescription).font(.caption).foregroundStyle(.secondary)
+				}
+			}.accessibilityIdentifier("fleetPackScope").disabled(app.isDownloading)
 			if let saved = app.offlineManifest {
 				VStack(alignment: .leading, spacing: 2) {
 					LabeledContent("Saved", value: easternDate(saved.generatedAt, timeFormat: app.units.time)).font(.subheadline)
 					LabeledContent("Saved size", value: ByteCountFormatter.string(fromByteCount: saved.byteLength, countStyle: .file)).font(.subheadline)
 					Text("\(saved.counts.cars.formatted()) cars · \(saved.counts.events.formatted()) movement events").font(.caption)
 					Text("History: \(easternDate(saved.historyStart, timeFormat: app.units.time)) – \(easternDate(saved.historyEnd, timeFormat: app.units.time))").font(.caption).foregroundStyle(.secondary)
+					Text(saved.pack?.selection.scopeDescription ?? "All cars · Previously saved retained history")
+						.font(.caption).accessibilityIdentifier("savedFleetScope")
+					if let pack = saved.pack {
+						Text("\(pack.counts.matchedCars.formatted()) selected cars + \(pack.counts.linkedCars.formatted()) linked cars for complete fixed sets and recent formations.").font(.caption)
+					}
 				}
-			} else { Text("Save the full roster, source records, last reports, and all retained movement history to this device.").font(.footnote) }
-			if let available = app.availableManifest {
+			} else { Text("Save selected cars, their source records and last reports, with 7 or 30 days of movement history.").font(.footnote) }
+			if let available = app.availablePack {
 				VStack(alignment: .leading, spacing: 2) {
-					LabeledContent("Download size", value: ByteCountFormatter.string(fromByteCount: available.downloadByteLength, countStyle: .file)).font(.subheadline)
-					LabeledContent("Size after saving", value: ByteCountFormatter.string(fromByteCount: available.byteLength, countStyle: .file)).font(.subheadline)
-					Text("Published \(easternDate(available.generatedAt, timeFormat: app.units.time))\(available.compression == "gzip" ? ". Allow free space for both sizes while the compressed download is prepared." : "")")
+					LabeledContent("Archive size", value: ByteCountFormatter.string(fromByteCount: available.archiveByteLength, countStyle: .file))
+						.font(.subheadline).accessibilityIdentifier("fleetPackArchiveSize")
+					LabeledContent("Saved-size estimate", value: ByteCountFormatter.string(fromByteCount: available.estimatedSavedByteLength, countStyle: .file))
+						.font(.subheadline).accessibilityIdentifier("fleetPackSavedEstimate")
+					LabeledContent("Linked cars", value: available.counts.linkedCars.formatted()).font(.subheadline)
+					Text("\(available.counts.matchedCars.formatted()) selected cars · \(available.counts.cars.formatted()) cars including linked members · \(available.counts.events.formatted()) movement events").font(.caption)
+					Text("Prepared \(easternDate(available.generatedAt, timeFormat: app.units.time)). Linked cars keep documented fixed sets and recent formations complete. Actual saved size may differ from the estimate.")
 						.font(.caption).foregroundStyle(.secondary)
 				}
-				if app.isDownloading {
+			}
+			if app.isDownloading {
+				if app.isPreparingFleetPack {
+					ProgressView("Preparing selected fleet…").accessibilityIdentifier("preparingFleetPack")
+				} else {
 					VStack(alignment: .leading, spacing: 4) {
 						ProgressView(value: app.downloadProgress ?? 0).accessibilityLabel("Fleet download progress")
 						Text((app.downloadProgress ?? 0) >= 0.99 ? "Checking and saving fleet…" : "\(Int((app.downloadProgress ?? 0) * 100))% complete").font(.caption.monospacedDigit())
 					}
-					Button("Cancel download", role: .cancel) { app.cancelDownload() }.actionStyle().accessibilityIdentifier("cancelFleetDownload")
 				}
+				Button(app.isPreparingFleetPack ? "Cancel preparation" : "Cancel download", role: .cancel) { app.cancelDownload() }
+					.actionStyle().accessibilityIdentifier("cancelFleetDownload")
 			}
 			if !app.isDownloading {
 				HStack {
-					if app.availableManifest != nil {
+					if app.availablePack != nil {
 						Button(app.offlineManifest == nil ? "Download fleet" : "Update fleet download") { app.startDownload() }
-							.disabled(app.offlineStore == nil).accessibilityIdentifier("downloadFleet")
+							.disabled(app.offlineStore == nil || !app.connected).accessibilityIdentifier("downloadFleet")
 						Spacer()
 					}
-					Button("Check for update") { Task { await app.checkDownload() } }.accessibilityIdentifier("checkFleetDownload")
+					Button(app.availablePack == nil ? "Prepare download" : "Prepare again") { Task { await app.checkDownload() } }
+						.disabled(app.offlineStore == nil || !app.connected).accessibilityIdentifier("checkFleetDownload")
 				}
 				.buttonStyle(.borderless).actionStyle().font(.subheadline).frame(minHeight: 44)
 			}
@@ -185,7 +206,65 @@ struct SettingsView: View {
 			}
 			if app.offlineStore == nil { Notice(text: "Download storage is unavailable. Try reopening the app.") }
 			if let error = app.downloadError { Notice(text: error) }
-		} header: { ListHeader("Offline fleet") } footer: { Text("Downloads happen only when you choose Download or Update. Keep the app open while downloading and saving. Saved reports are historical and retain their original history window until replaced or deleted. Failed downloads preserve your previous copy.") }
+		} header: { ListHeader("Offline fleet") } footer: { Text("Prepare to see the archive size and saved-size estimate, then choose Download or Update. Keep the app open while saving. One validated pack replaces your previous copy. Saved reports are historical; events can mention cars outside the saved scope. Failed or canceled downloads preserve your previous copy.") }
+	}
+}
+
+private struct FleetPackSelectionView: View {
+	@Environment(AppModel.self) private var app
+	var body: some View {
+		List {
+			Section {
+				Picker("Movement history", selection: Binding(get: { app.fleetPackSelection.historyDays }, set: { days in
+					var selection = app.fleetPackSelection; selection.historyDays = days; app.setFleetPackSelection(selection)
+				})) {
+					Text("7 days").tag(7)
+					Text("30 days").tag(30)
+				}.pickerStyle(.segmented).accessibilityIdentifier("fleetPackHistory")
+				Button("Everything") {
+					app.setFleetPackSelection(FleetPackSelection(historyDays: app.fleetPackSelection.historyDays))
+				}.actionStyle().accessibilityIdentifier("fleetPackEverything")
+			} footer: { Text("Everything includes all car types and estimated home yards, with the history window chosen above.") }
+			Section {
+				choice("All car types", selected: app.fleetPackSelection.equipment.isEmpty, id: "fleetPackAllEquipment") { update(equipment: []) }
+				ForEach(Array(Set(app.fleetPackFacets.equipment + app.fleetPackSelection.equipment)).filter { !$0.isEmpty }.sorted(), id: \.self) { equipment in
+					choice(equipment, selected: app.fleetPackSelection.equipment.contains(equipment), id: "fleetPackEquipment_\(equipment)") {
+						update(equipment: toggled(equipment, in: app.fleetPackSelection.equipment))
+					}
+				}
+			} header: { ListHeader("Car types") } footer: { Text("Select multiple exact equipment types. Choosing All car types removes this filter.") }
+			Section {
+				choice("All estimated home yards", selected: app.fleetPackSelection.yards.isEmpty, id: "fleetPackAllYards") { update(yards: []) }
+				ForEach(Array(Set(app.fleetPackFacets.yard + app.fleetPackSelection.yards + ["unknown"])).filter { !$0.isEmpty }.sorted(), id: \.self) { yard in
+					choice(yard == "unknown" ? "Unknown / unreported" : yard, selected: app.fleetPackSelection.yards.contains(yard), id: "fleetPackYard_\(yard)") {
+						update(yards: toggled(yard, in: app.fleetPackSelection.yards))
+					}
+				}
+			} header: { ListHeader("Estimated home yards") } footer: { Text("Yards are estimates from reports and source records. Multiple yard selections match exact names. Unknown includes cars without an estimated home yard. Car type and yard filters must both match.") }
+			if let error = app.fleetPackFacetsError { Section { Notice(text: error) } }
+			Section { Button("Reload car types and yards") { Task { await app.loadFleetPackFacets() } }.actionStyle().disabled(!app.connected) }
+		}
+		.themedList().navigationTitle("Fleet download scope").navigationBarTitleDisplayMode(.inline)
+		.disabled(app.isDownloading)
+		.task { await app.loadFleetPackFacets() }
+	}
+	private func choice(_ title: String, selected: Bool, id: String, action: @escaping () -> Void) -> some View {
+		Button(action: action) {
+			HStack {
+				Text(title).foregroundStyle(app.theme.ink)
+				Spacer()
+				if selected { Image(systemName: "checkmark").foregroundStyle(app.theme.selection) }
+			}.frame(minHeight: 32).contentShape(Rectangle())
+		}.buttonStyle(.plain).accessibilityIdentifier(id).accessibilityAddTraits(selected ? .isSelected : [])
+	}
+	private func toggled(_ value: String, in values: [String]) -> [String] {
+		values.contains(value) ? values.filter { $0 != value } : (values + [value]).sorted()
+	}
+	private func update(equipment: [String]? = nil, yards: [String]? = nil) {
+		var selection = app.fleetPackSelection
+		if let equipment { selection.equipment = equipment }
+		if let yards { selection.yards = yards }
+		app.setFleetPackSelection(selection)
 	}
 }
 

@@ -50,7 +50,11 @@ final class AppModel {
 	var locating = false
 	var connected = true
 	var offlineManifest: FleetOfflineManifest?
-	var availableManifest: FleetOfflineManifest?
+	var availablePack: FleetPackManifest?
+	var fleetPackSelection = FleetPackSelection()
+	var fleetPackFacets = FleetFacets()
+	var fleetPackFacetsError: String?
+	var isPreparingFleetPack = false
 	var downloadProgress: Double?
 	var downloadError: String?
 	var useSavedFleet = false
@@ -343,7 +347,9 @@ final class AppModel {
 		apiBeforeOutage = nil
 		if outageSimulated { beginSimulatedOutage() }
 		boardIsCached = true
-		availableManifest = nil
+		cancelDownload()
+		availablePack = nil
+		fleetPackFacets = FleetFacets()
 		lastCatalogAttempt = 0
 		persist()
 		// Cached content belongs to one endpoint; restore this endpoint's ride and boards.
@@ -1016,38 +1022,110 @@ final class AppModel {
 		}
 	}
 
-	func checkDownload() async {
+	func loadFleetPackFacets() async {
 		let requestedEndpoint = endpoint
-		downloadError = nil
+		guard connected else { return }
+		fleetPackFacetsError = nil
 		do {
-			let manifest = try await api.offlineManifest()
+			let page = try await api.fleet(query: ["view": "cars", "retired": "true"])
 			guard requestedEndpoint == endpoint, !Task.isCancelled else { return }
-			availableManifest = manifest
-		} catch { if requestedEndpoint == endpoint, !Task.isCancelled { downloadError = "The fleet download is temporarily unavailable. Your saved copy is still usable." } }
+			fleetPackFacets = page.facets
+		} catch {
+			if requestedEndpoint == endpoint, !Task.isCancelled { fleetPackFacetsError = "Car type and yard choices are unavailable. You can still prepare all cars or retry loading the choices." }
+		}
+	}
+
+	func setFleetPackSelection(_ selection: FleetPackSelection) {
+		guard downloadTask == nil else { return }
+		fleetPackSelection = selection
+		availablePack = nil
+		downloadError = nil
+	}
+
+	func checkDownload() async {
+		guard downloadTask == nil, connected else { return }
+		let generation = UUID(), url = baseURL, selection = fleetPackSelection
+		downloadGeneration = generation
+		downloadError = nil
+		availablePack = nil
+		isPreparingFleetPack = true
+		downloadTask = Task { [weak self] in
+			defer { self?.finishFleetDownload(generation: generation) }
+			do {
+				let pack = try await Self.prepareFleetPack(api: FleetPackAPI(baseURL: url), selection: selection)
+				guard let self, self.downloadGeneration == generation, self.baseURL == url else { return }
+				self.availablePack = pack
+			} catch {
+				if !Task.isCancelled, self?.downloadGeneration == generation { self?.downloadError = error.localizedDescription }
+			}
+		}
+		await downloadTask?.value
+	}
+
+	private static func prepareFleetPack(api: FleetPackAPI, selection: FleetPackSelection) async throws -> FleetPackManifest {
+		var job = try await api.prepare(selection: selection)
+		var restarted = false
+		let deadline = Date().addingTimeInterval(10 * 60)
+		while job.state == .preparing {
+			try Task.checkCancellation()
+			guard Date() < deadline else { throw AppError.message("This fleet pack is taking longer than expected. Try preparing it again. Your saved fleet is still available.") }
+			try await Task.sleep(for: .seconds(1))
+			do { job = try await api.status(jobID: job.jobId) }
+			catch FleetPackAPIError.expired where !restarted {
+				restarted = true
+				job = try await api.prepare(selection: selection)
+			}
+		}
+		try Task.checkCancellation()
+		guard let pack = job.manifest,
+			pack.selection.historyDays == selection.historyDays,
+			Set(pack.selection.equipment) == Set(selection.equipment), Set(pack.selection.yards) == Set(selection.yards) else { throw FleetPackAPIError.invalidResponse }
+		return pack
+	}
+
+	private func finishFleetDownload(generation: UUID) {
+		guard downloadGeneration == generation else { return }
+		downloadProgress = nil
+		isPreparingFleetPack = false
+		downloadGeneration = nil
+		downloadTask = nil
 	}
 
 	func startDownload() {
-		guard downloadTask == nil, let manifest = availableManifest, let store = offlineStore else { return }
+		guard downloadTask == nil, connected, let pack = availablePack, let store = offlineStore else { return }
 		downloadError = nil
 		downloadProgress = 0
 		let generation = UUID()
 		downloadGeneration = generation
 		let url = baseURL
 		downloadTask = Task { [weak self] in
+			defer { self?.finishFleetDownload(generation: generation) }
 			do {
-				try await store.download(manifest: manifest, apiBaseURL: url) { [weak self] fraction in
+				try await store.download(pack: pack, apiBaseURL: url) { [weak self] fraction in
 					Task { @MainActor [weak self] in
-						guard let self, self.downloadGeneration == generation else { return }
+						guard let self, self.downloadGeneration == generation, !self.isPreparingFleetPack else { return }
 						self.downloadProgress = max(self.downloadProgress ?? 0, fraction)
 					}
 				}
-				self?.offlineManifest = await store.manifest()
+				let saved = await store.manifest()
+				guard self?.downloadGeneration == generation else { return }
+				self?.offlineManifest = saved
+			} catch OfflineFleetError.expired {
+				guard !Task.isCancelled, let self, self.downloadGeneration == generation, self.baseURL == url else { return }
+				self.availablePack = nil
+				self.isPreparingFleetPack = true
+				self.downloadProgress = nil
+				do {
+					let fresh = try await Self.prepareFleetPack(api: FleetPackAPI(baseURL: url), selection: pack.selection)
+					guard self.downloadGeneration == generation, self.baseURL == url else { return }
+					self.availablePack = fresh
+					self.downloadError = "The previous archive expired. A fresh pack is ready; review its size and choose Download again."
+				} catch {
+					if !Task.isCancelled { self.downloadError = error.localizedDescription }
+				}
 			} catch {
-				if !Task.isCancelled { self?.downloadError = error.localizedDescription }
+				if !Task.isCancelled, self?.downloadGeneration == generation { self?.downloadError = error.localizedDescription }
 			}
-			self?.downloadProgress = nil
-			self?.downloadGeneration = nil
-			self?.downloadTask = nil
 		}
 	}
 

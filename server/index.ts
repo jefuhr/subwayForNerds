@@ -12,6 +12,7 @@ import { TransitService } from './service';
 import { nowSeconds } from './transit';
 import { transfers } from './transfers';
 import { registerFleetOfflineRoutes } from './fleet-offline-routes';
+import { registerFleetPackRoutes } from './fleet-pack-routes';
 import { registerAnalytics } from './analytics';
 
 export async function createServer(service = new TransitService({ fixtureDir: process.env.FIXTURE_DIR }), { exemptLoopbackRateLimits = false } = {}) {
@@ -76,8 +77,10 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
   app.get(api + '/fleet/health', () => ({
     available: !!service.fleet?.initialized && !service.fleet.error, error: service.fleet?.error || null,
     offline: { available: !!service.offline?.manifest, generatedAt: service.offline?.manifest?.generatedAt ?? null, error: service.offline?.error || null },
+    offlineV2: { available: !!service.packs?.ready, error: service.packs?.error || null },
   }));
   registerFleetOfflineRoutes(app, service, api);
+  await registerFleetPackRoutes(app, service, api);
 	app.get(api + '/health', () => {
 		const now = nowSeconds();
 		const feeds = [...service.slots.values()].map(({ state }) => ({

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { TransitService } from './service';
 
-function byteRange(header: string, size: number) {
+export function byteRange(header: string, size: number) {
   const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
   if (!match || (!match[1] && !match[2])) return;
   const start = match[1] ? Number(match[1]) : Math.max(0, size - Number(match[2]));

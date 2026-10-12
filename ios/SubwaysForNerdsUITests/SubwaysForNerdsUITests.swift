@@ -684,6 +684,8 @@ final class SubwaysForNerdsUITests: XCTestCase {
 	func testDownloadedFleetSurvivesOfflineRelaunch() {
 		var app = launch()
 		app.tab("Settings").tap()
+		scrollTo(app.buttons["checkFleetDownload"], in: app)
+		app.buttons["checkFleetDownload"].tap()
 		scrollTo(app.buttons["downloadFleet"], in: app)
 		XCTAssertTrue(app.buttons["downloadFleet"].waitForExistence(timeout: 20))
 		app.buttons["downloadFleet"].tap()

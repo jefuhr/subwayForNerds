@@ -3,10 +3,11 @@ import CSQLite
 import TransitCore
 
 public enum OfflineFleetError: LocalizedError, Sendable {
-	case unavailable, invalid(String)
+	case unavailable, expired, invalid(String)
 	public var errorDescription: String? {
 		switch self {
 		case .unavailable: return "Download a fleet snapshot while connected to browse it offline."
+		case .expired: return "This fleet pack expired. Prepare a fresh pack to download. Your previous download is still available."
 		case .invalid(let message): return message
 		}
 	}
@@ -39,8 +40,8 @@ public actor OfflineFleetStore {
 		// A terminated update can leave a large candidate behind before pointer activation.
 		// This directory is owned by one store; keep only the snapshot named by the pointer.
 		for file in try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) {
-			if file.pathExtension == "sqlite", file.lastPathComponent != saved?.fileName {
-				try FileManager.default.removeItem(at: file)
+			if let database = SnapshotFiles.databaseName(for: file.lastPathComponent), database != saved?.fileName {
+				SnapshotFiles.removeDatabase(at: directory.appendingPathComponent(database))
 			}
 		}
 	}
@@ -49,50 +50,101 @@ public actor OfflineFleetStore {
 
 	public func download(manifest: FleetOfflineManifest, apiBaseURL: URL,
 		progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
-		guard downloadID == nil else { throw OfflineFleetError.invalid("A fleet download is already running.") }
-		guard manifest.schemaVersion == 1,
-			let url = URL(string: manifest.downloadURL, relativeTo: apiBaseURL)?.absoluteURL,
-			url.scheme == apiBaseURL.scheme, url.host == apiBaseURL.host, url.port == apiBaseURL.port,
-			url.user == nil, url.password == nil,
-			url.scheme == "https" || ["localhost", "127.0.0.1", "::1"].contains(url.host ?? "")
-		else { throw OfflineFleetError.invalid("This fleet download format or address is unsupported.") }
 		try SnapshotFiles.validate(manifest)
-		try SnapshotFiles.requireSpace(in: directory, bytes: manifest.byteLength + manifest.downloadByteLength)
+		let url = try SnapshotFiles.downloadURL(manifest.downloadURL, relativeTo: apiBaseURL)
+		try await performDownload(id: manifest.id, url: url, expectedBytes: manifest.downloadByteLength,
+			spaceBytes: manifest.byteLength + manifest.downloadByteLength, progress: progress) {
+			try install(file: $0, manifest: manifest)
+		}
+	}
+
+	public func download(pack: FleetPackManifest, apiBaseURL: URL,
+		progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
+		try SnapshotFiles.validate(pack)
+		let url = try SnapshotFiles.downloadURL(pack.downloadURL, relativeTo: apiBaseURL)
+		try await performDownload(id: pack.id, url: url, expectedBytes: pack.archiveByteLength,
+			spaceBytes: pack.archiveByteLength + pack.estimatedSavedByteLength, progress: progress) {
+			try install(file: $0, pack: pack)
+		}
+	}
+
+	private func performDownload(id: String, url: URL, expectedBytes: Int64, spaceBytes: Int64,
+		progress: @escaping @Sendable (Double) -> Void, install: (URL) throws -> Void) async throws {
+		guard downloadID == nil else { throw OfflineFleetError.invalid("A fleet download is already running.") }
+		try SnapshotFiles.requireSpace(in: directory, bytes: spaceBytes)
 		let token = UUID(); downloadID = token
 		defer { if downloadID == token { downloadID = nil } }
-		let resumeFile = directory.appendingPathComponent("resume-\(safeID(manifest.id)).data")
+		// Resume data belongs to one exact archive URL, never a different endpoint.
+		let resumeFile = directory.appendingPathComponent("resume-\(safeID(id)).json")
 		let configuration = URLSessionConfiguration.default
 		configuration.timeoutIntervalForRequest = 60
 		configuration.timeoutIntervalForResource = 3_600
 		let session = URLSession(configuration: configuration)
 		defer { session.invalidateAndCancel() }
-		let delegate = DownloadProgress(expectedBytes: manifest.downloadByteLength, progress: progress)
+		let delegate = DownloadProgress(expectedBytes: expectedBytes, url: url, progress: progress)
 		progress(0)
 		do {
 			let result: (URL, URLResponse)
-			if let resume = try? Data(contentsOf: resumeFile) {
+			if let resume = SnapshotFiles.resumeData(at: resumeFile, for: url) {
 				result = try await session.download(resumeFrom: resume, delegate: delegate)
 			} else {
 				result = try await session.download(from: url, delegate: delegate)
 			}
 			defer { try? FileManager.default.removeItem(at: result.0) }
-			guard let response = result.1 as? HTTPURLResponse, [200, 206].contains(response.statusCode),
+			guard let response = result.1 as? HTTPURLResponse,
 				response.url?.host == url.host, response.url?.scheme == url.scheme,
-				response.url?.port == url.port else { throw OfflineFleetError.invalid("The fleet download is unavailable. Try updating its information.") }
+				response.url?.port == url.port, response.url?.user == nil, response.url?.password == nil else { throw OfflineFleetError.invalid("The fleet download is unavailable. Try updating its information.") }
+			if response.statusCode == 404 { throw OfflineFleetError.expired }
+			guard [200, 206].contains(response.statusCode) else { throw OfflineFleetError.invalid("The fleet download is unavailable. Try preparing it again.") }
 			try Task.checkCancellation()
 			guard downloadID == token else { throw CancellationError() }
 			progress(0.99)
-			try install(file: result.0, manifest: manifest)
+			try install(result.0)
 			try? FileManager.default.removeItem(at: resumeFile)
 			progress(1)
 		} catch {
+			if delegate.expired {
+				try? FileManager.default.removeItem(at: resumeFile)
+				throw OfflineFleetError.expired
+			}
 			if downloadID == token {
-				if let resume = (error as NSError).userInfo["NSURLSessionDownloadTaskResumeData"] as? Data {
-					try? resume.write(to: resumeFile, options: .atomic)
+				if let resume = (error as NSError).userInfo["NSURLSessionDownloadTaskResumeData"] as? Data, resume.count <= 1_048_576 {
+					try? SnapshotFiles.saveResumeData(resume, at: resumeFile, for: url)
 				} else { try? FileManager.default.removeItem(at: resumeFile) }
 			}
 			throw error
 		}
+	}
+
+	public func install(file: URL, pack: FleetPackManifest) throws {
+		try SnapshotFiles.validate(pack)
+		try Task.checkCancellation()
+		try SnapshotFiles.requireSpace(in: directory, bytes: 16 * 1_024 * 1_024)
+		try SnapshotFiles.verify(file, bytes: pack.archiveByteLength, sha256: pack.archiveSha256)
+		let name = "\(safeID(pack.id))-\(UUID().uuidString).sqlite"
+		let destination = directory.appendingPathComponent(name)
+		var activated = false
+		defer {
+			if !activated {
+				SnapshotFiles.removeDatabase(at: destination)
+			}
+		}
+		// Release SQLite and its journal before integrity validation and pointer activation.
+		do {
+			let importer = try FleetPackImporter(file: destination, pack: pack)
+			try SnapshotFiles.inflateGzip(file, expectedBytes: pack.uncompressedByteLength, consume: importer.consume)
+			try importer.finish()
+		}
+		let database = try SnapshotDatabase(file: destination)
+		try database.validate(pack: pack)
+		let size = try destination.resourceValues(forKeys: [.fileSizeKey]).fileSize.map(Int64.init) ?? 0
+		let manifest = FleetOfflineManifest(schemaVersion: 2, id: pack.id, generatedAt: pack.generatedAt,
+			historyStart: pack.historyStart, historyEnd: pack.historyEnd,
+			counts: FleetOfflineCounts(cars: pack.counts.cars, consists: pack.counts.consists, events: pack.counts.events, assertions: pack.counts.assertions),
+			byteLength: size, sha256: try SnapshotFiles.digest(destination), downloadURL: pack.downloadURL,
+			observedAt: pack.observedAt, pack: pack)
+		try activate(SavedSnapshot(manifest: manifest, fileName: name))
+		activated = true
 	}
 
 	/// Also used by integration tests and fixture-based UI tests.
@@ -103,7 +155,7 @@ public actor OfflineFleetStore {
 		let name = "\(safeID(manifest.id))-\(UUID().uuidString).sqlite"
 		let destination = directory.appendingPathComponent(name)
 		var activated = false
-		defer { if !activated { try? FileManager.default.removeItem(at: destination) } }
+		defer { if !activated { SnapshotFiles.removeDatabase(at: destination) } }
 		if manifest.compression == "gzip" {
 			try SnapshotFiles.verify(file, bytes: manifest.compressedByteLength!, sha256: manifest.compressedSha256!)
 			try SnapshotFiles.inflateGzip(file, to: destination, expectedBytes: manifest.byteLength)
@@ -113,13 +165,16 @@ public actor OfflineFleetStore {
 		}
 		try SnapshotFiles.verify(destination, bytes: manifest.byteLength, sha256: manifest.sha256)
 		try validateDatabase(at: destination, manifest: manifest)
-		let next = SavedSnapshot(manifest: manifest, fileName: name)
+		try activate(SavedSnapshot(manifest: manifest, fileName: name))
+		activated = true
+	}
+
+	private func activate(_ next: SavedSnapshot) throws {
 		try Task.checkCancellation()
 		try JSONEncoder().encode(next).write(to: directory.appendingPathComponent("active.json"), options: .atomic)
 		let previous = saved
 		saved = next
-		activated = true
-		if let previous { try? FileManager.default.removeItem(at: directory.appendingPathComponent(previous.fileName)) }
+		if let previous { SnapshotFiles.removeDatabase(at: directory.appendingPathComponent(previous.fileName)) }
 	}
 
 	private func validateDatabase(at file: URL, manifest: FleetOfflineManifest) throws {
@@ -247,17 +302,22 @@ public actor OfflineFleetStore {
 }
 
 private final class DownloadProgress: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+	private let lock = NSLock()
+	private var statusCode: Int?
+	var expired: Bool { lock.withLock { statusCode == 404 } }
 	let expectedBytes: Int64
+	let url: URL
 	let progress: @Sendable (Double) -> Void
-	init(expectedBytes: Int64, progress: @escaping @Sendable (Double) -> Void) { self.expectedBytes = expectedBytes; self.progress = progress }
+	init(expectedBytes: Int64, url: URL, progress: @escaping @Sendable (Double) -> Void) { self.expectedBytes = expectedBytes; self.url = url; self.progress = progress }
 	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {}
 	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+		lock.withLock { statusCode = (downloadTask.response as? HTTPURLResponse)?.statusCode }
+		if totalBytesWritten > expectedBytes { downloadTask.cancel(); return }
 		let expected = totalBytesExpectedToWrite > 0 ? totalBytesExpectedToWrite : expectedBytes
 		if expected > 0 { progress(min(0.98, Double(totalBytesWritten) / Double(expected) * 0.98)) }
 	}
 	func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
-		let original = task.originalRequest?.url
-		completionHandler(request.url?.host == original?.host && request.url?.scheme == original?.scheme && request.url?.port == original?.port ? request : nil)
+		completionHandler(request.url?.host == url.host && request.url?.scheme == url.scheme && request.url?.port == url.port && request.url?.user == nil && request.url?.password == nil ? request : nil)
 	}
 }
 
@@ -320,6 +380,33 @@ final class SnapshotDatabase {
 			throw OfflineFleetError.invalid("The fleet database does not match its download information.")
 		}
 		_ = try rows("SELECT event_id,car_id FROM event_cars LIMIT 1")
+	}
+	func validate(pack: FleetPackManifest) throws {
+		guard try rows("PRAGMA user_version") == [["1"]], try rows("PRAGMA quick_check") == [["ok"]],
+			try rows("PRAGMA foreign_key_check").isEmpty else {
+			throw OfflineFleetError.invalid("The saved fleet pack is incompatible or damaged.")
+		}
+		for (table, count) in [("cars", pack.counts.cars), ("consists", pack.counts.consists), ("events", pack.counts.events), ("assertions", pack.counts.assertions), ("event_cars", pack.counts.eventCars)] {
+			guard try rows("SELECT COUNT(*) FROM \(table)") == [[String(count)]] else {
+				throw OfflineFleetError.invalid("The fleet pack is missing records.")
+			}
+		}
+		var conditions: [String] = [], values: [String] = []
+		for (selected, expression) in [(pack.selection.equipment, "json_extract(data,'$.equipment')"),
+			(pack.selection.yards, "COALESCE(NULLIF(json_extract(data,'$.estimatedYard.name'),''),'unknown')")] where !selected.isEmpty {
+			conditions.append("\(expression) IN (\(selected.map { _ in "?" }.joined(separator: ",")))")
+			values += selected
+		}
+		let condition = conditions.isEmpty ? "1=1" : conditions.joined(separator: " AND ")
+		guard try rows("SELECT COUNT(*) FROM cars WHERE \(condition)", values: values) == [[String(pack.counts.matchedCars)]] else {
+			throw OfflineFleetError.invalid("The fleet pack does not match its selected car types and yards.")
+		}
+		guard let raw = try rows("SELECT data FROM meta WHERE key='snapshot'").first?.first,
+			let metadata = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any],
+			metadata["schemaVersion"] as? Int == 2, metadata["generatedAt"] as? Double == pack.generatedAt,
+			metadata["historyStart"] as? Double == pack.historyStart, metadata["historyEnd"] as? Double == pack.historyEnd else {
+			throw OfflineFleetError.invalid("The fleet pack does not match its download information.")
+		}
 	}
 	private func failure() -> any Error {
 		if sqlite3_errcode(db) == SQLITE_INTERRUPT, Task.isCancelled { return CancellationError() }

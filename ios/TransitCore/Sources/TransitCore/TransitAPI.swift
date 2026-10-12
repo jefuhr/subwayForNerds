@@ -21,7 +21,7 @@ public enum TransitAPIError: Error, LocalizedError, Sendable, Equatable {
 /// The server remains the source of normalized feed data. Cached responses are
 /// reused only after server validation; offline data is explicitly owned by the UI cache.
 public actor TransitAPI {
-	public static let productionBaseURL = URL(string: "https://juliet.nyc/subwaysForNerds/api/v1/")!
+	public static let productionBaseURL = URL(string: "https://subwaysfornerds.juliet.nyc/api/v1/")!
 	public let baseURL: URL
 	private let session: URLSession
 	private struct CachedResponse { let data: Data; let etag: String }

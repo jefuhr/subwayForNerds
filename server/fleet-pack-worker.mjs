@@ -90,9 +90,13 @@ try {
 		await line(['assertion', row.id, row.car_id, row.data]); counts.assertions++;
 	}
 	const usedConsists = new Set();
-	const query = source.prepare(`SELECT e.id,e.timestamp,e.data,ec.car_id FROM events e INDEXED BY event_time
+	// The timestamp index contains rowids, so finding the earliest recent row
+	// avoids fetching every recent event through a random table lookup. Events
+	// can arrive out of timestamp order; use MIN(rowid), not the first timestamp.
+	const firstRecentRow = source.prepare('SELECT MIN(rowid) AS rowid FROM events INDEXED BY event_time WHERE timestamp>=?').get(historyStart)?.rowid;
+	const query = source.prepare(`SELECT e.id,e.timestamp,e.data,ec.car_id FROM events e NOT INDEXED
 		CROSS JOIN event_cars ec CROSS JOIN selected s
-		WHERE e.timestamp>=? AND ec.event_id=e.id AND s.id=ec.car_id ORDER BY e.timestamp,e.id`);
+		WHERE e.rowid>=? AND e.timestamp>=? AND ec.event_id=e.id AND s.id=ec.car_id ORDER BY e.rowid`);
 	let current, members = [];
 	async function flush() {
 		if (!current) return;
@@ -102,7 +106,7 @@ try {
 		if (typeof consistId === 'string') usedConsists.add(consistId);
 		if (usedConsists.size > 250_000) throw new Error('Offline fleet pack has too many historical formations');
 	}
-	for (const row of query.iterate(historyStart)) {
+	for (const row of firstRecentRow == null ? [] : query.iterate(firstRecentRow, historyStart)) {
 		if (current?.id !== row.id) { await flush(); current = { id: row.id, timestamp: row.timestamp, data: row.data }; members = []; }
 		members.push(row.car_id);
 	}

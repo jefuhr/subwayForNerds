@@ -80,6 +80,30 @@ test('v2 pack streams selected records and exact history with linked cars', asyn
 	} finally { await packs.stop(); store.close(); await rm(dir, { recursive: true, force: true }); }
 });
 
+test('v2 pack includes recent events inserted out of timestamp order', async () => {
+	const dir = await mkdtemp(join(tmpdir(), 'sfn-pack-backfill-'));
+	const source = join(dir, 'fleet.sqlite'), output = join(dir, 'packs');
+	const store = new FleetStore(source), packs = new FleetPackService(source, output);
+	try {
+		store.importRoster([{ car_number: '1', car_class: 'R160', retirement_date: 'In-Service' }], '2026-09-06', 1);
+		const event = store.db.prepare('INSERT INTO events VALUES(?,?,?)');
+		const member = store.db.prepare('INSERT INTO event_cars VALUES(?,?)');
+		for (const [id, timestamp] of [['recent-first', now - 86400], ['old', now - 30 * 86400],
+			['boundary', now - 7 * 86400], ['recent-last', now - 3600]] as const) {
+			event.run(id, timestamp, JSON.stringify({ timestamp }));
+			member.run(id, 'nyct:R160:1');
+		}
+		await packs.start();
+		const job = await packs.request({ equipment: ['R160'], yards: [], historyDays: 7 }, now);
+		const result = await ready(packs, job.jobId);
+		assert.equal(result?.state, 'ready', JSON.stringify(result));
+		const archive = await readFile(join(output, `${result!.manifest!.id}.jsonl.gz`));
+		const events = gunzipSync(archive).toString('utf8').trimEnd().split('\n').map(line => JSON.parse(line))
+			.filter(line => line[0] === 'event').map(line => line[1]);
+		assert.deepEqual(events, ['recent-first', 'boundary', 'recent-last']);
+	} finally { await packs.stop(); store.close(); await rm(dir, { recursive: true, force: true }); }
+});
+
 test('v2 route validates selections and serves ranged immutable archives', async () => {
 	const dir = await mkdtemp(join(tmpdir(), 'sfn-pack-api-'));
 	const source = join(dir, 'fleet.sqlite'), store = seed(source);

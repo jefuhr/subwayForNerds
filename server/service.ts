@@ -10,6 +10,7 @@ import { enrichSchedule, type Schedules } from './schedules';
 import { HELIUM_URL, normalizeConsists, enrichConsist, type ConsistTrip } from './consists';
 import { FleetService, fleetSnapshot } from './fleet';
 import { FleetOfflineService } from './fleet-offline';
+import { FleetPackService } from './fleet-pack';
 import { ChangeDetector } from './changes';
 
 import { PATH_URL, normalizePath } from './path';
@@ -34,6 +35,7 @@ export class TransitService {
   consists = new Map<string, ConsistTrip>();
   fleet?: FleetService;
   offline?: FleetOfflineService;
+  packs?: FleetPackService;
   consistState: SourceState = { id: 'helium', timestamp: null, fetchedAt: null, error: null };
   scheduleWorker?: Worker;
   changeDetector = new ChangeDetector();
@@ -199,7 +201,9 @@ export class TransitService {
     const fleetFile = path.join(this.cacheDir, 'fleet.sqlite');
     this.fleet = new FleetService(fleetFile);
     this.offline = new FleetOfflineService(fleetFile, path.join(this.cacheDir, 'fleet-offline'));
+    this.packs = new FleetPackService(fleetFile, path.join(this.cacheDir, 'fleet-offline-v2'));
     void this.fleet.ready.then(() => this.stopped ? undefined : this.offline!.start()).catch(error => { if (this.offline) this.offline.error = String(error); });
+    void this.fleet.ready.then(() => this.stopped ? undefined : this.packs!.start()).catch(error => { if (this.packs) this.packs.error = String(error); });
     this.schedule(async () => {
       await this.fleet!.ready;
       const response = await this.request('https://data.ny.gov/resource/kir5-i9xt.json?$limit=50000');
@@ -283,5 +287,5 @@ export class TransitService {
     return { entrances: this.entrances.filter(e => String(e.complex_id) === id), equipment,
       outages: this.outages.filter(e => ids.has(e.equipment || e.equipmentno)), sources: [...this.contextStates.values()] };
   }
-  async stop() { this.stopped = true; for (const timer of this.timers) clearTimeout(timer); this.timers.clear(); await this.scheduleWorker?.terminate(); await this.offline?.stop(); await this.fleet?.close().catch(() => {}); }
+  async stop() { this.stopped = true; for (const timer of this.timers) clearTimeout(timer); this.timers.clear(); await this.scheduleWorker?.terminate(); await this.offline?.stop(); await this.packs?.stop(); await this.fleet?.close().catch(() => {}); }
 }

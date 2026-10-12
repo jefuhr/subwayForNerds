@@ -4,6 +4,35 @@ import TransitCore
 @testable import FleetOffline
 
 @Suite struct HTTPDownloadTests {
+	@Test(.enabled(if: ProcessInfo.processInfo.environment["SFN_FIXTURE_API"] != nil))
+	func realV2PackDownloadAndOfflineRelaunch() async throws {
+		let base = try #require(URL(string: ProcessInfo.processInfo.environment["SFN_FIXTURE_API"] ?? ""))
+		#expect(["127.0.0.1", "localhost"].contains(base.host ?? ""))
+		let api = FleetPackAPI(baseURL: base)
+		var job = try await api.prepare(selection: FleetPackSelection(equipment: ["R211A"], historyDays: 7))
+		for _ in 0..<120 where job.state == .preparing {
+			try await Task.sleep(for: .milliseconds(250))
+			job = try await api.status(jobID: job.jobId)
+		}
+		let pack = try #require(job.manifest)
+		#expect(job.state == .ready && pack.schemaVersion == 2)
+		#expect(pack.selection.equipment == ["R211A"] && pack.selection.historyDays == 7)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("sfn-v2-http-\(UUID().uuidString)")
+		defer { try? FileManager.default.removeItem(at: directory) }
+		let store = try OfflineFleetStore(directory: directory)
+		try await store.download(pack: pack, apiBaseURL: base)
+		let saved = try #require(await store.manifest())
+		#expect(saved.pack == pack)
+		let page = try await store.page(query: ["view": "cars", "retired": "true"])
+		#expect(page.total == pack.counts.cars)
+		let detail = try await store.detail(id: "nyct:R211A:4149")
+		#expect(!detail.cars.isEmpty && !detail.history.isEmpty)
+		#expect(detail.cars.allSatisfy { $0.reporting == false })
+		let reopened = try OfflineFleetStore(directory: directory)
+		#expect(await reopened.manifest()?.pack == pack)
+		#expect(try await reopened.detail(id: "nyct:R211A:4149") == detail)
+	}
+
 	/// Run against the recorded fixture server, never against a live upstream service.
 	@Test(.enabled(if: ProcessInfo.processInfo.environment["SFN_FIXTURE_API"] != nil))
 	func realManifestDownloadAndOfflineQueries() async throws {

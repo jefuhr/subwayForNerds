@@ -3,7 +3,54 @@ import CryptoKit
 import CSQLite
 import TransitCore
 
+private struct SnapshotResumeData: Codable {
+	let url: String
+	let data: Data
+}
+
 enum SnapshotFiles {
+	static func saveResumeData(_ data: Data, at file: URL, for url: URL) throws {
+		guard data.count <= 1_048_576 else { throw OfflineFleetError.invalid("The fleet resume information is too large. Retry the download.") }
+		try JSONEncoder().encode(SnapshotResumeData(url: url.absoluteString, data: data)).write(to: file, options: .atomic)
+	}
+	static func resumeData(at file: URL, for url: URL) -> Data? {
+		guard let size = try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+			size <= 2 * 1_048_576,
+			let bytes = try? Data(contentsOf: file),
+			let resume = try? JSONDecoder().decode(SnapshotResumeData.self, from: bytes),
+			resume.url == url.absoluteString, resume.data.count <= 1_048_576 else { return nil }
+		return resume.data
+	}
+
+	static func databaseName(for fileName: String) -> String? {
+		if fileName.hasSuffix(".sqlite") { return fileName }
+		for suffix in ["-journal", "-wal", "-shm"] where fileName.hasSuffix(".sqlite" + suffix) {
+			return String(fileName.dropLast(suffix.count))
+		}
+		return nil
+	}
+	static func removeDatabase(at file: URL) {
+		for suffix in ["", "-journal", "-wal", "-shm"] {
+			try? FileManager.default.removeItem(atPath: file.path + suffix)
+		}
+	}
+
+	static func validate(_ pack: FleetPackManifest) throws {
+		guard pack.isValid else {
+			throw OfflineFleetError.invalid("The fleet pack information is incomplete or incompatible. Please prepare it again.")
+		}
+	}
+
+	static func downloadURL(_ address: String, relativeTo base: URL) throws -> URL {
+		guard let url = URL(string: address, relativeTo: base)?.absoluteURL,
+			url.scheme == base.scheme, url.host == base.host, url.port == base.port,
+			url.user == nil, url.password == nil, url.fragment == nil,
+			url.scheme == "https" || ["localhost", "127.0.0.1", "::1"].contains(url.host ?? "") else {
+			throw OfflineFleetError.invalid("This fleet download address is unsupported.")
+		}
+		return url
+	}
+
 	static func validate(_ manifest: FleetOfflineManifest) throws {
 		guard manifest.schemaVersion == 1, manifest.byteLength > 0,
 			manifest.byteLength < Int64.max / 3 else {
@@ -32,6 +79,7 @@ enum SnapshotFiles {
 
 	static func requireSpace(available: Int64, bytes: Int64) throws {
 		let reserve: Int64 = 256 * 1_024 * 1_024
+		guard bytes >= 0, bytes <= Int64.max - reserve else { throw OfflineFleetError.invalid("The fleet download size is unsupported.") }
 		if available < bytes + reserve {
 			let needed = ByteCountFormatter.string(fromByteCount: bytes + reserve, countStyle: .file)
 			throw OfflineFleetError.invalid("Free at least \(needed) on your device to save this fleet download. Your previous download is still available.")
@@ -44,6 +92,12 @@ enum SnapshotFiles {
 		guard size.map(Int64.init) == bytes else {
 			throw OfflineFleetError.invalid("Fleet download is incomplete. Your previous download is still available.")
 		}
+		guard try digest(file) == sha256.lowercased() else {
+			throw OfflineFleetError.invalid("Fleet download checksum failed. Please retry.")
+		}
+	}
+
+	static func digest(_ file: URL) throws -> String {
 		let handle = try FileHandle(forReadingFrom: file)
 		defer { try? handle.close() }
 		var digest = SHA256()
@@ -51,21 +105,24 @@ enum SnapshotFiles {
 			try Task.checkCancellation()
 			digest.update(data: block)
 		}
-		guard digest.finalize().map({ String(format: "%02x", $0) }).joined() == sha256.lowercased() else {
-			throw OfflineFleetError.invalid("Fleet download checksum failed. Please retry.")
-		}
+		return digest.finalize().map({ String(format: "%02x", $0) }).joined()
 	}
 
 	/// Bounded streaming inflation: no database-sized allocation or second database copy.
 	/// A gzip trailer, exact output size and no trailing bytes are required.
 	static func inflateGzip(_ input: URL, to output: URL, expectedBytes: Int64) throws {
-		let source = try FileHandle(forReadingFrom: input)
-		defer { try? source.close() }
 		guard FileManager.default.createFile(atPath: output.path, contents: nil) else {
 			throw OfflineFleetError.invalid("The fleet download could not be saved.")
 		}
 		let destination = try FileHandle(forWritingTo: output)
 		defer { try? destination.close() }
+		try inflateGzip(input, expectedBytes: expectedBytes) { try destination.write(contentsOf: $0) }
+		try destination.synchronize()
+	}
+
+	static func inflateGzip(_ input: URL, expectedBytes: Int64, consume: (Data) throws -> Void) throws {
+		let source = try FileHandle(forReadingFrom: input)
+		defer { try? source.close() }
 		var stream = z_stream()
 		guard inflateInit2_(&stream, 15 + 16, ZLIB_VERSION, Int32(MemoryLayout<z_stream>.size)) == Z_OK else {
 			throw OfflineFleetError.invalid("The fleet download could not be expanded.")
@@ -92,7 +149,7 @@ enum SnapshotFiles {
 						let count = outputBytes.count - Int(stream.avail_out)
 						guard Int64(count) <= expectedBytes - total else { throw damagedGzip }
 						if count > 0 {
-							try destination.write(contentsOf: Data(bytes: outputBytes.baseAddress!, count: count))
+							try consume(Data(bytes: outputBytes.baseAddress!, count: count))
 							total += Int64(count)
 						}
 						return status
@@ -111,7 +168,6 @@ enum SnapshotFiles {
 		}
 		guard finished, total == expectedBytes else { throw damagedGzip }
 		try Task.checkCancellation()
-		try destination.synchronize()
 	}
 
 	private static var damagedGzip: OfflineFleetError {

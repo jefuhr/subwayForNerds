@@ -7,6 +7,7 @@ import { FEED_ROUTES } from '../server/transit';
 import { decode } from '../server/decode';
 import { FleetService, fleetSnapshot } from '../server/fleet';
 import { FleetOfflineService } from '../server/fleet-offline';
+import { FleetPackService } from '../server/fleet-pack';
 
 export const fixtureNow = Date.parse('2026-09-06T00:59:40Z') / 1000;
 
@@ -32,6 +33,8 @@ export async function createFixtureService() {
     await service.fleet.call('observe', snapshots, fixtureNow);
     service.offline = new FleetOfflineService(fleetFile, join(directory, 'offline'));
     await service.offline.rebuild(fixtureNow);
+    service.packs = new FleetPackService(fleetFile, join(directory, 'offline-v2'), { generatedAtForTests: fixtureNow });
+    await service.packs.start();
     return { service, directory, selectedTripKey: selected.key, selectedCarId: 'nyct:R211A:4149', close };
   } catch (error) { await close(); throw error; }
 }

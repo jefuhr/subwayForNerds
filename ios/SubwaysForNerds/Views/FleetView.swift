@@ -118,7 +118,7 @@ struct FleetView: View {
 		.listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
 		if let error { Section { Notice(text: error) } }
 		if usingSaved, let saved = app.offlineManifest {
-			Section { Notice(text: "Saved fleet · \(easternDate(saved.generatedAt, timeFormat: app.units.time)). Every report is historical.") }
+			Section { Notice(text: savedFleetScope(saved, timeFormat: app.units.time)) }
 		}
 		if let data {
 			Section {
@@ -154,7 +154,7 @@ struct FleetView: View {
 					VStack(alignment: .leading, spacing: 6) {
 						ForEach(Array(data.coverage.enumerated()), id: \.offset) { _, coverage in Text("\(coverage.category): \(coverage.count.formatted()) cars. \(coverage.note)") }
 						ForEach(Array(data.sources.enumerated()), id: \.offset) { _, evidence in EvidenceView(evidence: evidence) }
-						Text("“All” covers the imported inventory, not every vehicle ever built. Collection starts when the server runs; historical movements cannot be reconstructed from a missing feed.").foregroundStyle(.secondary)
+						Text(usingSaved ? "Inventory and coverage refer to this saved scope, including linked cars. Historical formations can mention other cars whose details are outside the pack." : "“All” covers the imported inventory, not every vehicle ever built. Collection starts when the server runs; historical movements cannot be reconstructed from a missing feed.").foregroundStyle(.secondary)
 					}
 					.font(.caption)
 				}
@@ -242,7 +242,7 @@ struct FleetDetailView: View {
 		List {
 			if let error { Section { Notice(text: error) } }
 			if usingSaved, let manifest = app.offlineManifest {
-				Section { Notice(text: "Saved fleet · \(easternDate(manifest.generatedAt, timeFormat: app.units.time)). Every report is historical.") }
+				Section { Notice(text: savedFleetScope(manifest, timeFormat: app.units.time)) }
 			}
 			if let data {
 				Section {
@@ -299,7 +299,7 @@ struct FleetDetailView: View {
 						}.actionStyle().disabled(loadingMore).accessibilityIdentifier("loadMoreFleetHistory")
 					}
 				} header: { ListHeader(usingSaved ? "Downloaded movement history" : "Observed changes · last 30 days") } footer: {
-					Text(usingSaved ? "All retained changes are available using Load more history. Times are observation times, not inferred movement times." : "Latest 200 changes. Download the fleet in Settings for all retained history. Times are observation times, not inferred movement times.")
+					Text(usingSaved ? "All changes included in this saved history window are available using Load more history. Historical events can mention cars outside the saved scope. Times are observation times, not inferred movement times." : "Latest 200 changes. Prepare a fleet pack in Settings to save 7 or 30 days of history. Times are observation times, not inferred movement times.")
 				}
 				Section { RawJSONView(value: data, title: "Fleet identifiers & reports") }
 			} else if error == nil { ProgressView("Loading car history…") }
@@ -415,6 +415,12 @@ struct FleetDetailView: View {
 			hasMore = next.history.count == 200
 		} catch { if !Task.isCancelled { self.error = "Could not load more saved history. Try again." } }
 	}
+}
+
+private func savedFleetScope(_ manifest: FleetOfflineManifest, timeFormat: TimeFormat) -> String {
+	let scope = manifest.pack?.selection.scopeDescription ?? "All cars · Previously saved retained history"
+	let linked = manifest.pack.map { " \($0.counts.linkedCars.formatted()) linked cars are included for fixed sets and recent formations." } ?? ""
+	return "Saved fleet · \(easternDate(manifest.generatedAt, timeFormat: timeFormat)). Saved scope: \(scope).\(linked) Every report is historical."
 }
 
 private func observedNow(_ car: FleetCar, now: TimeInterval) -> Bool {

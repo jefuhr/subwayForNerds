@@ -25,7 +25,7 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
   try { accounts = accountOptions(); } catch { app.log.error('Account configuration unavailable; authentication disabled'); }
   await registerAccounts(app, api, accounts, { exemptLoopback: exemptLoopbackRateLimits });
   registerAnalytics(app, api, service.catalog);
-  const encoded = new WeakMap<object, { json: string; gzip: Buffer; etag: string }>();
+  const encoded = new WeakMap<object, { json: string; gzip: Buffer; etag: string; length: number }>();
   app.addHook('onSend', async (_req, reply, payload) => {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -35,13 +35,16 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
     let cached = typeof value === 'object' && value !== null ? encoded.get(value) : undefined;
     if (!cached) {
       const json = JSON.stringify(value), etag = '"' + createHash('sha1').update(json).digest('hex') + '"';
-      cached = { json, gzip: gzipSync(json, { level: 4 }), etag };
+      cached = { json, gzip: gzipSync(json, { level: 4 }), etag, length: Buffer.byteLength(json) };
       if (typeof value === 'object' && value !== null) encoded.set(value, cached);
     }
-    const { json, gzip, etag } = cached;
+    const { json, gzip, etag, length } = cached;
     reply.header('ETag', etag).header('Cache-Control', 'no-cache').type('application/json');
     reply.header('Vary', 'Accept-Encoding');
+    // A 304 has no body, so it carries no length; clients reuse their cached copy.
     if (req.headers['if-none-match'] === etag) return reply.code(304).send();
+    // Clients receive the decoded body, so this is the size their download progress counts toward.
+    reply.header('X-Uncompressed-Length', String(length));
     if ((req.headers['accept-encoding'] || '').split(',').some((s: string) => /^\s*gzip\s*(?:;\s*q=(?!0(?:\.0*)?\s*$)[\d.]+)?\s*$/.test(s))) return reply.header('Content-Encoding', 'gzip').send(gzip);
     return reply.send(json);
   };

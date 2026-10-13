@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
+import { Worker } from 'node:worker_threads';
+import { once } from 'node:events';
 import { FleetStore } from '../server/fleet-store.mjs';
 import { FleetPackService } from '../server/fleet-pack';
 import { TransitService } from '../server/service';
@@ -78,6 +80,65 @@ test('v2 pack streams selected records and exact history with linked cars', asyn
 		assert.equal(unknownState?.manifest?.counts.cars, 1);
 		assert.equal(unknownState?.manifest?.counts.events, 0);
 	} finally { await packs.stop(); store.close(); await rm(dir, { recursive: true, force: true }); }
+});
+
+test('v2 pack status reports bounded build progress while preparing and drops it once ready', async () => {
+	const dir = await mkdtemp(join(tmpdir(), 'sfn-pack-progress-'));
+	const source = join(dir, 'fleet.sqlite'), store = seed(source), packs = new FleetPackService(source, join(dir, 'packs'));
+	try {
+		await packs.start();
+		const first = await packs.request(selection, now);
+		assert.equal(first.state, 'preparing');
+		assert.equal(first.progress?.stage, 'starting');
+		assert.equal(first.progress?.fraction, 0);
+		assert.equal(first.progress?.step, 1);
+		assert.ok(first.progress?.label);
+		const seen = [first.progress!];
+		let final;
+		for (let attempt = 0; attempt < 500 && !final; attempt++) {
+			const state = packs.status(first.jobId)!;
+			if (state.state === 'preparing') seen.push(state.progress!);
+			else final = state;
+			await new Promise(resolve => setTimeout(resolve, 2));
+		}
+		assert.equal(final?.state, 'ready');
+		assert.equal('progress' in final!, false);
+		for (const [index, progress] of seen.entries()) {
+			assert.ok(progress.fraction >= 0 && progress.fraction <= 1, JSON.stringify(progress));
+			assert.ok(progress.step >= 1 && progress.step <= progress.steps, JSON.stringify(progress));
+			assert.ok(progress.done >= 0 && (progress.total === 0 || progress.done <= progress.total), JSON.stringify(progress));
+			if (index) assert.ok(progress.fraction >= seen[index - 1].fraction && progress.step >= seen[index - 1].step, JSON.stringify(seen));
+		}
+	} finally { await packs.stop(); store.close(); await rm(dir, { recursive: true, force: true }); }
+});
+
+test('v2 pack worker reports every build stage in order before its manifest', async () => {
+	const dir = await mkdtemp(join(tmpdir(), 'sfn-pack-stages-'));
+	const source = join(dir, 'fleet.sqlite'), store = seed(source);
+	try {
+		const worker = new Worker(new URL('../server/fleet-pack-worker.mjs', import.meta.url), {
+			workerData: { source, destination: join(dir, 'pack.jsonl.gz'), selection, generatedAt: now, progressIntervalMs: 0 },
+		});
+		const messages: any[] = [];
+		worker.on('message', message => messages.push(message));
+		await once(worker, 'exit');
+		const result = messages.at(-1);
+		assert.match(result?.archiveSha256 ?? '', /^[a-f0-9]{64}$/, JSON.stringify(result));
+		const progress = messages.slice(0, -1).map(message => message.progress);
+		assert.ok(progress.length && progress.every(Boolean), JSON.stringify(messages));
+		assert.deepEqual([...new Set(progress.map(item => item.stage))], ['opening', 'selecting', 'cars', 'assertions', 'history', 'consists', 'finishing']);
+		const steps = progress[0].steps;
+		for (const [index, item] of progress.entries()) {
+			assert.equal(item.steps, steps);
+			assert.ok(item.fraction >= 0 && item.fraction < 1, JSON.stringify(item));
+			assert.ok(item.total === 0 || item.done <= item.total, JSON.stringify(item));
+			if (index) assert.ok(item.fraction >= progress[index - 1].fraction && item.step >= progress[index - 1].step, JSON.stringify(progress));
+		}
+		const history = progress.filter(item => item.stage === 'history');
+		assert.equal(history.at(-1).done, history.at(-1).total);
+		assert.ok(history.at(-1).total >= 2);
+		assert.equal(progress.find(item => item.stage === 'cars' && item.done === item.total)?.total, result.counts.cars);
+	} finally { store.close(); await rm(dir, { recursive: true, force: true }); }
 });
 
 test('v2 pack includes recent events inserted out of timestamp order', async () => {

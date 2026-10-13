@@ -793,7 +793,17 @@ public struct FleetPackJob: Codable, Sendable, Equatable {
 	public var jobId: String
 	public var state: State
 	public var manifest: FleetPackManifest?
-	public init(jobId: String, state: State, manifest: FleetPackManifest? = nil) {
-		self.jobId = jobId; self.state = state; self.manifest = manifest
+	public var progress: FleetPackBuildProgress?
+	public init(jobId: String, state: State, manifest: FleetPackManifest? = nil, progress: FleetPackBuildProgress? = nil) {
+		self.jobId = jobId; self.state = state; self.manifest = manifest; self.progress = progress
+	}
+	private enum CodingKeys: String, CodingKey { case jobId, state, manifest, progress }
+	public init(from decoder: Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		jobId = try container.decode(String.self, forKey: .jobId)
+		state = try container.decode(State.self, forKey: .state)
+		manifest = try container.decodeIfPresent(FleetPackManifest.self, forKey: .manifest)
+		// Progress only feeds the loading bar, so a malformed value never fails the job.
+		progress = try? container.decodeIfPresent(FleetPackBuildProgress.self, forKey: .progress)
 	}
 }

@@ -52,6 +52,37 @@ struct Notice: View {
 	}
 }
 
+/// A determinate bar in place of a spinner: what is loading, how far along it is, and the step in progress.
+/// Exact percents show plainly, estimates with "~", and work nothing can measure yet shows none.
+struct LoadingBar: View {
+	@Environment(AppModel.self) private var app
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	let title: String
+	let progress: LoadProgress
+	var body: some View {
+		VStack(alignment: .leading, spacing: 5) {
+			HStack(alignment: .firstTextBaseline, spacing: 8) {
+				Text(title).font(.subheadline.weight(.semibold))
+				Spacer(minLength: 4)
+				if let percent = progress.percentLabel { Text(percent).font(.subheadline.weight(.semibold).monospacedDigit()) }
+			}
+			// Only the bar eases; animating the texts too would crossfade old and new numbers.
+			ProgressView(value: progress.fraction ?? 0).tint(app.theme.accent)
+				.animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: progress.fraction)
+			Text(progress.detail).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+		}
+		.padding(.vertical, 4)
+		.accessibilityElement(children: .ignore)
+		.accessibilityLabel(title)
+		.accessibilityValue([progress.spokenPercent, progress.detail].compactMap { $0 }.joined(separator: ". "))
+	}
+}
+
+/// Hands a request's progress to main-actor state such as a view's `@State`.
+func onMain(_ update: @escaping @MainActor @Sendable (TransferProgress) -> Void) -> TransferProgressHandler {
+	{ progress in await update(progress) }
+}
+
 /// One aligned table row for all feeds instead of a two-line row per feed.
 struct SourcesView: View {
 	@Environment(AppModel.self) private var app

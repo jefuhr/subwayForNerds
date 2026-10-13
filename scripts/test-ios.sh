@@ -17,11 +17,13 @@ if (!device) { console.error("Install an iOS 26+ iPhone simulator in Xcode Setti
 process.stdout.write(device.udid);
 ')}
 xcrun simctl bootstatus "$simulator_id" -b
-if curl -fsS --max-time 1 http://127.0.0.1:8092/healthz >/dev/null 2>&1; then
-	echo 'Port 8092 is already in use. Stop the existing fixture server before running native UI tests.' >&2
-	exit 1
-fi
-node_modules/.bin/tsx test/fixture-server.ts > artifacts/native-fixture-server.log 2>&1 &
+for port in 8092 8093; do
+	if curl -fsS --max-time 1 "http://127.0.0.1:$port/healthz" >/dev/null 2>&1; then
+		echo "Port $port is already in use. Stop the existing fixture server before running native UI tests." >&2
+		exit 1
+	fi
+done
+FIXTURE_SLOW_PORT=8093 node_modules/.bin/tsx test/fixture-server.ts > artifacts/native-fixture-server.log 2>&1 &
 fixture_pid=$!
 trap 'kill "$fixture_pid" 2>/dev/null || true; wait "$fixture_pid" 2>/dev/null || true' EXIT
 ready=false

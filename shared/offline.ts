@@ -39,3 +39,14 @@ export interface FleetPackManifest {
   estimatedSavedByteLength: number;
   downloadURL: string;
 }
+
+/** Build progress of a preparing pack. Counts are exact within a stage; `fraction` covers the whole build. */
+export interface FleetPackProgress {
+  stage: string;
+  label: string;
+  step: number;
+  steps: number;
+  done: number;
+  total: number;
+  fraction: number;
+}

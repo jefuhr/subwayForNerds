@@ -55,7 +55,9 @@ final class AppModel {
 	var fleetPackFacets = FleetFacets()
 	var fleetPackFacetsError: String?
 	var isPreparingFleetPack = false
-	var downloadProgress: Double?
+	/// The pack job while the server prepares it; nil until the request is accepted.
+	var fleetPackJob: FleetPackJob?
+	var fleetDownload: FleetDownloadProgress?
 	var downloadError: String?
 	var useSavedFleet = false
 	var endpoint: String
@@ -68,6 +70,12 @@ final class AppModel {
 	var activeRideTrip: CachedTrip?
 	var savedTrips: [CachedTrip] = []
 	var offlineUsage: OfflineStorageUsage?
+	/// Steps of the first storage check, while the Offline screen has no usage to show yet.
+	var storageCheck: LoadProgress?
+	@ObservationIgnored private var storageCheckToken: UUID?
+	/// Byte progress of board and trip downloads a screen is waiting on.
+	var fetchProgress: [OfflineFetchTarget: TransferProgress] = [:]
+	@ObservationIgnored private var fetchTokens: [OfflineFetchTarget: UUID] = [:]
 	/// Saves that could not be written. Shown until the user dismisses them.
 	var offlineFailures: [OfflineSaveFailure] = []
 	var offlineActionError: String?
@@ -104,7 +112,8 @@ final class AppModel {
 	@ObservationIgnored private var locationTask: Task<CLLocation, Error>?
 	@ObservationIgnored private var locationGeneration = 0
 	@ObservationIgnored private let locationRequest: (@MainActor @Sendable () async throws -> CLLocation)?
-	@ObservationIgnored private var downloadTask: Task<Void, Never>?
+	/// Observed, so screens showing `isDownloading` redraw the moment a fleet download starts or ends.
+	private var downloadTask: Task<Void, Never>?
 	@ObservationIgnored private var downloadGeneration: UUID?
 	@ObservationIgnored private var lastCatalogAttempt: TimeInterval = 0
 	@ObservationIgnored private let fixedNow: TimeInterval?
@@ -620,9 +629,17 @@ final class AppModel {
 	func reloadOfflineStatus() async {
 		guard let transitStore else { return }
 		let requestedEndpoint = endpoint
+		// Only the first check shows its steps; later ones refresh numbers already on screen.
+		// Checks can overlap, so only the latest one moves or clears the bar.
+		let token = UUID()
+		let showSteps = offlineUsage == nil
+		if showSteps { storageCheckToken = token; storageCheck = .step(0, of: 3, "Reading saved trains") }
 		let saved = await transitStore.savedTrips(endpoint: requestedEndpoint)
+		if showSteps, storageCheckToken == token { storageCheck = .step(1, of: 3, "Reading save errors") }
 		let failures = await transitStore.failures()
+		if showSteps, storageCheckToken == token { storageCheck = .step(2, of: 3, "Measuring offline storage") }
 		let usage = await transitStore.usage()
+		if showSteps, storageCheckToken == token { storageCheck = nil; storageCheckToken = nil }
 		guard requestedEndpoint == endpoint else { return }
 		savedTrips = saved
 		offlineFailures = failures
@@ -819,8 +836,12 @@ final class AppModel {
 		let requestedEndpoint = endpoint
 		let generation = boardGeneration
 		let client = api
+		let target = OfflineFetchTarget.board(stationID: id)
+		// Only a board the screen is still waiting for reports its download.
+		let tracked = board == nil && id == stationID ? trackFetch(target) : nil
+		defer { endFetch(target, token: tracked?.token) }
 		do {
-			let value = try await client.board(stationID: id)
+			let value = try await client.board(stationID: id, progress: tracked?.handler)
 			try Task.checkCancellation()
 			guard requestedEndpoint == endpoint else { return }
 			if combinedStations[stationID] != nil, selectedMemberIDs.contains(id), generation == boardGeneration {
@@ -874,8 +895,11 @@ final class AppModel {
 	private func performTrip(_ key: String) async {
 		let requestedEndpoint = endpoint
 		let client = api
+		let target = OfflineFetchTarget.trip(key: key)
+		let tracked = openTrips[key] != nil && liveTrips[key]?.detail == nil ? trackFetch(target) : nil
+		defer { endFetch(target, token: tracked?.token) }
 		do {
-			let value = try await client.trip(key: key)
+			let value = try await client.trip(key: key, progress: tracked?.handler)
 			try Task.checkCancellation()
 			guard requestedEndpoint == endpoint else { return }
 			let open = openTrips[key] != nil
@@ -889,6 +913,34 @@ final class AppModel {
 			liveTrips[key, default: LiveTrip()].failure = (error as? TransitAPIError) == .notFound ? .notFound : .unavailable(error.localizedDescription)
 		}
 		if readiness.wanted.contains(key) { await refreshReadiness() }
+	}
+
+	/// Starts publishing one fetch's download to `fetchProgress`.
+	private func trackFetch(_ target: OfflineFetchTarget) -> (token: UUID, handler: TransferProgressHandler) {
+		let token = UUID()
+		fetchTokens[target] = token
+		return (token, { [weak self] progress in await self?.reportFetch(progress, target: target, token: token) })
+	}
+	private func reportFetch(_ progress: TransferProgress, target: OfflineFetchTarget, token: UUID) {
+		guard fetchTokens[target] == token else { return }
+		fetchProgress[target] = progress
+	}
+	private func endFetch(_ target: OfflineFetchTarget, token: UUID?) {
+		guard let token, fetchTokens[target] == token else { return }
+		fetchTokens[target] = nil
+		fetchProgress[target] = nil
+	}
+
+	/// The bar shown before the selected station has any departures on screen.
+	var boardLoad: LoadProgress {
+		let subject = station.map { "departures for \($0.name)" } ?? "departures"
+		if let progress = fetchProgress[.board(stationID: stationID)] { return progress.load(subject) }
+		return LoadProgress(fraction: nil, detail: connected ? "Waiting to request \(subject)…" : "Waiting for a connection to request \(subject)…")
+	}
+	/// The bar shown while an open train has no details yet.
+	func tripLoad(_ key: String) -> LoadProgress {
+		if let progress = fetchProgress[.trip(key: key)] { return progress.load("train details") }
+		return LoadProgress(fraction: nil, detail: connected ? "Waiting to request train details…" : "Waiting for a connection to request train details…")
 	}
 
 	private func updateReadiness() {
@@ -1049,10 +1101,13 @@ final class AppModel {
 		downloadError = nil
 		availablePack = nil
 		isPreparingFleetPack = true
+		fleetPackJob = nil
 		downloadTask = Task { [weak self] in
 			defer { self?.finishFleetDownload(generation: generation) }
 			do {
-				let pack = try await Self.prepareFleetPack(api: FleetPackAPI(baseURL: url), selection: selection)
+				let pack = try await Self.prepareFleetPack(api: FleetPackAPI(baseURL: url), selection: selection) { [weak self] job in
+					if self?.downloadGeneration == generation { self?.fleetPackJob = job }
+				}
 				guard let self, self.downloadGeneration == generation, self.baseURL == url else { return }
 				self.availablePack = pack
 			} catch {
@@ -1062,8 +1117,9 @@ final class AppModel {
 		await downloadTask?.value
 	}
 
-	private static func prepareFleetPack(api: FleetPackAPI, selection: FleetPackSelection) async throws -> FleetPackManifest {
+	private static func prepareFleetPack(api: FleetPackAPI, selection: FleetPackSelection, update: (FleetPackJob) -> Void) async throws -> FleetPackManifest {
 		var job = try await api.prepare(selection: selection)
+		update(job)
 		var restarted = false
 		// The server may need to scan several million recent events on its first build.
 		// Wait through its 20-minute worker limit so a slow, valid pack can finish.
@@ -1077,6 +1133,7 @@ final class AppModel {
 				restarted = true
 				job = try await api.prepare(selection: selection)
 			}
+			update(job)
 		}
 		try Task.checkCancellation()
 		guard let pack = job.manifest,
@@ -1087,7 +1144,8 @@ final class AppModel {
 
 	private func finishFleetDownload(generation: UUID) {
 		guard downloadGeneration == generation else { return }
-		downloadProgress = nil
+		fleetDownload = nil
+		fleetPackJob = nil
 		isPreparingFleetPack = false
 		downloadGeneration = nil
 		downloadTask = nil
@@ -1096,17 +1154,18 @@ final class AppModel {
 	func startDownload() {
 		guard downloadTask == nil, let pack = availablePack, let store = offlineStore else { return }
 		downloadError = nil
-		downloadProgress = 0
+		fleetDownload = FleetDownloadProgress(stage: .downloading, completedBytes: 0, totalBytes: pack.archiveByteLength)
 		let generation = UUID()
 		downloadGeneration = generation
 		let url = baseURL
 		downloadTask = Task { [weak self] in
 			defer { self?.finishFleetDownload(generation: generation) }
 			do {
-				try await store.download(pack: pack, apiBaseURL: url) { [weak self] fraction in
+				try await store.download(pack: pack, apiBaseURL: url) { [weak self] progress in
 					Task { @MainActor [weak self] in
 						guard let self, self.downloadGeneration == generation, !self.isPreparingFleetPack else { return }
-						self.downloadProgress = max(self.downloadProgress ?? 0, fraction)
+						// Updates hop here independently, so an older one can arrive late; the bar only moves forward.
+						if progress.fraction >= self.fleetDownload?.fraction ?? 0 { self.fleetDownload = progress }
 					}
 				}
 				let saved = await store.manifest()
@@ -1116,9 +1175,12 @@ final class AppModel {
 				guard !Task.isCancelled, let self, self.downloadGeneration == generation, self.baseURL == url else { return }
 				self.availablePack = nil
 				self.isPreparingFleetPack = true
-				self.downloadProgress = nil
+				self.fleetDownload = nil
+				self.fleetPackJob = nil
 				do {
-					let fresh = try await Self.prepareFleetPack(api: FleetPackAPI(baseURL: url), selection: pack.selection)
+					let fresh = try await Self.prepareFleetPack(api: FleetPackAPI(baseURL: url), selection: pack.selection) { [weak self] job in
+						if self?.downloadGeneration == generation { self?.fleetPackJob = job }
+					}
 					guard self.downloadGeneration == generation, self.baseURL == url else { return }
 					self.availablePack = fresh
 					self.downloadError = "The previous archive expired. A fresh pack is ready; review its size and choose Download again."
@@ -1132,6 +1194,13 @@ final class AppModel {
 	}
 
 	func cancelDownload() { downloadTask?.cancel() }
+
+	/// The bar while the server builds a pack: its own build progress once the job reports it.
+	var fleetPackLoad: LoadProgress {
+		guard let job = fleetPackJob else { return LoadProgress(fraction: nil, detail: "Sending your fleet selection to \(baseURL.host ?? "the server")…") }
+		return job.progress?.load ?? LoadProgress(fraction: nil, detail: "The server is preparing your fleet pack…")
+	}
+	var fleetDownloadLoad: LoadProgress { (fleetDownload ?? FleetDownloadProgress(stage: .downloading, completedBytes: 0, totalBytes: 0)).load }
 	func deleteDownload() async {
 		guard downloadTask == nil else { return }
 		do {

@@ -168,7 +168,9 @@ struct OfflineSettingsView: View {
 				if usage.overLimit { Notice(text: "Saved trains and your ride use more than the limit. They are never removed automatically.") }
 			} else if app.transitStore == nil {
 				Notice(text: "Offline storage is unavailable. Try reopening the app.")
-			} else { ProgressView("Checking storage…") }
+			} else {
+				LoadingBar(title: "Checking storage", progress: app.storageCheck ?? .step(0, of: 3, "Reading saved trains")).accessibilityIdentifier("offlineStorageLoading")
+			}
 			ForEach(app.offlineFailures) { failure in
 				Notice(text: "Could not save \(failure.kind.rawValue) \(Display.ageLabel(failure.failedAt, now: app.now)): \(failure.message)")
 			}

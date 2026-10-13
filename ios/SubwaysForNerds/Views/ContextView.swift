@@ -7,7 +7,9 @@ struct ContextView: View {
 	@Environment(\.scenePhase) private var phase
 	@State private var context: StationContext?
 	@State private var error: String?
+	@State private var progress: TransferProgress?
 	@State private var requestGeneration = 0
+	private let subject = "elevator, escalator and entrance records"
 	private var outageSource: SourceState? { context?.sources.first { $0.id == "outages" } }
 	private var equipmentSource: SourceState? { context?.sources.first { $0.id == "equipment" } }
 	private var outageFresh: Bool { app.connected && error == nil && (outageSource?.timestamp ?? 0) > 0 && outageSource?.error == nil && app.now - (outageSource?.fetchedAt ?? 0) <= 120 }
@@ -84,7 +86,10 @@ struct ContextView: View {
 						Section { SourcesView(sources: context.sources, now: app.now) } header: { ListHeader("Source freshness") }
 					}
 					Section { RawJSONView(value: context, title: "Published station records") }
-				} else if error == nil { ProgressView("Loading station context…") }
+				} else if error == nil {
+					LoadingBar(title: "Loading station context", progress: progress?.load(subject) ?? LoadProgress(fraction: nil, detail: "Waiting to request \(subject)…"))
+						.accessibilityIdentifier("contextLoading")
+				}
 			}
 		}.themedList().navigationTitle(station.name).navigationBarTitleDisplayMode(.inline)
 			.refreshable { await refresh() }
@@ -120,8 +125,10 @@ struct ContextView: View {
 		let requestedEndpoint = app.endpoint
 		requestGeneration += 1
 		let generation = requestGeneration
+		if context == nil { progress = nil }
+		let report = context == nil ? onMain { value in if generation == requestGeneration { progress = value } } : nil
 		do {
-			let value = try await app.api.context(stationID: station.id)
+			let value = try await app.api.context(stationID: station.id, progress: report)
 			try Task.checkCancellation()
 			guard requestedEndpoint == app.endpoint, generation == requestGeneration else { return }
 			context = value; error = nil

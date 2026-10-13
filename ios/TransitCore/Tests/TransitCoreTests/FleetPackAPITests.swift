@@ -35,6 +35,16 @@ import TransitCore
 		#expect(try JSONDecoder().decode(FleetPackSelection.self, from: body) == selection)
 	}
 
+	@Test func preparingJobsCarryBuildProgressWhenTheServerSendsIt() async throws {
+		let api = makeAPI()
+		PackAPIProtocol.handler = { _ in (202, Data(#"{"jobId":"job","state":"preparing","progress":{"stage":"cars","label":"Writing car records","step":4,"steps":8,"done":12,"total":40,"fraction":0.107}}"#.utf8)) }
+		let job = try await api.status(jobID: "job")
+		#expect(job.progress?.stage == "cars" && job.progress?.done == 12 && job.progress?.total == 40)
+		PackAPIProtocol.handler = { _ in (202, Data(#"{"jobId":"job","state":"preparing","progress":"soon"}"#.utf8)) }
+		let tolerated = try await api.status(jobID: "job")
+		#expect(tolerated.state == .preparing && tolerated.progress == nil)
+	}
+
 	@Test func busyAndUnavailableHaveDistinctActionableErrors() async throws {
 		let api = makeAPI()
 		for (status, expected) in [(429, FleetPackAPIError.busy), (503, .unavailable)] {

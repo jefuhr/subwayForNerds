@@ -20,9 +20,15 @@ import TransitCore
 		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("sfn-v2-http-\(UUID().uuidString)")
 		defer { try? FileManager.default.removeItem(at: directory) }
 		let store = try OfflineFleetStore(directory: directory)
-		try await store.download(pack: pack, apiBaseURL: base)
+		let log = ProgressRecorder()
+		try await store.download(pack: pack, apiBaseURL: base) { log.append($0) }
 		let saved = try #require(await store.manifest())
 		#expect(saved.pack == pack)
+		let downloading = log.values.filter { $0.stage == .downloading }
+		#expect(downloading.first == FleetDownloadProgress(stage: .downloading, completedBytes: 0, totalBytes: pack.archiveByteLength))
+		#expect(downloading.last?.completedBytes == pack.archiveByteLength)
+		#expect(log.values.last?.stage == .activating)
+		#expect(zip(log.values, log.values.dropFirst()).allSatisfy { $0.fraction <= $1.fraction })
 		let page = try await store.page(query: ["view": "cars", "retired": "true"])
 		#expect(page.total == pack.counts.cars)
 		let detail = try await store.detail(id: "nyct:R211A:4149")
@@ -31,6 +37,29 @@ import TransitCore
 		let reopened = try OfflineFleetStore(directory: directory)
 		#expect(await reopened.manifest()?.pack == pack)
 		#expect(try await reopened.detail(id: "nyct:R211A:4149") == detail)
+	}
+
+	/// Through the fixture server's throttled port (`FIXTURE_SLOW_PORT`) the archive takes about
+	/// three seconds, so the download must be reported while it runs, not only at its end.
+	@Test(.enabled(if: ProcessInfo.processInfo.environment["SFN_FIXTURE_SLOW_API"] != nil))
+	func throttledPackDownloadReportsProgressWhileItRuns() async throws {
+		let base = try #require(URL(string: ProcessInfo.processInfo.environment["SFN_FIXTURE_SLOW_API"] ?? ""))
+		#expect(["127.0.0.1", "localhost"].contains(base.host ?? ""))
+		let api = FleetPackAPI(baseURL: base)
+		var job = try await api.prepare(selection: FleetPackSelection(equipment: ["R211A"], historyDays: 7))
+		for _ in 0..<60 where job.state == .preparing {
+			try await Task.sleep(for: .milliseconds(250))
+			job = try await api.status(jobID: job.jobId)
+		}
+		let pack = try #require(job.manifest)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("sfn-v2-slow-\(UUID().uuidString)")
+		defer { try? FileManager.default.removeItem(at: directory) }
+		let store = try OfflineFleetStore(directory: directory)
+		let log = ProgressRecorder()
+		try await store.download(pack: pack, apiBaseURL: base) { log.append($0) }
+		let midway = log.values.filter { $0.stage == .downloading && $0.completedBytes > 0 && $0.completedBytes < pack.archiveByteLength }
+		#expect(Set(midway.map(\.completedBytes)).count >= 3, "\(log.values)")
+		#expect(zip(log.values, log.values.dropFirst()).allSatisfy { $0.fraction <= $1.fraction })
 	}
 
 	/// Run against the recorded fixture server, never against a live upstream service.
@@ -43,7 +72,10 @@ import TransitCore
 		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("sfn-http-\(UUID().uuidString)")
 		defer { try? FileManager.default.removeItem(at: directory) }
 		let store = try OfflineFleetStore(directory: directory)
-		try await store.download(manifest: manifest, apiBaseURL: base)
+		let log = ProgressRecorder()
+		try await store.download(manifest: manifest, apiBaseURL: base) { log.append($0) }
+		#expect(log.values.last { $0.stage == .downloading }?.completedBytes == manifest.downloadByteLength)
+		#expect(log.values.last?.stage == .activating)
 		try await assertSavedSnapshot(store: store, manifest: manifest, directory: directory)
 	}
 

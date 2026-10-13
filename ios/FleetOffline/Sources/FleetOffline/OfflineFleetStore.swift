@@ -49,27 +49,27 @@ public actor OfflineFleetStore {
 	public func manifest() -> FleetOfflineManifest? { saved?.manifest }
 
 	public func download(manifest: FleetOfflineManifest, apiBaseURL: URL,
-		progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
+		progress: @escaping @Sendable (FleetDownloadProgress) -> Void = { _ in }) async throws {
 		try SnapshotFiles.validate(manifest)
 		let url = try SnapshotFiles.downloadURL(manifest.downloadURL, relativeTo: apiBaseURL)
 		try await performDownload(id: manifest.id, url: url, expectedBytes: manifest.downloadByteLength,
 			spaceBytes: manifest.byteLength + manifest.downloadByteLength, progress: progress) {
-			try install(file: $0, manifest: manifest)
+			try install(file: $0, manifest: manifest, progress: progress)
 		}
 	}
 
 	public func download(pack: FleetPackManifest, apiBaseURL: URL,
-		progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
+		progress: @escaping @Sendable (FleetDownloadProgress) -> Void = { _ in }) async throws {
 		try SnapshotFiles.validate(pack)
 		let url = try SnapshotFiles.downloadURL(pack.downloadURL, relativeTo: apiBaseURL)
 		try await performDownload(id: pack.id, url: url, expectedBytes: pack.archiveByteLength,
 			spaceBytes: pack.archiveByteLength + pack.estimatedSavedByteLength, progress: progress) {
-			try install(file: $0, pack: pack)
+			try install(file: $0, pack: pack, progress: progress)
 		}
 	}
 
 	private func performDownload(id: String, url: URL, expectedBytes: Int64, spaceBytes: Int64,
-		progress: @escaping @Sendable (Double) -> Void, install: (URL) throws -> Void) async throws {
+		progress: @escaping @Sendable (FleetDownloadProgress) -> Void, install: (URL) throws -> Void) async throws {
 		guard downloadID == nil else { throw OfflineFleetError.invalid("A fleet download is already running.") }
 		try SnapshotFiles.requireSpace(in: directory, bytes: spaceBytes)
 		let token = UUID(); downloadID = token
@@ -82,7 +82,15 @@ public actor OfflineFleetStore {
 		let session = URLSession(configuration: configuration)
 		defer { session.invalidateAndCancel() }
 		let delegate = DownloadProgress(expectedBytes: expectedBytes, url: url, progress: progress)
-		progress(0)
+		progress(FleetDownloadProgress(stage: .downloading, completedBytes: 0, totalBytes: expectedBytes))
+		// The async download API never calls didWriteData, so progress is read from the task's own counters.
+		let watcher = Task {
+			while !Task.isCancelled {
+				delegate.reportReceived()
+				try? await Task.sleep(for: .milliseconds(200))
+			}
+		}
+		defer { watcher.cancel() }
 		do {
 			let result: (URL, URLResponse)
 			if let resume = SnapshotFiles.resumeData(at: resumeFile, for: url) {
@@ -91,6 +99,10 @@ public actor OfflineFleetStore {
 				result = try await session.download(from: url, delegate: delegate)
 			}
 			defer { try? FileManager.default.removeItem(at: result.0) }
+			// Stop the watcher before the final count, so no download report follows the install stages.
+			watcher.cancel()
+			await watcher.value
+			delegate.reportReceived()
 			guard let response = result.1 as? HTTPURLResponse,
 				response.url?.host == url.host, response.url?.scheme == url.scheme,
 				response.url?.port == url.port, response.url?.user == nil, response.url?.password == nil else { throw OfflineFleetError.invalid("The fleet download is unavailable. Try updating its information.") }
@@ -98,10 +110,8 @@ public actor OfflineFleetStore {
 			guard [200, 206].contains(response.statusCode) else { throw OfflineFleetError.invalid("The fleet download is unavailable. Try preparing it again.") }
 			try Task.checkCancellation()
 			guard downloadID == token else { throw CancellationError() }
-			progress(0.99)
 			try install(result.0)
 			try? FileManager.default.removeItem(at: resumeFile)
-			progress(1)
 		} catch {
 			if delegate.expired {
 				try? FileManager.default.removeItem(at: resumeFile)
@@ -116,11 +126,14 @@ public actor OfflineFleetStore {
 		}
 	}
 
-	public func install(file: URL, pack: FleetPackManifest) throws {
+	public func install(file: URL, pack: FleetPackManifest, progress: @Sendable (FleetDownloadProgress) -> Void = { _ in }) throws {
 		try SnapshotFiles.validate(pack)
 		try Task.checkCancellation()
 		try SnapshotFiles.requireSpace(in: directory, bytes: 16 * 1_024 * 1_024)
-		try SnapshotFiles.verify(file, bytes: pack.archiveByteLength, sha256: pack.archiveSha256)
+		progress(FleetDownloadProgress(stage: .verifying, completedBytes: 0, totalBytes: pack.archiveByteLength))
+		try SnapshotFiles.verify(file, bytes: pack.archiveByteLength, sha256: pack.archiveSha256) {
+			progress(FleetDownloadProgress(stage: .verifying, completedBytes: $0, totalBytes: pack.archiveByteLength))
+		}
 		let name = "\(safeID(pack.id))-\(UUID().uuidString).sqlite"
 		let destination = directory.appendingPathComponent(name)
 		var activated = false
@@ -132,23 +145,32 @@ public actor OfflineFleetStore {
 		// Release SQLite and its journal before integrity validation and pointer activation.
 		do {
 			let importer = try FleetPackImporter(file: destination, pack: pack)
-			try SnapshotFiles.inflateGzip(file, expectedBytes: pack.uncompressedByteLength, consume: importer.consume)
+			var imported: Int64 = 0
+			progress(FleetDownloadProgress(stage: .importing, completedBytes: 0, totalBytes: pack.uncompressedByteLength))
+			try SnapshotFiles.inflateGzip(file, expectedBytes: pack.uncompressedByteLength) { block in
+				try importer.consume(block)
+				imported += Int64(block.count)
+				progress(FleetDownloadProgress(stage: .importing, completedBytes: imported, totalBytes: pack.uncompressedByteLength))
+			}
 			try importer.finish()
 		}
 		let database = try SnapshotDatabase(file: destination)
 		try database.validate(pack: pack)
 		let size = try destination.resourceValues(forKeys: [.fileSizeKey]).fileSize.map(Int64.init) ?? 0
+		progress(FleetDownloadProgress(stage: .checking, completedBytes: 0, totalBytes: size))
+		let sha256 = try SnapshotFiles.digest(destination) { progress(FleetDownloadProgress(stage: .checking, completedBytes: $0, totalBytes: size)) }
 		let manifest = FleetOfflineManifest(schemaVersion: 2, id: pack.id, generatedAt: pack.generatedAt,
 			historyStart: pack.historyStart, historyEnd: pack.historyEnd,
 			counts: FleetOfflineCounts(cars: pack.counts.cars, consists: pack.counts.consists, events: pack.counts.events, assertions: pack.counts.assertions),
-			byteLength: size, sha256: try SnapshotFiles.digest(destination), downloadURL: pack.downloadURL,
+			byteLength: size, sha256: sha256, downloadURL: pack.downloadURL,
 			observedAt: pack.observedAt, pack: pack)
+		progress(FleetDownloadProgress(stage: .activating, completedBytes: 0, totalBytes: 0))
 		try activate(SavedSnapshot(manifest: manifest, fileName: name))
 		activated = true
 	}
 
 	/// Also used by integration tests and fixture-based UI tests.
-	public func install(file: URL, manifest: FleetOfflineManifest) throws {
+	public func install(file: URL, manifest: FleetOfflineManifest, progress: @Sendable (FleetDownloadProgress) -> Void = { _ in }) throws {
 		try SnapshotFiles.validate(manifest)
 		try Task.checkCancellation()
 		try SnapshotFiles.requireSpace(in: directory, bytes: manifest.byteLength)
@@ -156,15 +178,26 @@ public actor OfflineFleetStore {
 		let destination = directory.appendingPathComponent(name)
 		var activated = false
 		defer { if !activated { SnapshotFiles.removeDatabase(at: destination) } }
+		let download = manifest.compression == "gzip" ? manifest.compressedByteLength! : manifest.byteLength
+		func verifying(_ bytes: Int64) { progress(FleetDownloadProgress(stage: .verifying, completedBytes: bytes, totalBytes: download)) }
+		func importing(_ bytes: Int64) { progress(FleetDownloadProgress(stage: .importing, completedBytes: bytes, totalBytes: manifest.byteLength)) }
+		verifying(0)
 		if manifest.compression == "gzip" {
-			try SnapshotFiles.verify(file, bytes: manifest.compressedByteLength!, sha256: manifest.compressedSha256!)
-			try SnapshotFiles.inflateGzip(file, to: destination, expectedBytes: manifest.byteLength)
+			try SnapshotFiles.verify(file, bytes: manifest.compressedByteLength!, sha256: manifest.compressedSha256!, progress: verifying)
+			importing(0)
+			try SnapshotFiles.inflateGzip(file, to: destination, expectedBytes: manifest.byteLength, progress: importing)
 		} else {
-			try SnapshotFiles.verify(file, bytes: manifest.byteLength, sha256: manifest.sha256)
+			try SnapshotFiles.verify(file, bytes: manifest.byteLength, sha256: manifest.sha256, progress: verifying)
+			importing(0)
 			try FileManager.default.copyItem(at: file, to: destination)
+			importing(manifest.byteLength)
 		}
-		try SnapshotFiles.verify(destination, bytes: manifest.byteLength, sha256: manifest.sha256)
+		progress(FleetDownloadProgress(stage: .checking, completedBytes: 0, totalBytes: manifest.byteLength))
+		try SnapshotFiles.verify(destination, bytes: manifest.byteLength, sha256: manifest.sha256) {
+			progress(FleetDownloadProgress(stage: .checking, completedBytes: $0, totalBytes: manifest.byteLength))
+		}
 		try validateDatabase(at: destination, manifest: manifest)
+		progress(FleetDownloadProgress(stage: .activating, completedBytes: 0, totalBytes: 0))
 		try activate(SavedSnapshot(manifest: manifest, fileName: name))
 		activated = true
 	}
@@ -304,17 +337,30 @@ public actor OfflineFleetStore {
 private final class DownloadProgress: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
 	private let lock = NSLock()
 	private var statusCode: Int?
+	private var task: URLSessionTask?
 	var expired: Bool { lock.withLock { statusCode == 404 } }
 	let expectedBytes: Int64
 	let url: URL
-	let progress: @Sendable (Double) -> Void
-	init(expectedBytes: Int64, url: URL, progress: @escaping @Sendable (Double) -> Void) { self.expectedBytes = expectedBytes; self.url = url; self.progress = progress }
+	let progress: @Sendable (FleetDownloadProgress) -> Void
+	init(expectedBytes: Int64, url: URL, progress: @escaping @Sendable (FleetDownloadProgress) -> Void) { self.expectedBytes = expectedBytes; self.url = url; self.progress = progress }
+	func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) { lock.withLock { self.task = task } }
 	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {}
+	/// Only delegate-based downloads call this; the async download API never does, so
+	/// `reportReceived` enforces the same limit and records the status for `expired`.
 	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
 		lock.withLock { statusCode = (downloadTask.response as? HTTPURLResponse)?.statusCode }
 		if totalBytesWritten > expectedBytes { downloadTask.cancel(); return }
-		let expected = totalBytesExpectedToWrite > 0 ? totalBytesExpectedToWrite : expectedBytes
-		if expected > 0 { progress(min(0.98, Double(totalBytesWritten) / Double(expected) * 0.98)) }
+	}
+	/// Reports the archive bytes on hand so far, including the part a resumed (206) download
+	/// already had, and stops a download that grows past the archive's announced size.
+	func reportReceived() {
+		guard let task = lock.withLock({ self.task }) else { return }
+		let status = (task.response as? HTTPURLResponse)?.statusCode
+		lock.withLock { if status != nil { statusCode = status } }
+		let resumed = status == 206 && task.countOfBytesExpectedToReceive > 0 ? max(0, expectedBytes - task.countOfBytesExpectedToReceive) : 0
+		let received = resumed + task.countOfBytesReceived
+		if received > expectedBytes { task.cancel(); return }
+		progress(FleetDownloadProgress(stage: .downloading, completedBytes: received, totalBytes: expectedBytes))
 	}
 	func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
 		completionHandler(request.url?.host == url.host && request.url?.scheme == url.scheme && request.url?.port == url.port && request.url?.user == nil && request.url?.password == nil ? request : nil)

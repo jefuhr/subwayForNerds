@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { createServer } from '../server/index';
 import { TransitService } from '../server/service';
 import { decode } from '../server/decode';
@@ -46,6 +47,27 @@ test('station APIs are indexed, conditional, isolated from upstream, and resilie
     const trip = await app.inject('/subwaysForNerds/api/v1/trips?key=' + encodeURIComponent(response.json().departures[0].tripKey));
     assert.equal(trip.statusCode, 200); assert.ok(trip.json().raw.length);
     assert.equal(fetched, 0);
+  } finally { await app.close(); }
+});
+test('JSON responses state their uncompressed length so clients can show exact download progress', async () => {
+  const service = new TransitService();
+  const raw = decode(readFileSync(new URL('fixtures/gtfs.pb', import.meta.url)));
+  service.accept('gtfs', raw, Number(raw.header.timestamp));
+  const app = await createServer(service);
+  try {
+    const url = '/subwaysForNerds/api/v1/stations/602/board';
+    const gzip = await app.inject({ url, headers: { 'accept-encoding': 'gzip, deflate, br' } });
+    assert.equal(gzip.headers['content-encoding'], 'gzip');
+    const decoded = gunzipSync(gzip.rawPayload);
+    assert.ok(decoded.length > gzip.rawPayload.length);
+    assert.equal(gzip.headers['x-uncompressed-length'], String(decoded.length));
+    const identity = await app.inject({ url, headers: { 'accept-encoding': 'identity' } });
+    assert.equal(identity.headers['content-encoding'], undefined);
+    assert.equal(identity.headers['x-uncompressed-length'], String(identity.rawPayload.length));
+    assert.equal(identity.headers['x-uncompressed-length'], String(decoded.length));
+    const unchanged = await app.inject({ url, headers: { 'if-none-match': gzip.headers.etag! } });
+    assert.equal(unchanged.statusCode, 304);
+    assert.equal(unchanged.headers['x-uncompressed-length'], undefined);
   } finally { await app.close(); }
 });
 test('older feeds cannot overwrite newer data, and missing trips are removed without invented cancellations', () => {

@@ -86,37 +86,47 @@ enum SnapshotFiles {
 		}
 	}
 
-	static func verify(_ file: URL, bytes: Int64, sha256: String) throws {
+	static func verify(_ file: URL, bytes: Int64, sha256: String, progress: (Int64) -> Void = { _ in }) throws {
 		try Task.checkCancellation()
 		let size = try file.resourceValues(forKeys: [.fileSizeKey]).fileSize
 		guard size.map(Int64.init) == bytes else {
 			throw OfflineFleetError.invalid("Fleet download is incomplete. Your previous download is still available.")
 		}
-		guard try digest(file) == sha256.lowercased() else {
+		guard try digest(file, progress: progress) == sha256.lowercased() else {
 			throw OfflineFleetError.invalid("Fleet download checksum failed. Please retry.")
 		}
 	}
 
-	static func digest(_ file: URL) throws -> String {
+	/// `progress` receives the running count of bytes hashed.
+	static func digest(_ file: URL, progress: (Int64) -> Void = { _ in }) throws -> String {
 		let handle = try FileHandle(forReadingFrom: file)
 		defer { try? handle.close() }
 		var digest = SHA256()
+		var hashed: Int64 = 0
 		while let block = try handle.read(upToCount: 1_048_576), !block.isEmpty {
 			try Task.checkCancellation()
 			digest.update(data: block)
+			hashed += Int64(block.count)
+			progress(hashed)
 		}
 		return digest.finalize().map({ String(format: "%02x", $0) }).joined()
 	}
 
 	/// Bounded streaming inflation: no database-sized allocation or second database copy.
 	/// A gzip trailer, exact output size and no trailing bytes are required.
-	static func inflateGzip(_ input: URL, to output: URL, expectedBytes: Int64) throws {
+	/// `progress` receives the running count of bytes written.
+	static func inflateGzip(_ input: URL, to output: URL, expectedBytes: Int64, progress: (Int64) -> Void = { _ in }) throws {
 		guard FileManager.default.createFile(atPath: output.path, contents: nil) else {
 			throw OfflineFleetError.invalid("The fleet download could not be saved.")
 		}
 		let destination = try FileHandle(forWritingTo: output)
 		defer { try? destination.close() }
-		try inflateGzip(input, expectedBytes: expectedBytes) { try destination.write(contentsOf: $0) }
+		var written: Int64 = 0
+		try inflateGzip(input, expectedBytes: expectedBytes) { block in
+			try destination.write(contentsOf: block)
+			written += Int64(block.count)
+			progress(written)
+		}
 		try destination.synchronize()
 	}
 

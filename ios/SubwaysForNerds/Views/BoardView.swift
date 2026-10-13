@@ -115,7 +115,7 @@ struct BoardView: View {
 				}
 				if app.board == nil {
 					Section {
-						if app.boardError == nil { ProgressView("Connecting to your station…") }
+						if app.boardError == nil { LoadingBar(title: "Loading departures", progress: app.boardLoad).accessibilityIdentifier("boardLoading") }
 						Button("Find a station") { stationPicker = .search }.actionStyle()
 					}
 				} else if groups.isEmpty {

@@ -9,12 +9,22 @@ import { once } from 'node:events';
 import { createGzip } from 'node:zlib';
 import { dirname } from 'node:path';
 import { readFleetCars } from './fleet-store.mjs';
+import { packProgress } from './fleet-pack-progress.mjs';
 
 let source;
 let gzip, writing;
 const reserve = workerData.reserveBytes ?? 2 * 1024 ** 3;
 const maximumArtifactBytes = workerData.maximumArtifactBytes ?? 6 * 1024 ** 3;
 let checks = 0, records = 0, uncompressedByteLength = 0, archiveByteLength = 0;
+const progressInterval = workerData.progressIntervalMs ?? 250;
+let reportedStage, reportedAt = 0;
+// Every stage change is reported; counts within a stage at most once per interval.
+function report(stage, done = 0, total = 0, force = false) {
+	const at = Date.now();
+	if (!force && stage === reportedStage && at - reportedAt < progressInterval) return;
+	reportedStage = stage; reportedAt = at;
+	parentPort.postMessage({ progress: packProgress(stage, done, total) });
+}
 function space(required = 1024 * 1024) {
 	const disk = statfsSync(dirname(workerData.destination));
 	const sequence = workerData.availableBytesForTests;
@@ -29,6 +39,7 @@ function currentConsist(car, generatedAt) {
 	return last?.consistId && last.timestamp >= generatedAt - 90 && last.timestamp <= generatedAt + 60 ? last.consistId : undefined;
 }
 try {
+	report('opening', 0, 0, true);
 	source = new DatabaseSync(workerData.source, { readOnly: true });
 	source.exec('PRAGMA busy_timeout=3000; PRAGMA temp_store=MEMORY; BEGIN');
 	const version = source.prepare('SELECT MAX(version) AS version FROM migrations').get()?.version;
@@ -39,6 +50,7 @@ try {
 	const historyStart = generatedAt - selection.historyDays * 86400;
 	const historyEnd = Math.max(generatedAt, Number(source.prepare('SELECT MAX(timestamp) AS timestamp FROM events').get()?.timestamp || 0));
 	const observedAt = JSON.parse(source.prepare("SELECT data FROM meta WHERE key='observedAt'").get()?.data || 'null');
+	report('selecting', 0, 0, true);
 	const cars = readFleetCars(source, generatedAt).map(car => ({ ...car, reporting: false }));
 	const matches = car =>
 		(!selection.equipment.length || selection.equipment.includes(car.equipment)) &&
@@ -85,19 +97,36 @@ try {
 		if (!gzip.write(bytes)) await once(gzip, 'drain');
 	}
 	await line(['header', 2, generatedAt, historyStart, historyEnd, selection]);
-	for (const car of cars) if (selected.has(car.id)) await line(['car', car.id, JSON.stringify(car)]);
+	let written = 0;
+	report('cars', 0, selected.size, true);
+	for (const car of cars) if (selected.has(car.id)) {
+		await line(['car', car.id, JSON.stringify(car)]);
+		report('cars', ++written, selected.size);
+	}
+	report('cars', written, selected.size, true);
+	const assertions = Number(source.prepare('SELECT COUNT(*) AS count FROM assertions a JOIN selected s ON s.id=a.car_id').get()?.count || 0);
+	report('assertions', 0, assertions, true);
 	for (const row of source.prepare('SELECT a.id,a.car_id,a.data FROM assertions a JOIN selected s ON s.id=a.car_id ORDER BY a.id').iterate()) {
 		await line(['assertion', row.id, row.car_id, row.data]); counts.assertions++;
+		report('assertions', counts.assertions, assertions);
 	}
+	report('assertions', counts.assertions, assertions, true);
 	const usedConsists = new Set();
 	// The timestamp index contains rowids, so finding the earliest recent row
 	// avoids fetching every recent event through a random table lookup. Events
 	// can arrive out of timestamp order; use MIN(rowid), not the first timestamp.
 	const firstRecentRow = source.prepare('SELECT MIN(rowid) AS rowid FROM events INDEXED BY event_time WHERE timestamp>=?').get(historyStart)?.rowid;
-	const query = source.prepare(`SELECT id,timestamp,data FROM events NOT INDEXED
+	const query = source.prepare(`SELECT rowid,id,timestamp,data FROM events NOT INDEXED
 		WHERE rowid>=? AND timestamp>=? ORDER BY rowid`);
 	const legacyMembers = source.prepare('SELECT car_id FROM event_cars WHERE event_id=?');
+	// Progress follows the rowid range being scanned, since rows outside the window are skipped unseen.
+	const lastRow = firstRecentRow == null ? undefined : source.prepare('SELECT MAX(rowid) AS rowid FROM events').get()?.rowid;
+	const scanned = firstRecentRow == null || lastRow == null ? 0 : Number(lastRow) - Number(firstRecentRow) + 1;
+	report('history', 0, scanned, true);
+	let rows = 0;
 	for (const row of firstRecentRow == null ? [] : query.iterate(firstRecentRow, historyStart)) {
+		// This scan can cover millions of rows; consult the clock only every 4,096 of them.
+		if ((++rows & 4095) === 0) report('history', Number(row.rowid) - Number(firstRecentRow) + 1, scanned);
 		let event;
 		try { event = JSON.parse(row.data); } catch { event = null; }
 		// Live observations store the same car IDs in the payload and event_cars.
@@ -112,16 +141,21 @@ try {
 		if (typeof event.consistId === 'string') usedConsists.add(event.consistId);
 		if (usedConsists.size > 250_000) throw new Error('Offline fleet pack has too many historical formations');
 	}
+	report('history', scanned, scanned, true);
 	for (const car of cars) if (selected.has(car.id)) {
 		const consist = currentConsist(car, generatedAt);
 		if (consist) usedConsists.add(consist);
 	}
+	report('consists', 0, usedConsists.size, true);
 	for (const row of source.prepare('SELECT id,data FROM consists ORDER BY id').iterate()) if (usedConsists.has(row.id)) {
 		await line(['consist', row.id, row.data]); counts.consists++;
+		report('consists', counts.consists, usedConsists.size);
 	}
+	report('consists', counts.consists, usedConsists.size, true);
 	for (const row of source.prepare("SELECT key,data FROM meta WHERE key IN ('roster','supplement','yardRules','observedAt') ORDER BY key").iterate()) {
 		await line(['meta', row.key, row.data]);
 	}
+	report('finishing', 0, 0, true);
 	await line(['end', counts]);
 	gzip.end();
 	await writing;

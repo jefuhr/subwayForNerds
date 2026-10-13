@@ -56,6 +56,7 @@ struct FleetView: View {
 	@State private var filters: FleetFilters
 	@State private var data: FleetPage?
 	@State private var error: String?
+	@State private var progress: LoadProgress?
 	@State private var usingSaved = false
 	@State private var requestGeneration = 0
 	private let selection: Binding<FleetPick?>?
@@ -80,6 +81,7 @@ struct FleetView: View {
 			guard phase == .active else { return }
 			data = nil
 			error = nil
+			progress = nil
 			do { try await Task.sleep(for: .milliseconds(180)) } catch { return }
 			await poll(every: 10) { await refresh() }
 		}
@@ -159,7 +161,10 @@ struct FleetView: View {
 					.font(.caption)
 				}
 			}
-		} else if error == nil { ProgressView("Loading fleet inventory…") }
+		} else if error == nil {
+			LoadingBar(title: "Loading fleet inventory", progress: progress ?? LoadProgress(fraction: nil, detail: "Starting the fleet search…"))
+				.accessibilityIdentifier("fleetLoading")
+		}
 	}
 
 	private var moreFiltersLabel: String {
@@ -193,14 +198,19 @@ struct FleetView: View {
 		let query = filters.query
 		requestGeneration += 1
 		let generation = requestGeneration
+		let waiting = data == nil
+		if waiting { progress = nil }
 		do {
 			let value: FleetPage
 			let savedMode = (app.useSavedFleet || !app.connected) && app.offlineManifest != nil
 			if savedMode, let store = app.offlineStore {
+				// A local query reports nothing measurable while it runs, so no percent is shown.
+				if waiting { progress = LoadProgress(fraction: nil, detail: "Searching the saved fleet database on this device…") }
 				value = try await store.page(query: query)
 				try Task.checkCancellation()
 			} else {
-				value = try await app.api.fleet(query: query)
+				let report = waiting ? onMain { value in if generation == requestGeneration { progress = value.load("the fleet inventory") } } : nil
+				value = try await app.api.fleet(query: query, progress: report)
 				try Task.checkCancellation()
 			}
 			guard identity == loadKey, generation == requestGeneration else { return }
@@ -227,6 +237,7 @@ struct FleetDetailView: View {
 	@Environment(\.scenePhase) private var phase
 	@State private var data: FleetDetail?
 	@State private var error: String?
+	@State private var progress: LoadProgress?
 	@State private var usingSaved = false
 	@State private var loadingMore = false
 	@State private var hasMore = false
@@ -294,20 +305,27 @@ struct FleetDetailView: View {
 					}
 					if data.history.isEmpty { Text("No movement history collected for this period.").font(.subheadline).foregroundStyle(.secondary) }
 					if usingSaved && hasMore {
-						Button { Task { await loadMore() } } label: {
-							if loadingMore { ProgressView() } else { Text("Load more history") }
-						}.actionStyle().disabled(loadingMore).accessibilityIdentifier("loadMoreFleetHistory")
+						if loadingMore {
+							LoadingBar(title: "Loading more history", progress: LoadProgress(fraction: nil, detail: "Reading more saved movements on this device…"))
+								.accessibilityIdentifier("loadMoreFleetHistory")
+						} else {
+							Button("Load more history") { Task { await loadMore() } }.actionStyle().accessibilityIdentifier("loadMoreFleetHistory")
+						}
 					}
 				} header: { ListHeader(usingSaved ? "Downloaded movement history" : "Observed changes · last 30 days") } footer: {
 					Text(usingSaved ? "All changes included in this saved history window are available using Load more history. Historical events can mention cars outside the saved scope. Times are observation times, not inferred movement times." : "Latest 200 changes. Prepare a fleet pack in Settings to save 7 or 30 days of history. Times are observation times, not inferred movement times.")
 				}
 				Section { RawJSONView(value: data, title: "Fleet identifiers & reports") }
-			} else if error == nil { ProgressView("Loading car history…") }
+			} else if error == nil {
+				LoadingBar(title: "Loading car history", progress: progress ?? LoadProgress(fraction: nil, detail: "Waiting to request this car's history…"))
+					.accessibilityIdentifier("fleetDetailLoading")
+			}
 		}.themedList().navigationTitle("Car & consist details").navigationBarTitleDisplayMode(.inline)
 			.navigationDestination(item: $liveTrip) { TrainDetailView(tripKey: $0) }
 			.task(id: loadKey) {
 				guard phase == .active else { return }
 				data = nil
+				progress = nil
 				await poll(every: 10) { await refresh() }
 			}
 			.refreshable { await refresh(force: true) }
@@ -370,14 +388,18 @@ struct FleetDetailView: View {
 		let identity = loadKey
 		requestGeneration += 1
 		let generation = requestGeneration
+		let waiting = data == nil
+		if waiting { progress = nil }
 		do {
 			let value: FleetDetail
 			let savedMode = (preferSaved || app.useSavedFleet || !app.connected) && app.offlineManifest != nil
 			if savedMode, let store = app.offlineStore {
+				if waiting { progress = LoadProgress(fraction: nil, detail: "Reading this car's saved history on this device…") }
 				value = try await store.detail(id: id, offset: 0, limit: 200)
 				try Task.checkCancellation()
 			} else {
-				value = try await app.api.fleetDetail(kind: kind, id: id)
+				let report = waiting ? onMain { value in if generation == requestGeneration { progress = value.load("this car's history") } } : nil
+				value = try await app.api.fleetDetail(kind: kind, id: id, progress: report)
 				try Task.checkCancellation()
 			}
 			guard identity == loadKey, generation == requestGeneration else { return }

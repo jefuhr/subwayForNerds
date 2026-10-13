@@ -5,13 +5,14 @@ import { statfsSync } from 'node:fs';
 import { mkdir, open, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { readFleetCars } from './fleet-store.mjs';
-import type { FleetPackManifest, FleetPackSelection } from '../shared/offline';
+import { packProgress } from './fleet-pack-progress.mjs';
+import type { FleetPackManifest, FleetPackProgress, FleetPackSelection } from '../shared/offline';
 
 const hour = 3_600_000;
 const hash = /^[a-f0-9]{64}$/;
 const artifact = /^([a-f0-9]{64})\.jsonl\.gz$/;
 const maximumCacheBytes = 6 * 1024 ** 3;
-type PackState = { jobId: string; state: 'preparing' | 'ready' | 'unavailable'; manifest?: FleetPackManifest; error?: string };
+type PackState = { jobId: string; state: 'preparing' | 'ready' | 'unavailable'; manifest?: FleetPackManifest; progress?: FleetPackProgress; error?: string };
 type PackJob = PackState & { key: string; createdAt: number };
 type WorkerResult = Omit<FleetPackManifest, 'id' | 'downloadURL'>;
 export interface FleetPackOptions { reserveBytes?: number; availableBytesForTests?: number[]; maximumArtifactBytes?: number; generatedAtForTests?: number }
@@ -98,7 +99,7 @@ export class FleetPackService {
     const running = [...this.jobs.values()].find(job => job.key === key && job.state === 'preparing');
     if (running) return this.publicState(running);
     if (this.active || this.reserving) return { jobId: '', state: 'unavailable', error: 'A fleet pack is already preparing. Retry shortly.' };
-    const jobId = randomUUID(), job: PackJob = { jobId, key, state: 'preparing', createdAt: Date.now() };
+    const jobId = randomUUID(), job: PackJob = { jobId, key, state: 'preparing', progress: packProgress('starting'), createdAt: Date.now() };
     this.jobs.set(jobId, job);
     this.reserving = true;
     try { await this.reclaimForBuild(); }
@@ -122,7 +123,11 @@ export class FleetPackService {
       let result: WorkerResult | undefined, failure: Error | undefined;
       const timeout = setTimeout(() => { failure = new Error('Fleet pack preparation timed out'); void worker.terminate(); }, 20 * 60_000);
       timeout.unref();
-      worker.once('message', message => { if (message.error) failure = new Error(message.error); else result = message; });
+      worker.on('message', message => {
+        if (message.progress) { job.progress = message.progress; return; }
+        if (result || failure) return;
+        if (message.error) failure = new Error(message.error); else result = message;
+      });
       worker.once('error', error => { failure = error; });
       worker.once('exit', async code => {
         clearTimeout(timeout);
@@ -154,7 +159,8 @@ export class FleetPackService {
   }
 
   private publicState(job: PackJob): PackState {
-    return { jobId: job.jobId, state: job.state, ...(job.manifest ? { manifest: job.manifest } : {}), ...(job.error ? { error: job.error } : {}) };
+    return { jobId: job.jobId, state: job.state, ...(job.manifest ? { manifest: job.manifest } : {}),
+      ...(job.state === 'preparing' && job.progress ? { progress: job.progress } : {}), ...(job.error ? { error: job.error } : {}) };
   }
   status(jobId: string): PackState | undefined {
     const job = this.jobs.get(jobId);

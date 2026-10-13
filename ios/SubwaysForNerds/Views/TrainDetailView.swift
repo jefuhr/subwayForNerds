@@ -130,7 +130,10 @@ struct TrainDetailView: View {
 					}
 				}
 				if let shownDetail { Section { RawJSONView(value: shownDetail) } }
-			} else if error == nil { ProgressView("Loading train details…") }
+			} else if error == nil {
+				LoadingBar(title: "Loading train details", progress: snapshotOnly ? LoadProgress(fraction: nil, detail: "Reading the saved train from this device…") : app.tripLoad(tripKey))
+					.accessibilityIdentifier("tripLoading")
+			}
 		}
 		.themedList().navigationTitle("Train details").navigationBarTitleDisplayMode(.inline)
 		.navigationDestination(item: $carTarget) { target in
@@ -375,6 +378,7 @@ struct TransferView: View {
 	@Environment(\.scenePhase) private var phase
 	@State private var data: TransferResult?
 	@State private var error: String?
+	@State private var progress: TransferProgress?
 	@State private var requestGeneration = 0
 	private var stale: Bool {
 		guard let data else { return true }
@@ -436,19 +440,26 @@ struct TransferView: View {
 				}
 				if groups.isEmpty && !stale && data.message == nil && error == nil { Text("No matching connecting departures are currently reported.").foregroundStyle(.secondary) }
 				Section { SourcesView(sources: data.sources, now: app.now) } header: { ListHeader("Prediction sources") }
-			} else if error == nil { ProgressView("Checking connecting departures…") }
+			} else if error == nil {
+				LoadingBar(title: "Checking connecting departures", progress: progress?.load(subject) ?? LoadProgress(fraction: nil, detail: "Waiting to request \(subject)…"))
+					.accessibilityIdentifier("transfersLoading")
+			}
 		}.themedList().navigationTitle(stop.name).navigationBarTitleDisplayMode(.inline)
 			.refreshable { await refresh() }
 			.task(id: "\(phase)|\(app.endpoint)|\(app.connected)") { if phase == .active { await poll(every: 10) { await refresh() } } }
 	}
+	private var subject: String { "connecting departures at \(stop.name)" }
 	private func refresh() async {
 		// Connections need live predictions; offline there is nothing honest to show.
 		guard app.connected else { error = "Connections need a live feed. Reconnect for current estimates."; return }
 		let requestedEndpoint = app.endpoint
 		requestGeneration += 1
 		let generation = requestGeneration
+		// Only a screen still waiting for its first result shows the download, starting over for each attempt.
+		if data == nil { progress = nil }
+		let report = data == nil ? onMain { value in if generation == requestGeneration { progress = value } } : nil
 		do {
-			let value = try await app.api.transfers(key: tripKey, stopID: stop.id, sequence: stop.sequence)
+			let value = try await app.api.transfers(key: tripKey, stopID: stop.id, sequence: stop.sequence, progress: report)
 			try Task.checkCancellation()
 			guard requestedEndpoint == app.endpoint, generation == requestGeneration else { return }
 			data = value; error = nil

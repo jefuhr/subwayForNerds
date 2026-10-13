@@ -177,12 +177,9 @@ struct SettingsView: View {
 			}
 			if app.isDownloading {
 				if app.isPreparingFleetPack {
-					ProgressView("Preparing selected fleet…").accessibilityIdentifier("preparingFleetPack")
+					LoadingBar(title: "Preparing fleet pack", progress: app.fleetPackLoad).accessibilityIdentifier("preparingFleetPack")
 				} else {
-					VStack(alignment: .leading, spacing: 4) {
-						ProgressView(value: app.downloadProgress ?? 0).accessibilityLabel("Fleet download progress")
-						Text((app.downloadProgress ?? 0) >= 0.99 ? "Checking and saving fleet…" : "\(Int((app.downloadProgress ?? 0) * 100))% complete").font(.caption.monospacedDigit())
-					}
+					LoadingBar(title: "Downloading fleet pack", progress: app.fleetDownloadLoad).accessibilityIdentifier("fleetDownloadProgress")
 				}
 				Button(app.isPreparingFleetPack ? "Cancel preparation" : "Cancel download", role: .cancel) { app.cancelDownload() }
 					.actionStyle().accessibilityIdentifier("cancelFleetDownload")

@@ -3,8 +3,9 @@
 A station-first NYC subway console for people who already know the map. Live
 departures, stop-relative train positions, reported tracks, stopping patterns,
 operations IDs, physical car numbers when reported, future-stop connections, and a persistent fleet browser.
-The React web app and a separate SwiftUI iPhone and iPad app share the same transit API.
-The native app supports iOS 26 and newer and adds optional offline fleet downloads.
+The React website, SwiftUI iPhone and iPad app, and native Kotlin/Compose Android
+app share the same transit API. Native clients support iOS 26+ and Android 12+
+and add optional offline fleet downloads, saved rides, and widgets.
 
 ## Run locally
 
@@ -19,6 +20,8 @@ npm run dev
 Open `http://localhost:5173/subwaysForNerds/`. The API runs on port 8091.
 For the iPhone and iPad app, open `ios/SubwaysForNerds.xcodeproj` in Xcode and follow
 [native development and device setup](docs/ios.md). The web app remains independently buildable.
+For Android builds, emulator verification, and in-place phone installation, see
+[native Android development](docs/android.md).
 For the production build, including offline installation:
 
 ```sh

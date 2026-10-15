@@ -2,7 +2,8 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import { join } from 'node:path';
-import { AccountStore, hash, secret, type ProviderName, type Challenge } from './account-store';
+import { createHash, timingSafeEqual } from 'node:crypto';
+import { AccountStore, hash, secret, type ProviderName, type Challenge, type Identity } from './account-store';
 import { productionProviders, type AuthProvider, type LoginInput } from './auth-providers';
 import { validateSettings, defaults, equal, MAX_SETTINGS_BYTES } from '../shared/settings';
 export type AccountOptions = {store:AccountStore;origin:string;providers:Record<ProviderName,AuthProvider>};
@@ -17,6 +18,9 @@ export function accountOptions(env=process.env):AccountOptions|undefined{
 function fail(statusCode:number,message:string):never{throw Object.assign(new Error(message),{statusCode});}
 const providerName=(v:unknown):ProviderName=>v==='apple'||v==='google'?v:fail(400,'Choose Apple or Google.');
 const text=(value:unknown)=>typeof value==='string'&&value.length>0&&value.length<16000?value:fail(400,'Invalid login request.');
+export const ANDROID_AUTH_CALLBACK='nyc.juliet.subwaysfornerds://auth/android';
+const appProof=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9_-]{43}$/.test(value)?value:fail(400,'Android sign-in requires S256 proof.');
+const sameSecret=(a:string,b:string)=>{const left=Buffer.from(a),right=Buffer.from(b);return left.length===right.length&&timingSafeEqual(left,right);};
 export async function registerAccounts(app:FastifyInstance,api:string,options?:AccountOptions,{exemptLoopback=false}:{exemptLoopback?:boolean}={}){
 	await app.register(async auth=>{
 		await auth.register(cookie);
@@ -36,40 +40,80 @@ export async function registerAccounts(app:FastifyInstance,api:string,options?:A
 			checkOrigin(req);const user=session(req);
 			if(!req.headers.authorization?.startsWith('Bearer ')&&(req.headers.origin!==origin||req.headers['x-sfn-csrf']!==hash('csrf:'+token(req))))fail(403,'Please reopen settings and try again.');return user;
 		};
-		const recent=(req:FastifyRequest)=>{const user=mutation(req);if(Date.now()/1000-user.authenticatedAt>600)fail(403,'Sign in again before changing login methods or deleting your account.');return user;};
+		const recent=(req:FastifyRequest)=>{const user=mutation(req);if(store.currentTime()-user.authenticatedAt>600)fail(403,'Sign in again before changing login methods or deleting your account.');return user;};
 		const setSession=(reply:FastifyReply,value:string)=>reply.setCookie(cookieName,value,{httpOnly:true,secure:true,sameSite:'lax',path:root,maxAge:30*86400});
 		const clearSession=(reply:FastifyReply)=>reply.clearCookie(cookieName,{httpOnly:true,secure:true,sameSite:'lax',path:root});
 		const callback=(provider:ProviderName)=>origin+api+'/auth/'+provider+'/callback';
-		auth.post<{Body:{provider?:unknown;platform?:unknown;intent?:unknown}}>(api+'/auth/challenges',{config:{rateLimit:{max:20,timeWindow:60000}}},async(req,reply)=>{
+		const originalSession=(c:Challenge,req?:FastifyRequest)=>{
+			if(c.userID&&(store.sessionByHash(c.sessionHash||'')?.id!==c.userID||(req&&hash(token(req))!==c.sessionHash)))fail(401,'Your account changed during sign-in. Please try again.');
+		};
+		const androidRedirect=(c:Challenge,values:Record<string,string>)=>ANDROID_AUTH_CALLBACK+'?'+new URLSearchParams({state:c.appState!,...values});
+		auth.post<{Body:{provider?:unknown;platform?:unknown;intent?:unknown;codeChallenge?:unknown;codeChallengeMethod?:unknown;state?:unknown}}>(api+'/auth/challenges',{config:{rateLimit:{max:20,timeWindow:60000}}},async(req,reply)=>{
 			checkOrigin(req);
 			const provider=providerName(req.body?.provider),platform=req.body?.platform,intent=req.body?.intent||'login';
-			if(!['native','web'].includes(platform as string)||!['login','link','reauth'].includes(intent as string))fail(400,'Invalid login request.');
+			if(!['native','web','android'].includes(platform as string)||!['login','link','reauth'].includes(intent as string))fail(400,'Invalid login request.');
+			if(platform==='android'&&(req.body.codeChallengeMethod!=='S256'||Object.keys(req.body).some(k=>!['provider','platform','intent','codeChallenge','codeChallengeMethod','state'].includes(k))))fail(400,'Android sign-in requires S256 proof and the fixed app callback.');
+			const appChallenge=platform==='android'?appProof(req.body.codeChallenge):undefined;
+			const appState=platform==='android'?appProof(req.body.state):undefined;
 			if(platform==='web'&&req.headers.origin!==origin)fail(403,'Start sign-in from this app.');
 			const userID=intent==='link'?recent(req).id:intent==='reauth'?mutation(req).id:null;
 			const browser=platform==='web'?(req.cookies.sfn_oauth||secret()):null;
 			if(browser)reply.setCookie('sfn_oauth',browser,{httpOnly:true,secure:true,sameSite:'none',path:api+'/auth/',maxAge:300});
-			const c:Challenge={provider,platform:platform as Challenge['platform'],intent:intent as Challenge['intent'],userID,nonce:secret(),browser:browser?hash(browser):null,verifier:secret(),sessionHash:userID?hash(token(req)):undefined};
-			const id=store.challenge(c);return{id,nonce:c.nonce,authorizationURL:platform==='web'?providers[provider].authorize(c,id,callback(provider)):undefined};
+			const c:Challenge={provider,platform:platform as Challenge['platform'],intent:intent as Challenge['intent'],userID,nonce:secret(),browser:browser?hash(browser):null,verifier:secret(),sessionHash:userID?hash(token(req)):undefined,appChallenge,appState};
+			const id=store.challenge(c);return{id,nonce:c.nonce,authorizationURL:platform==='android'?origin+api+'/auth/android/start?'+new URLSearchParams({challenge:id}):platform==='web'?providers[provider].authorize(c,id,callback(provider)):undefined};
 		});
-		const finish=async(req:FastifyRequest,reply:FastifyReply,provider:ProviderName,id:string,input:LoginInput,platform:'native'|'web')=>{
-			const c=store.takeChallenge(id);
-			if(!c||c.provider!==provider||c.platform!==platform)fail(401,'Sign-in expired. Please try again.');
-			if(platform==='web'&&(!req.cookies.sfn_oauth||c.browser!==hash(req.cookies.sfn_oauth)))fail(401,'Sign-in must finish in the browser where it began.');
-			if(c.userID&&(store.sessionByHash(c.sessionHash||'')?.id!==c.userID||(platform==='native'&&hash(token(req))!==c.sessionHash)))fail(401,'Your account changed during sign-in. Please try again.');
-			let identity;try{identity=await providers[provider].verify(c,input,callback(provider));}catch{fail(401,'Sign-in could not be verified. Please try again.');}
+		auth.get<{Querystring:{challenge?:unknown}}>(api+'/auth/android/start',async(req,reply)=>{
+			const browser=req.cookies.sfn_oauth||secret();
+			const c=store.bindAndroidChallenge(text(req.query.challenge),hash(browser));
+			if(!c)fail(401,'Sign-in expired or began in another browser. Please try again.');
+			originalSession(c);
+			reply.setCookie('sfn_oauth',browser,{httpOnly:true,secure:true,sameSite:'none',path:api+'/auth/',maxAge:300});
+			return reply.code(303).redirect(providers[c.provider].authorize(c,text(req.query.challenge),callback(c.provider)));
+		});
+		const complete=(c:Challenge,identity:Identity,req:FastifyRequest,reply:FastifyReply)=>{
+			originalSession(c,c.platform==='web'?undefined:req);
 			if(c.intent==='reauth'){
 				// Never create/link an identity as a side effect of reauthentication.
-				if(!store.ownsIdentity(c.userID!,identity!))fail(401,'Use a login already linked to this account.');
-				store.login(identity!,c.userID!);
+				if(!store.ownsIdentity(c.userID!,identity))fail(401,'Use a login already linked to this account.');
+				store.login(identity,c.userID!);
 				store.reauthenticateHash(c.sessionHash!);return{account:store.account(c.userID!),csrf:hash('csrf:'+token(req))};
 			}
-			let account;try{account=store.login(identity!,c.intent==='link'?c.userID!:undefined);}catch(error){fail(409,(error as Error).message);}
+			let account;try{account=store.login(identity,c.intent==='link'?c.userID!:undefined);}catch(error){fail(409,(error as Error).message);}
 			if(c.intent==='link')return{account,csrf:hash('csrf:'+token(req))};
 			if(token(req))store.logout(token(req));
 			const value=store.createSession(account!.id);
-			if(platform==='web')setSession(reply,value);
-			return{account,csrf:hash('csrf:'+value),...(platform==='native'?{token:value}:{})};
+			if(c.platform==='web')setSession(reply,value);
+			return{account,csrf:hash('csrf:'+value),...(c.platform!=='web'?{token:value}:{})};
 		};
+		const finish=async(req:FastifyRequest,reply:FastifyReply,provider:ProviderName,id:string,input:LoginInput,platform:'native'|'browser')=>{
+			const c=store.takeChallenge(id);
+			if(!c||c.provider!==provider||(platform==='native'?c.platform!=='native':c.platform==='native'))fail(401,'Sign-in expired. Please try again.');
+			if(c.platform!=='native'&&(!req.cookies.sfn_oauth||c.browser!==hash(req.cookies.sfn_oauth)))fail(401,'Sign-in must finish in the browser where it began.');
+			try{
+				originalSession(c,c.platform==='native'?req:undefined);
+				let identity;try{identity=await providers[provider].verify(c,input,callback(provider));}catch{fail(401,'Sign-in could not be verified. Please try again.');}
+				// Verification awaits a provider: logout/unlink/delete can revoke the original session meanwhile.
+				originalSession(c,c.platform==='native'?req:undefined);
+				if(c.expiresAt!==undefined&&store.currentTime()>=c.expiresAt)fail(401,'Sign-in expired. Please try again.');
+				if(c.platform==='android'){
+					if(c.intent==='reauth'&&!store.ownsIdentity(c.userID!,identity))fail(401,'Use a login already linked to this account.');
+					return{androidRedirect:androidRedirect(c,{handoff:store.androidHandoff({challenge:c,identity})})};
+				}
+				return complete(c,identity,req,reply);
+			}catch(error){
+				if(c.platform==='android')return{androidRedirect:androidRedirect(c,{error:'error'})};
+				if(c.platform==='web')return{webError:true};
+				throw error;
+			}
+		};
+		auth.post<{Body:{handoff?:unknown;state?:unknown;verifier?:unknown}}>(api+'/auth/android/exchange',{config:{rateLimit:{max:20,timeWindow:60000}}},async(req,reply)=>{
+			checkOrigin(req);
+			const handoff=store.takeAndroidHandoff(text(req.body?.handoff));
+			if(!handoff||typeof req.body.verifier!=='string'||!/^[A-Za-z0-9._~-]{43,128}$/.test(req.body.verifier)||
+				typeof req.body.state!=='string'||!sameSecret(handoff.challenge.appState||'',req.body.state)||
+				!sameSecret(handoff.challenge.appChallenge||'',createHash('sha256').update(req.body.verifier).digest('base64url')))fail(401,'Sign-in proof expired or did not match this app. Please try again.');
+			return complete(handoff.challenge,handoff.identity,req,reply);
+		});
 		auth.post<{Params:{provider:string};Body:{challenge:string;code:string;identityToken:string}}>(api+'/auth/:provider/exchange',{config:{rateLimit:{max:20,timeWindow:60000}}},async(req,reply)=>{
 			checkOrigin(req);return finish(req,reply,providerName(req.params.provider),text(req.body?.challenge),{code:text(req.body?.code),identityToken:text(req.body?.identityToken)},'native');
 		});
@@ -79,12 +123,13 @@ export async function registerAccounts(app:FastifyInstance,api:string,options?:A
 			const provider=providerName(req.params.provider);
 			if(data?.error){
 				const c=store.takeChallenge(text(data.state));
-				if(!c||c.provider!==provider||c.platform!=='web'||!req.cookies.sfn_oauth||c.browser!==hash(req.cookies.sfn_oauth))fail(401,'Sign-in expired. Please try again.');
+				if(!c||c.provider!==provider||c.platform==='native'||!req.cookies.sfn_oauth||c.browser!==hash(req.cookies.sfn_oauth))fail(401,'Sign-in expired. Please try again.');
+				if(c.platform==='android')return reply.code(303).redirect(androidRedirect(c,{error:data.error==='access_denied'?'cancelled':'error'}));
 				return reply.code(303).redirect(origin+root+'?account='+ (data.error==='access_denied'?'cancelled':'error'));
 			}
-			try{await finish(req,reply,provider,text(data?.state),{code:text(data?.code)},'web');}
-			catch(error){if(req.cookies.sfn_oauth)return reply.code(303).redirect(origin+root+'?account=error');throw error;}
-			return reply.code(303).redirect(origin+root+'?account=connected');
+			const result=await finish(req,reply,provider,text(data?.state),{code:text(data?.code)},'browser');
+			if('androidRedirect' in result)return reply.code(303).redirect(result.androidRedirect!);
+			return reply.code(303).redirect(origin+root+'?account='+('webError' in result?'error':'connected'));
 		}});
 		auth.get(api+'/account',async req=>({account:session(req),csrf:hash('csrf:'+token(req))}));
 		auth.post(api+'/auth/logout',async(req,reply)=>{mutation(req);store.logout(token(req));clearSession(reply);return reply.code(204).send();});

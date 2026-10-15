@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<color name="logo_background">#FFFFFF</color>
+	<!-- Subway console, the default theme, until the rider's saved theme is drawn. -->
+	<color name="launch_background">#111610</color>
+	<color name="widget_background">#111610</color>
+	<color name="widget_ink">#F6F9F1</color>
+	<color name="widget_muted">#B4BBAE</color>
+	<color name="widget_accent">#C7F36B</color>
+</resources>

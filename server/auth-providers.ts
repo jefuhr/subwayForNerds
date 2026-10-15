@@ -39,7 +39,7 @@ export function productionProviders(env:NodeJS.ProcessEnv):Record<ProviderName,A
 			authorize:(c,state,redirect)=>'https://appleid.apple.com/auth/authorize?'+new URLSearchParams({client_id:appleWeb,redirect_uri:redirect,response_type:'code',response_mode:'form_post',scope:'email',state,nonce:c.nonce}),
 			verify:async(c,input,redirect)=>{
 				const clientID=c.platform==='native'?appleNative:appleWeb;
-				const result=await form('https://appleid.apple.com/auth/token',{client_id:clientID,client_secret:await appleSecret(clientID),code:input.code,grant_type:'authorization_code',...(c.platform==='web'?{redirect_uri:redirect}:{})});
+				const result=await form('https://appleid.apple.com/auth/token',{client_id:clientID,client_secret:await appleSecret(clientID),code:input.code,grant_type:'authorization_code',...(c.platform!=='native'?{redirect_uri:redirect}:{})});
 				const payload=await verifyIdentityToken(result.id_token,appleKeys,'https://appleid.apple.com',clientID,c.nonce);
 				if(c.platform==='native'){
 					const original=await verifyIdentityToken(input.identityToken||'',appleKeys,'https://appleid.apple.com',clientID,c.nonce);
@@ -53,7 +53,7 @@ export function productionProviders(env:NodeJS.ProcessEnv):Record<ProviderName,A
 		google:{nativeClientID:googleNative,webClientID:googleWeb,
 			authorize:(c,state,redirect)=>'https://accounts.google.com/o/oauth2/v2/auth?'+new URLSearchParams({client_id:googleWeb,redirect_uri:redirect,response_type:'code',scope:'openid email',state,nonce:c.nonce,access_type:'offline',code_challenge:createHash('sha256').update(c.verifier).digest('base64url'),code_challenge_method:'S256'}),
 			verify:async(c,input,redirect)=>{
-				const result=await form('https://oauth2.googleapis.com/token',{client_id:googleWeb,client_secret:googleSecret,code:input.code,grant_type:'authorization_code',redirect_uri:c.platform==='web'?redirect:'',...(c.platform==='web'?{code_verifier:c.verifier}:{})});
+				const result=await form('https://oauth2.googleapis.com/token',{client_id:googleWeb,client_secret:googleSecret,code:input.code,grant_type:'authorization_code',redirect_uri:c.platform!=='native'?redirect:'',...(c.platform!=='native'?{code_verifier:c.verifier}:{})});
 				const payload=await verifyIdentityToken(c.platform==='native'?input.identityToken||'':result.id_token,googleKeys,['https://accounts.google.com','accounts.google.com'],googleWeb,c.nonce);
 				const exchanged=await jwtVerify(result.id_token,googleKeys,{issuer:['https://accounts.google.com','accounts.google.com'],audience:googleWeb,algorithms:['RS256']});
 				if(exchanged.payload.sub!==payload.sub)throw new Error('Identity mismatch');

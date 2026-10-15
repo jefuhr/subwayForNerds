@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">Subways for Nerds</string>
+	<string name="widget_name">Nearby trains</string>
+	<string name="widget_description">Both directions at your chosen nearby station. Set station selection and line filters in the app’s Settings, Widgets.</string>
+	<string name="widget_loading">Loading trains</string>
+	<string name="widget_loading_detail">Reading your widget station</string>
+</resources>

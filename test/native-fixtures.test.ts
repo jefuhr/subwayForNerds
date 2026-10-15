@@ -12,6 +12,8 @@ test('native contract fixtures reproduce real API responses with deterministic r
     const bytes = await readFile(new URL(`fixtures/native/${name}`, import.meta.url));
     const swiftBytes = await readFile(new URL(`../ios/TransitCore/Tests/TransitCoreTests/Fixtures/${name}`, import.meta.url));
     assert.deepEqual(swiftBytes, bytes, `${name}: Swift resources differ; run npm run fixtures:native`);
+    const kotlinBytes = await readFile(new URL(`../android/transit-core/src/test/resources/fixtures/${name}`, import.meta.url));
+    assert.deepEqual(kotlinBytes, bytes, `${name}: Kotlin resources differ; run npm run fixtures:native`);
     const recorded = JSON.parse(bytes.toString('utf8'));
     if (name === 'offline-manifest.json') {
       // SQLite header/version and page layout may differ between supported Node
@@ -35,4 +37,14 @@ test('native contract fixtures reproduce real API responses with deterministic r
   assert.ok(trip.key.includes('/?=#'));
   assert.ok((generated['edge-board.json'] as Board).departures.some(departure => !('assigned' in departure)));
   assert.ok((generated['transfers.json'] as TransferResult).connections.length > 0);
+});
+
+test('portable settings fixtures are identical in web, Swift, and Kotlin tests', async () => {
+  for (const name of ['settings.nerds', 'favorites.nerds', 'offline.nerds', 'combined-stations.nerds']) {
+    const source = await readFile(new URL(`fixtures/${name}`, import.meta.url));
+    const swift = await readFile(new URL(`../ios/TransitCore/Tests/TransitCoreTests/Fixtures/${name}`, import.meta.url));
+    const kotlin = await readFile(new URL(`../android/transit-core/src/test/resources/fixtures/${name}`, import.meta.url));
+    assert.deepEqual(swift, source, `${name}: Swift settings fixture differs`);
+    assert.deepEqual(kotlin, source, `${name}: Kotlin settings fixture differs`);
+  }
 });

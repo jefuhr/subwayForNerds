@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": 1788656380,
+  "historyStart": 1786064380,
+  "historyEnd": 1788656380,
+  "counts": {
+    "cars": 8442,
+    "consists": 1,
+    "events": 1,
+    "assertions": 9814
+  },
+  "observedAt": 1788656380,
+  "byteLength": 8818688,
+  "sha256": "515000d309b58ebe3f159c292a10902ba151d08c5a8a8a5f15b139bb7831d9c9",
+  "compression": "gzip",
+  "compressedByteLength": 1103816,
+  "compressedSha256": "8373a027efef76f597d8ec0642773b1c35a91b3206447eac603f3da940eeda5f",
+  "id": "515000d309b58ebe3f159c292a10902ba151d08c5a8a8a5f15b139bb7831d9c9",
+  "downloadURL": "/subwaysForNerds/api/v1/fleet/offline/snapshots/515000d309b58ebe3f159c292a10902ba151d08c5a8a8a5f15b139bb7831d9c9.sqlite.gz"
+}

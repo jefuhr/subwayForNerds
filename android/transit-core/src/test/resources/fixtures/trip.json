@@ -1,0 +1,211 @@
+{
+  "train": {
+    "key": "gtfs-l|20260905|122300_L..N|",
+    "feed": "gtfs-l",
+    "tripId": "122300_L..N",
+    "serviceDate": "20260905",
+    "route": "L",
+    "destination": "8 Av",
+    "direction": "NORTH",
+    "timestamp": 1788656332,
+    "stops": [
+      {
+        "id": "L03N",
+        "sequence": 21,
+        "name": "14 St-Union Sq",
+        "stationId": "602",
+        "arrival": 1788656337,
+        "departure": 1788656352,
+        "scheduledTrack": "2",
+        "actualTrack": "2",
+        "relationship": "SCHEDULED",
+        "changes": []
+      },
+      {
+        "id": "L02N",
+        "sequence": 22,
+        "name": "6 Av",
+        "stationId": "601",
+        "arrival": 1788656412,
+        "departure": 1788656442,
+        "scheduledTrack": "2",
+        "actualTrack": "2",
+        "relationship": "SCHEDULED",
+        "changes": []
+      },
+      {
+        "id": "L01N",
+        "sequence": 23,
+        "name": "8 Av",
+        "stationId": "618",
+        "arrival": 1788656562,
+        "departure": null,
+        "scheduledTrack": "2",
+        "actualTrack": "2",
+        "relationship": "SCHEDULED",
+        "changes": []
+      }
+    ],
+    "relationship": "SCHEDULED",
+    "alerts": [],
+    "trainId": "0L 2023 RPY/8AV",
+    "assigned": true,
+    "position": {
+      "stopId": "L03N",
+      "name": "14 St-Union Sq",
+      "status": "STOPPED_AT",
+      "timestamp": 1788656307
+    },
+    "changes": [],
+    "consist": {
+      "cars": [
+        {
+          "number": "4149",
+          "type": "R211A"
+        },
+        {
+          "number": "4148",
+          "type": "R211A"
+        },
+        {
+          "number": "4147",
+          "type": "R211A"
+        },
+        {
+          "number": "4146",
+          "type": "R211A"
+        },
+        {
+          "number": "4145",
+          "type": "R211A"
+        }
+      ],
+      "updatedAt": 1788656380,
+      "fetchedAt": 1788656380,
+      "source": "helium"
+    }
+  },
+  "raw": [
+    {
+      "id": "1",
+      "is_deleted": false,
+      "trip_update": {
+        "trip": {
+          "trip_id": "122300_L..N",
+          "start_date": "20260905",
+          "schedule_relationship": "SCHEDULED",
+          "route_id": "L",
+          "direction_id": 0,
+          ".transit_realtime.nyct_trip_descriptor": {
+            "train_id": "0L 2023 RPY/8AV",
+            "is_assigned": true,
+            "direction": "NORTH"
+          }
+        },
+        "stop_time_update": [
+          {
+            "stop_sequence": 21,
+            "arrival": {
+              "delay": 102,
+              "time": 1788656337,
+              "uncertainty": 0
+            },
+            "departure": {
+              "delay": 102,
+              "time": 1788656352,
+              "uncertainty": 0
+            },
+            "stop_id": "L03N",
+            "schedule_relationship": "SCHEDULED",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2",
+              "actual_track": "2"
+            }
+          },
+          {
+            "stop_sequence": 22,
+            "arrival": {
+              "delay": 87,
+              "time": 1788656412,
+              "uncertainty": 0
+            },
+            "departure": {
+              "delay": 102,
+              "time": 1788656442,
+              "uncertainty": 0
+            },
+            "stop_id": "L02N",
+            "schedule_relationship": "SCHEDULED",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2",
+              "actual_track": "2"
+            }
+          },
+          {
+            "stop_sequence": 23,
+            "arrival": {
+              "delay": 87,
+              "time": 1788656562,
+              "uncertainty": 0
+            },
+            "stop_id": "L01N",
+            "schedule_relationship": "SCHEDULED",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2",
+              "actual_track": "2"
+            }
+          }
+        ],
+        "timestamp": 1788656332
+      }
+    },
+    {
+      "id": "2",
+      "is_deleted": false,
+      "vehicle": {
+        "trip": {
+          "trip_id": "122300_L..N",
+          "start_date": "20260905",
+          "schedule_relationship": "SCHEDULED",
+          "route_id": "L",
+          "direction_id": 0,
+          ".transit_realtime.nyct_trip_descriptor": {
+            "train_id": "0L 2023 RPY/8AV",
+            "is_assigned": true,
+            "direction": "NORTH"
+          }
+        },
+        "current_stop_sequence": 21,
+        "current_status": "STOPPED_AT",
+        "timestamp": 1788656307,
+        "congestion_level": "UNKNOWN_CONGESTION_LEVEL",
+        "stop_id": "L03N"
+      }
+    }
+  ],
+  "source": {
+    "state": {
+      "id": "gtfs-l",
+      "timestamp": 1788656332,
+      "fetchedAt": 1788656332,
+      "error": null
+    },
+    "header": {
+      "gtfs_realtime_version": "1.0",
+      "incrementality": "FULL_DATASET",
+      "timestamp": 1788656332,
+      ".transit_realtime.nyct_feed_header": {
+        "nyct_subway_version": "1.0",
+        "trip_replacement_period": [
+          {
+            "route_id": "L",
+            "replacement_period": {
+              "start": 1788656332,
+              "end": 1788658132
+            }
+          }
+        ]
+      }
+    }
+  }
+}

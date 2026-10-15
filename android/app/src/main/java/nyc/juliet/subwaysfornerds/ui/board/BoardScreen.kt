@@ -60,7 +60,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -73,7 +72,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -122,10 +120,11 @@ import nyc.juliet.subwaysfornerds.ui.theme.palette
 /**
  * The board: station heading and actions, filters, grouped departures and feed check. With
  * two or more station pages, riders swipe between them like the web board's station pager.
+ * `onBack` shows a back arrow when the board was opened from connections.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun BoardScreen(model: AppModel, open: (Route) -> Unit, selected: Route?, modifier: Modifier = Modifier) {
+fun BoardScreen(model: AppModel, open: (Route) -> Unit, selected: Route?, modifier: Modifier = Modifier, onBack: (() -> Unit)? = null) {
 	val scope = rememberCoroutineScope()
 	Scaffold(
 		modifier = modifier.testTag("boardScreen"),
@@ -134,6 +133,9 @@ fun BoardScreen(model: AppModel, open: (Route) -> Unit, selected: Route?, modifi
 		topBar = {
 			TopAppBar(
 				title = { Text("Board", modifier = Modifier.semantics { heading() }) },
+				navigationIcon = {
+					if (onBack != null) IconButton(onClick = onBack, modifier = Modifier.testTag("navigateBack")) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+				},
 				actions = {
 					IconButton(onClick = { model.navigator.push(Route.StationPicker(StationPickerMode.SEARCH)) }, modifier = Modifier.testTag("findStation")) {
 						Icon(Icons.Filled.Search, contentDescription = "Find a station")
@@ -407,16 +409,15 @@ private fun OfflineStatus(model: AppModel) {
 private fun Filters(model: AppModel) {
 	val preference = model.preference
 	Column(Modifier.padding(start = 12.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)) {
-		Row(verticalAlignment = Alignment.CenterVertically) {
-			Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("directionFilter")) {
-				BoardLogic.directionOptions(model.station).forEach { option ->
-					val isSelected = preference.direction == option.id
-					DirectionChip(option, isSelected) { model.setDirection(option.id) }
-				}
-			}
-			VerticalDivider(Modifier.height(24.dp).padding(horizontal = 6.dp), color = palette.line)
-			RouteFilters(model)
-		}
+		StationFilterRow(
+			directions = BoardLogic.directionOptions(model.station),
+			direction = preference.direction,
+			onDirection = model::setDirection,
+			routes = BoardLogic.routeChoices(model.station, model.board, model.hiddenRoutes, CoreBridge::visibleRoutes),
+			selectedRoutes = preference.routes,
+			onToggleRoute = model::toggleRoute,
+			onAllRoutes = model::clearRoutes,
+		)
 		ChipRow(Modifier.testTag("boardViews")) {
 			Labels.boardViews.forEach { view ->
 				ChoiceChip(Labels.boardViewTitle(view), preference.view == view, { model.setBoardView(view) }, Modifier.testTag("boardView_$view"), contentDescription = Labels.boardViewLabel(view))
@@ -424,63 +425,6 @@ private fun Filters(model: AppModel) {
 		}
 	}
 }
-
-@Composable
-private fun DirectionChip(option: DirectionOption, isSelected: Boolean, onClick: () -> Unit) {
-	val icon = when (option.id) {
-		"NORTH" -> Icons.Filled.ArrowUpward
-		"SOUTH" -> Icons.Filled.ArrowDownward
-		"ALL" -> Icons.Filled.SwapVert
-		else -> null
-	}
-	Box(
-		Modifier
-			.size(48.dp)
-			.clickable(role = Role.RadioButton, onClick = onClick)
-			.semantics { contentDescription = option.name; selected = isSelected }
-			.testTag("direction_${option.id}"),
-		contentAlignment = Alignment.Center,
-	) {
-		Box(
-			Modifier.size(width = 40.dp, height = 32.dp)
-				.background(if (isSelected) palette.accentTint else androidx.compose.ui.graphics.Color.Transparent, CircleShape)
-				.border(if (isSelected) 1.5.dp else 1.dp, if (isSelected) palette.accent else palette.line, CircleShape),
-			contentAlignment = Alignment.Center,
-		) {
-			if (icon != null) Icon(icon, contentDescription = null, tint = if (isSelected) palette.action else palette.ink, modifier = Modifier.size(18.dp))
-			else Text(option.text.orEmpty(), style = TextRoles.caption.copy(fontWeight = FontWeight.SemiBold), color = if (isSelected) palette.action else palette.ink)
-		}
-	}
-}
-
-@Composable
-private fun RouteFilters(model: AppModel) {
-	val selectedRoutes = model.preference.routes
-	val routes = BoardLogic.routeChoices(model.station, model.board, model.hiddenRoutes, CoreBridge::visibleRoutes)
-	ChipRow {
-		ChoiceChip("All", selectedRoutes.isEmpty(), { model.clearRoutes() }, contentDescription = "All lines")
-		routes.forEach { route ->
-			val on = route in selectedRoutes
-			Box(
-				Modifier.size(48.dp)
-					.clickable(role = Role.Checkbox) { model.toggleRoute(route) }
-					.semantics { contentDescription = "Filter line ${Display.routeLabel(route)}"; selected = on }
-					.testTag("routeFilter_$route"),
-				contentAlignment = Alignment.Center,
-			) {
-				Box(
-					Modifier.then(if (on) Modifier.border(2.dp, palette.accent, CircleShape) else Modifier).padding(3.dp),
-					contentAlignment = Alignment.Center,
-				) {
-					RouteBullet(route, small = true, modifier = Modifier.then(if (selectedRoutes.isEmpty() || on) Modifier else Modifier.alphaFaded()))
-				}
-			}
-		}
-	}
-}
-
-/** Unselected lines fade while another line filter is active. */
-private fun Modifier.alphaFaded(): Modifier = this.alpha(0.4f)
 
 private fun LazyListScope.platformSection(model: AppModel, group: DepartureSection, predecessors: List<Departure?>, station: Station?, view: String, now: Double, open: (Route) -> Unit, selected: Route?) {
 	val (heading, subtitle) = BoardLogic.heading(group, station, view)

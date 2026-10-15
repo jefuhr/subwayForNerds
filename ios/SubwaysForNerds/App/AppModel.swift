@@ -27,6 +27,7 @@ final class AppModel {
 	var stationPreferences: [String: StationPreference]
 	var combinedStations: [String: CombinedStation]
 	var hiddenRoutes: [String]
+	var transferPreferences: TransferPreferences
 	var combinedBoard: CombinedBoardSnapshot?
 	private var memberBoards: [String: MemberBoardSnapshot] = [:]
 	var settingsError: String?
@@ -157,6 +158,7 @@ final class AppModel {
 		stationPreferences = portable?.settings.stations ?? saved.stations
 		combinedStations = portable?.settings.combinedStations ?? [:]
 		hiddenRoutes = portable?.settings.hiddenRoutes ?? []
+		transferPreferences = portable?.settings.transfers ?? TransferPreferences()
 		widgetPreferences = portable?.settings.widgets ?? Self.read(WidgetPreferences.self, at: directory.appendingPathComponent("widgets.json")) ?? WidgetPreferences()
 		offlinePreferences = portable?.settings.offline ?? OfflinePreferences()
 		settingsSync = portable?.sync
@@ -219,6 +221,11 @@ final class AppModel {
 		guard combinedBoard == nil, let board, let departure = board.departures.first(where: { $0.key == key }) else { return nil }
 		return DepartureOrigin(station: board.station, departure: departure, cached: boardIsCached, savedAt: boardSavedAt)
 	}
+	/// Where a trip boards on the selected board right now, captured by train details
+	/// before another station is selected.
+	func boardOrigin(forTrip key: String) -> DepartureOrigin? {
+		board?.departures.first { $0.tripKey == key }.flatMap { departureOrigin($0.key) }
+	}
 	func departureIsCached(_ key: String) -> Bool { !connected || (combinedBoard?.origins[key]?.cached ?? boardIsCached) }
 	func realStationIDs(_ ids: [String]) -> [String] { Array(Set(ids.flatMap { combinedStations[$0]?.stationIDs ?? [$0] })).sorted() }
 	var theme: AppTheme { AppTheme.all.first { $0.id == themeID } ?? AppTheme.all[0] }
@@ -227,14 +234,16 @@ final class AppModel {
 	var isDownloading: Bool { downloadTask != nil }
 	var baseURL: URL { URL(string: endpoint) ?? TransitAPI.productionBaseURL }
 
-	func selectStation(_ id: String) {
+	/// Opening a station board from a transfer keeps the current tab, so its navigation
+	/// stack can return to that transfer and train.
+	func selectStation(_ id: String, switchTab: Bool = true) {
 		favoriteStartupAttempted = true
-		guard id != stationID else { selectedTab = 0; return }
+		guard id != stationID else { if switchTab { selectedTab = 0 }; return }
 		stationID = id
 		boardGeneration += 1
 		memberBoards = [:]
 		combinedBoard = nil
-		selectedTab = 0
+		if switchTab { selectedTab = 0 }
 		board = nil
 		boardSavedAt = nil
 		boardIsCached = true
@@ -295,6 +304,31 @@ final class AppModel {
 
 	func resetFilters() { stationPreferences[stationID] = StationPreference(view: preference.view); persist() }
 	func clearRoutes() { var value = preference; value.routes = []; stationPreferences[stationID] = value; persist() }
+
+	/// Transfer filters always name their transfer station explicitly; they never
+	/// follow the selected board station.
+	func transferFilter(for stationID: String) -> TransferStationPreference { transferSettings.transferFilter(for: stationID) }
+	/// Separate mode copies the board filters into a missing entry on first use.
+	func ensureTransferFilter(for stationID: String) {
+		var settings = transferSettings
+		guard settings.seedTransferFilter(for: stationID) else { return }
+		transferPreferences = settings.transfers
+		persist()
+	}
+	func setTransferDirection(_ direction: String, for stationID: String) { updateTransferFilter(for: stationID) { $0.direction = direction } }
+	func toggleTransferRoute(_ route: String, for stationID: String) { updateTransferFilter(for: stationID) { TransferFilters.toggle(route, in: &$0) } }
+	func clearTransferRoutes(for stationID: String) { updateTransferFilter(for: stationID) { $0.routes = [] } }
+	func resetTransferFilters(for stationID: String) { updateTransferFilter(for: stationID) { $0 = TransferStationPreference() } }
+	func setSeparateTransferFilters(_ value: Bool) { transferPreferences.separateFilters = value; persist() }
+	private var transferSettings: PortableSettings {
+		var value = PortableSettings(); value.stations = stationPreferences; value.transfers = transferPreferences; return value
+	}
+	private func updateTransferFilter(for stationID: String, _ change: (inout TransferStationPreference) -> Void) {
+		var settings = transferSettings
+		settings.updateTransferFilter(for: stationID, change)
+		stationPreferences = settings.stations; transferPreferences = settings.transfers
+		persist()
+	}
 	func setTheme(_ id: String) { themeID = id; persist() }
 	func setWidgetDisplay(_ value: WidgetDisplayOptions) { widgetPreferences.display = value; persistWidgetPreferences() }
 	func setWidgetLockScreen(_ value: LockScreenWidgetOptions) { widgetPreferences.lockScreen = value; persistWidgetPreferences() }
@@ -667,14 +701,17 @@ final class AppModel {
 	/// "Save trip offline": kept until removed. Pass any detail still in memory, even
 	/// after the connection drops; the store keeps whichever source is newer. Without
 	/// one, the board's onward stops are saved as a labeled partial trip.
-	func saveTripOffline(_ key: String, detail: TripDetail?, origin: DepartureOrigin? = nil) async {
+	/// `inferFromBoard: false` uses only the given origin: train details pass the context
+	/// they captured, so a board selected later never supplies one.
+	func saveTripOffline(_ key: String, detail: TripDetail?, origin: DepartureOrigin? = nil, inferFromBoard: Bool = true) async {
 		guard let transitStore else { offlineActionError = "Offline storage is unavailable on this device."; return }
 		let requestedEndpoint = endpoint
+		let boardStation = inferFromBoard ? board?.station : nil
 		do {
-			if let detail { try await transitStore.saveTrip(detail, endpoint: requestedEndpoint, departure: origin?.departure ?? boardDeparture(key), manuallySaved: true) }
+			if let detail { try await transitStore.saveTrip(detail, endpoint: requestedEndpoint, departure: origin?.departure ?? (inferFromBoard ? boardDeparture(key) : nil), manuallySaved: true) }
 			else if await transitStore.trip(key: key, endpoint: requestedEndpoint) == nil {
-				guard let departure = origin?.departure ?? boardDeparture(key) else { throw AppError.message("No train details are available to save yet. Reconnect and try again.") }
-				try await transitStore.savePartialTrip(departure, endpoint: requestedEndpoint, manuallySaved: true, station: origin?.station ?? board?.station)
+				guard let departure = origin?.departure ?? (inferFromBoard ? boardDeparture(key) : nil) else { throw AppError.message("No train details are available to save yet. Reconnect and try again.") }
+				try await transitStore.savePartialTrip(departure, endpoint: requestedEndpoint, manuallySaved: true, station: origin?.station ?? boardStation)
 			}
 			try await transitStore.setManuallySaved(true, tripKey: key, endpoint: requestedEndpoint)
 			offlineActionError = nil
@@ -690,15 +727,15 @@ final class AppModel {
 	}
 
 	/// "I'm on this train". One active ride; it stays protected across relaunch until ended.
-	func startRide(_ key: String, detail: TripDetail?, origin: DepartureOrigin? = nil) async {
+	func startRide(_ key: String, detail: TripDetail?, origin: DepartureOrigin? = nil, inferFromBoard: Bool = true) async {
 		guard let transitStore else { offlineActionError = "Offline storage is unavailable on this device."; return }
 		guard !OfflineIdentity.isPositionalTrip(key) else { offlineActionError = "PATH reports identify a station arrival, not one train, so rides can't follow them."; return }
 		let requestedEndpoint = endpoint
-		let departure = origin?.departure ?? boardDeparture(key)
+		let departure = origin?.departure ?? (inferFromBoard ? boardDeparture(key) : nil)
 		do {
 			if let detail { try await transitStore.saveTrip(detail, endpoint: requestedEndpoint, departure: departure) }
-			else if await transitStore.trip(key: key, endpoint: requestedEndpoint) == nil, let departure { try await transitStore.savePartialTrip(departure, endpoint: requestedEndpoint, station: origin?.station ?? board?.station) }
-			let ride = ActiveRide(tripKey: key, boardingStationID: departure == nil ? nil : origin?.station.id ?? (combinedStations[stationID] == nil ? stationID : nil), startedAt: Date().timeIntervalSince1970)
+			else if await transitStore.trip(key: key, endpoint: requestedEndpoint) == nil, let departure { try await transitStore.savePartialTrip(departure, endpoint: requestedEndpoint, station: origin?.station ?? (inferFromBoard ? board?.station : nil)) }
+			let ride = ActiveRide(tripKey: key, boardingStationID: departure == nil ? nil : origin?.station.id ?? (inferFromBoard && combinedStations[stationID] == nil ? stationID : nil), startedAt: Date().timeIntervalSince1970)
 			try await transitStore.setActiveRide(ride, endpoint: requestedEndpoint)
 			let trip = await transitStore.trip(key: key, endpoint: requestedEndpoint)
 			guard requestedEndpoint == endpoint else { return }
@@ -1272,7 +1309,7 @@ final class AppModel {
 		var value = PortableSettings(); value.favorites = favorites; value.theme = themeID
 		value.combinedStations = combinedStations; value.hiddenRoutes = hiddenRoutes
 		value.trainFavorites = trainFavorites; value.stationSelection = stationSelection; value.units = units
-		value.stations = stationPreferences; value.widgets = widgetPreferences; value.offline = offlinePreferences; return value
+		value.stations = stationPreferences; value.widgets = widgetPreferences; value.offline = offlinePreferences; value.transfers = transferPreferences; return value
 	}
 	private var settingsStore: DeviceSettingsStore { DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json")) }
 	private func record(settings: PortableSettings, lastStation: String, sync: SettingsSyncState?) -> DeviceSettings {
@@ -1289,7 +1326,7 @@ final class AppModel {
 				favorites = saved.favorites; themeID = saved.theme
 				trainFavorites = saved.trainFavorites; stationSelection = saved.stationSelection; units = saved.units
 				stationPreferences = saved.stations; widgetPreferences = saved.widgets; offlinePreferences = saved.offline
-				combinedStations = saved.combinedStations; hiddenRoutes = saved.hiddenRoutes
+				combinedStations = saved.combinedStations; hiddenRoutes = saved.hiddenRoutes; transferPreferences = saved.transfers
 			}
 			settingsError = "Settings could not be saved on this device. Your previous preferences are unchanged. " + error.localizedDescription
 		}
@@ -1302,7 +1339,7 @@ final class AppModel {
 		}
 		let definitionChanged = combinedStations[selected] != settings.combinedStations[selected]
 		try settingsStore.save(record(settings: settings, lastStation: selected, sync: sync), replacingUnreadable: replacingUnreadable)
-		combinedStations = settings.combinedStations; hiddenRoutes = settings.hiddenRoutes
+		combinedStations = settings.combinedStations; hiddenRoutes = settings.hiddenRoutes; transferPreferences = settings.transfers
 		favorites = settings.favorites; themeID = settings.theme; stationPreferences = settings.stations; widgetPreferences = settings.widgets; settingsSync = sync; settingsError = nil
 		trainFavorites = settings.trainFavorites; stationSelection = settings.stationSelection; units = settings.units
 		let offlineChanged = offlinePreferences != settings.offline

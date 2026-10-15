@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AlertTriangle, ArrowUpRight, Accessibility, Clock3 } from 'lucide-react';
-import type { Board, StationContext, Train, StopPrediction, TransferResult } from '../shared/types';
+import type { Board, Station, StationContext, Train, StopPrediction, TransferResult } from '../shared/types';
 import { ageLabel, clockTime, sourceClockText, freshness, vehiclePositionDisplay } from '../shared/display';
 import { NJT_LINES } from '../shared/njt';
 import { api } from './platform';
@@ -11,15 +11,33 @@ import { changesAhead } from '../shared/changes';
 import { consistCarIDs, favoriteTrainMatch, fleetCarID } from '../shared/favorites';
 import { FavoriteCarButton, FavoriteConsistButton, useTrainFavorites } from './Favorites';
 import { useUnits } from './Units';
+import { getDeviceSettings, subscribeSettings, updateSettings } from './settings-store';
+import { filterTransfers, routeFilterKey, seedTransferFilter, transferFilter, transferRouteChoices, withTransferFilter } from '../shared/transfer-filters';
+import type { TransferStationSettings } from '../shared/settings';
+import { DirectionFilters, RouteFilters } from './BoardFilters';
 
-export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: string; close: () => void; now: number; openFleet?: (id?: string) => void }) {
+/** Where a train/transfer view was before its station board opened; restored by browser Back. */
+export type TripReturn = { tripKey: string; trainScroll: number; stop?: StopPrediction; transferScroll?: number };
+
+export function TrainDetail({ tripKey, close, now, openFleet, restore, stationFor, openBoard, backToTrain }: {
+  tripKey: string; close: () => void; now: number; openFleet?: (id?: string) => void;
+  restore?: TripReturn; stationFor?: (id: string) => Station | undefined;
+  openBoard?: (stationId: string, from: TripReturn) => void; backToTrain?: () => boolean;
+}) {
   const favorites = useTrainFavorites();
   const units = useUnits();
   const [data, setData] = useState<{ train: Train; raw: unknown }>();
   const [error, setError] = useState('');
-  const [selected, setSelected] = useState<StopPrediction>();
-  const trainView = useRef<HTMLDivElement>(null), savedScroll = useRef(0);
+  const [selected, setSelected] = useState<StopPrediction | undefined>(restore?.stop);
+  const trainView = useRef<HTMLDivElement>(null), savedScroll = useRef(restore?.trainScroll || 0);
+  // A restored train view waits for its first refreshed response before scrolling back.
+  const pendingScroll = useRef(restore && !restore.stop ? restore.trainScroll : null);
   useLayoutEffect(() => { const dialog = trainView.current?.closest('dialog'); if (dialog) dialog.scrollTop = selected ? 0 : savedScroll.current; }, [selected]);
+  useLayoutEffect(() => {
+    const dialog = trainView.current?.closest('dialog');
+    if (!dialog || selected || pendingScroll.current == null) return;
+    dialog.scrollTop = pendingScroll.current; pendingScroll.current = null;
+  }, [data, selected]);
   useEffect(() => {
     const controller = new AbortController();
     const update = () => api<{ train: Train; raw: unknown }>('trips?key=' + encodeURIComponent(tripKey), controller.signal).then(value => { setData(value); setError(''); }).catch(e => { if (!controller.signal.aborted) setError(e.message); });
@@ -61,12 +79,19 @@ export function TrainDetail({ tripKey, close, now, openFleet }: { tripKey: strin
       {train.scheduledPattern && <details className="raw-details"><summary>Matching scheduled pattern · {train.scheduledPattern.headsign}</summary><p className="fine-print">Shape {train.scheduledPattern.shape} · {train.scheduledPattern.source === 'gtfs_supplemented' ? 'Supplemented GTFS' : 'Regular GTFS'}. Static context only; live predictions above take precedence.</p><p className="fine-print">{train.scheduledPattern.stops.join(' → ')}</p></details>}
       <details className="raw-details"><summary>Decoded feed & identifiers</summary><pre>{JSON.stringify(data, null, 2)}</pre></details>
     </div>}
-    {selected && <TransferView tripKey={tripKey} stop={selected} now={now} back={() => setSelected(undefined)} />}
+    {selected && <TransferView tripKey={tripKey} stop={selected} now={now} back={() => { if (!backToTrain?.()) setSelected(undefined); }}
+      stationFor={stationFor} initialScroll={restore?.stop ? restore.transferScroll : undefined} trainSettled={!!train || !!error}
+      openBoard={openBoard && ((stationId, transferScroll) => openBoard(stationId, { tripKey, trainScroll: savedScroll.current, stop: selected, transferScroll }))} />}
   </Modal>;
 }
-function TransferView({ tripKey, stop, now, back }: { tripKey: string; stop: StopPrediction; now: number; back: () => void }) {
+function TransferView({ tripKey, stop, now, back, stationFor, openBoard, initialScroll, trainSettled }: {
+  tripKey: string; stop: StopPrediction; now: number; back: () => void;
+  stationFor?: (id: string) => Station | undefined; openBoard?: (stationId: string, transferScroll: number) => void; initialScroll?: number; trainSettled: boolean;
+}) {
   const units = useUnits();
+  const settings = useSyncExternalStore(subscribeSettings, getDeviceSettings).settings;
   const [data, setData] = useState<TransferResult>(), [error, setError] = useState('');
+  const root = useRef<HTMLElement>(null), pendingScroll = useRef(initialScroll ?? null);
   useEffect(() => {
     const controller = new AbortController(); let busy = false;
     const query = new URLSearchParams({ key: tripKey, stopId: stop.id, ...(stop.sequence == null ? {} : { sequence: String(stop.sequence) }) });
@@ -79,13 +104,38 @@ function TransferView({ tripKey, stop, now, back }: { tripKey: string; stop: Sto
     void refresh(); const timer = setInterval(() => { if (!document.hidden) void refresh(); }, 10000);
     return () => { controller.abort(); clearInterval(timer); };
   }, [tripKey, stop.id, stop.sequence]);
+  // The train's loading placeholder sits above this view, so restore only after both responses settle.
+  useLayoutEffect(() => {
+    const dialog = root.current?.closest('dialog');
+    if (!dialog || pendingScroll.current == null || !trainSettled || (!data && !error)) return;
+    dialog.scrollTop = pendingScroll.current; pendingScroll.current = null;
+  }, [data, error, trainSettled]);
+  // Filters belong to the transfer station, never the station selected on the main board.
+  const stationId = data?.station?.id || stop.stationId;
+  const separateMissing = !!stationId && settings.transfers.separateFilters && !settings.transfers.stations[stationId];
+  useEffect(() => { if (stationId && separateMissing) updateSettings(s => seedTransferFilter(s, stationId)); }, [stationId, separateMissing]);
+  const filter = stationId ? transferFilter(settings, stationId) : { direction: 'ALL', routes: [] };
+  const routes = [...new Set(filter.routes.map(routeFilterKey))];
+  const save = (patch: Partial<TransferStationSettings>) => { if (stationId) updateSettings(s => withTransferFilter(s, stationId, patch)); };
+  const filtered = filter.direction !== 'ALL' || routes.length > 0;
   const groups = new Map<string, TransferResult['connections']>();
   const stale = !!data && (freshness(data.originTimestamp, now, data.originStaleAfter) !== 'live' || (data.arrival != null && data.arrival < now));
-  for (const d of error || stale ? [] : (data?.connections || []).filter(d => freshness(d.timestamp, now, d.staleAfter) === 'live' && d.time != null && d.time >= now)) { const key = [d.route, d.direction, d.area].join('|'); const a = groups.get(key) || []; a.push(d); groups.set(key, a); }
-  return <section className="transfer-view"><button className="text-button" onClick={back}>← Back to train</button><h3>Transfers at {stop.name}</h3>
+  const fresh = error || stale ? [] : (data?.connections || []).filter(d => freshness(d.timestamp, now, d.staleAfter) === 'live' && d.time != null && d.time >= now);
+  const shown = filterTransfers(fresh, filter, settings.hiddenRoutes);
+  for (const d of shown) { const key = [d.route, d.direction, d.area].join('|'); const a = groups.get(key) || []; a.push(d); groups.set(key, a); }
+  const station = data?.station || (stationId ? stationFor?.(stationId) : undefined);
+  const choices = transferRouteChoices(station, data?.connections || [], settings.hiddenRoutes);
+  return <section className="transfer-view" ref={root}><div className="transfer-actions"><button className="text-button" onClick={back}>← Back to train</button>
+    {openBoard && <button className="text-button" disabled={!stationId} onClick={() => stationId && openBoard(stationId, root.current?.closest('dialog')?.scrollTop || 0)}>Open station board</button>}</div>
+    <h3>Transfers at {stop.name}</h3>
+    {stationId && <div className="departure-filters transfer-filters">
+      <DirectionFilters label="Transfer direction filters" stationId={stationId} direction={filter.direction} setDirection={direction => save({ direction })} />
+      <RouteFilters label="Transfer line filters" availableRoutes={choices} routes={routes} setRoutes={value => save({ routes: typeof value === 'function' ? value(routes) : value })} />
+    </div>}
     {error && <p className="notice">{error}</p>}{!data && !error && <p className="empty">Checking connecting departures…</p>}
     {data && <><p>Your train: {clockTime(data.arrival, units.time)} estimated {data.basis}{data.basis === 'departure' ? ' (arrival unavailable)' : ''} · updated {ageLabel(data.originTimestamp, now)}</p>{stale && !data.message && <p className="notice">Predictions are stale or the arrival estimate has passed. Awaiting an update.</p>}<p className="fine-print">Next 30 minutes · raw time gaps, no walking allowance. Boarding areas may require stairs, passageways, or different platform access. Connections are not guaranteed.</p>
       {data.message && <p className="notice">{data.message}</p>}
+      {fresh.length > 0 && !shown.length && <div className="empty-board transfer-empty"><h3>No connections match these filters</h3><p>{fresh.length} fresh {fresh.length === 1 ? 'connection is' : 'connections are'} hidden by your filters or hidden lines.</p>{filtered && <button className="primary-button" onClick={() => save({ direction: 'ALL', routes: [] })}>Reset filters</button>}</div>}
       {[...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, connections]) => <section className="transfer-group" key={key}><h4>{connections[0].route} · {connections[0].area}</h4>{connections.sort((a, b) => a.time! - b.time!).map(d => <div className="transfer-row" key={d.key}><span><strong>{d.destination}</strong><small>{d.actualTrack ? `Reported track ${d.actualTrack}` : d.scheduledTrack ? `Scheduled track ${d.scheduledTrack}` : 'Track not reported'}</small><ChangeLabels changes={d.changes} now={now} /></span><span><strong>{clockTime(d.time, units.time)}</strong><small>{d.gap < 60 ? '<1 min' : `${Math.floor(d.gap / 60)} min`} after arrival · {d.basis}{d.basis === 'arrival' ? ' fallback' : ''}</small></span></div>)}</section>)}
       <details className="raw-details"><summary>Prediction sources</summary>{data.sources.map(s => <p key={s.id}>{s.id} · {clockTime(s.timestamp, units.time)}{s.error ? ' · unavailable' : ''}</p>)}</details>
     </>}

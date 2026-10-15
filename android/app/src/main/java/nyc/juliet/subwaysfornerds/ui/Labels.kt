@@ -80,7 +80,7 @@ object Labels {
 		"lockScreen" to "Lock Screen", "directionOrder" to "Direction order", "showService" to "Service icons", "fields" to "Shown information",
 		"compact" to "Compact rows", "trainsPerDirection" to "Trains per direction", "timeStyle" to "Arrival display",
 		"refreshInterval" to "Refresh interval", "matchAppFilters" to "Match app filters", "direction" to "Direction", "routes" to "Lines",
-		"view" to "Board grouping",
+		"view" to "Board grouping", "transfers" to "Transfer filters", "separateFilters" to "Save transfer filters separately",
 	)
 
 	fun settingPath(path: String, stationName: (String) -> String?): String =

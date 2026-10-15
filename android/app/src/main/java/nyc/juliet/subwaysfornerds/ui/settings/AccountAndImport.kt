@@ -28,6 +28,7 @@ import kotlinx.serialization.json.doubleOrNull
 import nyc.juliet.subwaysfornerds.core.Settings
 import nyc.juliet.subwaysfornerds.core.SettingsMerge
 import nyc.juliet.subwaysfornerds.core.TrainFavorites
+import nyc.juliet.subwaysfornerds.core.TransferSettings
 import nyc.juliet.subwaysfornerds.core.TrainFavoriteRules
 import nyc.juliet.subwaysfornerds.ui.AppModel
 import nyc.juliet.subwaysfornerds.ui.Labels
@@ -45,6 +46,18 @@ import nyc.juliet.subwaysfornerds.ui.theme.TextRoles
 import nyc.juliet.subwaysfornerds.ui.theme.palette
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
+
+/** How transfer filters are kept, for Settings and import previews. */
+object TransferText {
+	fun mode(value: TransferSettings): String =
+		if (value.separateFilters) "Connections use their own filters for each transfer station, starting from that station's board filters."
+		else "Connections use each transfer station's board filters." + if (value.stations.isEmpty()) "" else " Separate filters stay saved for when this is on."
+	fun summary(value: TransferSettings): String {
+		val count = value.stations.size
+		val saved = "$count station${if (count == 1) "" else "s"} with separate transfer filters"
+		return if (value.separateFilters) "Transfer filters saved separately · $saved" else "Transfer filters shared with boards" + if (count == 0) "" else " · $saved kept"
+	}
+}
 
 /** Human-readable portable setting values for previews and conflicts. */
 object SettingsText {
@@ -104,6 +117,7 @@ fun ImportPreviewScreen(model: AppModel, account: AccountModel, close: () -> Uni
 		section("summary") {
 			row { RowContainer { Text("${settings.favorites.size} favorite stations · ${settings.trainFavorites.cars.size} cars · ${settings.trainFavorites.consists.size} consists", style = TextRoles.subheadline) } }
 			row { RowContainer { Text("${settings.combinedStations.size} combined stations · ${settings.hiddenRoutes.size} hidden lines", style = TextRoles.subheadline) } }
+			row { RowContainer { Text(TransferText.summary(settings.transfers), style = TextRoles.subheadline, modifier = Modifier.testTag("importTransferSummary")) } }
 			row { RowContainer { Text("Last station: " + (settings.combinedStations[file.lastStation]?.name ?: model.stations.firstOrNull { it.id == file.lastStation }?.name ?: file.lastStation), style = TextRoles.subheadline) } }
 			row { RowContainer { Text(if (account.account == null) "This replaces settings on this device." else "This replaces settings on this device and will sync to your account.", style = TextRoles.subheadline) } }
 		}

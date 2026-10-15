@@ -11,10 +11,10 @@ test('combined stations and hidden routes survive v4 exports and migrate older s
 	settings.combinedStations[id] = { name: 'Downtown', stationIDs: ['628', '624', '328'] };
 	settings.hiddenRoutes = ['R', '1'];
 	const file = decodeNerds(encodeNerds(settings, id));
-	assert.equal(file.version, 4);
+	assert.equal(file.version, 5);
 	assert.deepEqual(file.settings, validateSettings(settings));
 	const old = JSON.parse(encodeNerds(defaults(), '602'));
-	old.version = 3; delete old.settings.combinedStations; delete old.settings.hiddenRoutes;
+	old.version = 3; delete old.settings.combinedStations; delete old.settings.hiddenRoutes; delete old.settings.transfers;
 	assert.deepEqual(decodeNerds(JSON.stringify(old)).settings.combinedStations, {});
 	assert.deepEqual(decodeNerds(JSON.stringify(old)).settings.hiddenRoutes, []);
 	old.version = 4;

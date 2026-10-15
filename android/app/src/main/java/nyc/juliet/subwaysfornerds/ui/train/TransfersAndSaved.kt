@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DirectionsSubway
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,11 +44,18 @@ import nyc.juliet.subwaysfornerds.core.Freshness
 import nyc.juliet.subwaysfornerds.core.LoadProgress
 import nyc.juliet.subwaysfornerds.core.OfflineDisplay
 import nyc.juliet.subwaysfornerds.core.OfflineIdentity
+import nyc.juliet.subwaysfornerds.core.Station
+import nyc.juliet.subwaysfornerds.core.TransferFilter
 import nyc.juliet.subwaysfornerds.core.TransferResult
 import nyc.juliet.subwaysfornerds.data.CachedTrip
 import nyc.juliet.subwaysfornerds.ui.AppModel
 import nyc.juliet.subwaysfornerds.ui.CoreBridge
+import nyc.juliet.subwaysfornerds.ui.board.BoardLogic
+import nyc.juliet.subwaysfornerds.ui.board.StationFilterRow
+import nyc.juliet.subwaysfornerds.ui.components.ActionButton
+import nyc.juliet.subwaysfornerds.ui.components.ActionChip
 import nyc.juliet.subwaysfornerds.ui.components.ChangeIcons
+import nyc.juliet.subwaysfornerds.ui.components.ChipRow
 import nyc.juliet.subwaysfornerds.ui.components.ListScreen
 import nyc.juliet.subwaysfornerds.ui.components.LoadingBar
 import nyc.juliet.subwaysfornerds.ui.components.Notice
@@ -69,14 +77,34 @@ object Connections {
 		return !connected || Display.freshness(data.originTimestamp, now, data.originStaleAfter) != Freshness.LIVE || (data.arrival?.let { it < now } == true)
 	}
 
-	fun groups(data: TransferResult, hiddenRoutes: List<String>, now: Double): List<ConnectionGroup> =
-		data.connections.filter { CoreBridge.lineEnabled(it.route, hiddenRoutes) && Display.freshness(it, now) == Freshness.LIVE && (it.time ?: Double.NEGATIVE_INFINITY) >= now }
+	/** Filters only narrow the rows; grouping, gaps and the 30-minute window stay as the server reports them. */
+	fun groups(data: TransferResult, hiddenRoutes: List<String>, now: Double, filter: TransferFilter = TransferFilter()): List<ConnectionGroup> =
+		data.connections.filter {
+			CoreBridge.lineEnabled(it.route, hiddenRoutes) && Display.freshness(it, now) == Freshness.LIVE && (it.time ?: Double.NEGATIVE_INFINITY) >= now &&
+				(filter.direction == "ALL" || it.direction == filter.direction) && (filter.routes.isEmpty() || Display.displayRoute(it.route) in filter.routes.map(Display::displayRoute))
+		}
 			.groupBy { "${Display.routeLabel(it.route)} · ${Display.directionLabel(it.direction)} · ${it.area}" }
 			.map { (key, rows) ->
 				val sorted = rows.sortedBy { it.time ?: 0.0 }
 				ConnectionGroup(key, sorted[0].route, sorted[0].direction, sorted[0].area, sorted)
 			}
 			.sortedBy { it.id }
+
+	enum class Empty { NONE, FILTERED }
+
+	/** Why no groups show: nothing is reported, or the station's filters exclude every reported row. */
+	fun empty(data: TransferResult, hiddenRoutes: List<String>, now: Double, filter: TransferFilter): Empty? = when {
+		groups(data, hiddenRoutes, now, filter).isNotEmpty() -> null
+		filter != TransferFilter() && groups(data, hiddenRoutes, now).isNotEmpty() -> Empty.FILTERED
+		else -> Empty.NONE
+	}
+
+	/** Line chips from the transfer station's lines and every reported connection, so they stay put between refreshes. */
+	fun lineChoices(station: Station?, data: TransferResult?, hiddenRoutes: List<String>): List<String> =
+		BoardLogic.lineChoices(station?.routes.orEmpty() + data?.connections?.map { it.route }.orEmpty(), hiddenRoutes, CoreBridge::visibleRoutes)
+
+	/** The transfer station: the response's, or the stop's station before a response arrives. Never the selected board. */
+	fun targetStationID(route: Route.Transfers, data: TransferResult?): String? = data?.station?.id ?: route.stationID
 
 	fun gapLabel(departure: Departure): String? = departure.gap?.let { gap ->
 		"${if (gap < 60) "<1" else (gap / 60).toInt().toString()} min after arrival · ${departure.basis ?: "departure"}${if (departure.basis == "arrival") " fallback" else ""}"
@@ -85,7 +113,8 @@ object Connections {
 
 @Composable
 fun TransferScreen(model: AppModel, route: Route.Transfers, exit: ScreenExit, close: () -> Unit, open: (Route) -> Unit) {
-	var data by remember(route) { mutableStateOf<TransferResult?>(null) }
+	// Returning from the station board shows the last rows at once, still gated by freshness, while refreshing.
+	var data by remember(route) { mutableStateOf(model.rememberedTransfers(route)) }
 	var error by remember(route) { mutableStateOf<String?>(null) }
 	var progress by remember(route) { mutableStateOf<LoadProgress?>(null) }
 	var requestGeneration by remember(route) { mutableIntStateOf(0) }
@@ -105,6 +134,7 @@ fun TransferScreen(model: AppModel, route: Route.Transfers, exit: ScreenExit, cl
 			val value = model.service.transfers(route.tripKey, route.stopID, route.sequence, if (waiting) { update -> if (generation == requestGeneration) progress = update.load(subject) } else null)
 			if (requestedEndpoint != model.endpoint || generation != requestGeneration) return
 			data = value; error = null
+			model.rememberTransfers(route, value)
 		} catch (failure: CancellationException) { throw failure }
 		catch (_: Exception) {
 			if (requestedEndpoint == model.endpoint && generation == requestGeneration) error = "Transfer predictions unavailable. Reconnect for current estimates."
@@ -120,7 +150,25 @@ fun TransferScreen(model: AppModel, route: Route.Transfers, exit: ScreenExit, cl
 
 	val current = data
 	val stale = Connections.stale(current, model.connected, now)
+	val stationID = Connections.targetStationID(route, current)
+	val station = current?.station ?: stationID?.let { id -> model.allStations.firstOrNull { it.id == id } }
+	val filter = stationID?.let(model::transferFilter) ?: TransferFilter()
+	// Separate filters start as a copy of the station's board filters the first time it is shown, or when turned on here.
+	val separate = model.settings.transfers.separateFilters
+	LaunchedEffect(stationID, separate) { if (stationID != null && separate) model.useTransferFilter(stationID) }
+
 	ListScreen(route.stopName, exit = exit, onExit = close, onRefresh = { refresh() }, tag = "transfersScreen") {
+		section("station") {
+			row {
+				ChipRow(Modifier.padding(horizontal = 12.dp)) {
+					ActionChip(
+						"Open station board", { stationID?.let(model::openTransferStationBoard) },
+						Modifier.testTag("openTransferStationBoard"), icon = Icons.Filled.DirectionsSubway, enabled = stationID != null,
+					)
+				}
+			}
+		}
+		model.settingsError?.let { message -> section("settingsError") { row { RowContainer { Notice(message, Modifier.testTag("transferSettingsError")) } } } }
 		error?.let { message -> section("error") { row { RowContainer { Notice(message) } } } }
 		if (current == null) {
 			if (error == null) section("loading") {
@@ -143,10 +191,30 @@ fun TransferScreen(model: AppModel, route: Route.Transfers, exit: ScreenExit, cl
 					}
 				}
 			}
-			if (stale) row { RowContainer { Notice("Predictions are stale or the arrival estimate has passed. Awaiting an update.") } }
+			if (stale) row { RowContainer { Notice("Predictions are stale or the arrival estimate has passed. Awaiting an update.", Modifier.testTag("transfersStale")) } }
 			current.message?.let { message -> row { RowContainer { Notice(message) } } }
 		}
-		val groups = if (stale || error != null) emptyList() else Connections.groups(current, model.hiddenRoutes, now)
+		if (stationID != null) section(
+			"filters",
+			footer = if (separate) "Filters saved for transfers at this station only." else "Filters shared with this station's board.",
+		) {
+			row("filters") {
+				androidx.compose.foundation.layout.Box(Modifier.padding(start = 12.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)) {
+					StationFilterRow(
+						directions = BoardLogic.directionOptions(station),
+						direction = filter.direction,
+						onDirection = { model.setTransferDirection(stationID, it) },
+						routes = Connections.lineChoices(station, current, model.hiddenRoutes),
+						selectedRoutes = filter.routes.map(Display::displayRoute),
+						onToggleRoute = { model.toggleTransferRoute(stationID, it) },
+						onAllRoutes = { model.clearTransferRoutes(stationID) },
+						tagPrefix = "transfer_",
+					)
+				}
+			}
+		}
+		val live = !stale && error == null
+		val groups = if (live) Connections.groups(current, model.hiddenRoutes, now, filter) else emptyList()
 		groups.forEach { group ->
 			section("group:${group.id}", headerContent = {
 				Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.semantics(mergeDescendants = true) { heading() }) {
@@ -158,7 +226,7 @@ fun TransferScreen(model: AppModel, route: Route.Transfers, exit: ScreenExit, cl
 					row(departure.key) {
 						Row(
 							Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = Role.Button) { open(Route.Train(departure.tripKey)) }
-								.padding(horizontal = 16.dp, vertical = 6.dp).semantics(mergeDescendants = true) {},
+								.padding(horizontal = 16.dp, vertical = 6.dp).semantics(mergeDescendants = true) {}.testTag("connection_${departure.key}"),
 							verticalAlignment = Alignment.CenterVertically,
 						) {
 							Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
@@ -175,8 +243,15 @@ fun TransferScreen(model: AppModel, route: Route.Transfers, exit: ScreenExit, cl
 				}
 			}
 		}
-		if (groups.isEmpty() && !stale && current.message == null && error == null) section("none") {
-			row { RowContainer { Text("No matching connecting departures are currently reported.", style = TextRoles.footnote, color = palette.muted) } }
+		if (live && current.message == null) when (Connections.empty(current, model.hiddenRoutes, now, filter)) {
+			Connections.Empty.FILTERED -> section("filtered") {
+				row { RowContainer { Text("No connecting departures match this station's filters.", style = TextRoles.footnote, color = palette.muted, modifier = Modifier.testTag("transfersFiltered")) } }
+				row { ActionButton("Reset filters", { stationID?.let(model::resetTransferFilters) }, Modifier.padding(start = 4.dp).testTag("resetTransferFilters")) }
+			}
+			Connections.Empty.NONE -> section("none") {
+				row { RowContainer { Text("No matching connecting departures are currently reported.", style = TextRoles.footnote, color = palette.muted, modifier = Modifier.testTag("transfersNone")) } }
+			}
+			null -> {}
 		}
 		section("sources", header = "Prediction sources") { row { RowContainer { SourcesTable(current.sources, now) } } }
 	}

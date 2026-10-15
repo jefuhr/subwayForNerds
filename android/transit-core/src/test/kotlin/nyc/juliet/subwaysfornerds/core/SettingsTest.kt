@@ -20,14 +20,15 @@ class SettingsTest {
 				lockScreen = LockScreenSettings(WidgetDisplay(listOf("carNumbers"), false, 0, "clock", 60), "uptownLeft", false)))
 		val encoded = NerdsCodec.encode(settings, "unknown-station", Instant.parse("2026-10-13T12:00:00Z"))
 		val decoded = NerdsCodec.decode(encoded)
-		assertEquals(4, decoded.version); assertEquals("unknown-station", decoded.lastStation)
+		assertEquals(5, decoded.version); assertEquals("unknown-station", decoded.lastStation)
 		assertEquals(NerdsCodec.validate(settings), decoded.settings)
 		assertFalse(encoded.contains("activeRide")); assertFalse(encoded.contains("session"))
 	}
 	@Test fun legacyVersionsMigrateWithoutLosingNativeFields() {
 		val current = TransitJson.encodeToJsonElement(Settings.serializer(), Settings()).jsonObject
-		for (version in 1..4) {
+		for (version in 1..5) {
 			val values = current.toMutableMap()
+			if (version < 5) values.remove("transfers")
 			if (version < 4) { values.remove("combinedStations"); values.remove("hiddenRoutes") }
 			if (version < 3) values.remove("offline")
 			if (version < 2) { values.remove("trainFavorites"); values.remove("stationSelection"); values.remove("units")
@@ -37,9 +38,9 @@ class SettingsTest {
 	}
 	@Test fun strictValidationRejectsWrongVersionShapeDuplicatesNullsAndSize() {
 		val current = TransitJson.encodeToJsonElement(Settings.serializer(), Settings()).jsonObject
-		val bad = listOf(file(1, current), file(3, current), file(4, JsonObject(current - "offline")),
-			file(4, JsonObject(current + ("favorites" to JsonArray(listOf(JsonPrimitive("a"), JsonPrimitive("a")))))),
-			file(4, JsonObject(current + ("theme" to JsonNull))), file(4, JsonObject(current + ("deviceLocation" to JsonPrimitive(true)))))
+		val bad = listOf(file(1, current), file(3, current), file(4, current), file(5, JsonObject(current - "offline")),
+			file(5, JsonObject(current + ("favorites" to JsonArray(listOf(JsonPrimitive("a"), JsonPrimitive("a")))))),
+			file(5, JsonObject(current + ("theme" to JsonNull))), file(5, JsonObject(current + ("deviceLocation" to JsonPrimitive(true)))))
 		for (text in bad) assertThrows(SettingsException::class.java) { NerdsCodec.decode(text) }
 		assertThrows(SettingsException::class.java) { NerdsCodec.decode(" ".repeat(1_048_577)) }
 		assertThrows(SettingsException::class.java) { NerdsCodec.decode(file(9, current)) }

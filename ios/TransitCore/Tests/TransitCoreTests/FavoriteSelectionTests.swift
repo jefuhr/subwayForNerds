@@ -61,7 +61,7 @@ struct FavoriteSelectionTests {
 		#expect(Set(merged.settings.trainFavorites.cars) == ["nyct:R46:001", "sir:R211S:100"])
 		#expect(merged.conflicts.map(\.path) == ["/stationSelection/radiusFeet"])
 		let file = NerdsSettingsFile(settings: local, lastStation: "602")
-		#expect(try NerdsSettingsFile.decode(file.data()).version == 4)
+		#expect(try NerdsSettingsFile.decode(file.data()).version == 5)
 		#expect(try NerdsSettingsFile.decode(file.data()).settings == local)
 		local.stationSelection.radiusFeet = 0
 		#expect(throws: (any Error).self) { try local.validated() }

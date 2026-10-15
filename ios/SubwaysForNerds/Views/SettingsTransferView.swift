@@ -29,7 +29,7 @@ struct SettingsTransferSection: View {
 			Button("Import settings") { importing = true }.accessibilityIdentifier("importSettings")
 			if let message = error ?? app.settingsError { Text(message).foregroundStyle(.red).font(.footnote).accessibilityIdentifier("settingsError") }
 		} header: { ListHeader("Move your settings") } footer: {
-			Text("Move combined stations, hidden lines, favorite stations and trains, station selection, themes, filters, widget and offline preferences between devices with a .nerds file. Offline boards, saved trains and your ride stay on this device. No account is needed.")
+			Text("Move combined stations, hidden lines, favorite stations and trains, station selection, themes, board and transfer filters, widget and offline preferences between devices with a .nerds file. Offline boards, saved trains and your ride stay on this device. No account is needed.")
 		}
 		.fileImporter(isPresented: $importing, allowedContentTypes: [.nerdsSettings]) { result in
 			switch result { case .success(let url): app.previewSettingsFile(url); case .failure(let failure): error = failure.localizedDescription }
@@ -41,6 +41,7 @@ struct SettingsTransferSection: View {
 }
 @MainActor func settingsLabel(_ path: String, app: AppModel) -> String {
 	let labels = ["combinedStations": "Combined stations", "hiddenRoutes": "Hidden lines", "stationIDs": "Member stations", "name": "Name", "offline": "Offline transit", "departuresPerLineDirection": "Departures per line and direction", "tripDetailsPerLineDirection": "Full trips per line and direction", "saveOpenedTrips": "Save opened trips", "nearbyRadiusFeet": "Nearby station distance (ft)", "preloadOtherStationTrips": "Preload trips at other stations", "estimateLimitMinutes": "Offline estimate window (minutes)", "retentionHours": "Automatic retention (hours)", "storageLimitMiB": "Storage limit (MiB)", "widgetsFollowActiveRide": "Widgets follow active ride",
+		"transfers": "Transfer filters", "separateFilters": "Save transfer filters separately",
 		"units": "Units", "distance": "Distance units", "time": "Time format", "favorites": "Favorite stations", "trainFavorites": "Favorite trains", "cars": "Cars", "consists": "Consists", "match": "Consist matching", "stationSelection": "Station selection", "mode": "Mode", "radiusFeet": "Radius (ft)", "followApp": "Follow app", "selection": "Station choice", "theme": "Theme", "stations": "Stations", "widgets": "Widgets", "display": "Display", "lockScreen": "Lock Screen", "directionOrder": "Direction order", "showService": "Service icons", "fields": "Shown information", "compact": "Compact rows", "trainsPerDirection": "Trains per direction", "timeStyle": "Arrival display", "matchAppFilters": "Match app filters", "direction": "Direction", "routes": "Lines", "view": "Board grouping"]
 	return path.split(separator: "/").map { part in
 		let key = part.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "~1", with: "/").replacingOccurrences(of: "~0", with: "~")
@@ -87,6 +88,8 @@ struct SettingsImportPreview: View {
 				Section {
 					Text("\(file.settings.favorites.count) favorite stations · \(file.settings.trainFavorites.cars.count) cars · \(file.settings.trainFavorites.consists.count) consists")
 					Text("\(file.settings.combinedStations.count) combined stations · \(file.settings.hiddenRoutes.count) hidden lines")
+					Text("Transfer filters: " + (file.settings.transfers.separateFilters ? "saved separately" : "shared with boards") + (file.settings.transfers.stations.isEmpty ? "" : " · \(file.settings.transfers.stations.count) saved stations"))
+						.accessibilityIdentifier("importTransferFilters")
 					Text("Last station: " + (file.settings.combinedStations[file.lastStation]?.name ?? app.stations.first(where: { $0.id == file.lastStation })?.name ?? file.lastStation))
 					Text(account.account == nil ? "This replaces settings on this device." : "This replaces settings on this device and will sync to your account.")
 				}

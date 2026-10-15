@@ -51,6 +51,30 @@ test('legacy clients cannot erase combined stations or global line exclusions', 
 		assert.deepEqual((await app.inject({ url: '/api/v1/account/settings', headers })).json(), { revision: 1, settings });
 	} finally { await app.close(); }
 });
+test('legacy clients cannot erase non-default transfer filters', async () => {
+	const app = await fixture();
+	try {
+		const challenge = (await app.inject({ method: 'POST', url: '/api/v1/auth/challenges', payload: { provider: 'apple', platform: 'native', intent: 'login' } })).json();
+		const login = (await app.inject({ method: 'POST', url: '/api/v1/auth/apple/exchange', payload: { challenge: challenge.id, identityToken: 'valid-' + challenge.nonce, code: 'x' } })).json();
+		const headers = { authorization: 'Bearer ' + login.token };
+		const put = (payload: object, revision: number) => app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': `"${revision}"` }, payload });
+		// Omission is safe while the stored transfer settings are still defaults.
+		const legacy: any = defaults(); delete legacy.transfers;
+		assert.equal((await put(legacy, 0)).statusCode, 200);
+		assert.equal((await put(legacy, 1)).statusCode, 200);
+		const settings = defaults();
+		settings.transfers = { separateFilters: true, stations: { '631': { direction: 'SOUTH', routes: ['4'] } } };
+		assert.equal((await put(settings, 2)).statusCode, 200);
+		const rejected = await put(legacy, 3);
+		assert.equal(rejected.statusCode, 409);
+		assert.match(rejected.json().error, /transfer filters/);
+		// A retained map with sharing re-enabled is still not a default to erase.
+		const shared = structuredClone(settings); shared.transfers.separateFilters = false;
+		assert.equal((await put(shared, 3)).statusCode, 200);
+		assert.equal((await put(legacy, 4)).statusCode, 409);
+		assert.deepEqual((await app.inject({ url: '/api/v1/account/settings', headers })).json(), { revision: 4, settings: shared });
+	} finally { await app.close(); }
+});
 test('legacy account writes cannot erase saved train favorites or station selection', async () => {
 	const app = await fixture();
 	try {

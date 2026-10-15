@@ -15,7 +15,10 @@ enum class StationPickerMode { SEARCH, NEARBY }
 sealed interface Route {
 	/** A train; `origin` is the board row it was opened from, which names the boarding station. */
 	data class Train(val tripKey: String, val origin: String? = null, val snapshotOnly: Boolean = false) : Route
-	data class Transfers(val tripKey: String, val stopID: String, val stopName: String, val sequence: Int?) : Route
+	/** Connections at a stop; `stationID` is the stop's station, known before the transfer response arrives. */
+	data class Transfers(val tripKey: String, val stopID: String, val stopName: String, val sequence: Int?, val stationID: String? = null) : Route
+	/** A station's normal board opened from connections. Back returns to the screen below, on `returnTab`. */
+	data class StationBoard(val stationID: String, val returnTab: AppTab) : Route
 	data class StationInfo(val stationID: String) : Route
 	data object SavedTrips : Route
 	data class FleetDetail(val id: String, val kind: String, val preferSaved: Boolean = false) : Route
@@ -70,6 +73,22 @@ class AppNavigator {
 		stack += route
 	}
 
+	/**
+	 * Shows the newly selected station's board above the screens it was opened from, so Back
+	 * returns to them. From another tab, the board tab starts over and Back returns to that tab.
+	 */
+	fun openStationBoard(stationID: String, from: AppTab) {
+		val board = stacks.getValue(AppTab.BOARD)
+		if (from != AppTab.BOARD) board.clear()
+		tab = AppTab.BOARD
+		board += Route.StationBoard(stationID, from)
+	}
+
+	/** Leaving an opened station board goes back to the tab it was opened from. */
+	private fun left(route: Route?) {
+		if (route is Route.StationBoard && route.returnTab != tab) tab = route.returnTab
+	}
+
 	fun popOverlay(): Boolean = overlays.removeLastOrNull() != null
 	fun closeOverlay(route: Route) { overlays.remove(route) }
 	fun closeOverlays() { overlays.clear() }
@@ -78,12 +97,12 @@ class AppNavigator {
 	fun back(): Boolean {
 		if (popOverlay()) return true
 		val stack = stacks.getValue(tab)
-		if (stack.isNotEmpty()) { stack.removeAt(stack.lastIndex); return true }
+		if (stack.isNotEmpty()) { left(stack.removeAt(stack.lastIndex)); return true }
 		if (tab != AppTab.BOARD) { tab = AppTab.BOARD; return true }
 		return false
 	}
 
-	fun pop(tab: AppTab = this.tab) { stacks.getValue(tab).removeLastOrNull() }
+	fun pop(tab: AppTab = this.tab) { left(stacks.getValue(tab).removeLastOrNull()) }
 	fun clear(tab: AppTab) { stacks.getValue(tab).clear() }
 	val canGoBack: Boolean get() = overlays.isNotEmpty() || current.isNotEmpty() || tab != AppTab.BOARD
 }

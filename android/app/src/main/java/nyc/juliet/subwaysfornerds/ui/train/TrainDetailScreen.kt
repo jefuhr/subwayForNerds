@@ -219,7 +219,7 @@ fun TrainDetailScreen(model: AppModel, route: Route.Train, exit: ScreenExit, clo
 					StopRow(
 						model, stop, now,
 						offline = if (shown.cached) OfflineStop(shown.sourceTimestamp, index == shown.nextStopIndex, shown.noEstimate) else null,
-						onClick = if (connectable) ({ open(Route.Transfers(key, stop.id, stop.name, stop.sequence)) }) else null,
+						onClick = if (connectable) ({ open(Route.Transfers(key, stop.id, stop.name, stop.sequence, stop.stationId)) }) else null,
 					)
 				}
 			}
@@ -417,7 +417,8 @@ private fun StopRow(model: AppModel, stop: StopPrediction, now: Double, offline:
 		Modifier.fillMaxWidth().heightIn(min = 48.dp)
 			.then(if (onClick != null) Modifier.clickable(role = Role.Button, onClickLabel = "Connections at ${stop.name}", onClick = onClick) else Modifier)
 			.padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp)
-			.semantics(mergeDescendants = true) {},
+			.semantics(mergeDescendants = true) {}
+			.testTag("stop_${stop.id}"),
 		verticalAlignment = Alignment.CenterVertically,
 		horizontalArrangement = Arrangement.spacedBy(8.dp),
 	) {

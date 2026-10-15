@@ -43,4 +43,32 @@ class AppNavigatorTest {
 		navigator.show(Route.StationInfo("602"))
 		assertEquals(listOf<Route>(Route.StationInfo("602")), navigator.current)
 	}
+
+	@Test fun anOpenedStationBoardReturnsToTheTransferThenTheTrain() {
+		val navigator = AppNavigator()
+		val transfers = Route.Transfers("a", "A01N", "Times Sq", 3, stationID = "611")
+		navigator.push(Route.Train("a", origin = "row"))
+		navigator.push(transfers)
+		navigator.openStationBoard("611", from = AppTab.BOARD)
+		assertEquals(Route.StationBoard("611", AppTab.BOARD), navigator.current.last())
+		assertTrue(navigator.back())
+		assertEquals(transfers, navigator.current.last())
+		navigator.pop()
+		assertEquals(listOf<Route>(Route.Train("a", origin = "row")), navigator.current)
+	}
+
+	@Test fun anOpenedStationBoardReturnsToItsOriginalTab() {
+		val navigator = AppNavigator()
+		navigator.push(Route.Train("board-train"))
+		navigator.select(AppTab.FLEET)
+		navigator.push(Route.Train("a"))
+		navigator.push(Route.Transfers("a", "A01N", "Times Sq", 3))
+		navigator.openStationBoard("611", from = AppTab.FLEET)
+		assertEquals(AppTab.BOARD, navigator.tab)
+		assertEquals(listOf<Route>(Route.StationBoard("611", AppTab.FLEET)), navigator.current)
+		// The in-app back arrow pops like the system back.
+		navigator.pop()
+		assertEquals(AppTab.FLEET, navigator.tab)
+		assertEquals(2, navigator.current.size)
+	}
 }

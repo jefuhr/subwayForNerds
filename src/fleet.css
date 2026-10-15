@@ -36,3 +36,7 @@
 .transfer-row span:last-child{text-align:right}
 .transfer-row small{display:block;color:var(--muted);margin-top:5px}
 @media(max-width:800px){.board-toolbar{grid-template-columns:auto 1fr;gap:8px}.board-toolbar .board-actions{grid-column:2;justify-self:end}.board-toolbar .board-actions .text-button:first-child{display:none}.board-toolbar .direction-control{grid-column:1}.fleet-row{grid-template-columns:minmax(0,1fr) 16px}.fleet-numbers{grid-column:1}.fleet-position{grid-column:1}.fleet-row>svg{grid-column:2;grid-row:1 / span 2;align-self:center}.topbar-right .system-clock{display:none}.fleet-panel input{font-size:16px}.fleet-panel>.station-search-input{position:sticky;top:0;background:var(--canvas);z-index:1}.fleet-filters select{flex:1;min-width:130px}.fleet-panel .raw-details{overflow-wrap:anywhere}}
+.transfer-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.transfer-filters{margin:12px 0}
+.transfer-empty{padding:28px 15px;margin:14px 0}
+.return-link{margin-bottom:6px}

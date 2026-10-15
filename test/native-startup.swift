@@ -53,6 +53,8 @@ struct NativeStartupTests {
 		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("native-startup-\(UUID())")
 		defer { try? FileManager.default.removeItem(at: directory) }
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+		try transferFilterRegressions(directory: directory.appendingPathComponent("transfer-filters"))
+		try await transferBoardingRegressions(directory: directory.appendingPathComponent("transfer-boarding"))
 		let stations = [
 			Station(id: "far", name: "Far favorite", borough: "M", lat: 40.90, lon: -73.90),
 			Station(id: "near", name: "Near favorite", borough: "M", lat: 40.755290, lon: -73.987495),
@@ -207,6 +209,89 @@ struct NativeStartupTests {
 		try await selectionRegressions(directory: directory.appendingPathComponent("selection"), stations: stations)
 		try await combinedRegressions(directory: directory.appendingPathComponent("combined"))
 		try await offlineRegressions(directory: directory.appendingPathComponent("offline"))
+	}
+
+	@MainActor static func transferFilterRegressions(directory: URL) throws {
+		// Failure modes: editing the origin instead of the transfer station, losing
+		// board grouping, reseeding independent filters, and failed writes leaking
+		// into memory or sync. Navigation must also preserve the originating tab.
+		var settings = PortableSettings()
+		settings.stations["origin"] = StationPreference(direction: "NORTH", routes: ["A"], view: .service)
+		settings.stations["target"] = StationPreference(direction: "SOUTH", routes: ["GS"], view: .family)
+		let settingsURL = directory.appendingPathComponent("settings.json")
+		try DeviceSettingsStore(fileURL: settingsURL).save(DeviceSettings(settings: settings, lastStation: "origin"))
+		let model = AppModel(stateDirectory: directory)
+		model.ensureTransferFilter(for: "target")
+		try expect(model.transferPreferences.stations.isEmpty, "Shared mode must not create separate entries")
+		model.setTransferDirection("NORTH", for: "target")
+		model.toggleTransferRoute("S", for: "target")
+		try expect(model.stationID == "origin" && model.preference == settings.stations["origin"], "Transfer edits must leave the selected origin board unchanged")
+		try expect(model.stationPreferences["target"] == StationPreference(direction: "NORTH", routes: [], view: .family), "Shared transfer edits must normalize aliases and preserve target grouping")
+		model.toggleTransferRoute("Q", for: "target")
+		model.setSeparateTransferFilters(true)
+		model.ensureTransferFilter(for: "target")
+		try expect(model.transferPreferences.stations["target"] == TransferStationPreference(direction: "NORTH", routes: ["Q"]), "First separate use must copy and persist target board filters")
+		let seeded = AppModel(stateDirectory: directory)
+		try expect(seeded.transferPreferences == model.transferPreferences, "The first-use copy must survive relaunch without an edit")
+		model.setTransferDirection("SOUTH", for: "target")
+		model.clearTransferRoutes(for: "target")
+		let independent = model.transferPreferences.stations["target"]
+		model.setSeparateTransferFilters(false)
+		model.setTransferDirection("ALL", for: "target")
+		try expect(model.transferPreferences.stations["target"] == independent && model.stationPreferences["target"]?.routes == ["Q"], "Shared edits must retain inactive independent filters")
+		model.setSeparateTransferFilters(true)
+		model.ensureTransferFilter(for: "target")
+		try expect(model.transferFilter(for: "target") == independent, "Re-enabling separate filters must restore instead of reseed")
+		model.resetTransferFilters(for: "target")
+		try expect(model.transferFilter(for: "target") == TransferStationPreference() && model.stationPreferences["target"]?.view == .family && model.stationPreferences["target"]?.routes == ["Q"], "Separate reset must leave board filters and grouping intact")
+		let beforeFailure = model.portableSettings
+		let backupURL = directory.appendingPathComponent("settings-backup.json")
+		try FileManager.default.moveItem(at: settingsURL, to: backupURL)
+		try FileManager.default.createDirectory(at: settingsURL, withIntermediateDirectories: false)
+		model.setTransferDirection("SOUTH", for: "target")
+		try expect(model.portableSettings == beforeFailure && model.settingsError != nil, "A failed transfer save must roll back the in-memory value")
+		model.setSeparateTransferFilters(false)
+		try expect(model.portableSettings == beforeFailure, "A failed mode toggle must roll back too")
+		try FileManager.default.removeItem(at: settingsURL)
+		try FileManager.default.moveItem(at: backupURL, to: settingsURL)
+		let fixtureURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("test/fixtures/transfers.nerds")
+		let imported = try NerdsSettingsFile.decode(Data(contentsOf: fixtureURL))
+		try model.importSettings(imported)
+		try expect(AppModel(stateDirectory: directory).portableSettings == imported.settings, "Imported v5 filters must survive relaunch")
+		let ride = ActiveRide(tripKey: "existing-ride", boardingStationID: "origin", startedAt: 1)
+		model.activeRide = ride
+		model.selectedTab = 1
+		model.selectStation("target", switchTab: false)
+		try expect(model.selectedTab == 1 && model.stationID == "target", "Opening a transfer board must preserve its originating tab")
+		try expect(model.activeRide == ride, "Opening a transfer board must preserve the existing active ride and boarding station")
+		model.selectStation("target", switchTab: false)
+		try expect(model.selectedTab == 1, "Opening the already-selected transfer station must preserve the tab too")
+		print("PASS: target-station transfer filters, first-use persistence, mode restoration, alias toggling, write rollback, v5 import, and originating tab preservation")
+	}
+
+	@MainActor static func transferBoardingRegressions(directory: URL) async throws {
+		// A captured nil origin must stay nil even if the board visited from a transfer
+		// now contains that same train. An explicit earlier origin must still win.
+		let model = AppModel(stateDirectory: directory)
+		let key = "transfer-boarding-trip"
+		let captured = model.boardOrigin(forTrip: key)
+		try expect(captured == nil, "This scenario begins without an origin-board departure")
+		let target = Station(id: "target", name: "Transfer station", borough: "M", routes: ["Q"], lat: 40.7, lon: -74)
+		let original = Station(id: "origin", name: "Original station", borough: "M", routes: ["Q"], lat: 40.8, lon: -74)
+		let now = Date().timeIntervalSince1970
+		let departure = Departure(key: "transfer-row", tripKey: key, route: "Q", destination: "Uptown", direction: "NORTH", stopId: "targetN", partId: "target", area: "", time: now + 120, pattern: "Local", patternSource: "feed", location: "", feed: "nqrw", timestamp: now)
+		model.stationID = target.id
+		model.board = Board(station: target, generatedAt: now, departures: [departure])
+		await model.saveTripOffline(key, detail: nil, origin: captured, inferFromBoard: false)
+		try expect(await model.cachedTrip(key) == nil && model.offlineActionError != nil, "Saving with captured absence must not borrow a later board departure")
+		await model.startRide(key, detail: nil, origin: captured, inferFromBoard: false)
+		try expect(model.activeRide?.tripKey == key && model.activeRide?.boardingStationID == nil, "Starting a ride with captured absence must not assign the transfer station")
+		await model.endRide()
+		let explicit = DepartureOrigin(station: original, departure: departure, cached: false)
+		await model.startRide(key, detail: nil, origin: explicit, inferFromBoard: false)
+		try expect(model.activeRide?.boardingStationID == original.id, "An explicit original boarding station must survive visiting another board")
+		await model.endRide()
+		print("PASS: transfer board visits preserve both an explicit boarding origin and a captured missing origin")
 	}
 
 	@MainActor static func combinedRegressions(directory: URL) async throws {

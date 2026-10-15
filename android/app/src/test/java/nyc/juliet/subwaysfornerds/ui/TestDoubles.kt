@@ -120,7 +120,8 @@ internal class TestSettingsStorage(directory: File) : SettingsStorage {
 		failRead?.let { throw it }
 		return store.snapshot()
 	}
-	override suspend fun save(settings: Settings) = store.save(settings)
+	var failSave: Exception? = null
+	override suspend fun save(settings: Settings) { failSave?.let { throw it }; store.save(settings) }
 	override suspend fun saveLastStation(id: String) {
 		beforeLastStation?.invoke(id)
 		store.saveLastStation(id)

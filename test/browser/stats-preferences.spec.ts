@@ -15,6 +15,9 @@ test('preloads all favorites with bounded concurrency, deduplicates selection, a
   await expect.poll(() => counts.size).toBe(ids.length);
   expect(maximum).toBeLessThanOrEqual(3);
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('sfn:cachedStations') || '[]').length)).toBe(ids.length);
+  // cachedStations lists favorites after the first saved board; going offline is only
+  // deterministic once every preloaded board response has actually been stored.
+  await expect.poll(() => page.evaluate(ids => ids.filter(id => localStorage.getItem('sfn:board:' + id) === null), ids)).toEqual([]);
   await context.setOffline(true);
   await page.evaluate(id => { history.pushState({}, '', '?station=' + id); dispatchEvent(new PopStateEvent('popstate')); }, ids[10]);
   await expect(page.locator('.active-page h1')).toHaveText(stations.find((s: any) => s.id === ids[10]).name);

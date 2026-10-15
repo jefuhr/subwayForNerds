@@ -211,7 +211,9 @@ private fun TabContent(model: AppModel, account: AccountModel, actions: Settings
 			val route = stack.lastOrNull()
 			if (route != null) {
 				holder.SaveableStateProvider("${tab.name}:${stack.size - 1}:$route") {
-					RouteScreen(model, account, route, if (stack.size > 1) ScreenExit.BACK else ScreenExit.NONE, pop, openFromDetail)
+					// The list pane already shows a board opened from connections; details show its station.
+					if (route is Route.StationBoard) ContextScreen(model, route.stationID, ScreenExit.BACK, pop, openFromDetail)
+					else RouteScreen(model, account, route, if (stack.size > 1) ScreenExit.BACK else ScreenExit.NONE, pop, openFromDetail)
 				}
 			} else when (tab) {
 				// Side by side, station info fills the detail column until a train is chosen.
@@ -231,6 +233,8 @@ fun RouteScreen(model: AppModel, account: AccountModel, route: Route, exit: Scre
 	when (route) {
 		is Route.Train -> TrainDetailScreen(model, route, exit, close, open)
 		is Route.Transfers -> TransferScreen(model, route, exit, close, open)
+		// A station board opened from connections pushes trains like other details, so Back returns here.
+		is Route.StationBoard -> BoardScreen(model, open, null, onBack = close)
 		is Route.StationInfo -> ContextScreen(model, route.stationID, exit, close, open)
 		Route.SavedTrips -> SavedTripsScreen(model, exit, close, open)
 		is Route.FleetDetail -> FleetDetailScreen(model, route, exit, close, open)

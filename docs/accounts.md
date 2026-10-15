@@ -1,11 +1,11 @@
 # Portable settings and accounts
 
-The iPhone/iPad app and website import and export the same `.nerds` file. Accounts
+The iPhone/iPad app, Android app, and website import and export the same `.nerds` file. Accounts
 are optional. File transfer works offline and before provider configuration.
 
 ## File format and migration
 
-`.nerds` is UTF-8 JSON with `format: "subways-for-nerds"`, `version: 3`, an ISO
+`.nerds` is UTF-8 JSON with `format: "subways-for-nerds"`, `version: 5`, an ISO
 `exportedAt` timestamp, `lastStation`, and `settings`. The latter contains ordered
 favorites, theme ID, station preferences, and widget preferences. Station
 preferences contain direction, route IDs, and board grouping. Widget settings
@@ -41,7 +41,7 @@ the train-favorite and station-selection fields; malformed or partial records
 are rejected before replacement.
 Version 3 adds the complete `offline` preferences object for native station caching
 and saved rides. Versions 1 and 2 import with offline defaults; they cannot contain
-a version 3 `offline` field. New exports always write version 3. Full trip limits
+a version 3 `offline` field. Full trip limits
 validate independently, with the effective count capped by the departure limit,
 so concurrent settings merges cannot create an invalid combination. See the
 [offline settings table](ios.md#offline-stations-and-saved-rides).
@@ -51,6 +51,20 @@ The corresponding `favorites.nerds` fixtures exercise the shared v2 fields,
 including one-foot and 26,400-foot radii, and must also remain identical.
 The `offline.nerds` fixture in each directory checks version 3 parity.
 
+Version 4 adds `combinedStations` and `hiddenRoutes`. Version 5 adds
+`transfers: { separateFilters: boolean, stations: Record<string, { direction: string, routes: string[] }> }`.
+New exports write version 5. Versions 1–4 import with shared transfer filters and
+an empty independent station map; those older file versions cannot contain
+`transfers`. Version 5 requires the complete transfer settings object. Legacy
+device and account records without it migrate to the same defaults.
+
+Transfer filters share the target station's normal board direction and routes by
+default, preserving its board grouping. With **Save transfer filters separately**
+enabled, first use copies that station's board filters into an independent saved
+entry. Turning the option off keeps those entries; turning it back on restores
+them. Global hidden lines apply in both modes. The `transfers.nerds` fixtures
+exercise version 5 parity across TypeScript, Swift, and Kotlin.
+
 Imports validate the full structure and a 1 MiB limit before showing a replacement
 preview. Unknown station IDs survive offline import and cross-platform round trips.
 Unknown theme IDs remain stored and display the default palette until supported.
@@ -59,7 +73,7 @@ recent-board bookkeeping, cached boards and trips, the active ride, downloaded
 fleet data, and development API addresses. Only offline preferences synchronize.
 Deploy server validation and the old-client downgrade guard before releasing the
 new native syncing client. Older clients that cannot read the new settings need
-an update; the server rejects their attempts to erase non-default offline preferences.
+an update; the server rejects their attempts to erase non-default offline or transfer preferences.
 
 The native app migrates `preferences.json` and `widgets.json` into an atomic
 `settings.json` record. The website migrates legacy `sfn:` preference keys into

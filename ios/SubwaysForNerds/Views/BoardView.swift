@@ -25,14 +25,9 @@ struct BoardSplitView: View {
 			.navigationSplitViewColumnWidth(400)
 		} detail: {
 			NavigationStack {
-				switch selection {
-				case .train(let key): TrainDetailView(tripKey: key)
-					case .departure(let key, let row): TrainDetailView(tripKey: key, origin: app.departureOrigin(row))
-				case .savedTrips: SavedTripsView()
+				if let selection { BoardDetailView(detail: selection) }
 				// Side by side, station info fills the detail column until a train is chosen.
-				case .station, nil:
-					if let station = app.station, selection != nil || sizeClass == .regular { ContextView(station: station) }
-				}
+				else if let station = app.station, sizeClass == .regular { ContextView(station: station) }
 			}
 			.id(selection)
 		}
@@ -45,6 +40,31 @@ struct BoardSplitView: View {
 			column = .detail
 			app.openTripKey = nil
 		}
+	}
+}
+
+struct BoardDetailView: View {
+	@Environment(AppModel.self) private var app
+	let detail: BoardDetail
+	var body: some View {
+		switch detail {
+		case .train(let key): TrainDetailView(tripKey: key)
+		case .departure(let key, let row): TrainDetailView(tripKey: key, origin: app.departureOrigin(row))
+		case .savedTrips: SavedTripsView()
+		case .station: if let station = app.station { ContextView(station: station) }
+		}
+	}
+}
+
+/// The normal board pushed over a transfer. It uses the one app model, so the board
+/// stays on this station; Back, the edge swipe, or popping returns to the transfer.
+struct StationBoardScreen: View {
+	@State private var shown: BoardDetail?
+	var body: some View {
+		BoardView(selection: .constant(nil)) { shown = $0 }
+			.navigationDestination(for: BoardDetail.self) { BoardDetailView(detail: $0) }
+			.navigationDestination(item: $shown) { BoardDetailView(detail: $0) }
+			.accessibilityIdentifier("stationBoardScreen")
 	}
 }
 
@@ -104,11 +124,8 @@ struct BoardView: View {
 				if app.board != nil { Section { offlineStatus } }
 				Section {
 					VStack(alignment: .leading, spacing: 0) {
-						HStack(spacing: 0) {
-							directionFilters
-							Divider().frame(height: 24).padding(.horizontal, 6)
-							routeFilters
-						}
+						BoardFilterControls(station: app.station, routes: routeChoices, direction: app.preference.direction, selectedRoutes: app.preference.routes,
+							setDirection: app.setDirection, toggleRoute: app.toggleRoute, clearRoutes: app.clearRoutes)
 						boardViewChips
 					}
 					.listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 8))
@@ -275,57 +292,8 @@ struct BoardView: View {
 		.scrollIndicators(.hidden)
 	}
 
-	private var directionFilters: some View {
-		let mixed = app.station?.isCombined == true && app.station?.routes.contains { $0.hasPrefix("PATH-") } == true && app.station?.routes.contains { !$0.hasPrefix("PATH-") } == true
-		let regional = app.station?.routes.contains { $0.hasPrefix("PATH-") } == true
-		let options = mixed ? [DirectionOption(id: "ALL", name: "All directions", icon: "arrow.left.arrow.right"), DirectionOption(id: "NORTH", name: "Northbound", icon: "arrow.up"), DirectionOption(id: "SOUTH", name: "Southbound", icon: "arrow.down"), DirectionOption(id: "TO_NY", name: "To New York", text: "NY"), DirectionOption(id: "TO_NJ", name: "To New Jersey", text: "NJ")] : regional
-			? [DirectionOption(id: "ALL", name: "All directions", icon: "arrow.left.arrow.right"), DirectionOption(id: "TO_NY", name: "To New York", text: "NY"), DirectionOption(id: "TO_NJ", name: "To New Jersey", text: "NJ")]
-			: [DirectionOption(id: "ALL", name: "All directions", icon: "arrow.up.arrow.down"), DirectionOption(id: "NORTH", name: "Northbound", icon: "arrow.up"), DirectionOption(id: "SOUTH", name: "Southbound", icon: "arrow.down")]
-		return HStack(spacing: 6) {
-			ForEach(options) { option in
-				let selected = app.preference.direction == option.id
-				Button { app.setDirection(option.id) } label: {
-					Group {
-						if let icon = option.icon { Image(systemName: icon) } else { Text(option.text ?? "") }
-					}
-					.chip(selected: selected)
-				}
-				.buttonStyle(.plain)
-				.accessibilityLabel(option.name)
-				.accessibilityIdentifier("direction_\(option.id)")
-				.accessibilityAddTraits(selected ? .isSelected : [])
-			}
-		}
-		.accessibilityElement(children: .contain)
-		.accessibilityIdentifier("directionFilter")
-	}
-
-	private var routeFilters: some View {
-		let routes = LineVisibility.routes(Array(Set(((app.station?.routes ?? []) + (app.board?.departures.map(\.route) ?? [])).map(Display.displayRoute))).sorted(), hiddenRoutes: app.hiddenRoutes)
-		let selected = app.preference.routes
-		return ScrollView(.horizontal) {
-			HStack(spacing: 0) {
-				Button { app.clearRoutes() } label: { Text("All").chip(selected: selected.isEmpty) }
-					.padding(.trailing, 2)
-					.buttonStyle(.plain)
-					.accessibilityLabel("All lines")
-					.accessibilityAddTraits(selected.isEmpty ? .isSelected : [])
-				ForEach(routes, id: \.self) { route in
-					let on = selected.contains(route)
-					Button { app.toggleRoute(route) } label: {
-						RouteBullet(route: route, small: true)
-							.padding(3)
-							.overlay { Capsule().strokeBorder(app.theme.accent, lineWidth: 2).opacity(on ? 1 : 0) }
-							.opacity(selected.isEmpty || on ? 1 : 0.4)
-							.frame(minWidth: 44, minHeight: 44)
-							.contentShape(Rectangle())
-					}
-					.buttonStyle(.plain).accessibilityLabel("Filter line \(Display.routeLabel(route))")
-					.accessibilityAddTraits(on ? .isSelected : [])
-				}
-			}
-		}
-		.scrollIndicators(.hidden)
+	private var routeChoices: [String] {
+		LineVisibility.routes(Array(Set(((app.station?.routes ?? []) + (app.board?.departures.map(\.route) ?? [])).map(Display.displayRoute))).sorted(), hiddenRoutes: app.hiddenRoutes)
 	}
 
 	private var boardViewChips: some View {
@@ -343,6 +311,83 @@ struct BoardView: View {
 		}
 		.scrollIndicators(.hidden)
 		.accessibilityIdentifier("boardViews")
+	}
+}
+
+/// Direction and multi-line filters shared by the board and transfers. Callers own
+/// the values, so transfers can edit their own station rather than the board's.
+struct BoardFilterControls: View {
+	@Environment(AppModel.self) private var app
+	let station: Station?
+	let routes: [String]
+	let direction: String
+	let selectedRoutes: [String]
+	let setDirection: (String) -> Void
+	let toggleRoute: (String) -> Void
+	let clearRoutes: () -> Void
+	/// Prefixes accessibility identifiers so transfer controls stay distinct from the board's.
+	var identifierPrefix = ""
+	var body: some View {
+		HStack(spacing: 0) {
+			directionFilters
+			Divider().frame(height: 24).padding(.horizontal, 6)
+			routeFilters
+		}
+	}
+
+	private func identifier(_ name: String) -> String { identifierPrefix.isEmpty ? name : identifierPrefix + name.prefix(1).uppercased() + name.dropFirst() }
+
+	private var directionFilters: some View {
+		let mixed = station?.isCombined == true && station?.routes.contains { $0.hasPrefix("PATH-") } == true && station?.routes.contains { !$0.hasPrefix("PATH-") } == true
+		let regional = station?.routes.contains { $0.hasPrefix("PATH-") } == true
+		let options = mixed ? [DirectionOption(id: "ALL", name: "All directions", icon: "arrow.left.arrow.right"), DirectionOption(id: "NORTH", name: "Northbound", icon: "arrow.up"), DirectionOption(id: "SOUTH", name: "Southbound", icon: "arrow.down"), DirectionOption(id: "TO_NY", name: "To New York", text: "NY"), DirectionOption(id: "TO_NJ", name: "To New Jersey", text: "NJ")] : regional
+			? [DirectionOption(id: "ALL", name: "All directions", icon: "arrow.left.arrow.right"), DirectionOption(id: "TO_NY", name: "To New York", text: "NY"), DirectionOption(id: "TO_NJ", name: "To New Jersey", text: "NJ")]
+			: [DirectionOption(id: "ALL", name: "All directions", icon: "arrow.up.arrow.down"), DirectionOption(id: "NORTH", name: "Northbound", icon: "arrow.up"), DirectionOption(id: "SOUTH", name: "Southbound", icon: "arrow.down")]
+		return HStack(spacing: 6) {
+			ForEach(options) { option in
+				let selected = direction == option.id
+				Button { setDirection(option.id) } label: {
+					Group {
+						if let icon = option.icon { Image(systemName: icon) } else { Text(option.text ?? "") }
+					}
+					.chip(selected: selected)
+				}
+				.buttonStyle(.plain)
+				.accessibilityLabel(option.name)
+				.accessibilityIdentifier(identifier("direction_\(option.id)"))
+				.accessibilityAddTraits(selected ? .isSelected : [])
+			}
+		}
+		.accessibilityElement(children: .contain)
+		.accessibilityIdentifier(identifier("directionFilter"))
+	}
+
+	private var routeFilters: some View {
+		ScrollView(.horizontal) {
+			HStack(spacing: 0) {
+				Button { clearRoutes() } label: { Text("All").chip(selected: selectedRoutes.isEmpty) }
+					.padding(.trailing, 2)
+					.buttonStyle(.plain)
+					.accessibilityLabel("All lines")
+					.accessibilityIdentifier(identifier("allLines"))
+					.accessibilityAddTraits(selectedRoutes.isEmpty ? .isSelected : [])
+				ForEach(routes, id: \.self) { route in
+					let on = selectedRoutes.contains(route)
+					Button { toggleRoute(route) } label: {
+						RouteBullet(route: route, small: true)
+							.padding(3)
+							.overlay { Capsule().strokeBorder(app.theme.accent, lineWidth: 2).opacity(on ? 1 : 0) }
+							.opacity(selectedRoutes.isEmpty || on ? 1 : 0.4)
+							.frame(minWidth: 44, minHeight: 44)
+							.contentShape(Rectangle())
+					}
+					.buttonStyle(.plain).accessibilityLabel("Filter line \(Display.routeLabel(route))")
+					.accessibilityIdentifier(identifier("routeFilter_\(route)"))
+					.accessibilityAddTraits(on ? .isSelected : [])
+				}
+			}
+		}
+		.scrollIndicators(.hidden)
 	}
 }
 

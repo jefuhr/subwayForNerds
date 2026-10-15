@@ -34,6 +34,8 @@ import nyc.juliet.subwaysfornerds.core.StationLocation
 import nyc.juliet.subwaysfornerds.core.StationSelection
 import nyc.juliet.subwaysfornerds.core.StationSettings
 import nyc.juliet.subwaysfornerds.core.TrainFavorites
+import nyc.juliet.subwaysfornerds.core.TransferFilter
+import nyc.juliet.subwaysfornerds.core.TransferResult
 import nyc.juliet.subwaysfornerds.core.TripDetail
 import nyc.juliet.subwaysfornerds.core.WidgetDisplay
 import nyc.juliet.subwaysfornerds.core.WidgetSettings
@@ -296,7 +298,9 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		val visible = visibleStations
 		favorites.mapNotNull { id -> visible.firstOrNull { it.id == id } }
 	}
-	val preference: StationSettings get() = settings.stations[stationID] ?: StationSettings(view = if (combinedStations[stationID] == null) "track" else "direction")
+	val preference: StationSettings get() = boardPreference(stationID, settings)
+	private fun boardPreference(id: String, value: Settings): StationSettings =
+		value.stations[id] ?: StationSettings(view = if (value.combinedStations[id] == null) "track" else "direction")
 	/** Core still checks time-sensitive membership every tick; equal groups retain their identity. */
 	val departureGroups: List<DepartureSection> by derivedStateOf(structuralEqualityPolicy()) {
 		val selected = preference
@@ -310,10 +314,29 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 
 	fun departureOrigin(key: String): BoardOrigin? {
 		combinedBoard?.origins?.get(key)?.let { return it }
-		val board = board ?: return null
-		if (combinedBoard != null) return null
-		val departure = board.departures.firstOrNull { it.key == key } ?: return null
+		val board = board ?: return pinnedOrigins[key]
+		if (combinedBoard != null) return pinnedOrigins[key]
+		val departure = board.departures.firstOrNull { it.key == key } ?: return pinnedOrigins[key]
 		return BoardOrigin(board.station, departure, boardIsCached, boardSavedAt)
+	}
+	/** Boarding context of open trains, captured before a transfer's station board replaced their board. */
+	private var pinnedOrigins = mapOf<String, BoardOrigin>()
+	/**
+	 * Where each open train boards, by trip, frozen when a transfer's station board opened. A
+	 * captured absence stays absent, so the newly selected board is never taken as the origin.
+	 */
+	private var frozenBoarding = mapOf<String, BoardOrigin?>()
+
+	/** The boarding station and row for a ride or saved train: given, frozen, or else from the current board. */
+	internal fun boardingOrigin(key: String, origin: BoardOrigin?): BoardOrigin? {
+		// A frozen origin lasts only while that train's screen can still be returned to.
+		pruneNavigationState()
+		return origin ?: if (key in frozenBoarding) frozenBoarding[key] else currentBoardOrigin(key)
+	}
+	private fun currentBoardOrigin(key: String): BoardOrigin? {
+		val departure = boardDeparture(key) ?: return null
+		val station = board?.station ?: return null
+		return BoardOrigin(station, departure, boardIsCached, boardSavedAt)
 	}
 	fun departureIsCached(key: String): Boolean = !connected || (combinedBoard?.origins?.get(key)?.cached ?: boardIsCached)
 	fun realStationIDs(ids: List<String>): List<String> = ids.flatMap { combinedStations[it]?.stationIDs ?: listOf(it) }.distinct().sorted()
@@ -380,11 +403,14 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 	// MARK: Selection
 
 	/** An explicit station choice. It always takes priority over automatic selection. */
-	fun selectStation(id: String, fromPager: Boolean = false) {
+	fun selectStation(id: String, fromPager: Boolean = false) = selectStation(id, fromPager, keepNavigation = false)
+
+	/** `keepNavigation` leaves every tab's screens in place, for a board opened from connections. */
+	private fun selectStation(id: String, fromPager: Boolean, keepNavigation: Boolean) {
 		favoriteStartupAttempted = true
 		browsing = true
 		if (id !in favorites) temporaryStation = id
-		if (!fromPager) navigator.select(AppTab.BOARD)
+		if (!fromPager && !keepNavigation) navigator.select(AppTab.BOARD)
 		if (id == stationID) return
 		stationID = id
 		expandedGroups = emptySet()
@@ -395,10 +421,46 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		boardSavedAt = null
 		boardIsCached = true
 		boardError = null
-		navigator.clear(AppTab.BOARD)
+		// Swiping pages on a board opened from connections keeps the way back to them.
+		val returning = fromPager && navigator.stack(AppTab.BOARD).lastOrNull() is Route.StationBoard
+		if (!keepNavigation && !returning) navigator.clear(AppTab.BOARD)
+		pruneNavigationState()
 		persistLastStation()
 		scope.launch { loadCachedBoard(id); refreshBoard() }
 		planOffline()
+	}
+
+	/**
+	 * "Open station board" from connections: selects the transfer station's normal board and keeps
+	 * the train and transfer to return to. Open trains keep boarding where they were opened.
+	 */
+	fun openTransferStationBoard(id: String) {
+		val from = navigator.tab
+		val trains = AppTab.entries.flatMap { navigator.stack(it) }.filterIsInstance<Route.Train>()
+		pinnedOrigins = pinnedOrigins + trains.mapNotNull { it.origin }.mapNotNull { key -> departureOrigin(key)?.let { key to it } }
+		frozenBoarding = trains.filter { it.tripKey !in frozenBoarding }
+			.associate { it.tripKey to (it.origin?.let(::departureOrigin) ?: currentBoardOrigin(it.tripKey)) } + frozenBoarding
+		selectStation(id, fromPager = false, keepNavigation = true)
+		navigator.openStationBoard(id, from)
+		pruneNavigationState()
+	}
+
+	/** Latest connections per open transfer screen, so returning shows rows at once while refreshing. */
+	private var transferResults = mapOf<Route.Transfers, TransferResult>()
+	fun rememberedTransfers(route: Route.Transfers): TransferResult? = transferResults[route]
+	fun rememberTransfers(route: Route.Transfers, value: TransferResult) {
+		pruneNavigationState()
+		transferResults = transferResults + (route to value)
+	}
+
+	/** Captured origins and connections are kept only while a screen that uses them can be returned to. */
+	private fun pruneNavigationState() {
+		val routes = AppTab.entries.flatMap { navigator.stack(it) } + navigator.overlays
+		val origins = routes.filterIsInstance<Route.Train>().mapNotNull { it.origin }.toSet()
+		pinnedOrigins = pinnedOrigins.filterKeys { it in origins }
+		val trips = routes.filterIsInstance<Route.Train>().map { it.tripKey }.toSet()
+		frozenBoarding = frozenBoarding.filterKeys { it in trips }
+		transferResults = transferResults.filterKeys { it in routes }
 	}
 
 	fun toggleFavorite(id: String) {
@@ -443,6 +505,48 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 	/** Resetting filters keeps the station's chosen board view. */
 	fun resetFilters() = updatePreference { StationSettings(view = it.view) }
 	fun clearRoutes() = updatePreference { it.copy(routes = emptyList()) }
+
+	// MARK: Transfer filters
+
+	fun setSeparateTransferFilters(value: Boolean) = updateSettings { it.copy(transfers = it.transfers.copy(separateFilters = value)) }
+
+	/**
+	 * Filters for connections at a transfer station, keyed by that station and never by the
+	 * selected board. Shared mode uses the station's board filters; separate mode its own entry,
+	 * or the board filters until the entry is first saved.
+	 */
+	fun transferFilter(stationID: String): TransferFilter = transferFilter(stationID, settings)
+	private fun transferFilter(id: String, value: Settings): TransferFilter {
+		if (value.transfers.separateFilters) value.transfers.stations[id]?.let { return it }
+		return boardPreference(id, value).let { TransferFilter(it.direction, it.routes) }
+	}
+
+	/** Separate mode copies a transfer station's board filters once, when its connections are first shown. */
+	fun useTransferFilter(stationID: String) = updateSettings { seeded(it, stationID) }
+	private fun seeded(value: Settings, id: String): Settings =
+		if (!value.transfers.separateFilters || id in value.transfers.stations) value
+		else value.copy(transfers = value.transfers.copy(stations = value.transfers.stations + (id to transferFilter(id, value))))
+
+	private fun updateTransferFilter(stationID: String, change: (TransferFilter) -> TransferFilter) = updateSettings { value ->
+		if (value.transfers.separateFilters) {
+			val next = change(transferFilter(stationID, value))
+			value.copy(transfers = value.transfers.copy(stations = value.transfers.stations + (stationID to next)))
+		} else {
+			// Shared mode edits the station's own board filters and keeps its board view.
+			val board = boardPreference(stationID, value)
+			val next = change(TransferFilter(board.direction, board.routes))
+			value.copy(stations = value.stations + (stationID to board.copy(direction = next.direction, routes = next.routes)))
+		}
+	}
+	fun setTransferDirection(stationID: String, direction: String) = updateTransferFilter(stationID) { it.copy(direction = direction) }
+	/** Chips show display lines, so an imported alias such as GS is selected, and cleared, by its S chip. */
+	fun toggleTransferRoute(stationID: String, route: String) = updateTransferFilter(stationID) { filter ->
+		val line = Display.displayRoute(route)
+		val selected = filter.routes.filter { Display.displayRoute(it) == line }
+		filter.copy(routes = if (selected.isNotEmpty()) filter.routes - selected.toSet() else filter.routes + line)
+	}
+	fun clearTransferRoutes(stationID: String) = updateTransferFilter(stationID) { it.copy(routes = emptyList()) }
+	fun resetTransferFilters(stationID: String) = updateTransferFilter(stationID) { TransferFilter() }
 
 	// MARK: Widget preferences
 
@@ -933,9 +1037,8 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		try {
 			if (detail != null) cache.saveTrip(detail, manual = true)
 			else if (cache.tripSnapshot(key) == null) {
-				val departure = origin?.departure ?: boardDeparture(key) ?: throw IllegalStateException("No train details are available to save yet. Reconnect and try again.")
-				val boardingStation = origin?.station ?: board?.station ?: throw IllegalStateException("No train details are available to save yet. Reconnect and try again.")
-				cache.saveDeparture(departure, boardingStation, manual = true)
+				val boarding = boardingOrigin(key, origin) ?: throw IllegalStateException("No train details are available to save yet. Reconnect and try again.")
+				cache.saveDeparture(boarding.departure, boarding.station, manual = true)
 			}
 			cache.setManuallySaved(key, true)
 			if (requested == endpoint) offlineActionError = null
@@ -959,13 +1062,10 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 			return
 		}
 		val requested = endpoint
-		val departure = origin?.departure ?: boardDeparture(key)
+		val boarding = boardingOrigin(key, origin)
 		try {
 			if (detail != null) cache.saveTrip(detail)
-			else if (cache.tripSnapshot(key) == null && departure != null) {
-				val boardingStation = origin?.station ?: board?.station
-				if (boardingStation != null) cache.saveDeparture(departure, boardingStation)
-			}
+			else if (cache.tripSnapshot(key) == null && boarding != null) cache.saveDeparture(boarding.departure, boarding.station)
 			cache.setActiveRide(key)
 			val ride = cache.activeRideRecord()
 			val trip = cache.tripSnapshot(key)
@@ -1388,6 +1488,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		favoriteStartupAttempted = true
 		navigator.closeOverlays()
 		navigator.show(Route.Train(key), AppTab.BOARD)
+		pruneNavigationState()
 	}
 
 	/** Runs `block` on the model's scope, for screens that start model work. */

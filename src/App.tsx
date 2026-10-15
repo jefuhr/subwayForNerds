@@ -1,5 +1,4 @@
 import { NJT_LINES, NJT_DEPARTURES_URL, NJT_SCHEDULES_URL, NJT_ALERTS_URL } from '../shared/njt';
-import { PATH_ROUTES } from '../shared/path';
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ArrowDown, MoveVertical, ArrowRight, ArrowUp, ArrowUpRight, ArrowLeftRight, Check, ChevronLeft, ChevronDown, ChevronRight, Clock3, Crosshair, ExternalLink, Info, MapPin, Palette, Radio, RefreshCw, Search, Star, TrainFront, TriangleAlert, X } from 'lucide-react';
 import type { Board, Station } from '../shared/types';
@@ -23,19 +22,14 @@ import { favoriteTrainMatch } from '../shared/favorites';
 import { selectStationAutomatically, usableStationLocation } from '../shared/station-selection';
 import { carLabel, useTrainFavorites } from './Favorites';
 import { useUnits } from './Units';
+import { Bullet, DirectionFilters, RouteFilters, displayRoute } from './BoardFilters';
+import type { TripReturn } from './Details';
 
 const TrainDetail = lazy(() => import('./Details').then(m => ({ default: m.TrainDetail })));
 const Fleet = lazy(() => import('./Fleet'));
 const ContextDetail = lazy(() => import('./Details').then(m => ({ default: m.ContextDetail })));
 const boroughs: Record<string, string> = { NJ: 'New Jersey', M: 'Manhattan', B: 'Brooklyn', Bk: 'Brooklyn', Bx: 'Bronx', Q: 'Queens', SI: 'Staten Island' };
 const quickStations = ['602', '617', '611', '607'];
-const displayRoute = (route: string) => ({ GS: 'S', FS: 'S', H: 'S', SI: 'SIR' })[route] || route;
-const routeColor = (route: string) => /^[123]$/.test(route) ? 'red' : /^[456]/.test(route) ? 'green' : /^7/.test(route) ? 'purple' : /^[ACE]$/.test(route) ? 'blue' : /^(B|D|F|FX|M)$/.test(route) ? 'orange' : /^[NQRW]$/.test(route) ? 'yellow' : route === 'G' ? 'lime' : /^[JZ]$/.test(route) ? 'brown' : 'gray';
-export function Bullet({ route, small = false }: { route: string; small?: boolean }) {
-  if (NJT_LINES[route]) return <span className={`route-bullet njt-route ${small ? 'small' : ''}`} style={{ background: NJT_LINES[route].color }} title={'NJ Transit ' + NJT_LINES[route].name}>{NJT_LINES[route].label}</span>;
-  if (route.startsWith('PATH')) return <span className={`route-bullet path-route ${small ? 'small' : ''}`} style={{ background: PATH_ROUTES[route]?.color }} title={'PATH ' + (PATH_ROUTES[route]?.label || '')}>{PATH_ROUTES[route]?.label || 'PATH'}</span>;
-  return <span className={`route-bullet ${routeColor(route)} ${small ? 'small' : ''}`} title={route}>{displayRoute(route)}</span>;
-}
 function readStation() {
   return new URLSearchParams(location.search).get('station') || getDeviceSettings().lastStation;
 }
@@ -58,6 +52,11 @@ export default function App() {
   }, [deviceSettings.lastStation]);
   const [panel, setPanel] = useState<'stations' | 'themes' | 'alerts' | 'context' | 'fleet' | 'settings' | null>(() => new URLSearchParams(location.search).has('account') ? 'settings' : null);
   const [tripKey, setTripKey] = useState<string | null>(null);
+  // Browser history entries pushed when a transfer opens its station board restore the views below it.
+  const [tripRestore, setTripRestore] = useState<TripReturn & { nonce: number }>();
+  // Each restoration remounts train details; a counter stays unique even when the clock does not move.
+  const restoreCount = useRef(0);
+  const [returnTo, setReturnTo] = useState<{ stopName: string } | undefined>(() => history.state?.sfnReturn);
   const [query, setQuery] = useState('');
   const [nearby, setNearby] = useState<{ latitude: number; longitude: number }>();
   const [locationState, setLocationState] = useState('');
@@ -66,7 +65,7 @@ export default function App() {
   const savePreference = (patch: Partial<Preference>) => updateSettings(s => ({ ...s, stations: { ...s.stations, [stationId]: { ...(s.stations[stationId] || { direction, routes, view }), ...patch } } }));
   const setDirection = (value: string) => { track('direction', stationId); savePreference({ direction: value }); };
   const setRoutes: React.Dispatch<React.SetStateAction<string[]>> = value => { track('line', stationId); savePreference({ routes: typeof value === 'function' ? value(routes) : value }); };
-  const openTrip = (key: string) => { track('train_open', stationId); setTripKey(key); };
+  const openTrip = (key: string) => { track('train_open', stationId); setTripRestore(undefined); setTripKey(key); };
   const [fleetId, setFleetId] = useState<string>();
   const openFleet = (id?: string) => { track('fleet_open', stationId); setTripKey(null); setFleetId(id); setPanel('fleet'); };
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
@@ -96,7 +95,10 @@ export default function App() {
     navigationGeneration.current++; browsing.current = true;
     const id = new URLSearchParams(location.search).get('station') || history.state?.stationId || readStation(); setStationId(id); saveLastStation(id);
     if (!favorites.includes(id)) setTemporaryStation(id);
-    setTripKey(null); setPanel(null); window.scrollTo({ top: 0, behavior: 'instant' });
+    setPanel(null); setReturnTo(history.state?.sfnReturn);
+    const trip: TripReturn | undefined = history.state?.sfnTrip;
+    if (trip) { setTripRestore({ ...trip, nonce: ++restoreCount.current }); setTripKey(trip.tripKey); return; }
+    setTripKey(null); setTripRestore(undefined); window.scrollTo({ top: 0, behavior: 'instant' });
   }; window.addEventListener('popstate', pop); return () => window.removeEventListener('popstate', pop); }, [favorites]);
   useEffect(() => { const selected = themes.some(t => t.id === theme) ? theme : 'subway'; document.documentElement.dataset.theme = selected; }, [theme]);
   useEffect(() => { if (board) stationView(stationId); }, [board, stationId]);
@@ -104,9 +106,26 @@ export default function App() {
   const selectStation = (id: string) => {
     navigationGeneration.current++; browsing.current = true;
     if (!favorites.includes(id)) setTemporaryStation(id);
-    setStationId(id); saveLastStation(id); setTripKey(null); setPanel(null);
+    setStationId(id); saveLastStation(id); setTripKey(null); setPanel(null); setReturnTo(undefined);
     const url = new URL(location.href); url.searchParams.set('station', id); history.pushState({ stationId: id }, '', url);
     window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+  const openStationBoard = (id: string, from: TripReturn) => {
+    // The train and transfer entries are recorded before the main station changes;
+    // the board then stays on the opened station while Back walks through them.
+    const url = new URL(location.href); url.searchParams.set('station', id);
+    const back = { stopName: from.stop?.name || 'this stop' };
+    history.pushState({ stationId: id, sfnTrip: { tripKey: from.tripKey, trainScroll: from.trainScroll } }, '', url);
+    history.pushState({ stationId: id, sfnTrip: from }, '', url);
+    history.pushState({ stationId: id, sfnReturn: back }, '', url);
+    navigationGeneration.current++; browsing.current = true;
+    if (!favorites.includes(id)) setTemporaryStation(id);
+    setStationId(id); saveLastStation(id); setTripKey(null); setTripRestore(undefined); setPanel(null); setReturnTo(back);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+  const closeTrip = () => {
+    setTripKey(null); setTripRestore(undefined);
+    if (history.state?.sfnTrip) history.replaceState({ ...history.state, sfnTrip: undefined }, '', location.href);
   };
   useEffect(() => {
     // One startup location fix orders favorite pages and, unless a link or navigation
@@ -172,7 +191,7 @@ export default function App() {
       <StationPager pages={pages} current={stationId} disabled={!!panel || !!tripKey} select={selectStation} name={id => stations.find(s => s.id === id)?.name || `Station ${id}`} render={(id, active) => {
         const snapshot = id === stationId ? { board, cached, error } : boardSnapshot(id);
         return <StationPage key={id} {...snapshot} stationId={id} station={snapshot.board?.station || stations.find(s => s.id === id)}
-          active={active} now={now} favorites={favorites} preference={preferences[id] || { direction: 'ALL', routes: [], view: 'track' }}
+          active={active} now={now} favorites={favorites} returnTo={id === stationId ? returnTo : undefined} onReturn={() => history.back()} preference={preferences[id] || { direction: 'ALL', routes: [], view: 'track' }}
           savePreference={savePreference} setDirection={setDirection} setRoutes={setRoutes} toggleFavorite={toggleFavorite}
           setPanel={setPanel} setNearby={setNearby} getNearby={getNearby} openTrip={openTrip} refresh={refresh} />;
       }} />
@@ -182,11 +201,14 @@ export default function App() {
     {panel === 'settings' && <Modal title="Settings" eyebrow="MAKE IT YOURS" close={() => setPanel(null)}><SettingsPanel stationNames={Object.fromEntries(stations.map(s => [s.id, s.name]))} onTheme={() => setPanel('themes')} onFleet={openFleet} /></Modal>}
     {panel === 'themes' && <Modal title="Make it yours" eyebrow="SAME SIGNAL. DIFFERENT FREQUENCY." close={() => setPanel(null)}><p className="muted">A subway original, with a few friends from the ferry.</p><div className="theme-grid">{themes.map(t => <button key={t.id} className={'theme-option ' + (theme === t.id ? 'chosen' : '')} onClick={() => setTheme(t.id)} aria-pressed={theme === t.id}><span className="theme-swatch" style={{ background: t.color }} /><span><strong>{t.name}</strong></span>{theme === t.id && <Check size={17} />}</button>)}</div></Modal>}
     {panel === 'alerts' && <Modal title="Service notes" eyebrow="WHAT CHANGED" close={() => setPanel(null)}><p className="fine-print">Alert feed updated {ageLabel(alertSource?.timestamp, now)}{alertSource?.error ? ' · connection unavailable' : ''}</p>{(cached || freshness(alertSource?.timestamp, now, alertSource?.staleAfter) !== 'live') && <p className="notice">Alert information is stale or unavailable. This is not confirmation of normal service.</p>}{!alerts.length && <p className="empty">No active alerts matched this station in the last feed.</p>}{board?.njt?.configured && <a className="text-button" href={NJT_ALERTS_URL} target="_blank" rel="noreferrer">NJ Transit service alerts <ArrowUpRight size={15} /></a>}{alerts.map(a => <article className="alert-detail" key={a.id}><div className="route-list">{a.routes.map(r => <Bullet key={r} route={r} small />)}</div><h3>{a.title}</h3><p>{a.description.replace(/<[^>]*>/g, '')}</p><details className="raw-details"><summary>Alert source details</summary><pre>{JSON.stringify(a.raw, null, 2)}</pre></details></article>)}</Modal>}
-    <Suspense fallback={<div className="panel-loading" role="status">Opening details…</div>}>{panel === 'fleet' && <Fleet close={() => setPanel(null)} now={now} initialId={fleetId} station={selectStation} trip={key => { setPanel(null); openTrip(key); }} />}{tripKey && <TrainDetail tripKey={tripKey} close={() => setTripKey(null)} now={now} openFleet={openFleet} />}{panel === 'context' && board && <ContextDetail board={board} close={() => setPanel(null)} now={now} />}</Suspense>
+    <Suspense fallback={<div className="panel-loading" role="status">Opening details…</div>}>{panel === 'fleet' && <Fleet close={() => setPanel(null)} now={now} initialId={fleetId} station={selectStation} trip={key => { setPanel(null); openTrip(key); }} />}{tripKey && <TrainDetail key={tripKey + ':' + (tripRestore?.nonce ?? '')} tripKey={tripKey} close={closeTrip} now={now} openFleet={openFleet}
+      restore={tripRestore} stationFor={id => stations.find(s => s.id === id)} openBoard={openStationBoard}
+      backToTrain={() => { if (!history.state?.sfnTrip?.stop) return false; history.back(); return true; }} />}{panel === 'context' && board && <ContextDetail board={board} close={() => setPanel(null)} now={now} />}</Suspense>
   </div>;
 }
-function StationPage({ stationId, station, board, cached, error, active, now, favorites, preference, savePreference, setDirection, setRoutes, toggleFavorite, setPanel, setNearby, getNearby, openTrip, refresh }: {
+function StationPage({ stationId, station, board, cached, error, active, now, favorites, returnTo, onReturn, preference, savePreference, setDirection, setRoutes, toggleFavorite, setPanel, setNearby, getNearby, openTrip, refresh }: {
   stationId: string; station?: Station; board?: Board; cached: boolean; error: string; active: boolean; now: number;
+  returnTo?: { stopName: string }; onReturn: () => void;
   favorites: string[]; preference: Preference; savePreference: (patch: Partial<Preference>) => void;
   setDirection: (value: string) => void; setRoutes: React.Dispatch<React.SetStateAction<string[]>>;
   toggleFavorite: (id: string) => void; setPanel: (panel: 'stations' | 'themes' | 'alerts' | 'context' | 'fleet' | 'settings' | null) => void;
@@ -207,6 +229,7 @@ function StationPage({ stationId, station, board, cached, error, active, now, fa
   const alerts = board?.alerts || [];
   return (
       <div className="board-content">
+        {returnTo && <button className="text-button return-link" onClick={onReturn}><ChevronLeft size={15} />Back to transfers at {returnTo.stopName}</button>}
         <section className="station-heading"><div className="station-kicker"><span className="eyebrow">{boroughs[station?.borough || ''] || 'NEW YORK CITY'} / STATION {stationId}</span><span className={'status-pill ' + (live && !externalDepartures ? 'live' : 'stale')}><i />{externalDepartures ? 'STATION DIRECTORY' : live ? njt ? 'LIVE ARRIVALS' : degraded ? 'PARTIAL LIVE DATA' : 'LIVE FEED' : cached && board ? 'CACHED BOARD' : njt && !board?.departures.length ? 'NO LIVE PREDICTIONS' : board ? 'AWAITING LIVE DATA' : 'CONNECTING'}</span></div>
           <div className="station-title-row"><button className="station-name-button" onClick={() => { setPanel('stations'); setNearby(undefined); }}><h1>{station?.name || 'Your next train'}</h1><ChevronDown size={24} /></button><button className={'icon-button favorite-button ' + (favorites.includes(stationId) ? 'active' : '')} onClick={() => toggleFavorite(stationId)} aria-label={favorites.includes(stationId) ? 'Remove favorite station' : 'Favorite this station'} aria-pressed={favorites.includes(stationId)}><Star size={22} fill={favorites.includes(stationId) ? 'currentColor' : 'none'} /></button></div>
           <div className="station-meta"><div className="route-list">{(station?.routes || []).map(r => <Bullet route={r} small key={r} />)}</div><span className="station-description">{station?.parts.length ? `${station.parts.length} ${station.parts.length === 1 ? 'station' : 'connected stations'}` : 'Station-first. Always.'}</span><button className="text-button" onClick={() => board && setPanel('context')} disabled={!board}><Info size={14} />Station info<ArrowUpRight size={13} /></button><button className="nearby-mobile text-button" onClick={getNearby}><Crosshair size={16} />Nearby</button></div>
@@ -217,7 +240,7 @@ function StationPage({ stationId, station, board, cached, error, active, now, fa
           {externalDepartures ? <NjtStationInfo station={station!} /> : <>
           <div className="board-toolbar"><div className="board-title"><h2>Departures</h2><span className="count-badge">{visible.length}</span><DepartureViewMenu key={stationId} value={view} onChange={value => savePreference({ view: value })} /></div><div className="board-actions"><button className="text-button" onClick={() => setPanel('alerts')}><TriangleAlert size={14} />Alerts{alerts.length ? ` (${alerts.length})` : ''}</button><button className="icon-button" onClick={refresh} aria-label="Refresh departures"><RefreshCw size={15} /></button></div></div>
           <div className="departure-filters">
-            <div className="direction-filters" role="group" aria-label="Direction filters">{(station?.id.startsWith('path-') ? [['ALL', 'All directions'], ['TO_NY', 'To New York'], ['TO_NJ', 'To New Jersey']] : [['ALL', 'All directions'], ['NORTH', 'Northbound'], ['SOUTH', 'Southbound']]).map(([id, name]) => <button key={id} aria-label={name} title={name} aria-pressed={direction === id} onClick={() => setDirection(id)}>{id === 'ALL' ? <MoveVertical size={19} /> : (id === 'NORTH' || id === 'TO_NY') ? <ArrowUp size={19} /> : <ArrowDown size={19} />}</button>)}</div>
+            <DirectionFilters stationId={station?.id || stationId} direction={direction} setDirection={setDirection} />
             <RouteFilters availableRoutes={availableRoutes} routes={routes} setRoutes={setRoutes} />
           </div>
           {!board && <div className="loading-board"><span className="loading-line" /><span className="loading-line" /><span className="loading-line" /><p>{error || 'Connecting to your station…'}</p>{error && <button onClick={() => setPanel('stations')} className="text-button">Choose a station</button>}</div>}
@@ -256,30 +279,6 @@ function NjtLinks() {
     </div>;
 }
 
-function RouteFilters({ availableRoutes, routes, setRoutes }: { availableRoutes: string[]; routes: string[]; setRoutes: React.Dispatch<React.SetStateAction<string[]>> }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [overflow, setOverflow] = useState(false);
-  const [atEnd, setAtEnd] = useState(false);
-  useLayoutEffect(() => {
-    const el = ref.current!;
-    const update = () => {
-      setOverflow(el.scrollWidth > el.clientWidth + 1);
-      setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
-    };
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    el.addEventListener('scroll', update);
-    update();
-    return () => { observer.disconnect(); el.removeEventListener('scroll', update); };
-  }, [availableRoutes.join('|')]);
-  return <div className="route-filter-strip">
-    <div ref={ref} className="route-filters" role="group" aria-label="Line filters"><button aria-pressed={!routes.length} onClick={() => setRoutes([])}>All lines</button>{availableRoutes.map(r => <button key={r} aria-label={`Line ${r}`} aria-pressed={routes.includes(r)} onClick={() => setRoutes(v => v.includes(r) ? v.filter(x => x !== r) : [...v, r])}><Bullet route={r} /></button>)}</div>
-    {overflow && <button className="route-scroll" aria-label={atEnd ? 'Scroll to first lines' : 'Scroll to more lines'} onClick={() => {
-      const el = ref.current!;
-      el.scrollTo({ left: atEnd ? 0 : el.scrollLeft + Math.max(44, el.clientWidth - 44), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
-    }}>{atEnd ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}</button>}
-  </div>;
-}
 function StationShortcut({ station, selected, onClick }: { station: Station; selected: boolean; onClick: () => void }) {
   return <button className={'station-shortcut ' + (selected ? 'current' : '')} onClick={onClick}><span>{station.name}</span><div className="route-list">{station.routes.slice(0, 8).map(r => <Bullet key={r} route={r} small />)}</div>{selected && <span className="current-indicator" />}</button>;
 }

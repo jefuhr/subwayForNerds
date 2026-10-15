@@ -12,6 +12,11 @@ struct TrainDetailView: View {
 	/// arrival, so fetching them again would show whichever train holds that slot now.
 	var snapshotOnly = false
 	@State private var boardingOrigin: DepartureOrigin?
+	/// The selected board's entry for this train when details opened without an origin.
+	/// Captured once, absence included, so opening another station's board from a
+	/// transfer never makes that station the boarding station.
+	@State private var boardFallback: DepartureOrigin?
+	@State private var boardFallbackCaptured = false
 	init(tripKey: String, snapshotOnly: Bool = false, origin: DepartureOrigin? = nil) {
 		self.tripKey = tripKey; self.snapshotOnly = snapshotOnly
 		_boardingOrigin = State(initialValue: origin)
@@ -148,7 +153,10 @@ struct TrainDetailView: View {
 		}
 		// Registered for the view's lifetime; the prefetcher refreshes open trips on the
 		// selected cadence and pauses itself offline or in the background.
-		.onAppear { if !snapshotOnly, registration == nil { registration = OpenTripRegistration(app: app, tripKey: tripKey) } }
+		.onAppear {
+			if !snapshotOnly, registration == nil { registration = OpenTripRegistration(app: app, tripKey: tripKey) }
+			if !boardFallbackCaptured { boardFallbackCaptured = true; if boardingOrigin == nil { boardFallback = app.boardOrigin(forTrip: tripKey) } }
+		}
 		.task(id: app.endpoint) {
 			saved = await app.cachedTrip(tripKey)
 			savedLoaded = true
@@ -211,7 +219,7 @@ struct TrainDetailView: View {
 							Button("Cancel", role: .cancel) {}
 						} message: { Text("Its offline snapshot may then expire with other cached trips.") }
 				} else {
-					Button { Task { working = true; await app.saveTripOffline(tripKey, detail: data, origin: boardingOrigin); saved = await app.cachedTrip(tripKey); working = false } } label: {
+					Button { Task { working = true; await app.saveTripOffline(tripKey, detail: data, origin: boardingOrigin ?? boardFallback, inferFromBoard: !boardFallbackCaptured); saved = await app.cachedTrip(tripKey); working = false } } label: {
 						Label("Save trip offline", systemImage: "arrow.down.circle").chip()
 					}
 					.buttonStyle(.plain).disabled(working).accessibilityIdentifier("saveTripOffline")
@@ -241,7 +249,7 @@ struct TrainDetailView: View {
 
 	private func startRide() async {
 		working = true
-		await app.startRide(tripKey, detail: data, origin: boardingOrigin)
+		await app.startRide(tripKey, detail: data, origin: boardingOrigin ?? boardFallback, inferFromBoard: !boardFallbackCaptured)
 		saved = await app.cachedTrip(tripKey)
 		working = false
 	}
@@ -380,14 +388,22 @@ struct TransferView: View {
 	@State private var error: String?
 	@State private var progress: TransferProgress?
 	@State private var requestGeneration = 0
+	@State private var openedBoard = false
+	/// The transfer station: filters and the board button use it, never the selected board station.
+	private var stationID: String? { data?.station?.id ?? stop.stationId }
+	private var station: Station? { data?.station ?? stationID.flatMap { id in app.stations.first { $0.id == id } } }
+	private var filter: TransferStationPreference { stationID.map { app.transferFilter(for: $0) } ?? TransferStationPreference() }
 	private var stale: Bool {
 		guard let data else { return true }
 		return !app.connected || Display.freshness(data.originTimestamp, now: app.now, staleAfter: data.originStaleAfter) != .live || data.arrival.map { $0 < app.now } == true
 	}
-	private var groups: [ConnectionGroup] {
+	/// Live, visible connections before this station's filters.
+	private var usable: [Departure] {
 		guard let data, !stale, error == nil else { return [] }
-		let usable = data.connections.filter { LineVisibility.isEnabled($0.route, hiddenRoutes: app.hiddenRoutes) && Display.freshness($0, now: app.now) == .live && ($0.time ?? -.infinity) >= app.now }
-		return Dictionary(grouping: usable) { "\(Display.routeLabel($0.route)) · \(Display.directionLabel($0.direction)) · \($0.area)" }
+		return TransferFilters.usable(data.connections, hiddenRoutes: app.hiddenRoutes, now: app.now)
+	}
+	private var groups: [ConnectionGroup] {
+		Dictionary(grouping: TransferFilters.filter(usable, by: filter)) { "\(Display.routeLabel($0.route)) · \(Display.directionLabel($0.direction)) · \($0.area)" }
 			.map { key, departures in
 				let sorted = departures.sorted { ($0.time ?? 0) < ($1.time ?? 0) }
 				return ConnectionGroup(id: key, route: sorted[0].route, direction: sorted[0].direction, area: sorted[0].area, departures: sorted)
@@ -396,6 +412,14 @@ struct TransferView: View {
 	}
 	var body: some View {
 		List {
+			Section {
+				Button { openBoard() } label: {
+					Label("Open station board", systemImage: "list.bullet.rectangle").frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+				}
+				.buttonStyle(.borderless).actionStyle().disabled(stationID == nil)
+				.accessibilityHint("Shows the full board for this station. Go back to return to these connections.")
+				.accessibilityIdentifier("openStationBoard")
+			}
 			if let error { Section { Notice(text: error) } }
 			if let data {
 				Section {
@@ -406,6 +430,18 @@ struct TransferView: View {
 					if stale { Notice(text: "Predictions are stale or the arrival estimate has passed. Awaiting an update.") }
 					if let message = data.message { Notice(text: message) }
 				} footer: { Text("Next 30 minutes · raw time gaps, no walking allowance. Boarding areas may require stairs, passageways, or different platform access. Connections are not guaranteed.") }
+				if let stationID {
+					Section {
+						BoardFilterControls(station: station, routes: TransferFilters.choices(stationRoutes: station?.routes ?? [], connections: data.connections, hiddenRoutes: app.hiddenRoutes),
+							direction: filter.direction, selectedRoutes: TransferFilters.selectedChips(filter),
+							setDirection: { app.setTransferDirection($0, for: stationID) }, toggleRoute: { app.toggleTransferRoute($0, for: stationID) },
+							clearRoutes: { app.clearTransferRoutes(for: stationID) }, identifierPrefix: "transfer")
+							.listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 8))
+					} footer: {
+						Text(app.transferPreferences.separateFilters ? "Transfer filters for this station are saved separately from its board." : "Filters are shared with this station's board.")
+					}
+					.accessibilityIdentifier("transferFilters")
+				}
 				ForEach(groups) { group in
 					Section {
 						ForEach(group.departures) { departure in
@@ -438,17 +474,41 @@ struct TransferView: View {
 						.textCase(nil).accessibilityElement(children: .combine)
 					}
 				}
-				if groups.isEmpty && !stale && data.message == nil && error == nil { Text("No matching connecting departures are currently reported.").foregroundStyle(.secondary) }
+				if groups.isEmpty && !stale && data.message == nil && error == nil {
+					if usable.isEmpty {
+						Text("No matching connecting departures are currently reported.").foregroundStyle(.secondary).accessibilityIdentifier("transferNoConnections")
+					} else if let stationID {
+						Section {
+							Text("No connections match these filters.").foregroundStyle(.secondary).accessibilityIdentifier("transferNoMatches")
+							Button("Reset filters") { app.resetTransferFilters(for: stationID) }.actionStyle().accessibilityIdentifier("transferResetFilters")
+							if !app.hiddenRoutes.isEmpty { Text("Some lines are hidden in settings. Resetting transfer filters keeps those lines hidden.").font(.footnote).foregroundStyle(.secondary) }
+						}
+					}
+				}
 				Section { SourcesView(sources: data.sources, now: app.now) } header: { ListHeader("Prediction sources") }
 			} else if error == nil {
 				LoadingBar(title: "Checking connecting departures", progress: progress?.load(subject) ?? LoadProgress(fraction: nil, detail: "Waiting to request \(subject)…"))
 					.accessibilityIdentifier("transfersLoading")
 			}
 		}.themedList().navigationTitle(stop.name).navigationBarTitleDisplayMode(.inline)
+			.navigationDestination(isPresented: $openedBoard) { StationBoardScreen() }
+			// Returning from the board refreshes, and stale gating hides predictions that expired meanwhile.
+			.onChange(of: openedBoard) { was, open in if was, !open { Task { await refresh() } } }
+			// Separate filters copy the board's on first use, including when turned on while this is open.
+			.onAppear { seedFilter() }
+			.onChange(of: app.transferPreferences.separateFilters) { seedFilter() }
+			.onChange(of: stationID) { seedFilter() }
 			.refreshable { await refresh() }
 			.task(id: "\(phase)|\(app.endpoint)|\(app.connected)") { if phase == .active { await poll(every: 10) { await refresh() } } }
 	}
 	private var subject: String { "connecting departures at \(stop.name)" }
+	private func seedFilter() { if let stationID { app.ensureTransferFilter(for: stationID) } }
+	private func openBoard() {
+		guard let stationID else { return }
+		// Train details already captured their boarding context; the tab and stack stay put.
+		app.selectStation(stationID, switchTab: false)
+		openedBoard = true
+	}
 	private func refresh() async {
 		// Connections need live predictions; offline there is nothing honest to show.
 		guard app.connected else { error = "Connections need a live feed. Reconnect for current estimates."; return }

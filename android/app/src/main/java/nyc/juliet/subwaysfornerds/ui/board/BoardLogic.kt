@@ -32,10 +32,12 @@ object BoardLogic {
 	}
 
 	/** Lines a station's route chips offer: catalog and departure routes minus hidden lines. */
-	fun routeChoices(station: Station?, board: Board?, hiddenRoutes: List<String>, visible: (List<String>, List<String>) -> List<String>): List<String> {
-		val routes = ((station?.routes.orEmpty()) + (board?.departures?.map { it.route }.orEmpty())).map(Display::displayRoute).distinct().sorted()
-		return visible(routes, hiddenRoutes)
-	}
+	fun routeChoices(station: Station?, board: Board?, hiddenRoutes: List<String>, visible: (List<String>, List<String>) -> List<String>): List<String> =
+		lineChoices(station?.routes.orEmpty() + board?.departures?.map { it.route }.orEmpty(), hiddenRoutes, visible)
+
+	/** Filter chips for lines: display names (aliases such as GS become S), sorted, minus hidden lines. */
+	fun lineChoices(routes: List<String>, hiddenRoutes: List<String>, visible: (List<String>, List<String>) -> List<String>): List<String> =
+		visible(routes.map(Display::displayRoute).distinct().sorted(), hiddenRoutes)
 
 	fun trainSources(board: Board?) = board?.sources.orEmpty().filter { it.id !in ancillary }
 

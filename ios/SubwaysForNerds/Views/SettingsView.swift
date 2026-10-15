@@ -26,7 +26,11 @@ struct SettingsView: View {
 				NavigationLink { StationSelectionSettingsView() } label: { LabeledContent("Station selection", value: app.stationSelection.mode.title) }
 					.accessibilityIdentifier("stationSelectionSettings")
 				NavigationLink("Favorite trains") { FavoriteTrainsSettingsView() }.accessibilityIdentifier("favoriteTrainsSettings")
-			} header: { ListHeader("Board") }
+				Toggle("Save transfer filters separately", isOn: Binding(get: { app.transferPreferences.separateFilters }, set: { app.setSeparateTransferFilters($0) }))
+					.accessibilityIdentifier("separateTransferFilters")
+			} header: { ListHeader("Board") } footer: {
+				Text("When off, connections at a station use that station's board filters. When on, each transfer station starts from its board filters and then keeps its own.")
+			}
 			Section {
 				choiceRow(DistanceUnit.allCases, selected: app.units.distance, title: "Distance units", identifier: "distanceUnits", label: { $0.shortTitle }, spoken: { $0.title }) { app.setDistanceUnit($0) }
 				choiceRow(TimeFormat.allCases, selected: app.units.time, title: "Time format", identifier: "timeFormat", label: { $0.title }, spoken: { $0.title }) { app.setTimeFormat($0) }

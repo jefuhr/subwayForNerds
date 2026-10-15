@@ -100,6 +100,7 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 			row { NavigationRow("Lines", { open(Route.Lines) }, Modifier.testTag("lineVisibilitySettings")) }
 			row { NavigationRow("Station selection", { open(Route.StationSelectionSettings(widget = false)) }, Modifier.testTag("stationSelectionSettings"), value = Labels.stationModeTitle(model.settings.stationSelection.mode)) }
 			row { NavigationRow("Favorite trains", { open(Route.FavoriteTrains) }, Modifier.testTag("favoriteTrainsSettings")) }
+			row { SwitchRow("Save transfer filters separately", model.settings.transfers.separateFilters, { model.setSeparateTransferFilters(it) }, Modifier.testTag("separateTransferFilters"), subtitle = TransferText.mode(model.settings.transfers)) }
 		}
 		section("units", header = "Units", footer = "Applies to the app and widgets. Times are New York time. Automatic uses m/km nearby and ft/mi for favorite radius.") {
 			row {

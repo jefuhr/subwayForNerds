@@ -14,6 +14,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  android-build:
+    name: Android build, lint, and native tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - run: npm ci
+      - name: Install required Android SDK platform
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os, subprocess
+          sdk = os.environ['ANDROID_HOME']
+          manager = sdk + '/cmdline-tools/latest/bin/sdkmanager'
+          subprocess.run([manager, '--licenses'], input='y\n' * 100, text=True, check=True)
+          subprocess.run([manager, 'platform-tools', 'platforms;android-37.0', 'build-tools;36.0.0'], check=True)
+          PY
+      - name: Verify native contract fixtures
+        run: node --import tsx --test test/native-fixtures.test.ts
+      - name: Build and test Android
+        run: npm run test:android
+      - name: Save Android reports and development APK
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: android-results
+          path: |
+            artifacts/android/
+            android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: ignore
+          retention-days: 14
+
   web-e2e:
     name: Web E2E (Chromium and WebKit)
     runs-on: ubuntu-24.04

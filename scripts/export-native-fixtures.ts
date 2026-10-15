@@ -78,6 +78,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const destinations = process.argv[2] ? [resolve(process.argv[2])] : [
     fileURLToPath(new URL('../test/fixtures/native/', import.meta.url)),
     fileURLToPath(new URL('../ios/TransitCore/Tests/TransitCoreTests/Fixtures/', import.meta.url)),
+    fileURLToPath(new URL('../android/transit-core/src/test/resources/fixtures/', import.meta.url)),
   ];
   const fixtures = await nativeFixtures();
   for (const destination of destinations) {

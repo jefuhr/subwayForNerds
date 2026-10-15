@@ -1,0 +1,86 @@
+{
+  "format": "subways-for-nerds",
+  "version": 2,
+  "exportedAt": "2026-10-11T00:21:12.899Z",
+  "lastStation": "602",
+  "settings": {
+    "favorites": [
+      "602",
+      "future:station"
+    ],
+    "theme": "hello-kitty",
+    "stations": {
+      "602": {
+        "direction": "SOUTH",
+        "routes": [
+          "4",
+          "6"
+        ],
+        "view": "family"
+      }
+    },
+    "trainFavorites": {
+      "cars": [
+        "nyct:R211A:4149",
+        "sir:R211S:100"
+      ],
+      "consists": [
+        [
+          "nyct:R211A:4148",
+          "nyct:R211A:4149"
+        ]
+      ],
+      "match": "anyCar"
+    },
+    "stationSelection": {
+      "mode": "nearbyFavorite",
+      "radiusFeet": 1
+    },
+    "widgets": {
+      "stationSelection": {
+        "followApp": false,
+        "selection": {
+          "mode": "nearbyFavorite",
+          "radiusFeet": 26400
+        }
+      },
+      "matchAppFilters": false,
+      "stations": {
+        "future:station": {
+          "direction": "ALL",
+          "routes": [
+            "Q"
+          ],
+          "view": "corridor"
+        }
+      },
+      "display": {
+        "fields": [
+          "carCount",
+          "destination",
+          "stationName"
+        ],
+        "compact": false,
+        "trainsPerDirection": 4,
+        "timeStyle": "clock"
+      },
+      "lockScreen": {
+        "display": {
+          "fields": [
+            "carType",
+            "stationName"
+          ],
+          "compact": false,
+          "trainsPerDirection": 5,
+          "timeStyle": "minutes"
+        },
+        "directionOrder": "uptownLeft",
+        "showService": false
+      }
+    },
+    "units": {
+      "distance": "m",
+      "time": "24h"
+    }
+  }
+}

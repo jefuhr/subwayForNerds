@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "format": "fleet-jsonl-v2",
+  "compression": "gzip",
+  "generatedAt": 1800000000,
+  "historyStart": 1799395200,
+  "historyEnd": 1800000000,
+  "observedAt": 1800000000,
+  "selection": {
+    "equipment": [
+      "R160"
+    ],
+    "yards": [],
+    "historyDays": 7
+  },
+  "counts": {
+    "cars": 1,
+    "consists": 2,
+    "events": 2,
+    "assertions": 1,
+    "eventCars": 2,
+    "matchedCars": 1,
+    "linkedCars": 0
+  },
+  "archiveByteLength": 725,
+  "archiveSha256": "a8636feeb2d3db70323bf30fd25ba27ee9f6edc26bcd2588d6a29e9caa3615ea",
+  "uncompressedByteLength": 1888,
+  "estimatedSavedByteLength": 4199024,
+  "id": "a8636feeb2d3db70323bf30fd25ba27ee9f6edc26bcd2588d6a29e9caa3615ea",
+  "downloadURL": "/fixture/fleet-legacy-fixture.jsonl.gz"
+}

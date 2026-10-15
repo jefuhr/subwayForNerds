@@ -1,0 +1,256 @@
+{
+  "train": {
+    "key": "gtfs|20260905|fixture|repeated /?=#|25:00:00",
+    "feed": "gtfs",
+    "tripId": "fixture|repeated /?=#",
+    "serviceDate": "20260905",
+    "startTime": "25:00:00",
+    "route": "4",
+    "destination": "unknownN",
+    "direction": "NORTH",
+    "timestamp": 1788656380,
+    "stops": [
+      {
+        "id": "635N",
+        "sequence": 0,
+        "name": "14 St-Union Sq",
+        "stationId": "602",
+        "arrival": 0,
+        "departure": null,
+        "changes": []
+      },
+      {
+        "id": "635N",
+        "sequence": 1,
+        "name": "14 St-Union Sq",
+        "stationId": "602",
+        "arrival": 1788656440,
+        "departure": 1788656450,
+        "scheduledTrack": "0",
+        "actualTrack": "4",
+        "changes": [
+          {
+            "id": "track:1",
+            "kind": "track",
+            "classification": "unknown",
+            "stopIndices": [
+              1
+            ],
+            "location": "14 St-Union Sq",
+            "label": "track 4 · scheduled 0",
+            "before": "0",
+            "after": "4",
+            "evidence": [
+              {
+                "source": "gtfs",
+                "timestamp": 1788656380,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ],
+            "affectedStops": [
+              "635N"
+            ],
+            "alertIds": []
+          }
+        ]
+      },
+      {
+        "id": "631N",
+        "sequence": 2,
+        "name": "Grand Central-42 St",
+        "stationId": "610",
+        "arrival": null,
+        "departure": null,
+        "relationship": "SKIPPED",
+        "changes": [
+          {
+            "id": "skip:2",
+            "kind": "skip",
+            "classification": "unknown",
+            "label": "skips Grand Central-42 St",
+            "stopIndices": [
+              2
+            ],
+            "evidence": [
+              {
+                "source": "gtfs",
+                "timestamp": 1788656380,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ],
+            "affectedStops": [
+              "631N"
+            ],
+            "alertIds": []
+          }
+        ]
+      },
+      {
+        "id": "635N",
+        "sequence": 3,
+        "name": "14 St-Union Sq",
+        "stationId": "602",
+        "arrival": 1788656980,
+        "departure": 1788656990,
+        "changes": []
+      },
+      {
+        "id": "unknownN",
+        "sequence": 4,
+        "name": "unknownN",
+        "arrival": null,
+        "departure": null,
+        "changes": []
+      }
+    ],
+    "alerts": [],
+    "trainId": "fixture false",
+    "assigned": false,
+    "position": {
+      "stopId": "635N",
+      "name": "14 St-Union Sq",
+      "timestamp": 0
+    },
+    "changes": [
+      {
+        "id": "track:1",
+        "kind": "track",
+        "classification": "unknown",
+        "stopIndices": [
+          1
+        ],
+        "location": "14 St-Union Sq",
+        "label": "track 4 · scheduled 0",
+        "description": "14 St-Union Sq: reported track 4, scheduled track 0. Cause not established; this is a stop assignment, not current train position.",
+        "before": "0",
+        "after": "4",
+        "evidence": [
+          {
+            "source": "gtfs",
+            "timestamp": 1788656380,
+            "staleAfter": 90,
+            "unavailable": false
+          }
+        ],
+        "affectedStops": [
+          "635N"
+        ],
+        "alertIds": []
+      },
+      {
+        "id": "skip:2",
+        "kind": "skip",
+        "classification": "unknown",
+        "label": "skips Grand Central-42 St",
+        "description": "Explicitly marked skipped in the live feed.",
+        "stopIndices": [
+          2
+        ],
+        "evidence": [
+          {
+            "source": "gtfs",
+            "timestamp": 1788656380,
+            "staleAfter": 90,
+            "unavailable": false
+          }
+        ],
+        "affectedStops": [
+          "631N"
+        ],
+        "alertIds": []
+      }
+    ]
+  },
+  "raw": [
+    {
+      "id": "edge-trip",
+      "trip_update": {
+        "trip": {
+          "trip_id": "fixture|repeated /?=#",
+          "route_id": "4",
+          "start_date": "20260905",
+          "start_time": "25:00:00",
+          ".transit_realtime.nyct_trip_descriptor": {
+            "train_id": "fixture false",
+            "is_assigned": false,
+            "direction": "NORTH"
+          }
+        },
+        "stop_time_update": [
+          {
+            "stop_id": "635N",
+            "stop_sequence": 0,
+            "arrival": {
+              "time": 0
+            }
+          },
+          {
+            "stop_id": "635N",
+            "stop_sequence": 1,
+            "arrival": {
+              "time": 1788656440
+            },
+            "departure": {
+              "time": 1788656450
+            },
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "0",
+              "actual_track": "4"
+            }
+          },
+          {
+            "stop_id": "631N",
+            "stop_sequence": 2,
+            "schedule_relationship": "SKIPPED"
+          },
+          {
+            "stop_id": "635N",
+            "stop_sequence": 3,
+            "arrival": {
+              "time": 1788656980
+            },
+            "departure": {
+              "time": 1788656990
+            }
+          },
+          {
+            "stop_id": "unknownN",
+            "stop_sequence": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "edge-vehicle",
+      "vehicle": {
+        "trip": {
+          "trip_id": "fixture|repeated /?=#",
+          "route_id": "4",
+          "start_date": "20260905",
+          "start_time": "25:00:00",
+          ".transit_realtime.nyct_trip_descriptor": {
+            "train_id": "fixture false",
+            "is_assigned": false,
+            "direction": "NORTH"
+          }
+        },
+        "stop_id": "635N",
+        "timestamp": 0,
+        "current_status": 0
+      }
+    }
+  ],
+  "source": {
+    "state": {
+      "id": "gtfs",
+      "timestamp": 1788656380,
+      "fetchedAt": 1788656380,
+      "error": null
+    },
+    "header": {
+      "timestamp": 1788656380
+    }
+  }
+}

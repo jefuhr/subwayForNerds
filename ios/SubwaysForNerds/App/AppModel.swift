@@ -1,5 +1,5 @@
 import CoreLocation
-#if canImport(CoreTelephony)
+#if canImport(CoreTelephony) && os(iOS)
 import CoreTelephony
 #endif
 import Foundation
@@ -113,7 +113,7 @@ final class AppModel {
 	/// True while the first refresh after the path returned is still running.
 	@ObservationIgnored private var reconnecting = false
 	@ObservationIgnored private var reconnectGeneration = 0
-	#if canImport(CoreTelephony)
+	#if canImport(CoreTelephony) && os(iOS)
 	@ObservationIgnored private var telephony: CTTelephonyNetworkInfo?
 	#endif
 	/// Next-trip keys of favorite and nearby boards, kept only when other-station trips are preloaded.
@@ -1105,7 +1105,7 @@ final class AppModel {
 
 	/// The data service's radio generation. Reading it needs no permission and is nil on the simulator.
 	private func radioTechnology() -> String? {
-		#if canImport(CoreTelephony)
+		#if canImport(CoreTelephony) && os(iOS)
 		if telephony == nil { telephony = CTTelephonyNetworkInfo() }
 		guard let telephony, let technologies = telephony.serviceCurrentRadioAccessTechnology else { return nil }
 		let technology = telephony.dataServiceIdentifier.flatMap { technologies[$0] } ?? technologies.keys.sorted().first.flatMap { technologies[$0] }

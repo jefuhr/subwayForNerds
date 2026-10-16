@@ -1,0 +1,265 @@
+{
+	"sourceSha256": "b28f75397b2e7b6ba0b67db6ea2181800baa0254a48261252f3d55c4f2b17c71",
+	"method": "Native PDF source-path labels and visual review. These entries supersede earlier candidate reviews where a prior path list is provided.",
+	"reviews": [
+		{
+			"partId": "R24",
+			"priorPlatformPaths": [
+				7941,
+				7942
+			],
+			"platformPaths": [
+				7951
+			],
+			"reason": "City Hall yellow island, distinct from Cortlandt Street.",
+			"localImage": "downtown-paths-2.png"
+		},
+		{
+			"partId": "D24",
+			"priorPlatformPaths": [
+				7054,
+				7055
+			],
+			"platformPaths": [
+				7280
+			],
+			"reason": "Brighton platform beside Atlantic Terminal, distinct from the Fourth Avenue platforms.",
+			"localImage": "atlantic-paths.png"
+		},
+		{
+			"partId": "416",
+			"priorPlatformPaths": [
+				10237,
+				10238
+			],
+			"platformPaths": [
+				10210,
+				10211
+			],
+			"reason": "138 Street-Grand Concourse platforms, distinct from 3 Avenue-138 Street.",
+			"localImage": "bronx-paths.png"
+		},
+		{
+			"partId": "M18",
+			"priorPlatformPaths": [
+				4997,
+				4998,
+				8295,
+				8297
+			],
+			"platformPaths": [
+				8295,
+				8297
+			],
+			"reason": "Essex Street brown platforms only; remove the adjacent orange Delancey platforms.",
+			"localImage": "alias-review/anchors-024.png"
+		},
+		{
+			"partId": "A36",
+			"priorPlatformPaths": [
+				6603,
+				6604
+			],
+			"platformPaths": [
+				6603
+			],
+			"reason": "Chambers Street main-line island; separate the World Trade Center terminal marker.",
+			"localImage": "downtown-paths-2.png"
+		},
+		{
+			"partId": "E01",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				6604,
+				6605
+			],
+			"reason": "Two contiguous source pieces of the World Trade Center blue terminal platform.",
+			"localImage": "downtown-paths-2.png"
+		},
+		{
+			"partId": "Q01",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				7939,
+				7940
+			],
+			"reason": "Canal Street bridge platforms cross the Lexington line; distinct from main-line Broadway platforms.",
+			"localImage": "downtown-paths-2.png"
+		},
+		{
+			"partId": "R29",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				4577
+			],
+			"reason": "Jay Street yellow platform east of the IND crossing, with station label leader; distinct from the gray closed Myrtle Avenue marker.",
+			"localImage": "jay-paths.png"
+		},
+		{
+			"partId": "N04",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				7092,
+				7093
+			],
+			"reason": "Sea Beach platforms south of the West End crossing.",
+			"localImage": "new-utrecht-paths.png"
+		},
+		{
+			"partId": "M23",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				8298,
+				8299
+			],
+			"reason": "Broad Street brown platforms immediately north of terminal tails.",
+			"localImage": "downtown-paths-2.png"
+		},
+		{
+			"partId": "D20",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				4993,
+				4994
+			],
+			"reason": "Orange lower-level platform strokes overlaid beneath the separate blue upper-level strokes.",
+			"localImage": "west-four-paths.png"
+		},
+		{
+			"partId": "A48",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				5680,
+				5681
+			],
+			"reason": "Both wide blue Utica Avenue island platforms.",
+			"localImage": "utica-paths.png"
+		},
+		{
+			"partId": "B08",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				7918
+			],
+			"reason": "Lexington Avenue-63 Street platform follows the 63 Street line and label leader, north of 59 Street.",
+			"localImage": "midtown-paths-2.png"
+		},
+		{
+			"partId": "D14",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				6049
+			],
+			"reason": "Blue 7 Avenue island on the 53 Street alignment, matching the label leader.",
+			"localImage": "midtown-paths-2.png"
+		},
+		{
+			"partId": "G05",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				5714,
+				5739
+			],
+			"reason": "Stacked brown and blue Jamaica Center subway islands north of the regional railroad.",
+			"localImage": "jamaica-paths.png"
+		},
+		{
+			"partId": "G06",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				5715,
+				5734
+			],
+			"reason": "Stacked filled brown and blue Sutphin subway platform shapes, separate from the regional railroad platforms.",
+			"localImage": "jamaica-paths.png"
+		},
+		{
+			"partId": "142",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				8939
+			],
+			"reason": "Solid red South Ferry terminal platform inside the gray former loop; no turnback connectivity added.",
+			"localImage": "downtown-paths-2.png"
+		},
+		{
+			"partId": "228",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				6114
+			],
+			"reason": "Red Park Place island crossing the IND alignment, distinct from Chambers Street IRT.",
+			"localImage": "downtown-paths-2.png"
+		},
+		{
+			"partId": "632",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				9213,
+				9214
+			],
+			"reason": "Lexington 33 Street green platforms north of the separate 28 Street markers.",
+			"localImage": "midtown-paths-2.png"
+		},
+		{
+			"partId": "418",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				9233,
+				9234
+			],
+			"reason": "Fulton Street Lexington platforms south of the City Hall loop.",
+			"localImage": "downtown-paths-2.png"
+		},
+		{
+			"partId": "420",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				9238,
+				9239
+			],
+			"reason": "Bowling Green platforms at the source label leader.",
+			"localImage": "downtown-paths-2.png"
+		},
+		{
+			"partId": "222",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				10208,
+				10209
+			],
+			"reason": "Red lower-level 149 Street-Hostos platforms transverse to the green upper-level alignment.",
+			"localImage": "bronx-paths.png"
+		},
+		{
+			"partId": "R09",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				7595
+			],
+			"reason": "Yellow-filled Queensboro Plaza platform half, separate from purple-filled path 7594 used for the Flushing part.",
+			"localImage": "queensboro-paths.png"
+		},
+		{
+			"partId": "726",
+			"priorPlatformPaths": [],
+			"platformPaths": [
+				2291
+			],
+			"reason": "Light purple Hudson Yards-34 Street platform on the main 11 Avenue alignment, verified with the named source label; no Flushing terminal connectivity claimed.",
+			"localImage": "hudson-full.png"
+		},
+		{
+			"partId": "A47",
+			"priorPlatformPaths": [
+				5629
+			],
+			"platformPaths": [
+				5628,
+				5629
+			],
+			"reason": "Both offset active Kingston-Throop side platforms are visible in the native crop; prior centroid used only the north platform.",
+			"localImage": "nostrand-levels.png"
+		}
+	]
+}

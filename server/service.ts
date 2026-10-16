@@ -15,6 +15,9 @@ import { ChangeDetector } from './changes';
 
 import { PATH_URL, normalizePath } from './path';
 import { NjtLiveService } from './njt-live';
+import type { TrackMapSnapshot, TrackMapTopology } from '../shared/track-map';
+import { TrackMapPlacement } from './track-map';
+import { loadTrackMapTopology, validateTrackMapTopology } from './track-map-data';
 
 const upstream = 'https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/';
 export interface FeedSlot { state: SourceState; raw?: any; trains: Map<string, Train>; digest?: string }
@@ -41,7 +44,11 @@ export class TransitService {
   changeDetector = new ChangeDetector();
   readonly cacheDir: string;
   readonly njt: NjtLiveService;
-  constructor(readonly options: { fixtureDir?: string; cacheDir?: string; fetcher?: typeof fetch; njtCredentials?: { username: string; password: string } } = {}) {
+	readonly trackMap?: TrackMapPlacement;
+	readonly trackMapVersion?: string;
+	private trackMapFailed = false;
+	private trackMapCache?: { revision: number; now: number; value: TrackMapSnapshot };
+  constructor(readonly options: { fixtureDir?: string; cacheDir?: string; fetcher?: typeof fetch; njtCredentials?: { username: string; password: string }; trackMapTopology?: TrackMapTopology | null } = {}) {
     this.cacheDir = options.cacheDir || process.env.STATE_DIR || 'state';
     const credentials = options.njtCredentials ?? (process.env.NJT_ENABLED === '0' ? undefined : {
       username: process.env.NJT_USERNAME || '', password: process.env.NJT_PASSWORD || '',
@@ -53,7 +60,28 @@ export class TransitService {
       return connected;
     });
     for (const id of [...Object.keys(FEED_ROUTES), 'subway-alerts', 'path']) this.slots.set(id, { state: { id, timestamp: null, fetchedAt: null, error: null }, trains: new Map() });
+		try {
+			const topology = options.trackMapTopology === undefined ? loadTrackMapTopology() : options.trackMapTopology;
+			if (topology) { this.trackMap = new TrackMapPlacement(validateTrackMapTopology(topology)); this.trackMapVersion = topology.mapVersion; }
+		} catch { /* Departure boards remain usable when a map asset is invalid. */ }
   }
+	get trackMapAvailable() { return !!this.trackMap && !this.trackMapFailed; }
+	mapSnapshot(now = nowSeconds()): TrackMapSnapshot | undefined {
+		if (!this.trackMap) return;
+		if (this.trackMapCache?.revision === this.revision && this.trackMapCache.now === now) return this.trackMapCache.value;
+		try {
+			const slots = [...this.slots.values()].filter(slot => slot.state.id in FEED_ROUTES && slot.state.id !== 'gtfs-si');
+			const value = this.trackMap.snapshot(slots.flatMap(slot => [...slot.trains.values()]), slots.map(slot => ({ ...slot.state })), now, this.schedules);
+			this.trackMapCache = { revision: this.revision, now, value };
+			this.trackMapFailed = false;
+			return value;
+		} catch {
+			// A bad placement must not stop refreshBoards or leak an older live snapshot.
+			this.trackMapCache = undefined;
+			this.trackMapFailed = true;
+			return undefined;
+		}
+	}
   async request(url: string) {
     const result = await (this.options.fetcher || fetch)(url, { signal: AbortSignal.timeout(12000), headers: { 'User-Agent': 'SubwaysForNerds/0.1' } });
     if (!result.ok) throw new Error(`Upstream HTTP ${result.status}`);
@@ -94,6 +122,8 @@ export class TransitService {
     }
     if (this.njt.enabled) for (const [key, detail] of this.njt.details()) this.details.set(key, detail);
     this.revision++;
+		// Observe feed transitions even while no client has the map open.
+		this.mapSnapshot(now);
   }
   acceptConsists(raw: unknown, fetchedAt: number) {
     this.consists = normalizeConsists(raw, fetchedAt);

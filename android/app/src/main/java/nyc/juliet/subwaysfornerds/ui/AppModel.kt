@@ -66,6 +66,7 @@ import nyc.juliet.subwaysfornerds.ui.data.SettingsStorage
 import nyc.juliet.subwaysfornerds.ui.navigation.AppNavigator
 import nyc.juliet.subwaysfornerds.ui.navigation.AppTab
 import nyc.juliet.subwaysfornerds.ui.navigation.Route
+import nyc.juliet.subwaysfornerds.ui.map.TrackMapModel
 import nyc.juliet.subwaysfornerds.ui.theme.AppTheme
 import java.util.UUID
 
@@ -267,6 +268,8 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 	private val coordinator = TransitRefreshCoordinator(scope, { request -> performFetch(request) }, { deps.fixedNow ?: deps.clock() })
 
 	val fleet: FleetPackModel = FleetPackModel(scope, this, deps.fleet)
+	/** The track map tab; it polls only while visible and while the app is in the foreground. */
+	val trackMap: TrackMapModel = TrackMapModel(scope, { version, progress -> service.trackMapSnapshot(version, progress) }, { deps.fixedNow ?: deps.clock() })
 
 	// MARK: Derived stations
 
@@ -768,6 +771,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		watchFailures()
 		boardIsCached = true
 		fleet.endpointChanged()
+		trackMap.endpointChanged()
 		lastCatalogAttempt = 0.0
 		// Cached content belongs to one endpoint; restore this endpoint's ride and boards.
 		board = null; boardSavedAt = null; activeRide = null; activeRideTrip = null; savedTrips = emptyList(); surroundingBoards = emptyMap(); liveTrips = emptyMap()
@@ -804,6 +808,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 			active = true
 			coordinator.setConnected(connected)
 			coordinator.setForeground(true)
+			trackMap.setForeground(true)
 			planOffline()
 			coroutineScope {
 				launch { clockLoop() }
@@ -812,7 +817,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 				launch { refreshBoard() }
 			}
 		} finally {
-			if (activeGeneration == generation) active = false
+			if (activeGeneration == generation) { active = false; trackMap.setForeground(false) }
 		}
 	}
 
@@ -824,6 +829,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		fleet.leavingForeground()
 		deps.fleet?.setForeground(false)
 		scope.launch { coordinator.setForeground(false) }
+		trackMap.setForeground(false)
 		favoriteStartupAttempted = false
 		browsing = false
 		closestFavoriteJob?.cancel()
@@ -840,6 +846,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		val isConnected = networkConnected && !outageSimulated
 		if (isConnected == connected) return
 		connected = isConnected
+		trackMap.setConnected(isConnected)
 		// Reconnecting makes every tracked fetch due at once (recovery refresh).
 		coordinator.setConnected(isConnected)
 		if (!active) return

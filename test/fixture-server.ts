@@ -11,6 +11,10 @@ if (process.env.FIXTURE_NJT === '1') {
 // Analytics writes beside the temporary fleet database, never into ./state.
 process.env.STATE_DIR = fixture.directory;
 const app = await createServer(fixture.service, { exemptLoopbackRateLimits: true });
+if (process.env.FIXTURE_TRACK_MAP === '1') {
+  const { installTrackMapFixtureControls } = await import('./track-map-fixture');
+  installTrackMapFixtureControls(app);
+}
 app.addHook('onClose', async () => { await fixture.close(); });
 const port = Number(process.env.FIXTURE_PORT || 8092);
 // The same API on a second port with every response body spread over three seconds,

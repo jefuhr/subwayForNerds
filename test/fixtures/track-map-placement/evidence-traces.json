@@ -1,0 +1,10 @@
+[
+	{ "at": 0, "vehicleAt": 0, "status": "STOPPED_AT", "freshness": "live", "placement": "track", "motion": false },
+	{ "at": 10, "vehicleAt": 10, "status": "IN_TRANSIT_TO", "freshness": "live", "placement": "track", "motion": true },
+	{ "at": 40, "vehicleAt": 40, "status": "IN_TRANSIT_TO", "sourceError": "offline", "freshness": "stale", "placement": "track", "motion": false, "observedAt": 10 },
+	{ "at": 60, "vehicleAt": 60, "status": "IN_TRANSIT_TO", "sourceError": "offline", "freshness": "stale", "placement": "track", "motion": false, "samePoint": true, "observedAt": 10 },
+	{ "at": 80, "vehicleAt": 10, "status": "IN_TRANSIT_TO", "freshness": "live", "placement": "track", "motion": true },
+	{ "at": 100, "vehicleAt": 10, "status": "IN_TRANSIT_TO", "freshness": "stale", "placement": "track", "motion": false },
+	{ "at": 120, "vehicleAt": 10, "status": "IN_TRANSIT_TO", "freshness": "stale", "placement": "track", "motion": false, "samePoint": true },
+	{ "at": 310, "vehicleAt": 10, "status": "IN_TRANSIT_TO", "freshness": "unavailable", "placement": "unplaced", "motion": false }
+]

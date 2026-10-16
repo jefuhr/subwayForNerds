@@ -14,3 +14,6 @@ ios/Config/Local.xcconfig
 ios/DerivedData/
 *.xcresult
 .claude/settings.local.json
+# Generated native map resources are prepared locally until artwork distribution is authorized.
+ios/SubwaysForNerds/Resources/TrackMap/
+android/app/src/main/assets/track-map/

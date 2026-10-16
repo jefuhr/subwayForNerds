@@ -287,6 +287,10 @@ private fun OfflineProvenance(model: AppModel, shown: TrainPresentation, saved: 
 				OfflineDisplay.completenessLabel(saved.isComplete)?.let { Text(it, style = TextRoles.caption.copy(fontWeight = FontWeight.SemiBold), modifier = Modifier.testTag("partialTripLabel")) }
 			}
 			Text("Car numbers and the train's current position are not shown offline.", style = TextRoles.caption2, color = palette.muted)
+			Column(Modifier.testTag("trainDeviceNetworkStatus").semantics(mergeDescendants = true) {}) {
+				Text(model.deviceNetworkHeadline, style = TextRoles.caption2.copy(fontWeight = FontWeight.SemiBold))
+				Text(model.deviceNetworkDetail, style = TextRoles.caption2, color = palette.muted)
+			}
 		}
 	}
 }

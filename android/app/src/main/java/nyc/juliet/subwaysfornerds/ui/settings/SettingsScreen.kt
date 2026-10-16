@@ -221,15 +221,22 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 			model.settingsError?.let { message -> row { RowContainer { Text(message, style = TextRoles.footnote, color = palette.danger, modifier = Modifier.testTag("settingsError")) } } }
 		}
 		accountSection(model, account)
+		section("system", header = "System", footer = "App storage breakdown, network signal and link speed, memory use, and device health.") {
+			row {
+				NavigationRow(
+					"System status", { open(Route.SystemStatus) }, Modifier.testTag("systemStatusSettings"),
+					value = if (model.connected) "Online" else model.deviceNetworkStatus.state.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() },
+				)
+			}
+		}
 		if (model.debugBuild) section("debug", header = "Development server", footer = "Use a reachable API base address ending in /api/v1/. Your favorites, filters, and theme are saved on this device.") {
 			row { EndpointEditor(model) }
-			row { SwitchRow("Simulate no connection", model.outageSimulated, { model.setSimulatedOutage(it) }, Modifier.testTag("simulateOutage")) }
 		}
 		section("about", header = "About") {
 			row { LinkButton("Web app", "https://juliet.nyc/subwaysForNerds/", Modifier.padding(start = 4.dp)) }
-			row { LinkButton("Taking the ferry?", "https://juliet.nyc/ferryTimesMobile/", Modifier.padding(start = 4.dp)) }
 			row { LinkButton("Usage statistics", "https://juliet.nyc/subwaysForNerds/stats", Modifier.padding(start = 4.dp)) }
 			row { LinkButton("A juliet.nyc project", "https://juliet.nyc", Modifier.padding(start = 4.dp)) }
+			row { LinkButton("Report an issue on GitHub", "https://github.com/jefuhr/subwayForNerds/issues/new", Modifier.padding(start = 4.dp).testTag("createGithubIssue")) }
 			row {
 				RowContainer {
 					Text("Times are predictions, not promises. Location finds nearby and favorite stations in the app and, when allowed, widgets. Location and station search text stay on this device.", style = TextRoles.caption, color = palette.muted)

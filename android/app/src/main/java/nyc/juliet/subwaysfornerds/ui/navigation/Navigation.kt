@@ -47,6 +47,7 @@ sealed interface Route {
 	data object OfflineSettings : Route
 	data object FleetPackScope : Route
 	data object WidgetPreviews : Route
+	data object SystemStatus : Route
 	data object ImportPreview : Route
 
 	val isOverlay: Boolean get() = this is StationPicker || this == Alerts || this == Lines || this is CombinedEditor || this == ImportPreview

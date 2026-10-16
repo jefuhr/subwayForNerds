@@ -27,6 +27,8 @@ public actor TransitAPI {
 	private let progressInterval: Duration
 	private struct CachedResponse { let data: Data; let etag: String }
 	private var responses: [URL: CachedResponse] = [:]
+	/// How long the latest finished request took, from sending it to its last byte.
+	public private(set) var lastRoundTripMilliseconds: Int?
 
 	/// `progressInterval` is how often a watched request samples its received bytes.
 	public init(baseURL: URL = TransitAPI.productionBaseURL, session: URLSession = .shared, progressInterval: Duration = .milliseconds(100)) {
@@ -69,7 +71,10 @@ public actor TransitAPI {
 		let cached = responses[url]
 		if let cached { request.setValue(cached.etag, forHTTPHeaderField: "If-None-Match") }
 		await progress?(TransferProgress(phase: .requesting, host: host))
+		let started = ContinuousClock.now
 		let (data, raw) = try await load(request, host: host, progress: progress)
+		let elapsed = (ContinuousClock.now - started).components
+		lastRoundTripMilliseconds = Int(elapsed.seconds * 1_000 + elapsed.attoseconds / 1_000_000_000_000_000)
 		guard let response = raw as? HTTPURLResponse else { throw TransitAPIError.invalidResponse }
 		let payload: Data
 		switch response.statusCode {

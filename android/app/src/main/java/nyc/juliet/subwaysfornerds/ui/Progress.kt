@@ -1,11 +1,16 @@
 package nyc.juliet.subwaysfornerds.ui
 
+import nyc.juliet.subwaysfornerds.core.DeviceNetworkStatus
 import nyc.juliet.subwaysfornerds.core.LoadProgress
 import java.util.Locale
 
 /** The bar before a request starts: named work, no percent, and whether a connection is missing. */
 fun waitingLoad(subject: String, connected: Boolean): LoadProgress =
 	LoadProgress(null, if (connected) "Waiting to request $subject…" else "Waiting for a connection to request $subject…")
+
+/** The same bar, saying what the phone is doing while there is no connection. */
+fun waitingLoad(subject: String, connected: Boolean, status: DeviceNetworkStatus): LoadProgress =
+	if (connected) waitingLoad(subject, true) else LoadProgress(null, status.waitingDetail(subject))
 
 /** Decimal file sizes in the style riders see in iOS: "512 bytes", "12 KB", "4.2 MB". */
 object ByteCounts {

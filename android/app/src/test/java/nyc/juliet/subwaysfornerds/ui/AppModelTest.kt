@@ -2,11 +2,16 @@ package nyc.juliet.subwaysfornerds.ui
 
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import nyc.juliet.subwaysfornerds.core.AppStorageBreakdown
 import nyc.juliet.subwaysfornerds.core.Board
+import nyc.juliet.subwaysfornerds.core.DeviceNetworkStatus
 import nyc.juliet.subwaysfornerds.core.FleetPackJob
 import nyc.juliet.subwaysfornerds.core.NerdsCodec
+import nyc.juliet.subwaysfornerds.core.NetworkActivityState
+import nyc.juliet.subwaysfornerds.core.NetworkTransport
 import nyc.juliet.subwaysfornerds.core.Settings
 import nyc.juliet.subwaysfornerds.core.SourceState
+import nyc.juliet.subwaysfornerds.core.SystemRuntimeStatus
 import nyc.juliet.subwaysfornerds.core.TransitJson
 import nyc.juliet.subwaysfornerds.data.OfflineFetchTarget
 import nyc.juliet.subwaysfornerds.ui.navigation.AppTab
@@ -337,6 +342,75 @@ class AppModelTest {
 		Thread.sleep(2_500)
 		assertEquals(checks, transit.fleetStatusChecks)
 		assertEquals("Preparing the fleet pack stopped because the app left the screen. Your saved fleet is still available. Prepare it again to continue.", model.fleet.error)
+	}
+
+	@Test fun systemStatusReadsTheDeviceAndRecordsServerResponseTime() {
+		val reads = java.util.concurrent.atomic.AtomicInteger()
+		harness.systemStatus = {
+			reads.incrementAndGet()
+			SystemRuntimeStatus(storage = AppStorageBreakdown(appApkBytes = 1_000, fleetBytes = 500), thermalStatus = "Light", appVersion = "0.1.0 (1)")
+		}
+		start()
+		assertNull(model.lastApiLatencyMs)
+		activate()
+		waitFor("the live board") { model.board != null && !model.boardIsCached }
+		assertNotNull("a completed request records its response time", model.lastApiLatencyMs)
+		onModel { model.refreshSystemStatus() }
+		assertEquals(1, reads.get())
+		assertEquals(1_500L, model.systemStatus.storage.totalAppBytes)
+		assertEquals("Light", model.systemStatus.thermalStatus)
+		assertEquals(model.lastApiLatencyMs, model.systemStatus.lastApiLatencyMs)
+		// Offline storage is measured with the same refresh.
+		assertNotNull(model.offlineUsage)
+		assertFalse(model.refreshingSystemStatus)
+		// A collector failure keeps the last reading instead of blanking the screen.
+		harness.systemStatus = { throw IllegalStateException("StatFs unavailable") }
+		onModel { model.refreshSystemStatus() }
+		assertEquals("Light", model.systemStatus.thermalStatus)
+		assertFalse(model.refreshingSystemStatus)
+	}
+
+	@Test fun deviceNetworkStatusFollowsConnectivityWithoutAnObservation() {
+		start()
+		assertEquals(NetworkActivityState.CONNECTED, model.deviceNetworkStatus.state)
+		onModel { model.setNetworkConnected(false) }
+		waitFor("the disconnect") { !model.connected }
+		assertEquals(NetworkActivityState.SEARCHING, model.deviceNetworkStatus.state)
+		assertEquals("Searching for Wi-Fi or cellular signal…", model.deviceNetworkHeadline)
+		// The loading bar says what the phone is doing instead of a generic wait.
+		assertTrue(model.boardLoad.detail, model.boardLoad.detail.startsWith("Searching for Wi-Fi or cellular signal… · Waiting to request departures"))
+		onModel { model.setNetworkConnected(true) }
+		waitFor("the reconnect") { model.connected }
+		assertEquals(NetworkActivityState.CONNECTED, model.deviceNetworkStatus.state)
+	}
+
+	@Test fun anObservedNetworkExplainsWhyTheAppIsOffline() {
+		start()
+		activate()
+		waitFor("the live board") { model.board != null && !model.boardIsCached }
+		val portal = DeviceNetworkStatus.observe(true, listOf(NetworkTransport.WIFI), internet = true, validated = false, captivePortal = true, notMetered = true, notRoaming = true, notSuspended = true, airplaneMode = false, networkName = "\"Station Wi-Fi\"")
+		onModel { model.setNetworkConnected(false, portal) }
+		waitFor("the disconnect") { !model.connected }
+		assertEquals("Connected to Station Wi-Fi · sign-in required (captive portal)", model.deviceNetworkHeadline)
+		assertTrue(model.deviceNetworkDetail, model.deviceNetworkDetail.startsWith("Wi-Fi · Waiting for internet access to refresh departures ("))
+		val airplane = DeviceNetworkStatus(state = NetworkActivityState.OFFLINE, airplaneMode = true)
+		onModel { model.setDeviceNetworkStatus(airplane) }
+		assertEquals("Offline · Airplane mode is on", model.deviceNetworkHeadline)
+		assertFalse(model.connected)
+	}
+
+	@Test fun aSimulatedOutageIsReportedAsSuch() {
+		model = harness.create(debug = true)
+		onModel { model.setDeviceNetworkStatus(DeviceNetworkStatus.observe(true, listOf(NetworkTransport.CELLULAR), true, true, false, false, true, true, false)) }
+		assertEquals("Connected via Cellular", model.deviceNetworkHeadline)
+		onModel { model.setSimulatedOutage(true) }
+		waitFor("the simulated outage") { !model.connected }
+		assertEquals(NetworkActivityState.SIMULATED_OUTAGE, model.deviceNetworkStatus.state)
+		assertEquals("Simulated outage · network requests paused", model.deviceNetworkHeadline)
+		assertTrue(model.deviceNetworkDetail, model.deviceNetworkDetail.startsWith("Metered · Automatic refreshes paused until the simulated outage ends"))
+		onModel { model.setSimulatedOutage(false) }
+		waitFor("the outage to end") { model.connected }
+		assertEquals("Connected via Cellular", model.deviceNetworkHeadline)
 	}
 
 	@Test fun stationLinksArrivingBeforeLoadWaitAndThenOpen() {

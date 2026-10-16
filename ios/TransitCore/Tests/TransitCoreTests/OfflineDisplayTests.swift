@@ -64,6 +64,11 @@ struct OfflineDisplayTests {
 		#expect(OfflineDisplay.estimateLabel(timestamp: source + 5, now: source, preferences: prefs).contains("no estimate"))
 	}
 
+	@Test func boardProvenanceSaysWhenTheBoardWasSaved() {
+		#expect(OfflineDisplay.boardProvenance(savedAt: source, now: source + 240) == "Board saved 4m ago · countdowns use this device's clock; trains that left say estimate passed")
+		#expect(OfflineDisplay.boardProvenance(savedAt: nil, now: source) == "Last board from this visit · not saved offline")
+	}
+
 	@Test func nextSavedStopIsAnEstimateThatSkipsWithdrawnAndPassedStops() {
 		let stops = [
 			StopPrediction(id: "a", name: "A", arrival: source + 60),

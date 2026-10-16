@@ -76,6 +76,7 @@ import nyc.juliet.subwaysfornerds.ui.settings.OfflineSettingsScreen
 import nyc.juliet.subwaysfornerds.ui.settings.SettingsActions
 import nyc.juliet.subwaysfornerds.ui.settings.SettingsScreen
 import nyc.juliet.subwaysfornerds.ui.settings.StationSelectionScreen
+import nyc.juliet.subwaysfornerds.ui.settings.SystemStatusScreen
 import nyc.juliet.subwaysfornerds.ui.settings.WidgetDisplayScreen
 import nyc.juliet.subwaysfornerds.ui.settings.WidgetFiltersScreen
 import nyc.juliet.subwaysfornerds.ui.station.ContextScreen
@@ -252,6 +253,7 @@ fun RouteScreen(model: AppModel, account: AccountModel, route: Route, exit: Scre
 		Route.OfflineSettings -> OfflineSettingsScreen(model, exit, close, open)
 		Route.FleetPackScope -> FleetPackScopeScreen(model, exit, close)
 		Route.WidgetPreviews -> WidgetPreviewScreen(model, exit, close)
+		Route.SystemStatus -> SystemStatusScreen(model, exit, close)
 		Route.Lines -> LinesScreen(model, exit, close)
 		else -> OverlayScreen(model, account, route, close)
 	}

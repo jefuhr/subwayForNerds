@@ -1,10 +1,19 @@
 package nyc.juliet.subwaysfornerds.ui
 
+import android.app.ActivityManager
 import android.content.Context
+import android.os.Build
+import android.os.Debug
+import android.os.PowerManager
+import android.os.Process
+import android.os.StatFs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nyc.juliet.subwaysfornerds.BuildConfig
 import nyc.juliet.subwaysfornerds.core.AccountClient
+import nyc.juliet.subwaysfornerds.core.AppMemoryStatus
+import nyc.juliet.subwaysfornerds.core.AppStorageBreakdown
+import nyc.juliet.subwaysfornerds.core.DiskUsage
 import nyc.juliet.subwaysfornerds.core.AccountSession
 import nyc.juliet.subwaysfornerds.core.AndroidAuthPending
 import nyc.juliet.subwaysfornerds.core.AuthConfig
@@ -20,6 +29,7 @@ import nyc.juliet.subwaysfornerds.core.SettingsRevision
 import nyc.juliet.subwaysfornerds.core.Station
 import nyc.juliet.subwaysfornerds.core.StationContext
 import nyc.juliet.subwaysfornerds.core.StationLocation
+import nyc.juliet.subwaysfornerds.core.SystemRuntimeStatus
 import nyc.juliet.subwaysfornerds.core.TransferResult
 import nyc.juliet.subwaysfornerds.core.TransitClient
 import nyc.juliet.subwaysfornerds.core.TripDetail
@@ -48,6 +58,7 @@ import nyc.juliet.subwaysfornerds.ui.data.TransitService
 import nyc.juliet.subwaysfornerds.ui.data.WidgetHooks
 import nyc.juliet.subwaysfornerds.widgets.runtime.WidgetRuntime
 import nyc.juliet.subwaysfornerds.widgets.ui.TransitWidgetUi
+import java.io.File
 import java.net.URI
 
 /** The app's long-lived stores and clients. Tests may replace the model's dependencies. */
@@ -76,6 +87,7 @@ class AppContainer(private val context: Context) {
 			locationDisabled = options?.disableLocation == true,
 			flags = flags,
 			endpointOverride = options?.apiBase,
+			systemStatus = DeviceSystemStatus(context)::read,
 		)
 	}
 
@@ -189,4 +201,52 @@ class PreferenceFlags(context: Context) : UiFlags {
 	private val preferences = context.applicationContext.getSharedPreferences("ui-flags", Context.MODE_PRIVATE)
 	override fun get(key: String): Boolean = preferences.getBoolean(key, false)
 	override fun set(key: String, value: Boolean) { preferences.edit().putBoolean(key, value).apply() }
+}
+
+/**
+ * Measures the app's files, memory and device health for the system status screen. Paths match
+ * the stores that own them; reads block, so the model calls this off the main thread.
+ */
+class DeviceSystemStatus(context: Context) {
+	private val context = context.applicationContext
+
+	fun read(): SystemRuntimeStatus {
+		val info = context.applicationInfo
+		val files = context.filesDir
+		val noBackup = context.noBackupFilesDir
+		val disk = runCatching { StatFs(files.absolutePath) }.getOrNull()
+		val storage = AppStorageBreakdown(
+			appApkBytes = DiskUsage.bytes(File(info.sourceDir), *info.splitSourceDirs.orEmpty().map(::File).toTypedArray()),
+			settingsBytes = DiskUsage.bytes(File(files, "settings-v1"), File(noBackup, "session-v1"), File(noBackup, "location-v1"), File(info.dataDir, "shared_prefs")),
+			transitCacheBytes = DiskUsage.bytes(File(noBackup, "transit-v1")),
+			widgetCacheBytes = DiskUsage.bytes(File(noBackup, "widget-v1")),
+			httpCacheBytes = DiskUsage.bytes(context.cacheDir),
+			fleetBytes = DiskUsage.bytes(File(noBackup, "fleet-v1")),
+			deviceFreeBytes = disk?.availableBytes,
+			deviceTotalBytes = disk?.totalBytes,
+		)
+		val activity = context.getSystemService(ActivityManager::class.java)
+		val device = activity?.let { manager -> ActivityManager.MemoryInfo().also(manager::getMemoryInfo) }
+		val runtime = Runtime.getRuntime()
+		// Android rate-limits this for apps, so repeated reads within a few minutes may repeat a sample.
+		val pss = runCatching { activity?.getProcessMemoryInfo(intArrayOf(Process.myPid()))?.firstOrNull()?.totalPss?.toLong() }.getOrNull() ?: 0L
+		val memory = AppMemoryStatus(
+			processPssBytes = pss * 1024L,
+			jvmUsedBytes = runtime.totalMemory() - runtime.freeMemory(),
+			jvmMaxBytes = runtime.maxMemory(),
+			nativeAllocatedBytes = Debug.getNativeHeapAllocatedSize(),
+			deviceAvailableBytes = device?.availMem,
+			deviceTotalBytes = device?.totalMem,
+			lowMemory = device?.lowMemory == true,
+		)
+		val power = context.getSystemService(PowerManager::class.java)
+		return SystemRuntimeStatus(
+			storage = storage,
+			memory = memory,
+			thermalStatus = power?.let { SystemRuntimeStatus.thermalLabel(it.currentThermalStatus) } ?: "Unknown",
+			powerSaveMode = power?.isPowerSaveMode == true,
+			appVersion = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+			androidVersion = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
+		)
+	}
 }

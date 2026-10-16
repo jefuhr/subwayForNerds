@@ -1,4 +1,7 @@
 import CoreLocation
+#if canImport(CoreTelephony) && os(iOS)
+import CoreTelephony
+#endif
 import Foundation
 import Network
 import Observation
@@ -50,6 +53,11 @@ final class AppModel {
 	var locationError: String?
 	var locating = false
 	var connected = true
+	/// What the phone's network path is doing, shown wherever the app explains being offline.
+	private(set) var deviceNetworkStatus = DeviceNetworkStatus(state: .connecting)
+	/// Prefetcher fetches running now, and every board and trip it keeps current.
+	private(set) var fetchesInFlight = 0
+	private(set) var trackedFetches: [OfflineFetchTarget] = []
 	var offlineManifest: FleetOfflineManifest?
 	var availablePack: FleetPackManifest?
 	var fleetPackSelection = FleetPackSelection()
@@ -71,6 +79,10 @@ final class AppModel {
 	var activeRideTrip: CachedTrip?
 	var savedTrips: [CachedTrip] = []
 	var offlineUsage: OfflineStorageUsage?
+	/// The latest System status reading; nil until that screen first measures.
+	private(set) var systemStatus: SystemStatusSnapshot?
+	/// The installed bundle cannot change while the app runs, so it is measured once.
+	@ObservationIgnored private var appBundleBytes: Int64?
 	/// Steps of the first storage check, while the Offline screen has no usage to show yet.
 	var storageCheck: LoadProgress?
 	@ObservationIgnored private var storageCheckToken: UUID?
@@ -90,13 +102,20 @@ final class AppModel {
 	@ObservationIgnored private var openTrips: [String: Int] = [:]
 	/// Trips fetched as automatic next-trip snapshots, stored regardless of "save opened trips".
 	@ObservationIgnored private var snapshotKeys = Set<String>()
-	/// DEBUG outage simulation keeps the same endpoint so its cache stays in use.
+	/// Outage simulation keeps the same endpoint so its cache stays in use.
 	private(set) var outageSimulated = false
 	@ObservationIgnored let transitStore: OfflineTransitStore?
 	@ObservationIgnored private var prefetcher: OfflinePrefetcher?
 	@ObservationIgnored private var apiBeforeOutage: TransitAPI?
 	@ObservationIgnored private var restoreTask: Task<Void, Never>?
 	@ObservationIgnored private var networkConnected = true
+	@ObservationIgnored private var networkPath: NetworkPathSnapshot?
+	/// True while the first refresh after the path returned is still running.
+	@ObservationIgnored private var reconnecting = false
+	@ObservationIgnored private var reconnectGeneration = 0
+	#if canImport(CoreTelephony) && os(iOS)
+	@ObservationIgnored private var telephony: CTTelephonyNetworkInfo?
+	#endif
 	/// Next-trip keys of favorite and nearby boards, kept only when other-station trips are preloaded.
 	@ObservationIgnored private var surroundingTrips: [String: [String]] = [:]
 	@ObservationIgnored private var recent: [String]
@@ -194,7 +213,7 @@ final class AppModel {
 		}
 		#endif
 		syncWidgets(reload: true)
-		if outageSimulated { beginSimulatedOutage(); connected = false }
+		if outageSimulated { beginSimulatedOutage(); connected = false; deviceNetworkStatus = DeviceNetworkStatus(state: .simulatedOutage) }
 		prefetcher = makePrefetcher()
 		restoreTask = Task { await restoreOffline() }
 	}
@@ -436,9 +455,11 @@ final class AppModel {
 			networkStarted = true
 			network.pathUpdateHandler = { [weak self] path in
 				let connected = path.status == .satisfied
+				let snapshot = NetworkPathSnapshot(path)
 				Task { @MainActor [weak self] in
 					guard let self else { return }
 					self.networkConnected = connected
+					self.networkPath = snapshot
 					await self.connectionChanged()
 				}
 			}
@@ -654,10 +675,16 @@ final class AppModel {
 		if board == nil { await loadCachedBoard(id) }
 		guard id == stationID else { return }
 		if board == nil {
-			boardError = connected ? "Could not reach the train feed. Pull to retry or choose a saved station." : "No connection and no saved board for this station. Choose a saved station or reconnect."
+			boardError = connected ? "Could not reach the train feed. Pull to retry or choose a saved station." : noConnectionMessage(savedBoard: false)
 		} else {
-			boardError = connected ? "Showing a saved board. Reconnect for current predictions." : "No connection. Showing a saved board; times are offline estimates."
+			boardError = connected ? "Showing a saved board. Reconnect for current predictions." : noConnectionMessage(savedBoard: true)
 		}
+	}
+
+	/// Starts with "No connection" and says what the phone is doing about it.
+	private func noConnectionMessage(savedBoard: Bool) -> String {
+		savedBoard ? "No connection · \(deviceNetworkStatus.activitySummary). Showing a saved board; times are offline estimates."
+			: "No connection · \(deviceNetworkStatus.activitySummary). No saved board for this station; choose a saved station or reconnect."
 	}
 
 	func reloadOfflineStatus() async {
@@ -679,6 +706,31 @@ final class AppModel {
 		offlineFailures = failures
 		offlineUsage = usage
 		await refreshReadiness()
+	}
+
+	/// Measures storage off the main actor, then reads memory, power, and the latest feed latency.
+	func refreshSystemStatus() async {
+		let directory = directory
+		let widgetDirectory = widgetStore?.directory
+		let knownBundleBytes = appBundleBytes
+		let storage = await Task.detached(priority: .utility) {
+			let legacyBoards = ((try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [])
+				.filter { $0.lastPathComponent.hasPrefix("board-") && $0.pathExtension == "json" }
+			let volume = StorageMeasure.volume(containing: directory)
+			return AppStorageBreakdown(
+				appBundleBytes: knownBundleBytes ?? StorageMeasure.bytes(at: Bundle.main.bundleURL),
+				settingsBytes: StorageMeasure.bytes(at: ["settings.json", "preferences.json", "widgets.json"].map { directory.appendingPathComponent($0) }),
+				transitCacheBytes: StorageMeasure.bytes(at: [directory.appendingPathComponent("OfflineTransit", isDirectory: true)] + legacyBoards),
+				catalogBytes: StorageMeasure.bytes(at: directory.appendingPathComponent("stations.json")),
+				widgetCacheBytes: widgetDirectory.map(StorageMeasure.bytes(at:)) ?? 0,
+				urlCacheBytes: Int64(URLCache.shared.currentDiskUsage),
+				fleetBytes: StorageMeasure.bytes(at: directory.appendingPathComponent("FleetDownload", isDirectory: true)),
+				deviceFreeBytes: volume.free, deviceTotalBytes: volume.total)
+		}.value
+		appBundleBytes = storage.appBundleBytes
+		let process = ProcessInfo.processInfo
+		let memory = AppMemoryStatus(appFootprintBytes: ProcessMemory.footprintBytes() ?? 0, devicePhysicalMemoryBytes: process.physicalMemory, urlCacheMemoryBytes: Int64(URLCache.shared.currentMemoryUsage))
+		systemStatus = SystemStatusSnapshot(storage: storage, memory: memory, thermal: ThermalLevel(process.thermalState), isLowPowerMode: process.isLowPowerModeEnabled, roundTripMilliseconds: await api.lastRoundTripMilliseconds, measuredAt: Date().timeIntervalSince1970)
 	}
 
 	func setOfflinePreferences(_ value: OfflinePreferences) {
@@ -818,6 +870,8 @@ final class AppModel {
 	func planOffline() {
 		guard let prefetcher else { return }
 		let requests = plannedRequests()
+		let targets = requests.map(\.target)
+		if targets != trackedFetches { trackedFetches = targets }
 		updateReadiness()
 		Task { await prefetcher.track(requests) }
 	}
@@ -861,6 +915,8 @@ final class AppModel {
 	/// calling the public refresh methods here would join this same request and wait forever.
 	private func performFetch(_ request: OfflineFetchRequest) async {
 		guard request.endpoint == endpoint else { return }
+		fetchesInFlight += 1
+		defer { fetchesInFlight -= 1 }
 		switch request.target {
 		case .board(let id): await performBoard(id)
 		case .trip(let key): await performTrip(key)
@@ -972,12 +1028,22 @@ final class AppModel {
 	var boardLoad: LoadProgress {
 		let subject = station.map { "departures for \($0.name)" } ?? "departures"
 		if let progress = fetchProgress[.board(stationID: stationID)] { return progress.load(subject) }
-		return LoadProgress(fraction: nil, detail: connected ? "Waiting to request \(subject)…" : "Waiting for a connection to request \(subject)…")
+		return LoadProgress(fraction: nil, detail: connected ? "Waiting to request \(subject)…" : "Waiting for a connection (\(deviceNetworkStatus.shortActivity)) to request \(subject)…")
 	}
 	/// The bar shown while an open train has no details yet.
 	func tripLoad(_ key: String) -> LoadProgress {
 		if let progress = fetchProgress[.trip(key: key)] { return progress.load("train details") }
-		return LoadProgress(fraction: nil, detail: connected ? "Waiting to request train details…" : "Waiting for a connection to request train details…")
+		return LoadProgress(fraction: nil, detail: connected ? "Waiting to request train details…" : "Waiting for a connection (\(deviceNetworkStatus.shortActivity)) to request train details…")
+	}
+
+	/// The network path's details, then what the app is fetching or waiting to fetch.
+	var networkActivity: String {
+		deviceNetworkStatus.detailLine(waitingTargets: max(0, trackedFetches.count - fetchesInFlight), inFlightTargets: fetchesInFlight, endpointHost: baseURL.host())
+	}
+	/// Whether automatic refreshes run, and the boards and trains they keep current.
+	var networkSyncSummary: String {
+		let boards = trackedFetches.filter { if case .board = $0 { true } else { false } }.count
+		return deviceNetworkStatus.syncLine(trackedBoards: boards, trackedTrips: trackedFetches.count - boards, inFlight: fetchesInFlight)
 	}
 
 	private func updateReadiness() {
@@ -1005,8 +1071,13 @@ final class AppModel {
 
 	private func connectionChanged() async {
 		let isConnected = networkConnected && !outageSimulated
-		guard isConnected != connected else { return }
+		guard isConnected != connected else { updateDeviceNetworkStatus(); return }
 		connected = isConnected
+		// The recovery refresh below still reads as connecting.
+		reconnectGeneration += 1
+		let generation = reconnectGeneration
+		reconnecting = isConnected && active
+		updateDeviceNetworkStatus()
 		// Reconnecting makes every tracked fetch due at once (recovery refresh).
 		await prefetcher?.setConnected(isConnected)
 		guard active else { return }
@@ -1014,9 +1085,34 @@ final class AppModel {
 			async let catalog: Void = refreshCatalog()
 			async let board: Void = refreshBoard()
 			_ = await (catalog, board)
+			guard generation == reconnectGeneration else { return }
+			reconnecting = false
+			updateDeviceNetworkStatus()
 		} else {
 			await showSavedBoard(stationID, failed: false)
 		}
+	}
+
+	private func updateDeviceNetworkStatus() {
+		let status = networkPath.map { path in
+			path.status(radioTechnology: path.transports.contains(.cellular) ? radioTechnology() : nil, simulatedOutage: outageSimulated, reconnecting: reconnecting)
+		} ?? DeviceNetworkStatus(state: outageSimulated ? .simulatedOutage : .connecting)
+		guard status != deviceNetworkStatus else { return }
+		deviceNetworkStatus = status
+		// A "No connection" notice names what the phone is doing, so it follows the path.
+		if !connected, boardError?.hasPrefix("No connection") == true { boardError = noConnectionMessage(savedBoard: board != nil) }
+	}
+
+	/// The data service's radio generation. Reading it needs no permission and is nil on the simulator.
+	private func radioTechnology() -> String? {
+		#if canImport(CoreTelephony) && os(iOS)
+		if telephony == nil { telephony = CTTelephonyNetworkInfo() }
+		guard let telephony, let technologies = telephony.serviceCurrentRadioAccessTechnology else { return nil }
+		let technology = telephony.dataServiceIdentifier.flatMap { technologies[$0] } ?? technologies.keys.sorted().first.flatMap { technologies[$0] }
+		return DeviceNetworkStatus.radioLabel(technology)
+		#else
+		return nil
+		#endif
 	}
 
 	/// The widget follows the ride only when that preference is on; the snapshot is shared either way.
@@ -1025,7 +1121,6 @@ final class AppModel {
 		if widgetReloadEnabled { WidgetCenter.shared.reloadTimelines(ofKind: WidgetSharedStore.kind) }
 	}
 
-	#if DEBUG
 	/// Simulates losing the network on the same endpoint: requests fail and the
 	/// app reports no connection, so this endpoint's cache stays in use.
 	func setSimulatedOutage(_ value: Bool) async {
@@ -1035,15 +1130,12 @@ final class AppModel {
 		else if let saved = apiBeforeOutage { api = saved; apiBeforeOutage = nil }
 		await connectionChanged()
 	}
-	#endif
 
 	private func beginSimulatedOutage() {
-		#if DEBUG
 		if apiBeforeOutage == nil { apiBeforeOutage = api }
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.protocolClasses = [SimulatedOutage.self]
 		api = TransitAPI(baseURL: baseURL, session: URLSession(configuration: configuration))
-		#endif
 	}
 
 	func locateNearby() async {
@@ -1417,7 +1509,6 @@ struct OfflineReadiness: Equatable {
 	var savedCount: Int { wanted.filter(saved.contains).count }
 }
 
-#if DEBUG
 /// Fails every request immediately, as when the device has no connection.
 final class SimulatedOutage: URLProtocol, @unchecked Sendable {
 	override class func canInit(with request: URLRequest) -> Bool { true }
@@ -1425,7 +1516,6 @@ final class SimulatedOutage: URLProtocol, @unchecked Sendable {
 	override func startLoading() { client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet)) }
 	override func stopLoading() {}
 }
-#endif
 
 enum AppError: LocalizedError {
 	case message(String)
@@ -1492,5 +1582,54 @@ private final class LocationProvider: NSObject, @preconcurrency CLLocationManage
 		let waiting = continuation
 		continuation = nil
 		waiting?.resume(with: result)
+	}
+}
+
+
+/// The parts of an `NWPath` the device network status uses, copied off the monitor's queue.
+private struct NetworkPathSnapshot: Sendable {
+	var status: DeviceNetworkStatus.PathStatus
+	var transports: [DeviceNetworkStatus.Transport]
+	var reason: DeviceNetworkStatus.PathReason?
+	var isExpensive: Bool
+	var isConstrained: Bool
+	var supportsIPv4: Bool
+	var supportsIPv6: Bool
+	var supportsDNS: Bool
+
+	init(_ path: NWPath) {
+		status = switch path.status {
+		case .satisfied: .satisfied
+		case .requiresConnection: .requiresConnection
+		case .unsatisfied: .unsatisfied
+		@unknown default: .unsatisfied
+		}
+		transports = path.availableInterfaces.map { interface in
+			switch interface.type {
+			case .wifi: .wifi
+			case .cellular: .cellular
+			case .wiredEthernet: .wiredEthernet
+			case .loopback: .loopback
+			case .other: .other
+			@unknown default: .other
+			}
+		}
+		reason = switch path.unsatisfiedReason {
+		case .notAvailable: .notAvailable
+		case .cellularDenied: .cellularDenied
+		case .wifiDenied: .wifiDenied
+		case .localNetworkDenied: .localNetworkDenied
+		case .vpnInactive: .vpnInactive
+		@unknown default: nil
+		}
+		isExpensive = path.isExpensive
+		isConstrained = path.isConstrained
+		supportsIPv4 = path.supportsIPv4
+		supportsIPv6 = path.supportsIPv6
+		supportsDNS = path.supportsDNS
+	}
+
+	func status(radioTechnology: String?, simulatedOutage: Bool, reconnecting: Bool) -> DeviceNetworkStatus {
+		DeviceNetworkStatus(path: status, transports: transports, reason: reason, radioTechnology: radioTechnology, isExpensive: isExpensive, isConstrained: isConstrained, supportsIPv4: supportsIPv4, supportsIPv6: supportsIPv6, supportsDNS: supportsDNS, simulatedOutage: simulatedOutage, reconnecting: reconnecting)
 	}
 }

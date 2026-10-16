@@ -23,6 +23,7 @@ import nyc.juliet.subwaysfornerds.core.StationLocation
 import nyc.juliet.subwaysfornerds.core.TransferResult
 import nyc.juliet.subwaysfornerds.core.TransitClient
 import nyc.juliet.subwaysfornerds.core.TripDetail
+import nyc.juliet.subwaysfornerds.core.TrackMapSnapshot
 import nyc.juliet.subwaysfornerds.core.Board
 import nyc.juliet.subwaysfornerds.data.AndroidSessionStore
 import nyc.juliet.subwaysfornerds.data.AndroidSettingsStore
@@ -103,6 +104,7 @@ class ClientTransitService(private val client: TransitClient) : TransitService {
 	override suspend fun fleetDetail(kind: String, id: String, progress: TransferSink?): FleetDetail = client.fleetDetail(kind, id, progress)
 	override suspend fun prepareFleetPack(selection: FleetPackSelection): FleetPackJob = client.prepareFleetPack(selection)
 	override suspend fun fleetPackStatus(jobID: String): FleetPackJob = client.fleetPackStatus(jobID)
+	override suspend fun trackMapSnapshot(mapVersion: String, progress: TransferSink?): TrackMapSnapshot = client.trackMapSnapshot(mapVersion, progress)
 }
 
 class DeviceSettingsStorage(private val store: AndroidSettingsStore) : SettingsStorage {

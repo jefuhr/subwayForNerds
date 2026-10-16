@@ -1,0 +1,253 @@
+{
+	"sourceSha256": "b28f75397b2e7b6ba0b67db6ea2181800baa0254a48261252f3d55c4f2b17c71",
+	"primaryReferences": [
+		{
+			"url": "https://esd.ny.gov/sites/default/files/app_s.4_transit_analysis_fgeis_final.pdf",
+			"sha256": "41ae41ca027fd9934e7d56fe153e40409642d9ce7c96bd7c678c926aeb5231a9",
+			"pdfPage": 28,
+			"figure": "S.4-3.11",
+			"source": "MTA New York City Transit Department of Subways",
+			"scope": "Historical station plan confirms physical local/express code roles at 23 St Eighth Avenue; corroborate with current source geometry and direct frozen stop/code observations.",
+			"visuallyInspected": "nyct-23-st-plan.png",
+			"westToEast": [
+				"A1 southbound local",
+				"A3 southbound express",
+				"A4 northbound express",
+				"A2 northbound local"
+			]
+		},
+		{
+			"url": "https://www.dot.ny.gov/divisions/engineering/technical-services/trans-r-and-d-repository/C-06-29%20Final%20Report.pdf",
+			"sha256": "498a1c2c8996c6bb6c3ea4a9e2ae2875d3a4a027e8840bc82287970a8be71cff",
+			"pdfPages": [
+				17,
+				19
+			],
+			"source": "NYCT/Bentley track-maintenance pilot final report April2009 hosted by NYDOT",
+			"figures": [
+				"Figure3 Optram Workbench",
+				"Figure5 Workbench Locate Function"
+			],
+			"physicalAnchor": "170Street STATION W bordersC1; middleC34; eastC2. Bedford station rails C1/C6/C2 with reordered C3/C4 approaches.",
+			"visuallyInspected": [
+				"nyct-concourse-workbench-page17.png",
+				"nyct-bedford-page19.png",
+				"concourse-north-source.png",
+				"concourse-145-source.png",
+				"bedford-ids.png"
+			],
+			"limits": "Historical actual-track data pilot,not a current operating plan. C34/C6 labels are not automatically equated to live CM. Bedford lowerC1 trace reaches center approach; regular northC1 fragment remains disconnected."
+		},
+		{
+			"url": "https://data.ntsb.gov/Docket/Document/docBLOB?ID=16932497&FileExtension=pdf&FileName=Track%20Schematic%20MW7B-1022-SL055-Rel.pdf",
+			"sha256": "3a66306d4ee32d891830246e421370a1f45c0cf4d77a70a23c1e429e2b8d6eaf",
+			"pdfPage": 1,
+			"source": "MTA New York City Transit Signal Engineering",
+			"drawing": "MW7B-1022-SL-B sheet55, October12 2020",
+			"physicalAnchor": "At34St and42St, north points right and physical west-to-east order is B1 south local, B3 south express, B4 north express, B2 north local.",
+			"visuallyInspected": "nyct-sixth-signal-2020.png",
+			"limits": "Historic code anchor; current exact rails and current witnessed codes reviewed separately. Does not authorize crossovers or preserve the same order north of42St."
+		},
+		{
+			"url": "https://esd.ny.gov/sites/default/files/ESC-14-Transportation.pdf",
+			"sha256": "f1224fe4f84bd3aee13fa7ec3f5f5a9bacbf1f1f6abf3f8e94e01d2896e55f28",
+			"pdfPage": 40,
+			"figure": "14-8c",
+			"source": "Empire Station Complex transportation analysis, NYCT station plan",
+			"physicalAnchor": "34St Herald Square platform plan labels western outer B1 southbound local and eastern outer B2 northbound local.",
+			"visuallyInspected": "nyct-herald-platform.png"
+		}
+	],
+	"acceptedAssignments": [
+		{
+			"traceId": 10,
+			"trackCode": "A1",
+			"direction": "S",
+			"evidence": "West local at current 23 St artwork matches historical primary NYCT labeled A1 southbound local. Exact continuous trace to CPW is separately measured; corroborate current direct stop/code observations.",
+			"current23StPoint": {
+				"x": 1383.6697927768812,
+				"y": 5807.188952767809
+			}
+		},
+		{
+			"traceId": 9,
+			"trackCode": "A2",
+			"direction": "N",
+			"evidence": "East local at current 23 St artwork matches historical primary NYCT labeled A2 northbound local. Trace list traverses south for inspection, so reverse its orientation for northbound operational graph.",
+			"current23StPoint": {
+				"x": 1393.122712421803,
+				"y": 5812.423903130652
+			}
+		},
+		{
+			"chainId": "nassau-northwest-physical",
+			"trackCode": "J2",
+			"direction": "S",
+			"evidence": "Essex side/island platform asymmetry in ERA April 2001 p5 Contract C-34572, current exact source rails, and frozen stop/code observations; see physical-code-reviews.json. Source gaps remain disconnected."
+		},
+		{
+			"chainId": "nassau-southeast-physical",
+			"trackCode": "J4",
+			"direction": "N",
+			"evidence": "Essex side/island platform asymmetry in ERA April 2001 p5 Contract C-34572, current exact source rails, and frozen stop/code observations; see physical-code-reviews.json. Source gaps remain disconnected."
+		},
+		{
+			"chainId": "bridge-south-essex-physical",
+			"trackCode": "J1",
+			"direction": "N",
+			"evidence": "Essex side/island platform asymmetry in ERA April 2001 p5 Contract C-34572, current exact source rails, and frozen stop/code observations; see physical-code-reviews.json. Source gaps remain disconnected."
+		},
+		{
+			"chainId": "broadway-northeast-local",
+			"trackCode": "J2",
+			"direction": "S",
+			"evidence": "Essex side/island platform asymmetry in ERA April 2001 p5 Contract C-34572, current exact source rails, and frozen stop/code observations; see physical-code-reviews.json. Source gaps remain disconnected."
+		},
+		{
+			"chainId": "broadway-southwest-local",
+			"trackCode": "J1",
+			"direction": "N",
+			"evidence": "Essex side/island platform asymmetry in ERA April 2001 p5 Contract C-34572, current exact source rails, and frozen stop/code observations; see physical-code-reviews.json. Source gaps remain disconnected."
+		},
+		{
+			"chainId": "myrtle-south-physical",
+			"trackCode": "M1",
+			"direction": "S",
+			"evidence": "Essex side/island platform asymmetry in ERA April 2001 p5 Contract C-34572, current exact source rails, and frozen stop/code observations; see physical-code-reviews.json. Source gaps remain disconnected."
+		},
+		{
+			"chainId": "inwood-A3",
+			"trackCode": "A3",
+			"direction": "S",
+			"evidence": "Primary NYCT23St A3/A4 express labels, exact59Street branch endpoints6395/6406 onto6450/6453, independently inspected uptown-ind-source.png and cpw-59-source.png. Explicit painted gaps remain disconnected; surrounding same physical rails retain source annotation without invented geometry."
+		},
+		{
+			"chainId": "inwood-cpw-A4",
+			"trackCode": "A4",
+			"direction": "N",
+			"evidence": "Primary NYCT23St A3/A4 express labels, exact59Street branch endpoints6395/6406 onto6450/6453, independently inspected uptown-ind-source.png and cpw-59-source.png. Explicit painted gaps remain disconnected; surrounding same physical rails retain source annotation without invented geometry."
+		},
+		{
+			"chainId": "cpw-express-A3",
+			"trackCode": "A3",
+			"direction": "S",
+			"evidence": "Primary NYCT23St A3/A4 express labels, exact59Street branch endpoints6395/6406 onto6450/6453, independently inspected uptown-ind-source.png and cpw-59-source.png. Explicit painted gaps remain disconnected; surrounding same physical rails retain source annotation without invented geometry."
+		},
+		{
+			"chainId": "cpw-lower-express-A4",
+			"trackCode": "A4",
+			"direction": "N",
+			"evidence": "Primary NYCT23St A3/A4 express labels, exact59Street branch endpoints6395/6406 onto6450/6453, independently inspected uptown-ind-source.png and cpw-59-source.png. Explicit painted gaps remain disconnected; surrounding same physical rails retain source annotation without invented geometry."
+		},
+		{
+			"chainId": "concourse-C2",
+			"trackCode": "C2",
+			"direction": "N",
+			"evidence": "Primary NYCTFigure3 physical westC1/eastC2 at170Street matches exact source traces and current frozen C1S/C2N observations. Explicit lower/upperC1 separation preserves the uncertain Bedford track reorder."
+		},
+		{
+			"chainId": "concourse-lower-C1",
+			"trackCode": "C1",
+			"direction": "S",
+			"evidence": "Primary NYCTFigure3 physical westC1/eastC2 at170Street matches exact source traces and current frozen C1S/C2N observations. Explicit lower/upperC1 separation preserves the uncertain Bedford track reorder."
+		},
+		{
+			"chainId": "concourse-upper-C1",
+			"trackCode": "C1",
+			"direction": "S",
+			"evidence": "Primary NYCTFigure3 physical westC1/eastC2 at170Street matches exact source traces and current frozen C1S/C2N observations. Explicit lower/upperC1 separation preserves the uncertain Bedford track reorder."
+		},
+		{
+			"chainId": "sixth-local-B1-midtown",
+			"trackCode": "B1",
+			"direction": "S",
+			"evidence": "NYCT Signal Engineering MW7B-1022-SL-B sheet55, 2020, physically labels west-to-east B1/B3/B4/B2 at34St and42St; corroborated by ESD Figure14-8c and current exact stop/code witnesses. Current source traces are independently inspected in sixth-midtown-source.png and sixth-lower-source.png. Paint gaps remain disconnected; no crossing or proximity creates a switch."
+		},
+		{
+			"chainId": "sixth-local-B2-midtown",
+			"trackCode": "B2",
+			"direction": "N",
+			"evidence": "NYCT Signal Engineering MW7B-1022-SL-B sheet55, 2020, physically labels west-to-east B1/B3/B4/B2 at34St and42St; corroborated by ESD Figure14-8c and current exact stop/code witnesses. Current source traces are independently inspected in sixth-midtown-source.png and sixth-lower-source.png. Paint gaps remain disconnected; no crossing or proximity creates a switch."
+		},
+		{
+			"chainId": "sixth-express-B3-midtown",
+			"trackCode": "B3",
+			"direction": "S",
+			"evidence": "NYCT Signal Engineering MW7B-1022-SL-B sheet55, 2020, physically labels west-to-east B1/B3/B4/B2 at34St and42St; corroborated by ESD Figure14-8c and current exact stop/code witnesses. Current source traces are independently inspected in sixth-midtown-source.png and sixth-lower-source.png. Paint gaps remain disconnected; no crossing or proximity creates a switch."
+		},
+		{
+			"chainId": "sixth-express-B4-midtown",
+			"trackCode": "B4",
+			"direction": "N",
+			"evidence": "NYCT Signal Engineering MW7B-1022-SL-B sheet55, 2020, physically labels west-to-east B1/B3/B4/B2 at34St and42St; corroborated by ESD Figure14-8c and current exact stop/code witnesses. Current source traces are independently inspected in sixth-midtown-source.png and sixth-lower-source.png. Paint gaps remain disconnected; no crossing or proximity creates a switch."
+		},
+		{
+			"chainId": "sixth-local-B1-west-fourth",
+			"trackCode": "B1",
+			"direction": "S",
+			"evidence": "NYCT Signal Engineering MW7B-1022-SL-B sheet55, 2020, physically labels west-to-east B1/B3/B4/B2 at34St and42St; corroborated by ESD Figure14-8c and current exact stop/code witnesses. Current source traces are independently inspected in sixth-midtown-source.png and sixth-lower-source.png. Paint gaps remain disconnected; no crossing or proximity creates a switch."
+		},
+		{
+			"chainId": "sixth-express-B3-west-fourth",
+			"trackCode": "B3",
+			"direction": "S",
+			"evidence": "NYCT Signal Engineering MW7B-1022-SL-B sheet55, 2020, physically labels west-to-east B1/B3/B4/B2 at34St and42St; corroborated by ESD Figure14-8c and current exact stop/code witnesses. Current source traces are independently inspected in sixth-midtown-source.png and sixth-lower-source.png. Paint gaps remain disconnected; no crossing or proximity creates a switch."
+		},
+		{
+			"chainId": "sixth-express-B4-west-fourth",
+			"trackCode": "B4",
+			"direction": "N",
+			"evidence": "NYCT Signal Engineering MW7B-1022-SL-B sheet55, 2020, physically labels west-to-east B1/B3/B4/B2 at34St and42St; corroborated by ESD Figure14-8c and current exact stop/code witnesses. Current source traces are independently inspected in sixth-midtown-source.png and sixth-lower-source.png. Paint gaps remain disconnected; no crossing or proximity creates a switch."
+		},
+		{
+			"chainId": "sixth-local-B1-lower",
+			"trackCode": "B1",
+			"direction": "S",
+			"evidence": "NYCT Signal Engineering MW7B-1022-SL-B sheet55, 2020, physically labels west-to-east B1/B3/B4/B2 at34St and42St; corroborated by ESD Figure14-8c and current exact stop/code witnesses. Current source traces are independently inspected in sixth-midtown-source.png and sixth-lower-source.png. Paint gaps remain disconnected; no crossing or proximity creates a switch."
+		},
+		{
+			"chainId": "sixth-local-B2-lower",
+			"trackCode": "B2",
+			"direction": "N",
+			"evidence": "NYCT Signal Engineering MW7B-1022-SL-B sheet55, 2020, physically labels west-to-east B1/B3/B4/B2 at34St and42St; corroborated by ESD Figure14-8c and current exact stop/code witnesses. Current source traces are independently inspected in sixth-midtown-source.png and sixth-lower-source.png. Paint gaps remain disconnected; no crossing or proximity creates a switch. The original4811 endpoint joins4666 interior after Broadway-Lafayette at the drawn local branch; clip existing4666 suffix at that endpoint, never extend it. The M connector beyond that branch is outside this chain."
+		},
+		{
+			"chainId": "sixth-express-B3-lower",
+			"trackCode": "B3",
+			"direction": "S",
+			"evidence": "NYCT Signal Engineering MW7B-1022-SL-B sheet55, 2020, physically labels west-to-east B1/B3/B4/B2 at34St and42St; corroborated by ESD Figure14-8c and current exact stop/code witnesses. Current source traces are independently inspected in sixth-midtown-source.png and sixth-lower-source.png. Paint gaps remain disconnected; no crossing or proximity creates a switch."
+		},
+		{
+			"chainId": "sixth-express-B4-lower",
+			"trackCode": "B4",
+			"direction": "N",
+			"evidence": "NYCT Signal Engineering MW7B-1022-SL-B sheet55, 2020, physically labels west-to-east B1/B3/B4/B2 at34St and42St; corroborated by ESD Figure14-8c and current exact stop/code witnesses. Current source traces are independently inspected in sixth-midtown-source.png and sixth-lower-source.png. Paint gaps remain disconnected; no crossing or proximity creates a switch."
+		}
+	],
+	"method": "Historical primary physical track-code labels are corroborated with current PDF station-side geometry, exact continuous source paths and current frozen stop/code observations. Printed labels from the historical plan are not assumed to prove every current switch or operating move.",
+	"inspectedCurrentMapCrops": [
+		"cpw-local-source.png",
+		"eighth-23-st-source.png"
+	],
+	"additionalInspectedLocalArtifact": "nyct-23-st-plan.png",
+	"engineeringReportingReferences": [
+		{
+			"url": "https://erausa.org/pdf/bulletin/2000s/2001/2001-04-bulletin.pdf",
+			"sha256": "15020fa7a021ed190719dff2bf3a447e68e7ab52c022b675f15110c39b4045e2",
+			"pdfPage": 5,
+			"author": "Jeffrey Erlitz",
+			"source": "ERA New York Division Bulletin April 2001, Tech Talk, Contract C-34572",
+			"classification": "First-hand reporting of contract engineering layouts; not an authenticated NYCT original",
+			"physicalAnchor": "Essex side platform J2; outer island J1; middle island J3-4. Proposed crossover carries Queens-bound J4 through Bowery/Canal to J1 at Chambers. Current asymmetric platform and switch arrangement independently inspected.",
+			"inspected": [
+				"era-nassau-contract-page05.png",
+				"essex-code-anchor.png",
+				"essex-detail-ids.png",
+				"nassau-source.png",
+				"bridge-source.png",
+				"myrtle-junction-ids.png"
+			],
+			"limits": "Historical layout is corroborated with current map and frozen codes. No inference across missing source geometry, no all-way switch traversal, no center/turnback role inferred solely from color."
+		}
+	]
+}

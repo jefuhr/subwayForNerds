@@ -1,0 +1,36 @@
+{
+	"schemaVersion": 1,
+	"mapVersion": "synthetic-placement-v1",
+	"pdfSha256": "synthetic-no-pdf",
+	"page": { "width": 100, "height": 100 },
+	"attribution": "Synthetic topology for tests only; no source artwork",
+	"sourceURL": "https://example.invalid/synthetic",
+	"stations": [
+		{ "id": "a", "stationId": "a", "partId": "A", "name": "Alpha", "point": { "x": 0, "y": 0 }, "stopIds": ["AN"] },
+		{ "id": "b", "stationId": "b", "partId": "B", "name": "Beta", "point": { "x": 30, "y": 40 }, "stopIds": ["BN"] },
+		{ "id": "c", "stationId": "c", "partId": "C", "name": "Gamma", "point": { "x": 90, "y": 40 }, "stopIds": ["CN"] }
+	],
+	"nodes": [
+		{ "id": "a1", "point": { "x": 0, "y": 0 } },
+		{ "id": "a2", "point": { "x": 0, "y": 10 } },
+		{ "id": "b1", "point": { "x": 30, "y": 40 } },
+		{ "id": "b2", "point": { "x": 30, "y": 50 } },
+		{ "id": "c", "point": { "x": 90, "y": 40 } },
+		{ "id": "x", "point": { "x": 15, "y": 0 } },
+		{ "id": "y", "point": { "x": 15, "y": 60 } }
+	],
+	"edges": [
+		{ "id": "ab", "from": "a1", "to": "b1", "points": [{ "x": 0, "y": 0 }, { "x": 30, "y": 0 }, { "x": 30, "y": 40 }], "bidirectional": false, "revenue": true },
+		{ "id": "ab2", "from": "a2", "to": "b2", "points": [{ "x": 0, "y": 10 }, { "x": 30, "y": 50 }], "bidirectional": false, "revenue": true },
+		{ "id": "bc", "from": "b1", "to": "c", "points": [{ "x": 30, "y": 40 }, { "x": 90, "y": 40 }], "bidirectional": false, "revenue": true },
+		{ "id": "crossing", "from": "x", "to": "y", "points": [{ "x": 15, "y": 0 }, { "x": 15, "y": 60 }], "bidirectional": false, "revenue": true }
+	],
+	"platforms": [
+		{ "id": "a1", "stopId": "AN", "trackCodes": ["1"], "nodeId": "a1" },
+		{ "id": "a2", "stopId": "AN", "trackCodes": ["2"], "nodeId": "a2" },
+		{ "id": "b1", "stopId": "BN", "trackCodes": ["3"], "nodeId": "b1" },
+		{ "id": "b2", "stopId": "BN", "trackCodes": ["4"], "nodeId": "b2" },
+		{ "id": "c", "stopId": "CN", "trackCodes": ["5"], "nodeId": "c" }
+	],
+	"coverage": { "mappedStopIds": ["AN", "BN", "CN"], "unresolvedStopIds": [], "notes": ["Synthetic only"] }
+}

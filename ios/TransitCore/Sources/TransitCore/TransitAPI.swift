@@ -57,6 +57,8 @@ public actor TransitAPI {
 		try await get(["fleet", kind, id], progress: progress)
 	}
 	public func offlineManifest() async throws -> FleetOfflineManifest { try await get(["fleet", "offline", "manifest"]) }
+	public static func trackMapSnapshotPath(mapVersion: String) -> [String] { ["track-map", mapVersion, "snapshot"] }
+	public func trackMapSnapshot(mapVersion: String) async throws -> TrackMapSnapshot { try await get(Self.trackMapSnapshotPath(mapVersion: mapVersion)) }
 	public func clearResponseCache() { responses.removeAll() }
 
 	private func get<T: Decodable & Sendable>(_ components: [String], query: [String: String] = [:], progress: TransferProgressHandler? = nil) async throws -> T {

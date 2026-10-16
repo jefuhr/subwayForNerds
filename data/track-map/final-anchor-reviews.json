@@ -1,0 +1,794 @@
+{
+	"sourceArtifactSha256": "3d114aa197e0ea18189d704000d55c73bc64e285d31e386b2e0d5c7d28085cc0",
+	"sourcePdfSha256": "b28f75397b2e7b6ba0b67db6ea2181800baa0254a48261252f3d55c4f2b17c71",
+	"method": "Native PDF contact sheet review; platform source path midpoints recomputed by build.ts, candidate geographic estimates never become graph geometry.",
+	"reviews": [
+		{
+			"candidateIndex": 0,
+			"partId": "R16",
+			"labelIds": [
+				873,
+				874
+			],
+			"platformPaths": [
+				7923,
+				7924
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 1,
+			"partId": "Q01",
+			"labelIds": [
+				925,
+				927
+			],
+			"platformPaths": [
+				7937,
+				7938
+			],
+			"verdict": "rejected",
+			"reason": "Canal bridge/main-line level identity is not established.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 2,
+			"partId": "R24",
+			"labelIds": [
+				978,
+				952
+			],
+			"platformPaths": [
+				7941,
+				7942
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 3,
+			"partId": "R26",
+			"labelIds": [
+				946
+			],
+			"platformPaths": [
+				7945,
+				7946
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 4,
+			"partId": "R29",
+			"labelIds": [
+				198,
+				199,
+				203
+			],
+			"platformPaths": [
+				4577
+			],
+			"verdict": "rejected",
+			"reason": "Candidate is the disused Myrtle Avenue area, not the current Jay Street platform.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 5,
+			"partId": "R36",
+			"labelIds": [
+				377
+			],
+			"platformPaths": [
+				7090,
+				7091
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 6,
+			"partId": "R40",
+			"labelIds": [
+				381
+			],
+			"platformPaths": [
+				7066,
+				7067
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 7,
+			"partId": "R41",
+			"labelIds": [
+				388
+			],
+			"platformPaths": [
+				7028,
+				7032
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 8,
+			"partId": "D24",
+			"labelIds": [
+				187,
+				188
+			],
+			"platformPaths": [
+				7054,
+				7055
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 9,
+			"partId": "D40",
+			"labelIds": [
+				370
+			],
+			"platformPaths": [
+				7287,
+				7288
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 10,
+			"partId": "D41",
+			"labelIds": [
+				372,
+				373
+			],
+			"platformPaths": [
+				7289,
+				7290
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 11,
+			"partId": "B12",
+			"labelIds": [
+				381,
+				1056
+			],
+			"platformPaths": [
+				7419,
+				7420
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 12,
+			"partId": "J20",
+			"labelIds": [
+				330
+			],
+			"platformPaths": [
+				8345
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 13,
+			"partId": "J21",
+			"labelIds": [
+				325
+			],
+			"platformPaths": [
+				8346
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 14,
+			"partId": "J22",
+			"labelIds": [
+				323
+			],
+			"platformPaths": [
+				8347
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 15,
+			"partId": "J23",
+			"labelIds": [
+				160
+			],
+			"platformPaths": [
+				8352
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 16,
+			"partId": "J24",
+			"labelIds": [
+				161
+			],
+			"platformPaths": [
+				8353
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 17,
+			"partId": "M13",
+			"labelIds": [
+				999
+			],
+			"platformPaths": [
+				8304,
+				8305
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 18,
+			"partId": "M22",
+			"labelIds": [
+				979,
+				975,
+				1277
+			],
+			"platformPaths": [
+				8359
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 19,
+			"partId": "M06",
+			"labelIds": [
+				1011,
+				1012
+			],
+			"platformPaths": [
+				8324
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 20,
+			"partId": "A02",
+			"labelIds": [
+				705,
+				706
+			],
+			"platformPaths": [
+				6578
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 21,
+			"partId": "A11",
+			"labelIds": [
+				792,
+				807
+			],
+			"platformPaths": [
+				6581,
+				6582
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 22,
+			"partId": "A24",
+			"labelIds": [
+				853,
+				868
+			],
+			"platformPaths": [
+				6562,
+				6563
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 23,
+			"partId": "A27",
+			"labelIds": [
+				854,
+				855
+			],
+			"platformPaths": [
+				6558
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 24,
+			"partId": "D20",
+			"labelIds": [
+				570,
+				571,
+				922
+			],
+			"platformPaths": [
+				4993,
+				4994
+			],
+			"verdict": "rejected",
+			"reason": "Candidate does not disambiguate the lower-level West 4 Street platforms.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 25,
+			"partId": "A57",
+			"labelIds": [
+				332,
+				333
+			],
+			"platformPaths": [
+				5642
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 26,
+			"partId": "A65",
+			"labelIds": [
+				344,
+				345,
+				432
+			],
+			"platformPaths": [
+				5653
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 27,
+			"partId": "B08",
+			"labelIds": [
+				905,
+				906
+			],
+			"platformPaths": [
+				7578
+			],
+			"verdict": "rejected",
+			"reason": "Candidate marks Lexington Avenue-59 Street, not 63 Street.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 28,
+			"partId": "F39",
+			"labelIds": [
+				283
+			],
+			"platformPaths": [
+				5050
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 29,
+			"partId": "F01",
+			"labelIds": [
+				479
+			],
+			"platformPaths": [
+				6084,
+				6085
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 30,
+			"partId": "F06",
+			"labelIds": [
+				476,
+				477
+			],
+			"platformPaths": [
+				6086,
+				6087
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 31,
+			"partId": "D14",
+			"labelIds": [
+				856,
+				870
+			],
+			"platformPaths": [
+				6601,
+				6602
+			],
+			"verdict": "rejected",
+			"reason": "Candidate does not establish the stacked 7 Avenue platform.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 32,
+			"partId": "G05",
+			"labelIds": [
+				489,
+				490,
+				491,
+				495
+			],
+			"platformPaths": [
+				5739
+			],
+			"verdict": "rejected",
+			"reason": "Candidate follows regional railroad tracks, not the Jamaica Center subway terminal.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 33,
+			"partId": "G06",
+			"labelIds": [
+				489,
+				490,
+				491,
+				495
+			],
+			"platformPaths": [
+				5739
+			],
+			"verdict": "rejected",
+			"reason": "Candidate follows regional railroad tracks, not the Sutphin subway platform.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 34,
+			"partId": "101",
+			"labelIds": [
+				698,
+				699
+			],
+			"platformPaths": [
+				9635
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 35,
+			"partId": "142",
+			"labelIds": [
+				948,
+				949,
+				1095
+			],
+			"platformPaths": [
+				8939
+			],
+			"verdict": "rejected",
+			"reason": "Candidate selects the old South Ferry loop rather than the current terminal.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 36,
+			"partId": "228",
+			"labelIds": [
+				565,
+				566,
+				928
+			],
+			"platformPaths": [
+				9564,
+				9565
+			],
+			"verdict": "rejected",
+			"reason": "Candidate marks Chambers Street IRT rather than Park Place.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 37,
+			"partId": "237",
+			"labelIds": [
+				234,
+				235
+			],
+			"platformPaths": [
+				8757
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 38,
+			"partId": "238",
+			"labelIds": [
+				236
+			],
+			"platformPaths": [
+				8762,
+				8763
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 39,
+			"partId": "249",
+			"labelIds": [
+				239
+			],
+			"platformPaths": [
+				8766
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 40,
+			"partId": "250",
+			"labelIds": [
+				241,
+				242
+			],
+			"platformPaths": [
+				8805
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 41,
+			"partId": "257",
+			"labelIds": [
+				248
+			],
+			"platformPaths": [
+				8792
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 42,
+			"partId": "601",
+			"labelIds": [
+				608
+			],
+			"platformPaths": [
+				10273
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 43,
+			"partId": "612",
+			"labelIds": [
+				524
+			],
+			"platformPaths": [
+				10253,
+				10254
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 44,
+			"partId": "401",
+			"labelIds": [
+				693
+			],
+			"platformPaths": [
+				10236
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 45,
+			"partId": "416",
+			"labelIds": [
+				514
+			],
+			"platformPaths": [
+				10237,
+				10238
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 46,
+			"partId": "621",
+			"labelIds": [
+				520,
+				517
+			],
+			"platformPaths": [
+				8909
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 47,
+			"partId": "632",
+			"labelIds": [
+				551,
+				550
+			],
+			"platformPaths": [
+				9211,
+				9212
+			],
+			"verdict": "rejected",
+			"reason": "Candidate marks 28 Street rather than 33 Street.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 48,
+			"partId": "418",
+			"labelIds": [
+				979,
+				975,
+				1277
+			],
+			"platformPaths": [
+				9079,
+				9083
+			],
+			"verdict": "rejected",
+			"reason": "Candidate marks Brooklyn Bridge rather than Fulton Street.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 49,
+			"partId": "201",
+			"labelIds": [
+				663
+			],
+			"platformPaths": [
+				10302
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 50,
+			"partId": "208",
+			"labelIds": [
+				653
+			],
+			"platformPaths": [
+				10305,
+				10306
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 51,
+			"partId": "222",
+			"labelIds": [
+				673,
+				674,
+				647
+			],
+			"platformPaths": [
+				10208,
+				10209,
+				10326,
+				10327
+			],
+			"verdict": "rejected",
+			"reason": "Candidate marks the upper Lexington level rather than the lower 2/5 level.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 52,
+			"partId": "501",
+			"labelIds": [
+				618,
+				619
+			],
+			"platformPaths": [
+				10315
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 53,
+			"partId": "R09",
+			"labelIds": [
+				112
+			],
+			"platformPaths": [
+				7588,
+				7589
+			],
+			"verdict": "rejected",
+			"reason": "Candidate marks 39 Avenue rather than Queensboro Plaza.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 54,
+			"partId": "718",
+			"labelIds": [
+				113
+			],
+			"platformPaths": [
+				7594
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched named platform in the native PDF contact sheet; no rail connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		}
+	]
+}

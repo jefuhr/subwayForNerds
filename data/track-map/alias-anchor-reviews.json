@@ -1,0 +1,2146 @@
+{
+	"sourceArtifactSha256": "62e2574e1348a61adf7d2b356fb2374c6d5de61991e1d0eab17729fa1e2089bc",
+	"sourcePdfSha256": "b28f75397b2e7b6ba0b67db6ea2181800baa0254a48261252f3d55c4f2b17c71",
+	"method": "Native PDF contact sheet review. Approximate geographic coordinates were used only to search; accepted coordinates are recomputed from source platform paths.",
+	"reviews": [
+		{
+			"candidateIndex": 0,
+			"partId": "R08",
+			"labelIds": [
+				497,
+				498,
+				1123
+			],
+			"platformPaths": [
+				7588,
+				7589
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 1,
+			"partId": "R11",
+			"labelIds": [
+				905,
+				906
+			],
+			"platformPaths": [
+				7578
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 2,
+			"partId": "R13",
+			"labelIds": [
+				895,
+				896
+			],
+			"platformPaths": [
+				7579,
+				7580
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 3,
+			"partId": "R14",
+			"labelIds": [
+				859,
+				894,
+				900
+			],
+			"platformPaths": [
+				7919,
+				7920
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 4,
+			"partId": "R16",
+			"labelIds": [
+				854,
+				855
+			],
+			"platformPaths": [
+				7921,
+				7922
+			],
+			"verdict": "rejected",
+			"reason": "Times Sq candidate at 49 St",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 5,
+			"partId": "R19",
+			"labelIds": [
+				551,
+				550
+			],
+			"platformPaths": [
+				7929,
+				7930
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 6,
+			"partId": "R23",
+			"labelIds": [
+				925,
+				927
+			],
+			"platformPaths": [
+				7937,
+				7938
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 7,
+			"partId": "Q01",
+			"labelIds": [
+				925,
+				927
+			],
+			"platformPaths": [
+				7937,
+				7938
+			],
+			"verdict": "rejected",
+			"reason": "Canal bridge part paired to Broadway main-line platform",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 8,
+			"partId": "R24",
+			"labelIds": [
+				978,
+				952
+			],
+			"platformPaths": [
+				7941,
+				7942
+			],
+			"verdict": "rejected",
+			"reason": "City Hall platform association not visually established",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 9,
+			"partId": "R25",
+			"labelIds": [
+				943
+			],
+			"platformPaths": [
+				7941,
+				7942
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 10,
+			"partId": "R26",
+			"labelIds": [
+				946
+			],
+			"platformPaths": [
+				7945,
+				7946
+			],
+			"verdict": "rejected",
+			"reason": "Rector Broadway part association ambiguous with nearby IRT platform",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 11,
+			"partId": "R27",
+			"labelIds": [
+				948,
+				949,
+				1095
+			],
+			"platformPaths": [
+				7947,
+				7948
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 12,
+			"partId": "R29",
+			"labelIds": [
+				198,
+				199,
+				203
+			],
+			"platformPaths": [
+				4577
+			],
+			"verdict": "rejected",
+			"reason": "Jay St Broadway part paired with track near former Myrtle Av",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 13,
+			"partId": "R31",
+			"labelIds": [
+				187,
+				188
+			],
+			"platformPaths": [
+				7054,
+				7055
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 14,
+			"partId": "R40",
+			"labelIds": [
+				379
+			],
+			"platformPaths": [
+				7064,
+				7065
+			],
+			"verdict": "rejected",
+			"reason": "53 St candidate at 45 St",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 15,
+			"partId": "R41",
+			"labelIds": [
+				388
+			],
+			"platformPaths": [
+				7066,
+				7067
+			],
+			"verdict": "rejected",
+			"reason": "59 St candidate at 53 St",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 16,
+			"partId": "D24",
+			"labelIds": [
+				187,
+				188
+			],
+			"platformPaths": [
+				7054,
+				7055
+			],
+			"verdict": "rejected",
+			"reason": "Brighton Atlantic part paired with Fourth Avenue platform",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 17,
+			"partId": "D26",
+			"labelIds": [
+				355,
+				1046
+			],
+			"platformPaths": [
+				1783,
+				7277,
+				7278
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 18,
+			"partId": "D41",
+			"labelIds": [
+				372,
+				373
+			],
+			"platformPaths": [
+				7283,
+				7284
+			],
+			"verdict": "rejected",
+			"reason": "Ocean Pkwy candidate at W 8 St",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 19,
+			"partId": "D43",
+			"labelIds": [
+				286,
+				287,
+				425
+			],
+			"platformPaths": [
+				6871,
+				6872,
+				6873,
+				6874
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 20,
+			"partId": "B13",
+			"labelIds": [
+				382,
+				1057
+			],
+			"platformPaths": [
+				7399,
+				7400
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 21,
+			"partId": "B16",
+			"labelIds": [
+				385
+			],
+			"platformPaths": [
+				7379,
+				7380
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 22,
+			"partId": "N03",
+			"labelIds": [
+				411,
+				412
+			],
+			"platformPaths": [
+				7076,
+				7077
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 23,
+			"partId": "N08",
+			"labelIds": [
+				405,
+				406
+			],
+			"platformPaths": [
+				7084,
+				7085
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 24,
+			"partId": "N09",
+			"labelIds": [
+				407,
+				408
+			],
+			"platformPaths": [
+				7086,
+				7087
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 25,
+			"partId": "J20",
+			"labelIds": [
+				330
+			],
+			"platformPaths": [
+				8331,
+				8332
+			],
+			"verdict": "rejected",
+			"reason": "Crescent candidate at Cypress Hills",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 26,
+			"partId": "J24",
+			"labelIds": [
+				161
+			],
+			"platformPaths": [
+				8318,
+				8319
+			],
+			"verdict": "rejected",
+			"reason": "Alabama candidate at Broadway Junction",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 27,
+			"partId": "M18",
+			"labelIds": [
+				966,
+				967,
+				1280
+			],
+			"platformPaths": [
+				4997,
+				4998,
+				8295,
+				8297
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 28,
+			"partId": "M20",
+			"labelIds": [
+				950,
+				951
+			],
+			"platformPaths": [
+				8288
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 29,
+			"partId": "M01",
+			"labelIds": [
+				172,
+				173,
+				1081
+			],
+			"platformPaths": [
+				8320
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 30,
+			"partId": "M08",
+			"labelIds": [
+				174,
+				175
+			],
+			"platformPaths": [
+				8325,
+				8326
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 31,
+			"partId": "S01",
+			"labelIds": [
+				206,
+				1021
+			],
+			"platformPaths": [
+				1919
+			],
+			"verdict": "rejected",
+			"reason": "Franklin shuttle candidate at LIRR Nostrand",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 32,
+			"partId": "S03",
+			"labelIds": [
+				207,
+				1022
+			],
+			"platformPaths": [
+				1789
+			],
+			"verdict": "rejected",
+			"reason": "Park Pl shuttle candidate at Eastern Pkwy crossing",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 33,
+			"partId": "S04",
+			"labelIds": [
+				208,
+				209,
+				210
+			],
+			"platformPaths": [
+				1787
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 34,
+			"partId": "A02",
+			"labelIds": [
+				705,
+				706
+			],
+			"platformPaths": [
+				6579,
+				6580
+			],
+			"verdict": "rejected",
+			"reason": "Inwood candidate at Dyckman",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 35,
+			"partId": "A10",
+			"labelIds": [
+				804,
+				805,
+				806
+			],
+			"platformPaths": [
+				6599,
+				6600
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 36,
+			"partId": "A12",
+			"labelIds": [
+				793,
+				822
+			],
+			"platformPaths": [
+				6597,
+				6598
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 37,
+			"partId": "D13",
+			"labelIds": [
+				793,
+				822
+			],
+			"platformPaths": [
+				5282,
+				5283
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 38,
+			"partId": "A17",
+			"labelIds": [
+				815,
+				816
+			],
+			"platformPaths": [
+				6565,
+				6566
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 39,
+			"partId": "A21",
+			"labelIds": [
+				820,
+				821
+			],
+			"platformPaths": [
+				6592
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 40,
+			"partId": "A24",
+			"labelIds": [
+				853,
+				868
+			],
+			"platformPaths": [
+				6049
+			],
+			"verdict": "rejected",
+			"reason": "Columbus Circle candidate at 7 Av",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 41,
+			"partId": "A27",
+			"labelIds": [
+				854,
+				855
+			],
+			"platformPaths": [
+				6601,
+				6602
+			],
+			"verdict": "rejected",
+			"reason": "42 St IND candidate at 50 St",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 42,
+			"partId": "A28",
+			"labelIds": [
+				885,
+				886
+			],
+			"platformPaths": [
+				6555,
+				6556,
+				6557
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 43,
+			"partId": "A30",
+			"labelIds": [
+				918
+			],
+			"platformPaths": [
+				6553,
+				6554
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 44,
+			"partId": "A32",
+			"labelIds": [
+				570,
+				571,
+				922
+			],
+			"platformPaths": [
+				6547,
+				6548
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 45,
+			"partId": "D20",
+			"labelIds": [
+				570,
+				571,
+				922
+			],
+			"platformPaths": [
+				4993,
+				4994
+			],
+			"verdict": "rejected",
+			"reason": "West 4 St lower-level part not distinguished from upper-level platform",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 46,
+			"partId": "A34",
+			"labelIds": [
+				925,
+				927
+			],
+			"platformPaths": [
+				6545,
+				6546
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 47,
+			"partId": "A41",
+			"labelIds": [
+				198,
+				199,
+				203
+			],
+			"platformPaths": [
+				5000,
+				5001
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 48,
+			"partId": "A42",
+			"labelIds": [
+				185,
+				186,
+				183
+			],
+			"platformPaths": [
+				5616,
+				5617
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 49,
+			"partId": "A44",
+			"labelIds": [
+				195,
+				196,
+				1020
+			],
+			"platformPaths": [
+				5620,
+				5621
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 50,
+			"partId": "A47",
+			"labelIds": [
+				312
+			],
+			"platformPaths": [
+				5629
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 51,
+			"partId": "A51",
+			"labelIds": [
+				1815,
+				1814
+			],
+			"platformPaths": [
+				5704,
+				5705
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 52,
+			"partId": "A61",
+			"labelIds": [
+				346,
+				347,
+				348
+			],
+			"platformPaths": [
+				5647,
+				5648
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 53,
+			"partId": "H15",
+			"labelIds": [
+				455,
+				456
+			],
+			"platformPaths": [
+				5679
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 54,
+			"partId": "H11",
+			"labelIds": [
+				450,
+				451,
+				457
+			],
+			"platformPaths": [
+				5672
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 55,
+			"partId": "D01",
+			"labelIds": [
+				786,
+				1113
+			],
+			"platformPaths": [
+				5293
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 56,
+			"partId": "D10",
+			"labelIds": [
+				790,
+				32
+			],
+			"platformPaths": [
+				5276,
+				5277
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 57,
+			"partId": "D11",
+			"labelIds": [
+				795,
+				796
+			],
+			"platformPaths": [
+				5278,
+				5279
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 58,
+			"partId": "D12",
+			"labelIds": [
+				791,
+				811
+			],
+			"platformPaths": [
+				5280,
+				5281
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 59,
+			"partId": "B04",
+			"labelIds": [
+				64,
+				65,
+				512
+			],
+			"platformPaths": [
+				5041,
+				5042
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 60,
+			"partId": "B08",
+			"labelIds": [
+				905,
+				906
+			],
+			"platformPaths": [
+				7578
+			],
+			"verdict": "rejected",
+			"reason": "Lexington 63 candidate at Lexington 59",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 61,
+			"partId": "B10",
+			"labelIds": [
+				860,
+				50
+			],
+			"platformPaths": [
+				5015
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 62,
+			"partId": "D15",
+			"labelIds": [
+				861,
+				862,
+				863
+			],
+			"platformPaths": [
+				5051,
+				5052
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 63,
+			"partId": "D16",
+			"labelIds": [
+				873,
+				874
+			],
+			"platformPaths": [
+				4983,
+				4984
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 64,
+			"partId": "D18",
+			"labelIds": [
+				556
+			],
+			"platformPaths": [
+				4989,
+				4990
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 65,
+			"partId": "D19",
+			"labelIds": [
+				557
+			],
+			"platformPaths": [
+				4987,
+				4988
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 66,
+			"partId": "D21",
+			"labelIds": [
+				959,
+				960
+			],
+			"platformPaths": [
+				4991,
+				4992
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 67,
+			"partId": "F15",
+			"labelIds": [
+				966,
+				967,
+				1280
+			],
+			"platformPaths": [
+				4997,
+				4998
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 68,
+			"partId": "F25",
+			"labelIds": [
+				298,
+				299,
+				297
+			],
+			"platformPaths": [
+				5004
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 69,
+			"partId": "F26",
+			"labelIds": [
+				302,
+				303
+			],
+			"platformPaths": [
+				5007,
+				5008
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 70,
+			"partId": "F31",
+			"labelIds": [
+				271
+			],
+			"platformPaths": [
+				5018,
+				5019
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 71,
+			"partId": "F33",
+			"labelIds": [
+				275
+			],
+			"platformPaths": [
+				5022,
+				5023
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 72,
+			"partId": "F34",
+			"labelIds": [
+				277
+			],
+			"platformPaths": [
+				5024,
+				5025
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 73,
+			"partId": "F35",
+			"labelIds": [
+				289
+			],
+			"platformPaths": [
+				5032,
+				5033
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 74,
+			"partId": "F36",
+			"labelIds": [
+				279
+			],
+			"platformPaths": [
+				5026,
+				5027
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 75,
+			"partId": "F38",
+			"labelIds": [
+				281
+			],
+			"platformPaths": [
+				5028,
+				5029
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 76,
+			"partId": "F39",
+			"labelIds": [
+				283
+			],
+			"platformPaths": [
+				7285,
+				7286
+			],
+			"verdict": "rejected",
+			"reason": "Neptune candidate at W 8 St",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 77,
+			"partId": "G08",
+			"labelIds": [
+				473,
+				474
+			],
+			"platformPaths": [
+				6068,
+				6069
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 78,
+			"partId": "G12",
+			"labelIds": [
+				465,
+				466,
+				1130
+			],
+			"platformPaths": [
+				6060,
+				6061
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 79,
+			"partId": "G14",
+			"labelIds": [
+				468,
+				469
+			],
+			"platformPaths": [
+				6090,
+				6091
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 80,
+			"partId": "F09",
+			"labelIds": [
+				63,
+				1083
+			],
+			"platformPaths": [
+				6082,
+				6083
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 81,
+			"partId": "F11",
+			"labelIds": [
+				866,
+				867
+			],
+			"platformPaths": [
+				6093
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 82,
+			"partId": "F12",
+			"labelIds": [
+				864,
+				865
+			],
+			"platformPaths": [
+				6051
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 83,
+			"partId": "G05",
+			"labelIds": [
+				489,
+				490,
+				491,
+				495
+			],
+			"platformPaths": [
+				5739
+			],
+			"verdict": "rejected",
+			"reason": "Jamaica Center candidate at regional rail tracks",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 84,
+			"partId": "G06",
+			"labelIds": [
+				490,
+				491,
+				495
+			],
+			"platformPaths": [
+				5739
+			],
+			"verdict": "rejected",
+			"reason": "Sutphin candidate at same regional rail position as Jamaica Center",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 85,
+			"partId": "G07",
+			"labelIds": [
+				484,
+				485
+			],
+			"platformPaths": [
+				6094
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 86,
+			"partId": "G32",
+			"labelIds": [
+				179,
+				180,
+				178
+			],
+			"platformPaths": [
+				5123,
+				5124
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 87,
+			"partId": "G35",
+			"labelIds": [
+				193,
+				194
+			],
+			"platformPaths": [
+				5119,
+				5120
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 88,
+			"partId": "101",
+			"labelIds": [
+				698,
+				699
+			],
+			"platformPaths": [
+				9631,
+				9632
+			],
+			"verdict": "rejected",
+			"reason": "Van Cortlandt candidate at 238 St",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 89,
+			"partId": "106",
+			"labelIds": [
+				773,
+				774
+			],
+			"platformPaths": [
+				9627,
+				9628
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 90,
+			"partId": "112",
+			"labelIds": [
+				767,
+				768
+			],
+			"platformPaths": [
+				6158,
+				6159
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 91,
+			"partId": "115",
+			"labelIds": [
+				734,
+				735
+			],
+			"platformPaths": [
+				9619,
+				9620
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 92,
+			"partId": "117",
+			"labelIds": [
+				759,
+				760
+			],
+			"platformPaths": [
+				9615,
+				9616
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 93,
+			"partId": "118",
+			"labelIds": [
+				762,
+				763
+			],
+			"platformPaths": [
+				9613,
+				9614
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 94,
+			"partId": "124",
+			"labelIds": [
+				743,
+				744
+			],
+			"platformPaths": [
+				9589,
+				9590
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 95,
+			"partId": "125",
+			"labelIds": [
+				853,
+				868
+			],
+			"platformPaths": [
+				9651,
+				9652
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 96,
+			"partId": "126",
+			"labelIds": [
+				858
+			],
+			"platformPaths": [
+				9587,
+				9588
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 97,
+			"partId": "127",
+			"labelIds": [
+				854,
+				855
+			],
+			"platformPaths": [
+				9585,
+				9586
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 98,
+			"partId": "128",
+			"labelIds": [
+				885,
+				886
+			],
+			"platformPaths": [
+				9582,
+				9583,
+				9584
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 99,
+			"partId": "130",
+			"labelIds": [
+				917
+			],
+			"platformPaths": [
+				9578,
+				9579
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 100,
+			"partId": "133",
+			"labelIds": [
+				934,
+				935
+			],
+			"platformPaths": [
+				9572,
+				9573
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 101,
+			"partId": "135",
+			"labelIds": [
+				939
+			],
+			"platformPaths": [
+				9568,
+				9569
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 102,
+			"partId": "138",
+			"labelIds": [
+				943
+			],
+			"platformPaths": [
+				9562,
+				9563
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 103,
+			"partId": "139",
+			"labelIds": [
+				946
+			],
+			"platformPaths": [
+				9560,
+				9561
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 104,
+			"partId": "228",
+			"labelIds": [
+				565,
+				566,
+				928
+			],
+			"platformPaths": [
+				9564,
+				9565
+			],
+			"verdict": "rejected",
+			"reason": "Park Place candidate at Chambers IRT",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 105,
+			"partId": "235",
+			"labelIds": [
+				187,
+				188
+			],
+			"platformPaths": [
+				8754,
+				8755,
+				8756
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 106,
+			"partId": "239",
+			"labelIds": [
+				208,
+				209,
+				210
+			],
+			"platformPaths": [
+				8760,
+				8761
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 107,
+			"partId": "251",
+			"labelIds": [
+				243,
+				1073
+			],
+			"platformPaths": [
+				8780,
+				8781
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 108,
+			"partId": "257",
+			"labelIds": [
+				248
+			],
+			"platformPaths": [
+				8790,
+				8791
+			],
+			"verdict": "rejected",
+			"reason": "New Lots candidate at Van Siclen",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 109,
+			"partId": "241",
+			"labelIds": [
+				217,
+				218
+			],
+			"platformPaths": [
+				8768
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 110,
+			"partId": "247",
+			"labelIds": [
+				228
+			],
+			"platformPaths": [
+				8779
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 111,
+			"partId": "604",
+			"labelIds": [
+				604,
+				605
+			],
+			"platformPaths": [
+				10265,
+				10266
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 112,
+			"partId": "610",
+			"labelIds": [
+				529,
+				530
+			],
+			"platformPaths": [
+				10257,
+				10258
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 113,
+			"partId": "616",
+			"labelIds": [
+				589,
+				590
+			],
+			"platformPaths": [
+				10247,
+				10248
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 114,
+			"partId": "405",
+			"labelIds": [
+				695,
+				696
+			],
+			"platformPaths": [
+				10228,
+				10229
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 115,
+			"partId": "414",
+			"labelIds": [
+				795,
+				796
+			],
+			"platformPaths": [
+				10212,
+				10213
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 116,
+			"partId": "415",
+			"labelIds": [
+				673,
+				674,
+				647
+			],
+			"platformPaths": [
+				10326,
+				10327
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 117,
+			"partId": "628",
+			"labelIds": [
+				585,
+				586,
+				587
+			],
+			"platformPaths": [
+				9219,
+				9220
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 118,
+			"partId": "631",
+			"labelIds": [
+				909,
+				910
+			],
+			"platformPaths": [
+				9191,
+				9192
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 119,
+			"partId": "632",
+			"labelIds": [
+				551,
+				550
+			],
+			"platformPaths": [
+				9211,
+				9212
+			],
+			"verdict": "rejected",
+			"reason": "33 St Lexington candidate at 28 St",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 120,
+			"partId": "633",
+			"labelIds": [
+				548
+			],
+			"platformPaths": [
+				9211,
+				9212
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 121,
+			"partId": "634",
+			"labelIds": [
+				574,
+				575
+			],
+			"platformPaths": [
+				9209,
+				9210
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 122,
+			"partId": "638",
+			"labelIds": [
+				580
+			],
+			"platformPaths": [
+				9199,
+				9243
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 123,
+			"partId": "639",
+			"labelIds": [
+				950,
+				951
+			],
+			"platformPaths": [
+				9197,
+				9198
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 124,
+			"partId": "640",
+			"labelIds": [
+				978,
+				952
+			],
+			"platformPaths": [
+				9079,
+				9083
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 125,
+			"partId": "419",
+			"labelIds": [
+				981
+			],
+			"platformPaths": [
+				9235,
+				9236
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 126,
+			"partId": "212",
+			"labelIds": [
+				621,
+				622
+			],
+			"platformPaths": [
+				10286,
+				10287
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 127,
+			"partId": "214",
+			"labelIds": [
+				625,
+				626
+			],
+			"platformPaths": [
+				10284,
+				10285
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 128,
+			"partId": "222",
+			"labelIds": [
+				673,
+				674,
+				647
+			],
+			"platformPaths": [
+				10208,
+				10209,
+				10326,
+				10327
+			],
+			"verdict": "rejected",
+			"reason": "149 St lower IRT part paired with upper-level green platform",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 129,
+			"partId": "227",
+			"labelIds": [
+				728,
+				729
+			],
+			"platformPaths": [
+				9650
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 130,
+			"partId": "701",
+			"labelIds": [
+				507
+			],
+			"platformPaths": [
+				8636,
+				8637
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 131,
+			"partId": "709",
+			"labelIds": [
+				92,
+				93
+			],
+			"platformPaths": [
+				8616,
+				8617
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 132,
+			"partId": "714",
+			"labelIds": [
+				85,
+				86
+			],
+			"platformPaths": [
+				8608,
+				8609
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 133,
+			"partId": "715",
+			"labelIds": [
+				82,
+				83
+			],
+			"platformPaths": [
+				8606,
+				8607
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 134,
+			"partId": "716",
+			"labelIds": [
+				80
+			],
+			"platformPaths": [
+				8604,
+				8605
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 135,
+			"partId": "R09",
+			"labelIds": [
+				112
+			],
+			"platformPaths": [
+				7588,
+				7589
+			],
+			"verdict": "rejected",
+			"reason": "Queensboro Astoria candidate at 39 Av",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 136,
+			"partId": "718",
+			"labelIds": [
+				113
+			],
+			"platformPaths": [
+				8602,
+				8603
+			],
+			"verdict": "rejected",
+			"reason": "Queensboro Flushing candidate at Court Sq",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 137,
+			"partId": "720",
+			"labelIds": [
+				105,
+				106
+			],
+			"platformPaths": [
+				8634,
+				8635
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 138,
+			"partId": "721",
+			"labelIds": [
+				108,
+				109
+			],
+			"platformPaths": [
+				8632,
+				8633
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 139,
+			"partId": "723",
+			"labelIds": [
+				909,
+				910
+			],
+			"platformPaths": [
+				4499
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 140,
+			"partId": "724",
+			"labelIds": [
+				873,
+				874
+			],
+			"platformPaths": [
+				4500
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 141,
+			"partId": "725",
+			"labelIds": [
+				854,
+				855
+			],
+			"platformPaths": [
+				4498
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 142,
+			"partId": "Q05",
+			"labelIds": [
+				830,
+				1116
+			],
+			"platformPaths": [
+				6662
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 143,
+			"partId": "Q04",
+			"labelIds": [
+				831,
+				832
+			],
+			"platformPaths": [
+				6663
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched platform and station label in local PDF contact sheet; no connectivity is inferred.",
+			"sheet": "anchors-120.png"
+		}
+	]
+}

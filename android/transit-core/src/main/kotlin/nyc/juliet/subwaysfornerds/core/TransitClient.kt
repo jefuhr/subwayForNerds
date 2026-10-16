@@ -112,6 +112,8 @@ class TransitClient(baseUrl: String = PRODUCTION_API_BASE, client: OkHttpClient 
 	suspend fun context(stationID: String, progress: TransferProgressHandler? = null): StationContext = get(listOf("stations", stationID, "context"), decoder = StationContext.serializer(), progress = progress)
 	suspend fun fleet(query: Map<String, String> = emptyMap(), progress: TransferProgressHandler? = null): FleetPage = get(listOf("fleet"), query, FleetPage.serializer(), progress)
 	suspend fun fleetDetail(kind: String, id: String, progress: TransferProgressHandler? = null): FleetDetail = get(listOf("fleet", kind, id), decoder = FleetDetail.serializer(), progress = progress)
+	/** Live train placement on the installed track map; the version path segment selects the reviewed topology. */
+	suspend fun trackMapSnapshot(mapVersion: String, progress: TransferProgressHandler? = null): TrackMapSnapshot = get(listOf("track-map", mapVersion, "snapshot"), decoder = TrackMapSnapshot.serializer(), progress = progress)
 	suspend fun offlineManifest(): FleetOfflineManifest = get(listOf("fleet", "offline", "manifest"), decoder = FleetOfflineManifest.serializer())
 	private suspend fun <T> get(components: List<String>, query: Map<String, String> = emptyMap(), decoder: DeserializationStrategy<T>, progress: TransferProgressHandler? = null): T {
 		val url = requestURL(components, query)

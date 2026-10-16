@@ -6,7 +6,15 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
-enum class AppTab(val title: String) { BOARD("Board"), FLEET("Fleet"), SETTINGS("Settings") }
+/** Entries keep their original order and names; MAP is appended and shown between Board and Fleet. */
+enum class AppTab(val title: String) {
+	BOARD("Board"), FLEET("Fleet"), SETTINGS("Settings"), MAP("Map");
+
+	companion object {
+		/** The order tabs appear in the navigation bar and rail. */
+		val ordered: List<AppTab> = listOf(BOARD, MAP, FLEET, SETTINGS)
+	}
+}
 
 /** Station search starts empty in its own sort mode each time it opens. */
 enum class StationPickerMode { SEARCH, NEARBY }
@@ -45,7 +53,7 @@ sealed interface Route {
 }
 
 /**
- * Back stacks for the three tabs. Detail routes stack per tab; overlays cover every pane.
+ * Back stacks for the tabs. Detail routes stack per tab; overlays cover every pane.
  * Held by the view model so stacks survive rotation and window resizing.
  */
 @Stable

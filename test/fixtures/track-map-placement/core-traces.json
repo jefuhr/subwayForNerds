@@ -1,0 +1,7 @@
+[
+	{ "at": 0, "stop": "AN", "status": "STOPPED_AT", "expectedPlacement": "track", "expectedBasis": "reported", "expectedPoint": { "x": 0, "y": 0 } },
+	{ "at": 10, "stop": "BN", "status": "IN_TRANSIT_TO", "eta": 80, "expectedPlacement": "track", "expectedBasis": "estimated", "expectedPoint": { "x": 0, "y": 0 } },
+	{ "at": 45, "stop": "BN", "status": "IN_TRANSIT_TO", "eta": 80, "expectedPlacement": "track", "expectedBasis": "estimated", "expectedPoint": { "x": 30, "y": 5 } },
+	{ "at": 55, "stop": "BN", "status": "INCOMING_AT", "eta": 150, "expectedPlacement": "track", "expectedBasis": "estimated" },
+	{ "at": 60, "stop": "BN", "status": "STOPPED_AT", "expectedPlacement": "track", "expectedBasis": "reported", "expectedPoint": { "x": 30, "y": 40 } }
+]

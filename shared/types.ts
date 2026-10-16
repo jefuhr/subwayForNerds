@@ -33,7 +33,15 @@ export interface VehiclePosition {
 export interface NjtState {
 	configured: boolean; predictions: SourceState; positions: SourceState; cacheError: string | null;
 }
+// Estimated from Transit Lab segment run times; not an official MTA speed restriction.
+export interface SlowZone {
+  from: string; to: string; segment: string; kind: 'slow' | 'disruption';
+  since: string; through: string; extraSeconds: number; baselineSeconds: number; slowDays: number;
+}
+// toIndex addresses the segment's end stop in this snapshot's Train.stops.
+export interface TrainSlowZone extends SlowZone { toIndex: number; current?: boolean }
 export interface Train {
+  slowZones?: TrainSlowZone[];
   staleAfter?: number;
   vehiclePosition?: VehiclePosition;
   changes?: TripChange[];
@@ -46,6 +54,7 @@ export interface Train {
   scheduledPattern?: { shape: string; headsign: string; stops: string[]; source: string };
 }
 export interface Departure {
+  slowZone?: SlowZone;
   staleAfter?: number;
   vehiclePosition?: VehiclePosition;
   changes?: TripChange[];

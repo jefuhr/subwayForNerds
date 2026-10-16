@@ -231,7 +231,59 @@ public struct ScheduledPattern: Codable, Sendable, Equatable {
 	}
 }
 
+/// A segment between two consecutive GTFS stops whose weekday daytime run times are
+/// estimated slower than usual by Transit Lab. Not an official MTA speed restriction.
+public struct SlowZone: Codable, Sendable, Equatable {
+	public var from: String
+	public var to: String
+	/// Readable stop names, such as "28 St → 23 St-Baruch College".
+	public var segment: String
+	/// "slow" or "disruption"; unknown future kinds stay strings and display as slow zones.
+	public var kind: String
+	/// Calendar dates (YYYY-MM-DD) with no time zone.
+	public var since: String
+	public var through: String
+	public var extraSeconds: Double
+	public var baselineSeconds: Double
+	public var slowDays: Int
+
+	public init(from: String, to: String, segment: String, kind: String, since: String, through: String, extraSeconds: Double, baselineSeconds: Double, slowDays: Int) {
+		self.from = from; self.to = to; self.segment = segment; self.kind = kind
+		self.since = since; self.through = through
+		self.extraSeconds = extraSeconds; self.baselineSeconds = baselineSeconds; self.slowDays = slowDays
+	}
+}
+
+/// A zone on one train's route. `toIndex` addresses the segment's end stop in that
+/// snapshot's `Train.stops`; `current` marks the zone the train is in and is listed first.
+/// On the wire the zone's fields sit beside `toIndex` and `current`.
+@dynamicMemberLookup
+public struct TrainSlowZone: Codable, Sendable, Equatable {
+	public var zone: SlowZone
+	public var toIndex: Int
+	public var current: Bool?
+	public subscript<Value>(dynamicMember keyPath: KeyPath<SlowZone, Value>) -> Value { zone[keyPath: keyPath] }
+
+	public init(zone: SlowZone, toIndex: Int, current: Bool? = nil) {
+		self.zone = zone; self.toIndex = toIndex; self.current = current
+	}
+	private enum CodingKeys: String, CodingKey { case toIndex, current }
+	public init(from decoder: Decoder) throws {
+		zone = try SlowZone(from: decoder)
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		toIndex = try container.decode(Int.self, forKey: .toIndex)
+		current = try container.decodeIfPresent(Bool.self, forKey: .current)
+	}
+	public func encode(to encoder: Encoder) throws {
+		try zone.encode(to: encoder)
+		var container = encoder.container(keyedBy: CodingKeys.self)
+		try container.encode(toIndex, forKey: .toIndex)
+		try container.encodeIfPresent(current, forKey: .current)
+	}
+}
+
 public struct Train: Codable, Sendable, Equatable, Identifiable {
+	public var slowZones: [TrainSlowZone]?
 	public var staleAfter: TimeInterval?
 	public var vehiclePosition: VehiclePosition?
 	public var changes: [TripChange]?
@@ -254,7 +306,8 @@ public struct Train: Codable, Sendable, Equatable, Identifiable {
 	public var scheduledPattern: ScheduledPattern?
 	public var id: String { key }
 
-	public init(changes: [TripChange]? = nil, startTime: String? = nil, key: String, feed: String, tripId: String, serviceDate: String? = nil, route: String, destination: String, direction: String, trainId: String? = nil, assigned: Bool? = nil, timestamp: TimeInterval, position: TrainPosition? = nil, stops: [StopPrediction] = [], relationship: String? = nil, alerts: [String] = [], consist: Consist? = nil, scheduledPattern: ScheduledPattern? = nil, staleAfter: TimeInterval? = nil, vehiclePosition: VehiclePosition? = nil) {
+	public init(changes: [TripChange]? = nil, startTime: String? = nil, key: String, feed: String, tripId: String, serviceDate: String? = nil, route: String, destination: String, direction: String, trainId: String? = nil, assigned: Bool? = nil, timestamp: TimeInterval, position: TrainPosition? = nil, stops: [StopPrediction] = [], relationship: String? = nil, alerts: [String] = [], consist: Consist? = nil, scheduledPattern: ScheduledPattern? = nil, staleAfter: TimeInterval? = nil, vehiclePosition: VehiclePosition? = nil, slowZones: [TrainSlowZone]? = nil) {
+		self.slowZones = slowZones
 		self.staleAfter = staleAfter
 		self.vehiclePosition = vehiclePosition
 		self.changes = changes
@@ -293,6 +346,8 @@ public struct OnwardStop: Codable, Sendable, Equatable {
 }
 
 public struct Departure: Codable, Sendable, Equatable, Identifiable {
+	/// Present only while the train is inside that zone.
+	public var slowZone: SlowZone?
 	public var staleAfter: TimeInterval?
 	public var vehiclePosition: VehiclePosition?
 	public var changes: [TripChange]?
@@ -325,7 +380,8 @@ public struct Departure: Codable, Sendable, Equatable, Identifiable {
 	public var basis: String?
 	public var id: String { key }
 
-	public init(changes: [TripChange]? = nil, departure: TimeInterval? = nil, key: String, tripKey: String, route: String, destination: String, direction: String, stopId: String, partId: String, area: String, time: TimeInterval? = nil, arrival: TimeInterval? = nil, scheduledTrack: String? = nil, actualTrack: String? = nil, pattern: String, patternSource: String, location: String, locationTimestamp: TimeInterval? = nil, stopsAway: Int? = nil, assigned: Bool? = nil, feed: String, timestamp: TimeInterval, relationship: String? = nil, alerts: [String] = [], consist: Consist? = nil, onward: [OnwardStop] = [], gap: Double? = nil, basis: String? = nil, staleAfter: TimeInterval? = nil, vehiclePosition: VehiclePosition? = nil) {
+	public init(changes: [TripChange]? = nil, departure: TimeInterval? = nil, key: String, tripKey: String, route: String, destination: String, direction: String, stopId: String, partId: String, area: String, time: TimeInterval? = nil, arrival: TimeInterval? = nil, scheduledTrack: String? = nil, actualTrack: String? = nil, pattern: String, patternSource: String, location: String, locationTimestamp: TimeInterval? = nil, stopsAway: Int? = nil, assigned: Bool? = nil, feed: String, timestamp: TimeInterval, relationship: String? = nil, alerts: [String] = [], consist: Consist? = nil, onward: [OnwardStop] = [], gap: Double? = nil, basis: String? = nil, staleAfter: TimeInterval? = nil, vehiclePosition: VehiclePosition? = nil, slowZone: SlowZone? = nil) {
+		self.slowZone = slowZone
 		self.staleAfter = staleAfter
 		self.vehiclePosition = vehiclePosition
 		self.changes = changes

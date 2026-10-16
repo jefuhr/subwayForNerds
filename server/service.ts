@@ -12,6 +12,7 @@ import { FleetService, fleetSnapshot } from './fleet';
 import { FleetOfflineService } from './fleet-offline';
 import { FleetPackService } from './fleet-pack';
 import { ChangeDetector } from './changes';
+import { SlowZoneService, SLOW_ZONES_URL, decodeSlowZones } from './slow-zones';
 
 import { PATH_URL, normalizePath } from './path';
 import { NjtLiveService } from './njt-live';
@@ -39,6 +40,7 @@ export class TransitService {
   consistState: SourceState = { id: 'helium', timestamp: null, fetchedAt: null, error: null };
   scheduleWorker?: Worker;
   changeDetector = new ChangeDetector();
+  slowZones = new SlowZoneService();
   readonly cacheDir: string;
   readonly njt: NjtLiveService;
   constructor(readonly options: { fixtureDir?: string; cacheDir?: string; fetcher?: typeof fetch; njtCredentials?: { username: string; password: string } } = {}) {
@@ -76,6 +78,8 @@ export class TransitService {
     for (const train of all) this.changeDetector.enrich(train, this.alerts, this.slots.get('subway-alerts')?.state, this.schedules, now, names, !!this.contextStates.get('schedules')?.error, !!this.slots.get(train.feed)?.state.error);
     this.changeDetector.prune(now);
     for (const train of all) enrichConsist(train, this.consists, now);
+    for (const train of all) this.slowZones.enrich(train, now);
+    this.slowZones.prune(now);
     this.fleet?.observe(all.filter(t => !this.slots.get(t.feed)?.state.error && !this.consistState.error).flatMap(t => { const s = fleetSnapshot(t, now); return s ? [s] : []; }), now);
     const partToStation = new Map(this.catalog.flatMap(s => s.parts.map(p => [p.id, s.id] as const)));
     const byStation = new Map<string, Train[]>();
@@ -182,6 +186,27 @@ export class TransitService {
     this.startContext();
     this.schedule(() => this.refreshConsists(), 10000);
     this.schedule(async () => { await restoredSchedules; await this.refreshSchedules(); }, 3600000);
+    this.schedule(() => this.refreshSlowZones(), 21600000);
+  }
+  async refreshSlowZones() {
+    const zones = this.slowZones;
+    if (!zones.dataThrough) {
+      const cached = await this.restore('slow-zones');
+      if (cached) try { zones.restore(cached); this.refreshBoards(); } catch { /* An incompatible cache is replaced by the next fetch. */ }
+    }
+    try {
+      const response = await (this.options.fetcher || fetch)(SLOW_ZONES_URL, { signal: AbortSignal.timeout(30000),
+        headers: { 'User-Agent': 'SubwaysForNerds/0.1', ...(zones.etag && zones.dataThrough ? { 'If-None-Match': zones.etag } : {}) } });
+      const fetchedAt = nowSeconds();
+      if (response.status === 304 && zones.dataThrough) { zones.state = { ...zones.state, fetchedAt, error: null }; return; }
+      if (!response.ok) throw new Error(`Upstream HTTP ${response.status}`);
+      const rows = await decodeSlowZones(new Uint8Array(await response.arrayBuffer()));
+      const modified = response.headers.get('last-modified');
+      zones.accept(rows, { fetchedAt, timestamp: modified && Number.isFinite(Date.parse(modified)) ? Date.parse(modified) / 1000 : fetchedAt,
+        etag: response.headers.get('etag') || undefined, minimumRows: 1000 });
+      await this.persist('slow-zones', zones.snapshot());
+      this.refreshBoards();
+    } catch (error) { zones.state.error = String(error); throw error; }
   }
   startNjt() {
     if (!this.njt.enabled) return;

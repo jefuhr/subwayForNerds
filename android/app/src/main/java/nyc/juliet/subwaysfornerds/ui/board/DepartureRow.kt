@@ -29,11 +29,13 @@ import nyc.juliet.subwaysfornerds.core.Display
 import nyc.juliet.subwaysfornerds.core.Freshness
 import nyc.juliet.subwaysfornerds.core.OfflineDisplay
 import nyc.juliet.subwaysfornerds.core.OfflineSettings
+import nyc.juliet.subwaysfornerds.core.SlowZone
 import nyc.juliet.subwaysfornerds.core.TrainFavoriteMatch
 import nyc.juliet.subwaysfornerds.core.TrainFavoriteRules
 import nyc.juliet.subwaysfornerds.core.TrainFavorites
 import nyc.juliet.subwaysfornerds.ui.components.ChangeIcons
 import nyc.juliet.subwaysfornerds.ui.components.RouteBullet
+import nyc.juliet.subwaysfornerds.ui.components.SlowZoneTag
 import nyc.juliet.subwaysfornerds.ui.theme.TextRoles
 import nyc.juliet.subwaysfornerds.ui.theme.palette
 import kotlin.math.roundToInt
@@ -73,6 +75,9 @@ object DepartureFormat {
 		val age = if (Display.freshness(consist.updatedAt, now) == Freshness.LIVE) "" else " · last reported"
 		return "$types · ${Display.consistSummary(consist.cars)}$age"
 	}
+
+	/** The live slow zone tag; cached and offline boards hide it, while rows showing a last report keep it. */
+	fun slowZone(departure: Departure, cached: Boolean): SlowZone? = if (cached) null else departure.slowZone
 
 	fun favoriteLabel(match: TrainFavoriteMatch): String =
 		if (match.exactConsist) "Favorite consist" else "Favorite cars: " + match.carIDs.joinToString(", ") { TrainFavoriteRules.label(it) }
@@ -143,10 +148,17 @@ fun DepartureRow(
 				}
 				if (showPlatform) Text(Display.boardingLabel(departure), style = TextRoles.caption2, color = palette.muted, modifier = Modifier.testTag("boardingPlatform_${departure.key}"))
 				val position = departure.vehiclePosition
-				if (position != null) {
-					Display.currentVehiclePositions(listOf(position), now).firstOrNull()?.let { Text(Display.vehiclePositionLabel(it, now, cached), style = TextRoles.caption) }
+				val location = if (position != null) {
+					Display.currentVehiclePositions(listOf(position), now).firstOrNull()?.let { Display.vehiclePositionLabel(it, now, cached) }
 				} else if (!departure.feed.startsWith("njt-") && departure.location.isNotEmpty()) {
-					Text((if (DepartureFormat.historical(departure, now, cached)) "Last report: " else "") + departure.location, style = TextRoles.caption)
+					(if (DepartureFormat.historical(departure, now, cached)) "Last report: " else "") + departure.location
+				} else null
+				val slowZone = DepartureFormat.slowZone(departure, cached)
+				if (location != null || slowZone != null) {
+					Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+						if (location != null) Text(location, style = TextRoles.caption, modifier = Modifier.weight(1f, fill = false))
+						if (slowZone != null) SlowZoneTag(slowZone, "slowZoneTag_${departure.key}")
+					}
 				}
 				Row {
 					if (!departure.feed.startsWith("njt-")) Text(DepartureFormat.positionDetail(departure, now), style = TextRoles.caption2, color = palette.muted, modifier = Modifier.weight(1f))

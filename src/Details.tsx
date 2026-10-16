@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AlertTriangle, ArrowUpRight, Accessibility, Clock3 } from 'lucide-react';
 import type { Board, Station, StationContext, Train, StopPrediction, TransferResult } from '../shared/types';
 import { ageLabel, clockTime, sourceClockText, freshness, vehiclePositionDisplay } from '../shared/display';
@@ -7,6 +7,7 @@ import { api } from './platform';
 import Modal from './Modal';
 import { currentConsist } from '../shared/consist';
 import { ChangeDetails, ChangeLabels } from './Changes';
+import { SlowZoneSegment, SlowZoneSummary, slowZoneAttribution } from './SlowZones';
 import { changesAhead } from '../shared/changes';
 import { consistCarIDs, favoriteTrainMatch, fleetCarID } from '../shared/favorites';
 import { FavoriteCarButton, FavoriteConsistButton, useTrainFavorites } from './Favorites';
@@ -68,14 +69,16 @@ export function TrainDetail({ tripKey, close, now, openFleet, restore, stationFo
       </section>
       {train.alerts.map(a => <p key={a} className="notice"><AlertTriangle size={16} />{a}</p>)}
       <ChangeDetails changes={changesAhead(train.changes, 0)} now={now} />
+      <SlowZoneSummary zones={train.slowZones} />
       <div className="section-label">REMAINING STOPPING PATTERN <span>Arrival / departure · Eastern</span></div>
-      <ol className="stop-sequence">{train.stops.map((s, i) => <li key={s.id + i} className={s.relationship === 'SKIPPED' ? 'skipped' : ''}>
+      <ol className="stop-sequence">{train.stops.map((s, i) => <Fragment key={s.id + i}>{train.slowZones?.filter(z => z.toIndex === i).map(z => <SlowZoneSegment key={`slow-${z.from}-${z.to}`} zone={z} live={!error && freshness(train.timestamp, now, train.staleAfter) === 'live'} />)}<li className={s.relationship === 'SKIPPED' ? 'skipped' : ''}>
         <button className="stop-link" disabled={s.relationship === 'SKIPPED' || !s.stationId || (s.arrival ?? s.departure ?? Infinity) < now} aria-label={`Transfers at ${s.name}`} onClick={() => { savedScroll.current = trainView.current?.closest('dialog')?.scrollTop || 0; setSelected(s); }}>
         <span className="stop-dot" /><div><strong>{s.name}</strong><small>{s.id}{s.relationship === 'SKIPPED' ? ' · skipped' : ''}{s.scheduledTrack ? ` · scheduled track ${s.scheduledTrack}` : ''}{s.actualTrack ? ` · reported track ${s.actualTrack}` : ''}</small><ChangeLabels changes={s.changes} now={now} /></div>
         <span className="stop-time">{clockTime(s.arrival, units.time)}{s.departure && s.departure !== s.arrival && <small>dep {clockTime(s.departure, units.time)}</small>}</span>
         </button>
-      </li>)}</ol>
+      </li></Fragment>)}</ol>
       <p className="fine-print">Stopping patterns reflect the remaining feed predictions. Track fields describe each stop; a future track value is not the train’s current position. Operations IDs identify trips, not physical cars.</p>
+      {!!train.slowZones?.length && <p className="fine-print">{slowZoneAttribution}</p>}
       {train.scheduledPattern && <details className="raw-details"><summary>Matching scheduled pattern · {train.scheduledPattern.headsign}</summary><p className="fine-print">Shape {train.scheduledPattern.shape} · {train.scheduledPattern.source === 'gtfs_supplemented' ? 'Supplemented GTFS' : 'Regular GTFS'}. Static context only; live predictions above take precedence.</p><p className="fine-print">{train.scheduledPattern.stops.join(' → ')}</p></details>}
       <details className="raw-details"><summary>Decoded feed & identifiers</summary><pre>{JSON.stringify(data, null, 2)}</pre></details>
     </div>}

@@ -519,6 +519,8 @@ struct DepartureRow: View {
 		return OfflineDisplay.countdown(departure: departure, now: now, cached: cached, preferences: app.offlinePreferences, timeFormat: app.units.time)
 	}
 	private var historical: Bool { cached || Display.freshness(departure, now: now) != .live || departure.locationTimestamp.map { now - $0 > 90 } == true }
+	/// Only live boards say the train is in a zone; an older position report keeps it.
+	private var slowZone: SlowZone? { cached ? nil : departure.slowZone }
 	private var favoriteMatch: TrainFavoriteMatch? { app.trainFavorites.match(departure.consist, feed: departure.feed, now: now, cached: cached) }
 	private var gap: Int? {
 		guard !cached, Display.boardable(departure), let previous, Display.freshness(previous, now: now) == .live,
@@ -558,8 +560,12 @@ struct DepartureRow: View {
 					if let current = Display.currentVehiclePositions([position], now: now).first {
 						Text(Display.vehiclePositionLabel(current, now: now, cached: cached)).font(.caption)
 					}
-				} else if !departure.feed.hasPrefix("njt-"), !departure.location.isEmpty {
-					Text((historical ? "Last report: " : "") + departure.location).font(.caption)
+				} else if !departure.feed.hasPrefix("njt-"), !departure.location.isEmpty || slowZone != nil {
+					HStack(alignment: .firstTextBaseline, spacing: 6) {
+						if !departure.location.isEmpty { Text((historical ? "Last report: " : "") + departure.location) }
+						if let slowZone { SlowZoneTag(zone: slowZone) }
+					}
+					.font(.caption)
 				}
 				HStack(alignment: .firstTextBaseline) {
 					if !departure.feed.hasPrefix("njt-") { Text(positionDetail) }
@@ -598,5 +604,22 @@ struct DepartureRow: View {
 				Text("not boarding").font(.caption2).foregroundStyle(.secondary)
 			}
 		}
+	}
+}
+
+/// The extra time a train in an estimated slow zone typically loses, beside its location.
+private struct SlowZoneTag: View {
+	let zone: SlowZone
+	var body: some View {
+		HStack(spacing: 2) {
+			SlowZoneIcon(disruption: SlowZoneDisplay.isDisruption(zone))
+			Text(SlowZoneDisplay.boardTag(zone)).monospacedDigit()
+		}
+		.font(.caption2.weight(.semibold))
+		.padding(.horizontal, 4)
+		.background((SlowZoneDisplay.isDisruption(zone) ? Color.unplanned : .orange).opacity(0.16), in: Capsule())
+		.fixedSize()
+		.accessibilityElement(children: .ignore)
+		.accessibilityLabel(SlowZoneDisplay.accessibilityLabel(zone))
 	}
 }

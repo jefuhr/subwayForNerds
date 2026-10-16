@@ -47,6 +47,7 @@ object DepartureSerializer : KSerializer<Departure> {
 		consist = value.consist,
 		gap = value.gap,
 		basis = value.basis,
+		slowZone = value.slowZone,
 			explicitNullDeparture = (raw as? JsonObject)?.get("departure") == JsonNull,
 		)
 	}
@@ -82,6 +83,7 @@ object DepartureSerializer : KSerializer<Departure> {
 		consist = value.consist,
 		gap = value.gap,
 		basis = value.basis,
+		slowZone = value.slowZone,
 		)
 		if (encoder is JsonEncoder) {
 			val fields = encoder.json.encodeToJsonElement(delegate, wire).jsonObject
@@ -107,4 +109,5 @@ object DepartureSerializer : KSerializer<Departure> {
 	@EncodeDefault(NEVER) val consist: Consist? = null,
 	@EncodeDefault(NEVER) val gap: Double? = null,
 	@EncodeDefault(NEVER) val basis: String? = null,
+	@EncodeDefault(NEVER) val slowZone: SlowZone? = null,
 )

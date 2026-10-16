@@ -1,0 +1,1614 @@
+{
+  "train": {
+    "key": "gtfs|20260905|123100_4..S06X064|",
+    "feed": "gtfs",
+    "tripId": "123100_4..S06X064",
+    "serviceDate": "20260905",
+    "route": "4",
+    "destination": "Crown Hts-Utica Av",
+    "direction": "SOUTH",
+    "timestamp": 1788656333,
+    "stops": [
+      {
+        "id": "634S",
+        "name": "23 St-Baruch College",
+        "stationId": "405",
+        "arrival": 1788656376,
+        "departure": 1788656376,
+        "scheduledTrack": "1",
+        "actualTrack": "1",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          },
+          {
+            "id": "alert:lmm:planned_work:33698",
+            "kind": "pattern",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · express to local",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "affectedStops": [
+              "640",
+              "639",
+              "638",
+              "637",
+              "636",
+              "635",
+              "634",
+              "633",
+              "631",
+              "632",
+              "630",
+              "629",
+              "628",
+              "627",
+              "626",
+              "625",
+              "624",
+              "623",
+              "621",
+              "622",
+              "415",
+              "416"
+            ],
+            "alertIds": [
+              "lmm:planned_work:33698"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "635S",
+        "name": "14 St-Union Sq",
+        "stationId": "602",
+        "arrival": 1788656466,
+        "departure": 1788656466,
+        "scheduledTrack": "1",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          },
+          {
+            "id": "alert:lmm:planned_work:33698",
+            "kind": "pattern",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · express to local",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "affectedStops": [
+              "640",
+              "639",
+              "638",
+              "637",
+              "636",
+              "635",
+              "634",
+              "633",
+              "631",
+              "632",
+              "630",
+              "629",
+              "628",
+              "627",
+              "626",
+              "625",
+              "624",
+              "623",
+              "621",
+              "622",
+              "415",
+              "416"
+            ],
+            "alertIds": [
+              "lmm:planned_work:33698"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "636S",
+        "name": "Astor Pl",
+        "stationId": "407",
+        "arrival": 1788656556,
+        "departure": 1788656556,
+        "scheduledTrack": "1",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          },
+          {
+            "id": "alert:lmm:planned_work:33698",
+            "kind": "pattern",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · express to local",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "affectedStops": [
+              "640",
+              "639",
+              "638",
+              "637",
+              "636",
+              "635",
+              "634",
+              "633",
+              "631",
+              "632",
+              "630",
+              "629",
+              "628",
+              "627",
+              "626",
+              "625",
+              "624",
+              "623",
+              "621",
+              "622",
+              "415",
+              "416"
+            ],
+            "alertIds": [
+              "lmm:planned_work:33698"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "637S",
+        "name": "Bleecker St",
+        "stationId": "619",
+        "arrival": 1788656616,
+        "departure": 1788656616,
+        "scheduledTrack": "1",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          },
+          {
+            "id": "alert:lmm:planned_work:33698",
+            "kind": "pattern",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · express to local",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "affectedStops": [
+              "640",
+              "639",
+              "638",
+              "637",
+              "636",
+              "635",
+              "634",
+              "633",
+              "631",
+              "632",
+              "630",
+              "629",
+              "628",
+              "627",
+              "626",
+              "625",
+              "624",
+              "623",
+              "621",
+              "622",
+              "415",
+              "416"
+            ],
+            "alertIds": [
+              "lmm:planned_work:33698"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "638S",
+        "name": "Spring St",
+        "stationId": "409",
+        "arrival": 1788656706,
+        "departure": 1788656706,
+        "scheduledTrack": "1",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          },
+          {
+            "id": "alert:lmm:planned_work:33698",
+            "kind": "pattern",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · express to local",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "affectedStops": [
+              "640",
+              "639",
+              "638",
+              "637",
+              "636",
+              "635",
+              "634",
+              "633",
+              "631",
+              "632",
+              "630",
+              "629",
+              "628",
+              "627",
+              "626",
+              "625",
+              "624",
+              "623",
+              "621",
+              "622",
+              "415",
+              "416"
+            ],
+            "alertIds": [
+              "lmm:planned_work:33698"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "639S",
+        "name": "Canal St",
+        "stationId": "623",
+        "arrival": 1788656766,
+        "departure": 1788656766,
+        "scheduledTrack": "1",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          },
+          {
+            "id": "alert:lmm:planned_work:33698",
+            "kind": "pattern",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · express to local",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "affectedStops": [
+              "640",
+              "639",
+              "638",
+              "637",
+              "636",
+              "635",
+              "634",
+              "633",
+              "631",
+              "632",
+              "630",
+              "629",
+              "628",
+              "627",
+              "626",
+              "625",
+              "624",
+              "623",
+              "621",
+              "622",
+              "415",
+              "416"
+            ],
+            "alertIds": [
+              "lmm:planned_work:33698"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "640S",
+        "name": "Brooklyn Bridge-City Hall",
+        "stationId": "622",
+        "arrival": 1788656886,
+        "departure": 1788656886,
+        "scheduledTrack": "2",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          },
+          {
+            "id": "alert:lmm:planned_work:33698",
+            "kind": "pattern",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · express to local",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "affectedStops": [
+              "640",
+              "639",
+              "638",
+              "637",
+              "636",
+              "635",
+              "634",
+              "633",
+              "631",
+              "632",
+              "630",
+              "629",
+              "628",
+              "627",
+              "626",
+              "625",
+              "624",
+              "623",
+              "621",
+              "622",
+              "415",
+              "416"
+            ],
+            "alertIds": [
+              "lmm:planned_work:33698"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "418S",
+        "name": "Fulton St",
+        "stationId": "628",
+        "arrival": 1788656976,
+        "departure": 1788656976,
+        "scheduledTrack": "2",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "419S",
+        "name": "Wall St",
+        "stationId": "413",
+        "arrival": 1788657066,
+        "departure": 1788657066,
+        "scheduledTrack": "2",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "420S",
+        "name": "Bowling Green",
+        "stationId": "414",
+        "arrival": 1788657126,
+        "departure": 1788657126,
+        "scheduledTrack": "2",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "423S",
+        "name": "Borough Hall",
+        "stationId": "620",
+        "arrival": 1788657426,
+        "departure": 1788657426,
+        "scheduledTrack": "2",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "234S",
+        "name": "Nevins St",
+        "stationId": "337",
+        "arrival": 1788657516,
+        "departure": 1788657606,
+        "scheduledTrack": "2",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "235S",
+        "name": "Atlantic Av-Barclays Ctr",
+        "stationId": "617",
+        "arrival": 1788657696,
+        "departure": 1788657696,
+        "scheduledTrack": "2",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "239S",
+        "name": "Franklin Av-Medgar Evers College",
+        "stationId": "626",
+        "arrival": 1788657936,
+        "departure": 1788657936,
+        "scheduledTrack": "2",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "250S",
+        "name": "Crown Hts-Utica Av",
+        "stationId": "345",
+        "arrival": 1788658146,
+        "departure": null,
+        "scheduledTrack": "2",
+        "changes": [
+          {
+            "id": "alert:lmm:alert:266227:26",
+            "kind": "advisory",
+            "classification": "planned",
+            "advisory": true,
+            "label": "planned · delays",
+            "stopIndices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ],
+            "affectedStops": [],
+            "alertIds": [
+              "lmm:alert:266227:26"
+            ],
+            "evidence": [
+              {
+                "source": "subway-alerts",
+                "timestamp": 1788654197,
+                "staleAfter": 90,
+                "unavailable": false
+              },
+              {
+                "source": "gtfs",
+                "timestamp": 1788656333,
+                "staleAfter": 90,
+                "unavailable": false
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "alerts": [],
+    "trainId": "04 2031  3AB/UTI",
+    "assigned": true,
+    "position": {
+      "stopId": "634S",
+      "name": "23 St-Baruch College",
+      "status": "INCOMING_AT",
+      "timestamp": 1788656316
+    },
+    "changes": [
+      {
+        "id": "alert:lmm:alert:266227:26",
+        "kind": "advisory",
+        "classification": "planned",
+        "advisory": true,
+        "label": "planned · delays",
+        "description": "Published advisory; individual train impact may vary. Uptown [4][6] trains are running with delays while we address a signal problem near Grand Central-42 St.\nPlanned Work Reminder:\n[4] trains are running local in Manhattan.\nNo [5] service in Manhattan.",
+        "stopIndices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        "affectedStops": [],
+        "alertIds": [
+          "lmm:alert:266227:26"
+        ],
+        "evidence": [
+          {
+            "source": "subway-alerts",
+            "timestamp": 1788654197,
+            "staleAfter": 90,
+            "unavailable": false
+          },
+          {
+            "source": "gtfs",
+            "timestamp": 1788656333,
+            "staleAfter": 90,
+            "unavailable": false
+          }
+        ]
+      },
+      {
+        "id": "alert:lmm:planned_work:33698",
+        "kind": "pattern",
+        "classification": "planned",
+        "advisory": true,
+        "label": "planned · express to local",
+        "description": "Published advisory; individual train impact may vary. In Manhattan, [4] runs local in both directions between 125 St and Brooklyn Bridge-City Hall\nSchedule reminder: Late night [4] runs local between these stations.\n\nWhat's happening?\nWe're making station improvements\nSep 5 - 7, Sat to Mon, days and evenings (includes Labor Day)",
+        "stopIndices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "affectedStops": [
+          "640",
+          "639",
+          "638",
+          "637",
+          "636",
+          "635",
+          "634",
+          "633",
+          "631",
+          "632",
+          "630",
+          "629",
+          "628",
+          "627",
+          "626",
+          "625",
+          "624",
+          "623",
+          "621",
+          "622",
+          "415",
+          "416"
+        ],
+        "alertIds": [
+          "lmm:planned_work:33698"
+        ],
+        "evidence": [
+          {
+            "source": "subway-alerts",
+            "timestamp": 1788654197,
+            "staleAfter": 90,
+            "unavailable": false
+          },
+          {
+            "source": "gtfs",
+            "timestamp": 1788656333,
+            "staleAfter": 90,
+            "unavailable": false
+          }
+        ]
+      }
+    ],
+    "slowZones": [
+      {
+        "from": "633S",
+        "to": "634S",
+        "segment": "28 St → 23 St-Baruch College",
+        "kind": "slow",
+        "since": "2026-08-10",
+        "through": "2026-09-04",
+        "extraSeconds": 41.6,
+        "baselineSeconds": 92.4,
+        "slowDays": 20,
+        "toIndex": 0,
+        "current": true
+      },
+      {
+        "from": "419S",
+        "to": "420S",
+        "segment": "Wall St → Bowling Green",
+        "kind": "disruption",
+        "since": "2026-08-31",
+        "through": "2026-09-04",
+        "extraSeconds": 134.4,
+        "baselineSeconds": 88,
+        "slowDays": 5,
+        "toIndex": 9
+      }
+    ]
+  },
+  "raw": [
+    {
+      "id": "000127",
+      "trip_update": {
+        "trip": {
+          "trip_id": "123100_4..S06X064",
+          "start_date": "20260905",
+          "route_id": "4",
+          ".transit_realtime.nyct_trip_descriptor": {
+            "train_id": "04 2031  3AB/UTI",
+            "is_assigned": true,
+            "direction": "SOUTH"
+          }
+        },
+        "stop_time_update": [
+          {
+            "arrival": {
+              "time": 1788656376
+            },
+            "departure": {
+              "time": 1788656376
+            },
+            "stop_id": "634S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "1",
+              "actual_track": "1"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788656466
+            },
+            "departure": {
+              "time": 1788656466
+            },
+            "stop_id": "635S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "1"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788656556
+            },
+            "departure": {
+              "time": 1788656556
+            },
+            "stop_id": "636S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "1"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788656616
+            },
+            "departure": {
+              "time": 1788656616
+            },
+            "stop_id": "637S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "1"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788656706
+            },
+            "departure": {
+              "time": 1788656706
+            },
+            "stop_id": "638S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "1"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788656766
+            },
+            "departure": {
+              "time": 1788656766
+            },
+            "stop_id": "639S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "1"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788656886
+            },
+            "departure": {
+              "time": 1788656886
+            },
+            "stop_id": "640S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788656976
+            },
+            "departure": {
+              "time": 1788656976
+            },
+            "stop_id": "418S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788657066
+            },
+            "departure": {
+              "time": 1788657066
+            },
+            "stop_id": "419S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788657126
+            },
+            "departure": {
+              "time": 1788657126
+            },
+            "stop_id": "420S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788657426
+            },
+            "departure": {
+              "time": 1788657426
+            },
+            "stop_id": "423S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788657516
+            },
+            "departure": {
+              "time": 1788657606
+            },
+            "stop_id": "234S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788657696
+            },
+            "departure": {
+              "time": 1788657696
+            },
+            "stop_id": "235S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788657936
+            },
+            "departure": {
+              "time": 1788657936
+            },
+            "stop_id": "239S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2"
+            }
+          },
+          {
+            "arrival": {
+              "time": 1788658146
+            },
+            "stop_id": "250S",
+            ".transit_realtime.nyct_stop_time_update": {
+              "scheduled_track": "2"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "000128",
+      "vehicle": {
+        "trip": {
+          "trip_id": "123100_4..S06X064",
+          "start_date": "20260905",
+          "route_id": "4",
+          ".transit_realtime.nyct_trip_descriptor": {
+            "train_id": "04 2031  3AB/UTI",
+            "is_assigned": true,
+            "direction": "SOUTH"
+          }
+        },
+        "current_stop_sequence": 15,
+        "current_status": "INCOMING_AT",
+        "timestamp": 1788656316,
+        "stop_id": "634S"
+      }
+    }
+  ],
+  "source": {
+    "state": {
+      "id": "gtfs",
+      "timestamp": 1788656333,
+      "fetchedAt": 1788656333,
+      "error": null
+    },
+    "header": {
+      "gtfs_realtime_version": "1.0",
+      "timestamp": 1788656333,
+      ".transit_realtime.nyct_feed_header": {
+        "nyct_subway_version": "1.0",
+        "trip_replacement_period": [
+          {
+            "route_id": "1",
+            "replacement_period": {
+              "end": 1788656333
+            }
+          },
+          {
+            "route_id": "2",
+            "replacement_period": {
+              "end": 1788656333
+            }
+          },
+          {
+            "route_id": "3",
+            "replacement_period": {
+              "end": 1788656333
+            }
+          },
+          {
+            "route_id": "4",
+            "replacement_period": {
+              "end": 1788656333
+            }
+          },
+          {
+            "route_id": "5",
+            "replacement_period": {
+              "end": 1788656333
+            }
+          },
+          {
+            "route_id": "6",
+            "replacement_period": {
+              "end": 1788656333
+            }
+          },
+          {
+            "route_id": "7",
+            "replacement_period": {
+              "end": 1788656333
+            }
+          },
+          {
+            "route_id": "S",
+            "replacement_period": {
+              "end": 1788656333
+            }
+          }
+        ]
+      }
+    }
+  }
+}

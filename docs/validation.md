@@ -689,3 +689,51 @@ predate this merge; the merged UI suite is left to PR CI. Logs are retained as
   refresh timing, or real subway connectivity. No device installation or production
   deployment was performed. Ship the settings server/web update before the new
   native account-sync client.
+
+## October 16, 2026 — estimated slow zones
+
+### Verified locally on the integrated branch
+
+- `npm run check` passed: build, then 214 node tests passed and 1 was skipped (the
+  full NJT capture). `test/slow-zones.test.ts` decodes the checked-in Transit Lab
+  snapshot (10,542 rows) and reproduces transitlab.nyc's count of 88 active slow
+  zones, plus 1 active disruption.
+- `SFN_TEST_PORT=8095 npx playwright test` passed: 153 passed, 5 skipped, including
+  `test/browser/slow-zones.spec.ts` on desktop and mobile. Screenshots are
+  `artifacts/slow-zones-board-*.png` and `artifacts/slow-zones-detail-*.png`.
+- Live check against production feeds, on a local server with `PORT=8096`:
+  `api/v1/health` reported 89 active zones through 2026-10-15. After a few minutes of
+  stop history, 5 of 717 trains were tagged, for example a 6 train between 125 St and
+  3 Av-138 St at +62s. Every tagged train had no movement status. 29 trains reported
+  an explicit moving status and 57 more met the missing-status rule in
+  `docs/slow-zones.md`.
+- `npm run test:native` passed: TransitCore 225/225 and FleetOffline 32/32.
+- `npm run test:ios -- -only-testing:SubwaysForNerdsUITests/SlowZoneUITests` passed.
+  That covers the board tag, detail rows, NYC Ferry light theme, and an offline
+  relaunch with the tag hidden and no "now" marker.
+- `npm run test:android` passed: transit-core 55, fleet-offline 12 and app 164 unit
+  tests with 0 failures, plus lint, all builds, and the APK check.
+
+### Verified in the Android worktree (same Android files, not rerun here)
+
+- `SlowZoneFlowTest` passed 1/1 on `sfn-android31-native` with fixture port 8094
+  (`artifacts/android/e2e-20261016T220207Z` in that worktree). The fleet-offline
+  connected tests passed 7/7.
+
+### Known failures that are not regressions
+
+- `TransferFiltersUITests.swift:119` (`stationBoardScreen` never appears after "Open
+  station board") failed twice with this branch. It fails the same way on an
+  untouched `origin/main` (`eb18491`) export on the same simulator.
+- In the Android worktree, `TransferFlowTest` ×3 failed 6 of 12 alternating runs on
+  both `eb18491` and this branch. `AndroidSessionStoreTest` ×3 hit a keystore error on
+  the API 31 emulator identically on base. The full `test:android:e2e` result was 39/45.
+- `test/offline-fleet-v2.test.ts` ("low disk cleans staging") is flaky. It failed 2 of
+  6 runs on an untouched `origin/main` export.
+
+### Unverified
+
+- The full 52-test iOS UI suite was stopped at a load average of about 650–1000.
+  `LoadingBarUITests` ×2 and `CombinedStationsTests` ×2 failed during that period
+  and were not compared with base.
+- No physical-device installation or production deployment was performed.

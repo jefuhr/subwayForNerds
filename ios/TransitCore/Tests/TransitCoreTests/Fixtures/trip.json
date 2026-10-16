@@ -83,7 +83,21 @@
       "updatedAt": 1788656380,
       "fetchedAt": 1788656380,
       "source": "helium"
-    }
+    },
+    "slowZones": [
+      {
+        "from": "L02N",
+        "to": "L01N",
+        "segment": "6 Av → 8 Av",
+        "kind": "slow",
+        "since": "2026-07-13",
+        "through": "2026-09-02",
+        "extraSeconds": 18.3,
+        "baselineSeconds": 71.5,
+        "slowDays": 38,
+        "toIndex": 2
+      }
+    ]
   },
   "raw": [
     {

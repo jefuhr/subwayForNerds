@@ -40,6 +40,7 @@ export async function nativeFixtures(): Promise<Record<string, unknown>> {
       'catalog.json': await get('stations'),
       'board.json': await get('stations/602/board'),
       'trip.json': await get('trips?' + new URLSearchParams({ key: selected.key })),
+      'slow-zone-trip.json': await get('trips?' + new URLSearchParams({ key: service.boards.get('602')!.departures.find(d => d.slowZone)!.tripKey })),
       'transfers.json': await get('trips/transfers?' + transferQuery),
       'context.json': await get('stations/602/context'),
       'fleet-page.json': await get('fleet?view=cars&page=1'),

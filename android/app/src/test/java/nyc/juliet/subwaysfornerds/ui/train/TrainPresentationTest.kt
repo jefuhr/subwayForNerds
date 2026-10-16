@@ -39,6 +39,13 @@ class TrainPresentationTest {
 		assertEquals("No connection. Showing offline estimates.", newerSaved.error)
 	}
 
+	@Test fun currentSlowZoneIsMarkedNowOnlyWhileTheTripReportIsLive() {
+		assertTrue(TrainPresentation.of(detail(now - 10), null, null, true, false, connected = true, now = now).live(now))
+		assertFalse("A stale report is not live", TrainPresentation.of(detail(now - 200), null, null, true, false, connected = true, now = now).live(now))
+		assertFalse("Offline copies are never live", TrainPresentation.of(detail(now - 10), null, saved(now - 10), true, false, connected = false, now = now).live(now))
+		assertFalse(TrainPresentation.of(null, null, null, false, false, connected = true, now = now).live(now))
+	}
+
 	@Test fun missingFromFeedIsNotCancellation() {
 		val shown = TrainPresentation.of(detail(now - 30), TripFailure.NotFound, saved(now - 300), true, false, connected = true, now = now)
 		assertEquals("No longer in the current feed. Showing the last report, which may be out of date.", shown.error)

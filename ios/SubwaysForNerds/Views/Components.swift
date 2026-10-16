@@ -116,13 +116,28 @@ private func changeText(_ change: TripChange, stale: Bool) -> String {
 	"\(stale ? "Last known · " : "")\(change.label)\(change.advisory == true ? " · advisory" : "")"
 }
 
+extension Color {
+	/// Unplanned changes and major slowdowns, matching the web board's red.
+	static let unplanned = Color(hex: 0xE53935)
+}
+
 /// Colors follow the web board: amber for planned or scheduled, red for unplanned.
 private struct ChangeGlyph: View {
 	let change: TripChange
 	let stale: Bool
 	var body: some View {
 		Image(systemName: stale || change.classification == "scheduled" ? "clock.fill" : "exclamationmark.triangle.fill")
-			.foregroundStyle(change.classification == "unplanned" ? Color(hex: 0xE53935) : ["planned", "scheduled"].contains(change.classification) ? Color(hex: 0xD5A000) : .orange)
+			.foregroundStyle(change.classification == "unplanned" ? Color.unplanned : ["planned", "scheduled"].contains(change.classification) ? Color(hex: 0xD5A000) : .orange)
+	}
+}
+
+/// Estimated slow zones use the warning orange; major slowdowns read as strongly as unplanned changes.
+struct SlowZoneIcon: View {
+	let disruption: Bool
+	var body: some View {
+		Image(systemName: "tortoise.fill")
+			.foregroundStyle(disruption ? Color.unplanned : .orange)
+			.accessibilityLabel(disruption ? "Estimated major slowdown" : "Estimated slow zone")
 	}
 }
 

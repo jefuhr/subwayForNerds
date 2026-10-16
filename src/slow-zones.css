@@ -1,0 +1,10 @@
+.slow-zone-tag{display:inline-flex;align-items:center;gap:3px;margin-left:6px;color:var(--warning);font:10px ui-monospace,SFMono-Regular,Consolas,monospace;white-space:nowrap;vertical-align:1px}
+.slow-zone-disruption.slow-zone-tag,.slow-segment.slow-zone-disruption strong{color:var(--danger)}
+.slow-zone-summary{display:flex;align-items:center;gap:6px;margin:0 0 12px;font-size:11px;color:var(--warning)}
+/* Matches the .stop-link grid so the icon sits on the stop line between two stops. */
+.stop-sequence li.slow-segment{display:grid;grid-template-columns:12px minmax(0,1fr);gap:12px;align-items:center;padding:2px 0}
+.slow-segment-icon{width:12px;display:flex;justify-content:center;color:var(--warning);z-index:1;background:var(--canvas)}
+.slow-zone-disruption .slow-segment-icon{color:var(--danger)}
+.stop-sequence .slow-segment strong{font-size:11px;font-weight:700;color:var(--warning)}
+.stop-sequence .slow-segment small{margin-top:2px}
+.slow-segment-now .slow-segment-icon{outline:1px solid currentColor;outline-offset:2px;border-radius:50%}

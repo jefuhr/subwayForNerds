@@ -4,8 +4,10 @@ import nyc.juliet.subwaysfornerds.core.Consist
 import nyc.juliet.subwaysfornerds.core.ConsistCar
 import nyc.juliet.subwaysfornerds.core.Departure
 import nyc.juliet.subwaysfornerds.core.OfflineSettings
+import nyc.juliet.subwaysfornerds.core.SlowZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DepartureFormatTest {
@@ -15,6 +17,17 @@ class DepartureFormatTest {
 		area = "Uptown", time = time, pattern = "Express", patternSource = "reported", location = "approaching 42 St", feed = "gtfs-ace",
 		timestamp = timestamp, scheduledTrack = track,
 	)
+
+	@Test fun slowZoneTagsShowOnLiveAndLastReportRowsButNeverOnCachedBoards() {
+		val zone = SlowZone("633S", "634S", "28 St → 23 St-Baruch College", "slow", "2026-08-10", "2026-09-04", 41.6, 92.4, 20)
+		val zoned = row("a", now + 60).copy(slowZone = zone)
+		assertEquals(zone, DepartureFormat.slowZone(zoned, cached = false))
+		val oldPosition = zoned.copy(locationTimestamp = now - 200)
+		assertTrue(DepartureFormat.historical(oldPosition, now, cached = false))
+		assertEquals(zone, DepartureFormat.slowZone(oldPosition, cached = false))
+		assertNull(DepartureFormat.slowZone(zoned, cached = true))
+		assertNull(DepartureFormat.slowZone(row("b", now + 60), cached = false))
+	}
 
 	@Test fun cachedUnassignedTrainsNeverCountDown() {
 		val value = DepartureFormat.countdown(row("a", now + 300).copy(assigned = false), now, cached = true, OfflineSettings(), "12h")

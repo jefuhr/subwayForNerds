@@ -9,7 +9,7 @@ and add optional offline fleet downloads, saved rides, and widgets.
 
 ## Run locally
 
-Requires Node.js 22.13 or newer. No API key is needed for the currently configured
+Requires Node.js 22.15 or newer. No API key is needed for the currently configured
 public endpoints.
 
 ```sh
@@ -68,6 +68,10 @@ the app beyond localhost so geolocation and service workers work.
   distinguishing routine overnight/weekend patterns, planned work, disruptions,
   and reported track changes. Open train details for evidence and affected stops.
   See [service-change detection](docs/service-changes.md) for comparison limits.
+- A snail tag with the typical extra time (such as `+42s`) marks a train that is between
+  two stops of an estimated slow zone right now. Train details place every slow zone left
+  on the route between its two stops. Zones come from Transit Lab's nightly run-time
+  analysis, not an official MTA list; see [estimated slow zones](docs/slow-zones.md).
 - Open Fleet for grouped consists or individual cars, last reports, sourced home-yard
   estimates and 30 days of collected movement history. See [fleet data and operations](docs/fleet.md)
   for coverage, identity rules, backup/restore and API details.
@@ -88,8 +92,8 @@ the app beyond localhost so geolocation and service workers work.
 ## Data boundaries
 
 The server polls all eight subway/SIR groups every 15 seconds and alerts and
-equipment feeds every 60 seconds. It refreshes station/entrance metadata daily and
-regular/supplemented GTFS hourly. Pollers use independent timeouts and backoff;
+equipment feeds every 60 seconds. It refreshes station/entrance metadata daily,
+regular/supplemented GTFS hourly, and Transit Lab's slow-zone dataset every six hours. Pollers use independent timeouts and backoff;
 changed feeds are decoded once, indexed, and published as station snapshots.
 Requests for station boards never trigger an upstream fetch. ZIP parsing runs in
 a worker thread. The `state/` directory retains last successful responses.
@@ -159,7 +163,8 @@ seconds (two 60-second polling intervals). An unchanged alerts snapshot older th
 90 seconds reports `alerts.freshness: "uncertain"`; a recent snapshot with healthy
 polling reports `"live"`. Missing data or unhealthy polling also makes freshness
 uncertain. Overall `status` is `"ok"` only when both component statuses are `"ok"`;
-uncertain alert freshness alone does not make it degraded. Each feed retains
+uncertain alert freshness alone does not make it degraded. `slowZones` reports the
+slow-zone dataset's own status and never changes the overall status. Each feed retains
 `timestamp`, `fetchedAt`, `error`, and `age`, and adds `fetchAge` (seconds since the
 last successful fetch). Ages are `null` when the corresponding timestamp is absent.
 
@@ -222,6 +227,8 @@ below 200ms. Actual results and platform limitations belong in `docs/validation.
 - [MTA subway stations](https://data.ny.gov/Transportation/MTA-Subway-Stations/39hk-dx4f)
   and [entrances](https://data.ny.gov/Transportation/MTA-Subway-Entrances-and-Exits-2024/i9wp-a4ja).
 - [MTA station accessibility and equipment guidance](https://www.mta.info/developers/display-elevators-NYCT).
+- [Transit Lab subway slow zones](https://docs.transitlab.nyc/datasets/subway-slow-zones/)
+  (CC BY 4.0), estimated from MTA realtime data and not endorsed by the MTA.
 - The user's `~/leet/mta_realtime_investigation` supplied immutable binary fixtures.
 - Theme palettes and local Lato/Flame font assets were adapted from the user's
   `~/DiD_Open` mobile branch. The interface and transit service are new.

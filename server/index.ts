@@ -101,7 +101,7 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
 			status: arrivalsOk && alertsOk ? 'ok' : 'degraded',
 			arrivals: { status: arrivalsOk ? 'ok' : 'degraded' },
 			alerts: { status: alertsOk ? 'ok' : 'degraded', freshness: alertsFresh ? 'live' : 'uncertain' },
-			feeds, stationCount: service.catalog.length, njt: service.njt.health(now),
+			feeds, stationCount: service.catalog.length, njt: service.njt.health(now), slowZones: service.slowZones.health(now),
 		};
 	});
   app.get('/healthz', () => ({ status: 'ok' }));

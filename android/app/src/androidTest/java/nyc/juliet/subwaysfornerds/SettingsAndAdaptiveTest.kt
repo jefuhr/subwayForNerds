@@ -3,6 +3,7 @@ package nyc.juliet.subwaysfornerds
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -51,6 +52,26 @@ class SettingsFlowTest {
 		compose.onNodeWithTag("offlineEstimateLimit_60").performClick()
 		compose.onNodeWithTag("offlineEstimateLimit_60").assertIsSelected()
 		compose.onRoot().saveScreenshot("settings-offline")
+	}
+
+	@Test fun systemStatusMeasuresThisDevice() {
+		openSettings()
+		compose.onNodeWithTag("settingsScreen").performScrollToNode(hasTestTag("systemStatusSettings"))
+		compose.onNodeWithTag("systemStatusSettings").assertTextContains("Online")
+		compose.onNodeWithTag("systemStatusSettings").performClick()
+		compose.waitUntilAtLeastOneExists(hasTestTag("systemStatusScreen"), 5_000)
+		// The installed APK is never empty, so a nonzero total proves the collector ran on the device.
+		compose.waitUntilAtLeastOneExists(hasTestTag("systemStatusAppApkStorage") and !hasText("0 bytes", substring = true), 10_000)
+		compose.onNodeWithTag("systemStatusTotalStorage").assertIsDisplayed()
+		compose.onNodeWithTag("systemStatusFleetStorage").assertTextContains("Not downloaded", substring = true)
+		compose.onNodeWithTag("systemStatusScreen").performScrollToNode(hasTestTag("systemStatusRamUsed"))
+		compose.onNodeWithTag("systemStatusRamUsed").assertIsDisplayed()
+		compose.onNodeWithTag("systemStatusScreen").performScrollToNode(hasTestTag("refreshSystemStatus"))
+		compose.onNodeWithTag("systemStatusAppVersion").assertTextContains(BuildConfig.VERSION_NAME, substring = true)
+		compose.onNodeWithTag("systemStatusThermalState").assertExists()
+		compose.onNodeWithTag("refreshSystemStatus").performClick()
+		compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag("refreshSystemStatus") and hasText("Refresh status")).fetchSemanticsNodes().isNotEmpty() }
+		compose.onRoot().saveScreenshot("settings-system-status")
 	}
 
 	@Test fun accountsShowTheServerConfigurationHonestly() {

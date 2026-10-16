@@ -32,9 +32,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DownloadForOffline
@@ -291,12 +291,14 @@ private fun LazyListScope.boardContent(model: AppModel, open: (Route) -> Unit, s
 	val degraded = BoardLogic.degraded(board, model.combinedBoard, now)
 	if (error != null) section("boardError") { row { RowContainer { Notice(error, Modifier.testTag("boardError")) } } }
 	else if (degraded && board != null) section("degraded") { row { RowContainer { Notice("Some feeds are stale or unavailable. Check source ages below.") } } }
-	if (board != null) section("offline") { row { OfflineStatus(model) } }
+	if (board != null && model.boardIsCached) section("offline") { row { OfflineStatus(model) } }
 	section("filters") { row("filters") { Filters(model) } }
 
 	if (board == null) {
 		section("loading") {
 			if (error == null) row { val load = model.boardLoad; RowContainer { LoadingBar("Loading departures", load.fraction?.toFloat(), load.percentLabel, load.spokenPercent, load.detail, Modifier.testTag("boardLoading")) } }
+			// With no board and no connection, the bar's space says what the phone is doing.
+			else if (!model.connected) row { RowContainer { DeviceNetworkSummary(model) } }
 			row { ActionButton("Find a station", { model.navigator.push(Route.StationPicker(StationPickerMode.SEARCH)) }, Modifier.padding(start = 4.dp)) }
 		}
 	} else if (groups.isEmpty()) {
@@ -349,9 +351,13 @@ private fun StationHeading(model: AppModel, open: (Route) -> Unit, external: Boo
 		androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(end = 10.dp)) {
 			Text(BoardLogic.metadata(station, model.stationID, model.combinedStations[model.stationID]?.stationIDs?.size), style = TextRoles.caption2, color = palette.muted)
 			val label = BoardLogic.freshnessLabel(external, live, degraded, model.boardIsCached, model.board != null, model.boardSavedAt)
-			Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.testTag("boardFreshness").semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }) {
-				Icon(if (external) Icons.Filled.Map else if (live) Icons.Filled.Sensors else Icons.Filled.Schedule, contentDescription = null, tint = if (live) palette.action else palette.muted, modifier = Modifier.size(13.dp))
-				Text(label, style = TextRoles.caption2.copy(fontWeight = FontWeight.SemiBold), color = if (live) palette.action else palette.muted)
+			Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+				Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.testTag("boardFreshness").semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }) {
+					Icon(if (external) Icons.Filled.Map else if (live) Icons.Filled.Sensors else Icons.Filled.Schedule, contentDescription = null, tint = if (live) palette.action else palette.muted, modifier = Modifier.size(13.dp))
+					Text(label, style = TextRoles.caption2.copy(fontWeight = FontWeight.SemiBold), color = if (live) palette.action else palette.muted)
+				}
+				// Kept outside the live region so offline save progress does not interrupt TalkBack.
+				if (model.board != null && !model.boardIsCached && !external) OfflineReadinessIcon(model)
 			}
 		}
 		StationActions(model, open, external)
@@ -376,32 +382,49 @@ private fun StationActions(model: AppModel, open: (Route) -> Unit, external: Boo
 	}
 }
 
-/** Saved boards say they are offline estimates and how old their source is; live boards say how much is ready offline. */
+/** Saved boards say they are offline estimates and how old their source is. */
 @Composable
 private fun OfflineStatus(model: AppModel) {
 	val board = model.board ?: return
+	if (!model.boardIsCached) return
 	RowContainer {
 		Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-			if (model.boardIsCached) {
-				val source = model.predictionSourceTimestamp(board)
-				Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("boardOfflineEstimate").semantics(mergeDescendants = true) {}) {
-					Icon(Icons.Filled.CloudOff, contentDescription = null, tint = palette.warning, modifier = Modifier.size(15.dp))
-					Text(OfflineDisplay.estimateLabel(source, model.now, model.offlinePreferences), style = TextRoles.caption.copy(fontWeight = FontWeight.SemiBold))
-				}
-				Text(
-					model.boardSavedAt?.let { "Board saved ${Display.ageLabel(it, model.now)}. Countdowns use this device's clock; trains that left are marked estimate passed." }
-						?: "Showing the last board from this visit; it was not saved offline.",
-					style = TextRoles.caption2, color = palette.muted,
-				)
-			} else {
-				val readiness = model.readiness
-				val icon: ImageVector = if (readiness.boardFailed) Icons.Filled.ErrorOutline else if (readiness.boardSaved) Icons.Filled.CheckCircle else Icons.Filled.CloudDownload
-				Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("offlineReadiness").semantics(mergeDescendants = true) {}) {
-					Icon(icon, contentDescription = null, tint = palette.muted, modifier = Modifier.size(14.dp))
-					Text(BoardLogic.readinessLabel(readiness.boardFailed, readiness.boardSaved, readiness.savedCount, readiness.wanted.size, readiness.partial.size), style = TextRoles.caption2, color = palette.muted)
-				}
+			val source = model.predictionSourceTimestamp(board)
+			Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("boardOfflineEstimate").semantics(mergeDescendants = true) {}) {
+				Icon(Icons.Filled.CloudOff, contentDescription = null, tint = palette.warning, modifier = Modifier.size(15.dp))
+				Text(OfflineDisplay.estimateLabel(source, model.now, model.offlinePreferences), style = TextRoles.caption.copy(fontWeight = FontWeight.SemiBold))
 			}
+			DeviceNetworkSummary(
+				model,
+				model.boardSavedAt?.let { "Board saved ${Display.ageLabel(it, model.now)}. Countdowns use this device's clock; trains that left are marked estimate passed." }
+					?: "Showing the last board from this visit; it was not saved offline.",
+			)
 		}
+	}
+}
+
+/** Live boards show how much is ready offline as one compact icon beside the feed label. */
+@Composable
+private fun OfflineReadinessIcon(model: AppModel) {
+	val readiness = model.readiness
+	val icon: ImageVector = if (readiness.boardFailed) Icons.Filled.ErrorOutline else if (readiness.boardSaved) Icons.Filled.CloudDone else Icons.Filled.CloudDownload
+	Icon(
+		icon,
+		contentDescription = BoardLogic.readinessLabel(readiness.boardFailed, readiness.boardSaved, readiness.savedCount, readiness.wanted.size, readiness.partial.size),
+		tint = palette.muted,
+		modifier = Modifier.size(14.dp).testTag("offlineReadiness"),
+	)
+}
+
+/** What the phone's network is doing and what the app is waiting to fetch, then any board provenance. */
+@Composable
+private fun DeviceNetworkSummary(model: AppModel, provenance: String? = null) {
+	Column(Modifier.testTag("deviceNetworkStatus").semantics(mergeDescendants = true) {}) {
+		Text(model.deviceNetworkHeadline, style = TextRoles.caption2.copy(fontWeight = FontWeight.SemiBold), color = palette.ink)
+		Text(
+			listOfNotNull(model.deviceNetworkDetail, provenance).joinToString(" · "),
+			style = TextRoles.caption2, color = palette.muted, modifier = Modifier.testTag("deviceNetworkDetail"),
+		)
 	}
 }
 

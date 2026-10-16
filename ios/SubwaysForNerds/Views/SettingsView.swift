@@ -70,6 +70,11 @@ struct SettingsView: View {
 			offlineSection
 			SettingsTransferSection()
 			AccountSettingsSection()
+			Section {
+				NavigationLink { SystemStatusView() } label: {
+					LabeledContent("System status", value: app.deviceNetworkStatus.state == .connected ? "Online" : app.deviceNetworkStatus.shortActivity)
+				}.accessibilityIdentifier("systemStatusSettings")
+			} header: { ListHeader("System") } footer: { Text("App storage breakdown, network link quality, memory use, and device health.") }
 			#if DEBUG
 			Section { NavigationLink("Widget previews") { WidgetPreviewView() }.accessibilityIdentifier("widgetPreviews") }
 			Section {
@@ -88,16 +93,15 @@ struct SettingsView: View {
 				}
 				.buttonStyle(.borderless).actionStyle().font(.subheadline)
 				if let error = endpointError { Notice(text: error) }
-				Toggle("Simulate no connection", isOn: Binding(get: { app.outageSimulated }, set: { value in Task { await app.setSimulatedOutage(value) } }))
-					.font(.subheadline).accessibilityIdentifier("simulateOutage")
 			} header: { ListHeader("Development server") } footer: { Text("Use a reachable API base address ending in /api/v1/. Your favorites, filters, and theme are saved on this device.") }
 			#endif
 			Section {
 				Group {
 					Link("Web app", destination: URL(string: "https://juliet.nyc/subwaysForNerds/")!)
-					Link("Taking the ferry?", destination: URL(string: "https://juliet.nyc/ferryTimesMobile/")!)
 					Link("Usage statistics", destination: URL(string: "https://juliet.nyc/subwaysForNerds/stats")!)
 					Link("A juliet.nyc project", destination: URL(string: "https://juliet.nyc")!)
+					Link("Report an issue on GitHub", destination: URL(string: "https://github.com/jefuhr/subwayForNerds/issues/new")!)
+						.accessibilityIdentifier("createGithubIssue")
 				}
 				.font(.subheadline).actionStyle()
 				Text("Times are predictions, not promises. Location finds nearby and favorite stations in the app and, when allowed, widgets. Location and station search text stay on this device.").font(.caption).foregroundStyle(.secondary)

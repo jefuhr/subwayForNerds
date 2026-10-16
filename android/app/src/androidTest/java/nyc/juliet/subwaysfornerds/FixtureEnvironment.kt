@@ -48,6 +48,7 @@ import nyc.juliet.subwaysfornerds.data.AndroidTransitCache
 import nyc.juliet.subwaysfornerds.ui.AppContainer
 import nyc.juliet.subwaysfornerds.ui.AppDependencies
 import nyc.juliet.subwaysfornerds.ui.DeviceSettingsStorage
+import nyc.juliet.subwaysfornerds.ui.DeviceSystemStatus
 import nyc.juliet.subwaysfornerds.ui.LaunchOptions
 import nyc.juliet.subwaysfornerds.ui.TestLaunchGate
 import nyc.juliet.subwaysfornerds.ui.UiFlags
@@ -198,6 +199,8 @@ object FixtureEnvironment {
 				flags = UiFlags.Memory(),
 				// The fixture decides connectivity, so the emulator's own network can't flip the app offline.
 				fixedConnectivity = online,
+				// The real collector, so system status shows this device's storage, memory and power.
+				systemStatus = DeviceSystemStatus(app)::read,
 			)
 		}
 		AppContainer.accountOverride = { DisabledAccounts() }

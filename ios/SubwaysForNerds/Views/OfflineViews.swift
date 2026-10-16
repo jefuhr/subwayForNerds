@@ -1,6 +1,20 @@
 import SwiftUI
 import TransitCore
 
+/// What the phone's network is doing, in the spaces that explain being offline.
+struct DeviceNetworkLabel: View {
+	@Environment(AppModel.self) private var app
+	var identifier = DeviceNetworkStatus.accessibilityIdentifier
+	var font: Font = .caption
+	var body: some View {
+		let status = app.deviceNetworkStatus
+		Label(status.headline, systemImage: status.symbolName)
+			.font(font.weight(.semibold))
+			.accessibilityLabel(status.accessibilityLabel)
+			.accessibilityIdentifier(identifier)
+	}
+}
+
 /// The followed train, shown on the board until the rider ends it. Times are the
 /// saved predictions; offline they are estimates, never observed positions.
 struct ActiveRideBanner: View {
@@ -160,6 +174,16 @@ struct OfflineSettingsView: View {
 
 	private var storageSection: some View {
 		Section {
+			VStack(alignment: .leading, spacing: 2) {
+				DeviceNetworkLabel(font: .subheadline)
+				let details = app.deviceNetworkStatus.pathDetails
+				if !details.isEmpty {
+					Text(details.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
+						.accessibilityIdentifier("deviceNetworkDetail")
+				}
+				Text(app.networkSyncSummary).font(.caption).foregroundStyle(.secondary)
+					.accessibilityIdentifier("deviceNetworkSync")
+			}
 			if let usage = app.offlineUsage {
 				LabeledContent("Stored", value: "\(ByteCountFormatter.string(fromByteCount: Int64(usage.totalBytes), countStyle: .file)) of \(preferences.storageLimitMiB) MiB").font(.subheadline)
 					.accessibilityIdentifier("offlineUsage")
@@ -187,7 +211,7 @@ struct OfflineSettingsView: View {
 					Button("Clear automatic downloads", role: .destructive) { Task { working = true; await app.removeAutomaticOfflineData(); working = false } }
 					Button("Cancel", role: .cancel) {}
 				} message: { Text("Removes boards and trips saved automatically for this server. Saved trains and your current ride are kept. Boards are saved again while you browse online.") }
-		} header: { ListHeader("Storage") } footer: { Text("Offline boards, trips and your ride stay on this device and do not sync. These preferences transfer with your settings.") }
+		} header: { ListHeader("Connection and storage") } footer: { Text("Offline boards, trips and your ride stay on this device and do not sync. These preferences transfer with your settings.") }
 	}
 
 	/// Direct choices instead of a menu, so the current value stays visible.

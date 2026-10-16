@@ -44,6 +44,12 @@ public enum OfflineDisplay {
 		return isEstimateUsable(timestamp: timestamp, now: now, preferences: preferences) ? "Offline estimate · \(age)" : "Last known times · \(age)"
 	}
 
+	/// When a cached board was saved, shown beside the device network status.
+	public static func boardProvenance(savedAt: TimeInterval?, now: TimeInterval) -> String {
+		guard let savedAt else { return "Last board from this visit · not saved offline" }
+		return "Board saved \(Display.ageLabel(savedAt, now: now)) · countdowns use this device's clock; trains that left say estimate passed"
+	}
+
 	/// Index of the next saved stop whose predicted time is still ahead. This is an
 	/// estimate from the snapshot, never the train's observed position.
 	public static func estimatedNextStopIndex(_ stops: [StopPrediction], now: TimeInterval) -> Int? {

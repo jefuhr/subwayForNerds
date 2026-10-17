@@ -22,6 +22,18 @@ const dayNumber = (date: string) => Date.parse(date + 'T00:00:00Z') / 86400000;
 const eastern = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
 const stopPattern = /^[0-9A-Z]+[NS]$/, datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
+// First Eastern midnight outside the inclusive 14-day window, including DST changes.
+function expiry(dataThrough: string): number | null {
+  const day = dayNumber(dataThrough) + STALE_DAYS + 1;
+  if (!Number.isFinite(day)) return null;
+  let low = day * 86400 - 86400, high = day * 86400 + 86400;
+  while (high - low > 1) {
+    const middle = Math.floor((low + high) / 2);
+    if (dayNumber(eastern.format(middle * 1000)) >= day) high = middle; else low = middle;
+  }
+  return high;
+}
+
 export async function decodeSlowZones(bytes: Uint8Array): Promise<SlowZoneRow[]> {
   const file = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
   const rows = await parquetReadObjects({ file, columns: COLUMNS, compressors: { ZSTD: input => zstdDecompressSync(input) }, parsers: { dateFromDays: isoDate } });
@@ -56,6 +68,8 @@ interface History { stopId: string; previous?: string; seen: number }
 export class SlowZoneService {
   state: SourceState = { id: 'slow-zones', timestamp: null, fetchedAt: null, error: null };
   dataThrough: string | null = null;
+  expiresAt: number | null = null;
+  revision = 0;
   etag?: string;
   zones: ActiveSlowZone[] = [];
   private pairs = new Map<string, ActiveSlowZone>();
@@ -81,6 +95,8 @@ export class SlowZoneService {
   }
   private index(dataThrough: string, zones: ActiveSlowZone[]) {
     this.dataThrough = dataThrough; this.zones = zones;
+    this.expiresAt = expiry(dataThrough);
+    this.revision++;
     this.pairs = new Map(zones.map(z => [z.from + '|' + z.to, z]));
     this.ends = new Map();
     for (const z of zones) this.ends.set(z.to, [...(this.ends.get(z.to) || []), z]);

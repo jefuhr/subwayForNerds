@@ -1,7 +1,7 @@
 import XCTest
 
 /// Offline saving and rides, against the fixture server. Outages keep the same
-/// endpoint (SFN_TEST_OFFLINE or the Development toggle), so this endpoint's
+/// endpoint (SFN_TEST_OFFLINE or the System status toggle), so this endpoint's
 /// cache is what the app shows; switching to an unreachable endpoint would hide it.
 @MainActor
 final class OfflineRideTests: XCTestCase {
@@ -52,6 +52,9 @@ final class OfflineRideTests: XCTestCase {
 
 		// Reconnect: the same endpoint refreshes immediately and drops offline labels.
 		app.tab("Settings").tap()
+		reveal(app.buttons["systemStatusSettings"], in: app)
+		app.buttons["systemStatusSettings"].tap()
+		XCTAssertTrue(app.navigationBars["System status"].waitForExistence(timeout: 5))
 		let outage = app.switches["simulateOutage"]
 		scrollTo(outage, in: app)
 		outage.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
@@ -66,6 +69,10 @@ final class OfflineRideTests: XCTestCase {
 
 		// Storage controls confirm before removing anything.
 		app.tab("Settings").tap()
+		// Settings keeps System status pushed from the reconnect step.
+		let systemStatusBar = app.navigationBars["System status"]
+		if systemStatusBar.exists { systemStatusBar.buttons.firstMatch.tap() }
+		XCTAssertTrue(app.buttons["systemStatusSettings"].waitForExistence(timeout: 5))
 		reveal(app.buttons["offlineSettings"], in: app)
 		app.buttons["offlineSettings"].tap()
 		XCTAssertTrue(app.descendants(matching: .any)["offlineUsage"].firstMatch.waitForExistence(timeout: 10))

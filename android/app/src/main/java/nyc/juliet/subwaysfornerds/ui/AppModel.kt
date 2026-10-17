@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.structuralEqualityPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -16,12 +17,15 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import nyc.juliet.subwaysfornerds.core.Board
 import nyc.juliet.subwaysfornerds.core.CombinedStation
 import nyc.juliet.subwaysfornerds.core.Departure
+import nyc.juliet.subwaysfornerds.core.DeviceNetworkStatus
 import nyc.juliet.subwaysfornerds.core.Display
 import nyc.juliet.subwaysfornerds.core.NerdsCodec
 import nyc.juliet.subwaysfornerds.core.NerdsFile
+import nyc.juliet.subwaysfornerds.core.NetworkActivityState
 import nyc.juliet.subwaysfornerds.core.OfflineEndpoint
 import nyc.juliet.subwaysfornerds.core.OfflineIdentity
 import nyc.juliet.subwaysfornerds.core.OfflineSettings
@@ -33,6 +37,7 @@ import nyc.juliet.subwaysfornerds.core.Station
 import nyc.juliet.subwaysfornerds.core.StationLocation
 import nyc.juliet.subwaysfornerds.core.StationSelection
 import nyc.juliet.subwaysfornerds.core.StationSettings
+import nyc.juliet.subwaysfornerds.core.SystemRuntimeStatus
 import nyc.juliet.subwaysfornerds.core.TrainFavorites
 import nyc.juliet.subwaysfornerds.core.TransferFilter
 import nyc.juliet.subwaysfornerds.core.TransferResult
@@ -66,6 +71,7 @@ import nyc.juliet.subwaysfornerds.ui.data.SettingsStorage
 import nyc.juliet.subwaysfornerds.ui.navigation.AppNavigator
 import nyc.juliet.subwaysfornerds.ui.navigation.AppTab
 import nyc.juliet.subwaysfornerds.ui.navigation.Route
+import nyc.juliet.subwaysfornerds.ui.map.TrackMapModel
 import nyc.juliet.subwaysfornerds.ui.theme.AppTheme
 import java.util.UUID
 
@@ -125,6 +131,8 @@ class AppDependencies(
 	val endpointOverride: String? = null,
 	/** A fixed network state for in-process instrumentation; the device's network callback is not used. */
 	val fixedConnectivity: Boolean? = null,
+	/** Reads storage, memory and device health for the system status screen; called off the main thread. */
+	val systemStatus: () -> SystemRuntimeStatus = { SystemRuntimeStatus() },
 )
 
 /** Device-local interface choices that are not portable settings. */
@@ -191,6 +199,23 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 	/** Set only by instrumentation fixtures; the activity then skips the device network callback. */
 	val fixedConnectivity: Boolean? get() = deps.fixedConnectivity
 	var outageSimulated by mutableStateOf(false); private set
+	/** What the phone's default network is doing, shown wherever the app explains being offline. */
+	@set:JvmName("storeDeviceNetworkStatus")
+	var deviceNetworkStatus by mutableStateOf(DeviceNetworkStatus()); private set
+	/** The activity's last reading of the default network; null when only connected/disconnected is known. */
+	private var observedNetworkStatus: DeviceNetworkStatus? = null
+	/** Boards and trips in the automatic fetch plan, counted when the plan last changed. */
+	var plannedRequestCount by mutableStateOf(0); private set
+	val deviceNetworkHeadline: String get() = deviceNetworkStatus.headline
+	val deviceNetworkDetail: String get() = deviceNetworkStatus.detailLine(plannedRequestCount, fetchProgress.size, endpointHost)
+	private val endpointHost: String? get() = runCatching { java.net.URI(endpoint).host }.getOrNull()
+	/** How long the last successful catalog, board or train request took to a complete response. */
+	var lastApiLatencyMs by mutableStateOf<Long?>(null); private set
+
+	// MARK: System status
+
+	var systemStatus by mutableStateOf(SystemRuntimeStatus()); private set
+	var refreshingSystemStatus by mutableStateOf(false); private set
 
 	// MARK: Board
 
@@ -267,6 +292,8 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 	private val coordinator = TransitRefreshCoordinator(scope, { request -> performFetch(request) }, { deps.fixedNow ?: deps.clock() })
 
 	val fleet: FleetPackModel = FleetPackModel(scope, this, deps.fleet)
+	/** The track map tab; it polls only while visible and while the app is in the foreground. */
+	val trackMap: TrackMapModel = TrackMapModel(scope, { version, progress -> service.trackMapSnapshot(version, progress) }, { deps.fixedNow ?: deps.clock() })
 
 	// MARK: Derived stations
 
@@ -768,6 +795,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		watchFailures()
 		boardIsCached = true
 		fleet.endpointChanged()
+		trackMap.endpointChanged()
 		lastCatalogAttempt = 0.0
 		// Cached content belongs to one endpoint; restore this endpoint's ride and boards.
 		board = null; boardSavedAt = null; activeRide = null; activeRideTrip = null; savedTrips = emptyList(); surroundingBoards = emptyMap(); liveTrips = emptyMap()
@@ -780,8 +808,9 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 	}
 
 	fun setSimulatedOutage(value: Boolean) {
-		if (!deps.debug || value == outageSimulated) return
+		if (value == outageSimulated) return
 		outageSimulated = value
+		publishNetworkStatus()
 		scope.launch { connectionChanged() }
 	}
 
@@ -804,6 +833,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 			active = true
 			coordinator.setConnected(connected)
 			coordinator.setForeground(true)
+			trackMap.setForeground(true)
 			planOffline()
 			coroutineScope {
 				launch { clockLoop() }
@@ -812,7 +842,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 				launch { refreshBoard() }
 			}
 		} finally {
-			if (activeGeneration == generation) active = false
+			if (activeGeneration == generation) { active = false; trackMap.setForeground(false) }
 		}
 	}
 
@@ -824,22 +854,37 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		fleet.leavingForeground()
 		deps.fleet?.setForeground(false)
 		scope.launch { coordinator.setForeground(false) }
+		trackMap.setForeground(false)
 		favoriteStartupAttempted = false
 		browsing = false
 		closestFavoriteJob?.cancel()
 		closestFavoriteJob = null
 	}
 
-	/** The device's default network changed. */
-	fun setNetworkConnected(value: Boolean) {
+	/** The device's default network changed. Without [status], the shown status follows [value] alone. */
+	fun setNetworkConnected(value: Boolean, status: DeviceNetworkStatus? = null) {
 		networkConnected = value
+		observedNetworkStatus = status
+		publishNetworkStatus()
 		scope.launch { connectionChanged() }
+	}
+
+	/** A new reading of the default network that does not change whether the app is online. */
+	fun setDeviceNetworkStatus(status: DeviceNetworkStatus) {
+		observedNetworkStatus = status
+		publishNetworkStatus()
+	}
+
+	private fun publishNetworkStatus() {
+		val base = observedNetworkStatus ?: if (networkConnected) DeviceNetworkStatus() else DeviceNetworkStatus(state = NetworkActivityState.SEARCHING, validated = false)
+		deviceNetworkStatus = if (outageSimulated) base.copy(state = NetworkActivityState.SIMULATED_OUTAGE) else base
 	}
 
 	private suspend fun connectionChanged() {
 		val isConnected = networkConnected && !outageSimulated
 		if (isConnected == connected) return
 		connected = isConnected
+		trackMap.setConnected(isConnected)
 		// Reconnecting makes every tracked fetch due at once (recovery refresh).
 		coordinator.setConnected(isConnected)
 		if (!active) return
@@ -892,7 +937,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		val generation = catalogGeneration
 		val requested = endpoint
 		try {
-			val value = service.stations()
+			val value = timed { service.stations() }
 			if (generation != catalogGeneration || requested != endpoint) return
 			stations = value
 			rebuildCombinedBoard()
@@ -1005,10 +1050,10 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 	/** The bar shown before the selected station has any departures on screen. */
 	val boardLoad: LoadProgress get() {
 		val subject = station?.let { "departures for ${it.name}" } ?: "departures"
-		return fetchProgress[OfflineFetchTarget.Board(stationID)] ?: waitingLoad(subject, connected)
+		return fetchProgress[OfflineFetchTarget.Board(stationID)] ?: waitingLoad(subject, connected, deviceNetworkStatus)
 	}
 	/** The bar shown while an open train has no details yet. */
-	fun tripLoad(key: String): LoadProgress = fetchProgress[OfflineFetchTarget.Trip(key)] ?: waitingLoad("train details", connected)
+	fun tripLoad(key: String): LoadProgress = fetchProgress[OfflineFetchTarget.Trip(key)] ?: waitingLoad("train details", connected, deviceNetworkStatus)
 
 	// MARK: Trips
 
@@ -1149,6 +1194,30 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		reloadOfflineStatus()
 	}
 
+	/** Times one API request; only a complete response updates the server response time. */
+	private suspend fun <T> timed(request: suspend () -> T): T {
+		val started = System.nanoTime()
+		val value = request()
+		val ms = (System.nanoTime() - started) / 1_000_000
+		lastApiLatencyMs = ms
+		systemStatus = systemStatus.copy(lastApiLatencyMs = ms)
+		return value
+	}
+
+	/** Reads the device off the main thread and remeasures offline storage and the saved fleet. A failed read keeps the last one. */
+	suspend fun refreshSystemStatus() {
+		if (refreshingSystemStatus) return
+		refreshingSystemStatus = true
+		try {
+			val status = withContext(Dispatchers.IO) { runCatching { deps.systemStatus() }.getOrNull() }
+			if (status != null) systemStatus = status.copy(lastApiLatencyMs = lastApiLatencyMs)
+			reloadOfflineStatus()
+			fleet.refreshManifest()
+		} finally {
+			refreshingSystemStatus = false
+		}
+	}
+
 	suspend fun reloadOfflineStatus() {
 		val requested = endpoint
 		// Only the first check shows its steps; later ones refresh numbers already on screen.
@@ -1204,6 +1273,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 	fun planOffline() {
 		if (!loaded) return
 		val requests = plannedRequests()
+		plannedRequestCount = requests.size
 		updateReadiness()
 		scope.launch { coordinator.updatePlan(requests) }
 	}
@@ -1245,7 +1315,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		val subject = (stations.firstOrNull { it.id == id } ?: station?.takeIf { it.id == id })?.let { "departures for ${it.name}" } ?: "departures"
 		val token = if (board == null && id == stationID) trackFetch(target) else null
 		try {
-			val value = client.board(id, token?.let { sink(target, it, subject) })
+			val value = timed { client.board(id, token?.let { sink(target, it, subject) }) }
 			if (requested != endpoint) return
 			val member = combinedStations[stationID] != null && id in selectedMemberIDs && generation == boardGeneration
 			val selected = id == stationID && generation == boardGeneration
@@ -1311,7 +1381,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		val target = OfflineFetchTarget.Trip(key)
 		val token = if (openTrips[key] != null && liveTrips[key]?.detail == null) trackFetch(target) else null
 		try {
-			val value = client.trip(key, token?.let { sink(target, it, "train details") })
+			val value = timed { client.trip(key, token?.let { sink(target, it, "train details") }) }
 			if (requested != endpoint) return
 			val open = openTrips[key] != null
 			if (open) liveTrips = liveTrips + (key to LiveTrip(detail = value))

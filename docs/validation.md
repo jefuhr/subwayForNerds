@@ -737,3 +737,99 @@ predate this merge; the merged UI suite is left to PR CI. Logs are retained as
   `LoadingBarUITests` ×2 and `CombinedStationsTests` ×2 failed during that period
   and were not compared with base.
 - No physical-device installation or production deployment was performed.
+
+## October 16, 2026 — slow-zone map integration after PRs 26 and 28
+
+The slow-zone branch incorporates `origin/main` at
+`4618c2c3d7c2df4b80015afc9022cd4118c555c5`, including both the native track map
+and offline/network status changes. The health response retains both `slowZones`
+and `trackMap`; regression assertions cover their coexistence.
+
+- `npm run check`: production build passed; 328 Node tests passed, zero failed,
+  four skipped (the existing NJT capture skip and three optional raw-PDF audits).
+  Exact output: `artifacts/slow-zone-map/combined-check.log`.
+- `SFN_TEST_PORT=8295 npx playwright test test/browser/slow-zones.spec.ts`:
+  four passed across desktop and mobile. This checks existing board/detail and
+  cached-board slow-zone behavior after the PR 28 merge; it does not validate
+  native map rendering. Output: `artifacts/slow-zone-map/web-slow-zones.log`.
+- The new recorded-fixture integration test first failed because the map response
+  lacked slow-zone data, then passed with all three synthetic segments mapped.
+  Failure output: `artifacts/slow-zone-map/overlay-fixture-red.log`.
+- Conservative projection of the checked-in Transit Lab snapshot maps 64 of 89
+  active segments to reviewed directed rail paths; 25 retain their estimate
+  details with no map path. This is recorded-data coverage, not a live-production
+  acceptance claim. Tests also cover ambiguous geometry, reverse direction,
+  missing data, same-second cache invalidation and the Eastern-date expiry
+  boundary across daylight-saving transitions.
+- Native source integration was checked byte-for-byte against the worker checkouts,
+  including the shared backend, fixture inputs and PR 26 baseline. The final
+  inventory is `artifacts/slow-zone-map/combined-source-comparison.json`.
+- `swift test --package-path ios/TransitCore --jobs 2`: 323 tests in 37 suites
+  passed on the settled combined sources, including seven new map slow-zone cases.
+  Output: `artifacts/slow-zone-map/ios-core-all.log`.
+- Android `:transit-core:test`: 115 tests passed, zero failures, errors or skips,
+  including eight new map slow-zone tests. XML totals were independently checked.
+- Android `:transit-core:test :app:testDebugUnitTest :app:assembleDebug
+  :app:assembleDebugAndroidTest --max-workers=2`: the settled run succeeded,
+  with 115 core and 187 app tests passing (302 total, no failures/errors/skips).
+  App and instrumentation APKs built. Exact output and copied XML:
+  `artifacts/slow-zone-map/android-validation-final.log`,
+  `artifacts/slow-zone-map/android-core-test-results/`, and
+  `artifacts/slow-zone-map/android-app-test-results/`.
+- iOS arm64 `build-for-testing` passed. `test-without-building` then passed both
+  `TrackMapUITests/testEstimatedSlowZoneHighlightsLegendAndAccessibleDetails` and
+  `TrackMapUITests/testRecordedTrainRouteFilterCertaintyAndDetailReturn`, zero
+  failures. The coordinator reviewed the exported screenshots: amber rails,
+  estimated-zone legend, selected-line delay details and unobstructed controls.
+  Exact runner: `artifacts/slow-zone-map/run-ios-ui.sh`; output:
+  `artifacts/slow-zone-map/ios-ui-run.log`; result bundle:
+  `artifacts/slow-zone-map/ios-ui/tests.xcresult`; reviewed images:
+  `artifacts/slow-zone-map/ios-slow-zone-map.png` and
+  `artifacts/slow-zone-map/ios-slow-zone-details.png`.
+- After a singular/plural copy correction, the new iOS case was rerun. Its first
+  retry mistapped an offscreen route chip and opened a train; the failure screenshot
+  and hierarchy establish that path. Reusing the existing explicit-scroll helper
+  fixed the test targeting. The final arm64 test build and focused UI case passed
+  with zero failures; the coordinator reviewed the corrected screenshot.
+  Exact runner: `artifacts/slow-zone-map/run-ios-ui-verified.sh`; output:
+  `artifacts/slow-zone-map/ios-ui-verified-run.log`; final result bundle:
+  `artifacts/slow-zone-map/ios-ui-verified/tests.xcresult`. The preceding failure
+  remains in `artifacts/slow-zone-map/ios-ui-diagnostic-mistap/` and its sibling log.
+- After the Android canvas clipping fix, all 187 app unit tests passed again,
+  app/instrumentation APKs rebuilt, and `TrackMapSlowZoneFlowTest` passed 1/1.
+  The screen test checks visible amber pixels within canvas bounds, their removal
+  by route filtering, accessible estimate details, preserved camera state,
+  visible search controls and absence of system ANR/crash dialogs. The coordinator
+  independently checked XML totals and reviewed the unobstructed map/details
+  screenshots. Output: `artifacts/slow-zone-map/android-clipped-validation.log`;
+  XML: `artifacts/slow-zone-map/android-clean-artifacts/`; reviewed images:
+  `artifacts/slow-zone-map/android-slow-zone-map.png` and
+  `artifacts/slow-zone-map/android-slow-zone-details.png`.
+
+The initial Android slow-zone instrumentation case passed its assertions, but
+reviewed screenshots contained a System UI ANR dialog; it was not accepted as
+visual verification. A recovery attempt then hit Compose's fixed two-second
+`captureToImage` redraw timeout. The test now guards against system crash/ANR
+dialogs and checks actual screen pixels within the canvas bounds. A separate
+screen assertion reproduced map artwork covering the search controls before
+the canvas was clipped to its bounds. These diagnostic runs and the failing
+screen evidence are preserved in `artifacts/slow-zone-map/android-diagnostics/`.
+
+The separate existing Android route/detail regression remains unverified. Its
+first run reported a non-L row while a system dialog obscured the screen. A clean
+retry stalled during ActivityScenario cleanup and ended with an empty failure
+record, system-service delays and ANR evidence. The recovered emulator remained
+offline, so the diagnostic retry did not execute. The test helper now explicitly
+scrolls the L chip into view and asserts selected UI/model state before examining
+rows. This does not establish that the full route/detail flow passed. Exact failed
+run output: `artifacts/slow-zone-map/android-diagnostics/android-clean-route-detail.log`;
+runner evidence: `artifacts/slow-zone-map/android-diagnostics/android-route-stall-logcat.txt`.
+The final diagnostic test harness compiled successfully with
+`:app:assembleDebugAndroidTest --max-workers=2` after iOS testing finished and all
+simulators/emulators were shut down. Output:
+`artifacts/slow-zone-map/android-final-test-harness-build.log`.
+
+Native UI verification uses recorded HTTP fixtures on isolated local ports and
+dedicated simulator/emulator instances. Accessibility assertions check exposed
+labels, not an actual VoiceOver or TalkBack session. No physical-device install,
+live-production acceptance, commit, push or deployment was performed.

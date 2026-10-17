@@ -4,8 +4,9 @@ import SwiftUI
 struct SubwaysForNerdsApp: App {
 	@State private var app = AppModel()
 	@State private var account = AccountModel()
+	@State private var trackMap = TrackMapStore()
 	var body: some Scene {
-		WindowGroup { AppRootView().environment(app).environment(account).tint(app.theme.accent).preferredColorScheme(app.theme.dark ? .dark : .light) }
+		WindowGroup { AppRootView().environment(app).environment(account).environment(trackMap).tint(app.theme.accent).preferredColorScheme(app.theme.dark ? .dark : .light) }
 	}
 }
 
@@ -18,6 +19,8 @@ struct AppRootView: View {
 		@Bindable var app = app
 		TabView(selection: $app.selectedTab) {
 			Tab("Board", systemImage: "tram.fill", value: 0) { BoardSplitView().id(app.stationID) }
+			// Tags are stable integers; the map sits between Board and Fleet but takes the next free tag.
+			Tab("Map", systemImage: "map", value: 3) { TrackMapScreen() }
 			Tab("Fleet", systemImage: "train.side.front.car", value: 1) { FleetSplitView() }
 			Tab("Settings", systemImage: "gearshape", value: 2) { NavigationStack { SettingsView() } }
 		}

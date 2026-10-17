@@ -49,6 +49,39 @@ Settings transfer through the same validated `.nerds` v4 format as web and iOS, 
 
 Offline cache quotas and retention protect manually saved trips and the active ride. Downloaded fleet browsing supports the full snapshot and v2 equipment/yard selections with 7- or 30-day history, including history beyond the online detail limit. Downloads verify origin, lengths, hashes, schema, counts, and integrity before replacing a usable download.
 
+## Local Track Map Resources
+
+Prepare the matching PDF and topology before building the native Map tab:
+
+```sh
+node scripts/prepare-track-map.mjs --pdf /path/to/NYC_full_trackmap.pdf
+```
+
+The command verifies the source PDF hash and writes ignored resources under
+`android/app/src/main/assets/track-map/` and the iOS resource directory. Android
+renders visible PDF tiles and draws train markers in the same PDF coordinates.
+The source artwork is by vanshnookenraggen. Written consent remains required
+before distributing builds containing the PDF; local development resources are
+not included in Git. Missing or mismatched resources disable the map while the
+other app screens remain available.
+
+The versioned snapshot endpoint uses cached subway feeds. Track certainty and
+position certainty are separate; missing evidence does not establish a precise
+rail position. Stale/offline observations freeze and then expire according to
+the original evidence time. Inspect the topology's `coverage` before treating
+any corridor or operating move as mapped.
+
+Run the focused recorded-HTTP map suite on an explicitly selected disposable AVD:
+
+```sh
+SFN_ANDROID_SERIAL=emulator-5554 SFN_ANDROID_DEDICATED_AVD=your-test-avd \
+  bash scripts/test-track-map-android.sh
+```
+
+The runner defaults to local port 8194, selects only `TrackMapE2ETest`, and retains
+instrumentation reports, screenshots, and logs under `artifacts/android/`.
+It uses test-only request counters and outage controls; it never contacts production.
+
 ## Widgets and Permissions
 
 Add the subway widget from the launcher's widget picker after opening the app and saving a favorite. Widgets resize, preserve both directions, support themes and filters, and open the displayed station or saved ride.

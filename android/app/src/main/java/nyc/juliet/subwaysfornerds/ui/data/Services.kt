@@ -14,6 +14,8 @@ import nyc.juliet.subwaysfornerds.core.StationContext
 import nyc.juliet.subwaysfornerds.core.StationLocation
 import nyc.juliet.subwaysfornerds.core.TransferResult
 import nyc.juliet.subwaysfornerds.core.TripDetail
+import nyc.juliet.subwaysfornerds.core.TrackMapSnapshot
+import nyc.juliet.subwaysfornerds.core.TransitException
 import nyc.juliet.subwaysfornerds.core.LoadProgress
 import nyc.juliet.subwaysfornerds.core.TransferProgressHandler
 import nyc.juliet.subwaysfornerds.core.AuthConfig
@@ -37,6 +39,8 @@ interface TransitService {
 	suspend fun fleetDetail(kind: String, id: String, progress: TransferSink? = null): FleetDetail
 	suspend fun prepareFleetPack(selection: FleetPackSelection): FleetPackJob
 	suspend fun fleetPackStatus(jobID: String): FleetPackJob
+	/** Live train placement for the installed track map. Services without a map report it as missing. */
+	suspend fun trackMapSnapshot(mapVersion: String, progress: TransferSink? = null): TrackMapSnapshot = throw TransitException.NotFound()
 }
 
 /**

@@ -7,6 +7,21 @@ The web, iOS and Android clients use the same wording: "slow zone" or "major slo
 a summary such as "2 estimated slow zones ahead · about +2m 56s typical", and the
 Transit Lab attribution under the stopping pattern.
 
+## Map highlights
+
+The native iOS and Android track maps highlight estimated slow zones on reviewed
+rail geometry, underneath train markers. These are segment-level estimates, not
+claims that a particular rail is under an official speed restriction. Highlights
+are available even when no train is currently in the segment. The map includes
+an estimated-condition legend, segment details, typical extra time, and Transit
+Lab attribution. Route filters use the routes measured for each zone.
+
+Only unambiguous directed revenue paths between the dataset's stop IDs can be
+highlighted. Missing or ambiguous geometry is counted as unmapped; the map never
+fills gaps with straight lines or guesses a rail. The original map's partial
+coverage therefore also limits slow-zone highlights. Cached highlights expire at
+the same Eastern-date cutoff as the server's 14-day freshness rule.
+
 ## Source
 
 [Transit Lab's subway slow zones dataset](https://docs.transitlab.nyc/datasets/subway-slow-zones/)
@@ -81,6 +96,11 @@ Slow zones never change the overall health status.
 
 API fields (additive):
 
+- `TrackMapSnapshot.slowZones`: an optional object containing `dataThrough`,
+  `expiresAt` (Unix seconds), `unmappedCount`, and `zones`. Each map zone includes
+  the existing slow-zone summary plus `id`, measured `routes`, and `paths`
+  (reviewed polylines in top-left PDF coordinates). Older snapshots without this
+  field remain compatible and show no highlights.
 - `Departure.slowZone`: the zone the train is in now. Board rows only.
 - `Train.slowZones`: each zone ahead with `toIndex`, the index of its end stop in
   `Train.stops`. The current zone has `current: true` and is listed first.

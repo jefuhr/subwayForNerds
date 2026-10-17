@@ -71,7 +71,8 @@ the app beyond localhost so geolocation and service workers work.
 - A snail tag with the typical extra time (such as `+42s`) marks a train that is between
   two stops of an estimated slow zone right now. Train details place every slow zone left
   on the route between its two stops. Zones come from Transit Lab's nightly run-time
-  analysis, not an official MTA list; see [estimated slow zones](docs/slow-zones.md).
+  analysis, not an official MTA list. Native maps highlight mapped segments and expose
+  their typical delays; see [estimated slow zones](docs/slow-zones.md).
 - Open Fleet for grouped consists or individual cars, last reports, sourced home-yard
   estimates and 30 days of collected movement history. See [fleet data and operations](docs/fleet.md)
   for coverage, identity rules, backup/restore and API details.

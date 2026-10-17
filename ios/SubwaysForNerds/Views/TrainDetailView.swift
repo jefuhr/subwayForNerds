@@ -63,12 +63,14 @@ struct TrainDetailView: View {
 		// A trip missing from the feed is not reported as canceled; any snapshot stays.
 		switch live?.failure {
 		case .notFound?: return hasSnapshot ? "No longer in the current feed. Showing the last report, which may be out of date." : "This train is no longer in the current feed."
-		case .unavailable(let message)?: return hasSnapshot ? (app.connected ? "Train update unavailable. Showing offline estimates." : "No connection. Showing offline estimates.") : message
+		case .unavailable(let message)?: return hasSnapshot ? (app.connected ? "Train update unavailable. Showing offline estimates." : noConnection) : message
 		case nil: break
 		}
-		if !app.connected { return hasSnapshot ? "No connection. Showing offline estimates." : "No connection, and this train was not saved offline." }
+		if !app.connected { return hasSnapshot ? noConnection : "No connection · \(app.deviceNetworkStatus.activitySummary). This train was not saved offline." }
 		return nil
 	}
+
+	private var noConnection: String { "No connection · \(app.deviceNetworkStatus.activitySummary). Showing offline estimates." }
 
 	var body: some View {
 		List {
@@ -199,17 +201,20 @@ struct TrainDetailView: View {
 					Text("Saved PATH arrival · historical. PATH reports name a station arrival, not one train, so this copy is never refreshed.")
 						.font(.caption.weight(.semibold)).accessibilityIdentifier("savedPathSnapshot")
 				}
-				if !showingSnapshot {
-					Text(saved == nil ? "Last report from this visit · not saved offline" : "Last report from this visit · newer than the saved copy")
+				DeviceNetworkLabel(identifier: "trainDeviceNetworkStatus")
+				Text(app.networkActivity).font(.caption2).foregroundStyle(.secondary)
+					.accessibilityIdentifier("trainDeviceNetworkDetail")
+				let provenance = !showingSnapshot ? (saved == nil ? "Last report from this visit · not saved offline" : "Last report from this visit · newer than the saved copy")
+					: saved.map { "Saved \(Display.ageLabel($0.savedAt, now: now))\($0.manuallySaved ? " · kept until you remove it" : isRide ? " · kept for your ride" : "")" }
+				if let provenance {
+					Text("\(provenance) · car numbers and the train's current position are not shown offline")
 						.font(.caption).foregroundStyle(.secondary)
-				} else if let saved {
-					Text("Saved \(Display.ageLabel(saved.savedAt, now: now))\(saved.manuallySaved ? " · kept until you remove it" : isRide ? " · kept for your ride" : "")")
-						.font(.caption).foregroundStyle(.secondary)
-					if let label = OfflineDisplay.completenessLabel(saved) {
-						Text(label).font(.caption.weight(.semibold)).accessibilityIdentifier("partialTripLabel")
-					}
+				} else {
+					Text("Car numbers and the train's current position are not shown offline.").font(.caption2).foregroundStyle(.secondary)
 				}
-				Text("Car numbers and the train's current position are not shown offline.").font(.caption2).foregroundStyle(.secondary)
+				if showingSnapshot, let saved, let label = OfflineDisplay.completenessLabel(saved) {
+					Text(label).font(.caption.weight(.semibold)).accessibilityIdentifier("partialTripLabel")
+				}
 			}
 		}
 	}

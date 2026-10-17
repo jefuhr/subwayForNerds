@@ -4,7 +4,11 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.wifi.WifiInfo
+import android.net.wifi.WifiManager
 import android.os.Bundle
+import android.provider.Settings
+import android.telephony.TelephonyManager
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
@@ -15,6 +19,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
+import nyc.juliet.subwaysfornerds.core.DeviceNetworkStatus
+import nyc.juliet.subwaysfornerds.core.NetworkTransport
 import nyc.juliet.subwaysfornerds.ui.AppContainer
 import nyc.juliet.subwaysfornerds.ui.AppRoot
 import nyc.juliet.subwaysfornerds.ui.DeepLink
@@ -71,13 +77,28 @@ class MainActivity : ComponentActivity() {
 		viewModel.model.fixedConnectivity?.let { fixed -> viewModel.model.setNetworkConnected(fixed); return }
 		val manager = getSystemService(ConnectivityManager::class.java) ?: return
 		val current = manager.getNetworkCapabilities(manager.activeNetwork)
-		viewModel.model.setNetworkConnected(current?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true)
+		viewModel.model.setNetworkConnected(current?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true, networkStatus(current))
 		val callback = object : ConnectivityManager.NetworkCallback() {
+			private var capabilities: NetworkCapabilities? = null
+			private var blocked = false
 			override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
-				val connected = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-				runOnUiThread { viewModel.model.setNetworkConnected(connected) }
+				this.capabilities = capabilities
+				report(capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
 			}
-			override fun onLost(network: Network) { runOnUiThread { viewModel.model.setNetworkConnected(false) } }
+			override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
+				this.blocked = blocked
+				val connected = capabilities?.let { it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && it.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) } == true
+				report(connected)
+			}
+			override fun onLost(network: Network) {
+				capabilities = null
+				blocked = false
+				report(false)
+			}
+			private fun report(connected: Boolean) {
+				val status = networkStatus(capabilities, blocked)
+				runOnUiThread { viewModel.model.setNetworkConnected(connected && !blocked, status) }
+			}
 		}
 		manager.registerDefaultNetworkCallback(callback)
 		networkCallback = callback
@@ -95,6 +116,57 @@ class MainActivity : ComponentActivity() {
 		networkCallback = null
 		viewModel.model.suspend()
 		super.onStop()
+	}
+
+	/**
+	 * Reads the default network for the offline status. Wi-Fi names appear only when the system shares
+	 * them; this callback does not request location info, so Android usually redacts the SSID.
+	 * Signal and link speed are what the system reports; nothing is measured here.
+	 */
+	private fun networkStatus(capabilities: NetworkCapabilities?, blocked: Boolean = false): DeviceNetworkStatus {
+		val airplaneMode = Settings.Global.getInt(contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0) != 0
+		fun has(capability: Int) = capabilities?.hasCapability(capability) == true
+		val transports = capabilities?.let { value ->
+			listOf(
+				NetworkCapabilities.TRANSPORT_WIFI to NetworkTransport.WIFI,
+				NetworkCapabilities.TRANSPORT_CELLULAR to NetworkTransport.CELLULAR,
+				NetworkCapabilities.TRANSPORT_ETHERNET to NetworkTransport.ETHERNET,
+				NetworkCapabilities.TRANSPORT_BLUETOOTH to NetworkTransport.BLUETOOTH,
+				NetworkCapabilities.TRANSPORT_VPN to NetworkTransport.VPN,
+			).filter { (transport, _) -> value.hasTransport(transport) }.map { it.second }.ifEmpty { listOf(NetworkTransport.OTHER) }
+		}.orEmpty()
+		val wifi = capabilities?.transportInfo as? WifiInfo
+		// SIGNAL_STRENGTH_UNSPECIFIED and Wi-Fi's invalid RSSI are dropped by observe().
+		val dbm = capabilities?.signalStrength?.takeIf { it != NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED } ?: wifi?.rssi
+		return DeviceNetworkStatus.observe(
+			hasNetwork = capabilities != null,
+			transports = transports,
+			internet = has(NetworkCapabilities.NET_CAPABILITY_INTERNET),
+			validated = has(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
+			captivePortal = has(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL),
+			notMetered = has(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
+			notRoaming = has(NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING),
+			notSuspended = has(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED),
+			airplaneMode = airplaneMode,
+			networkName = wifi?.ssid,
+			blocked = blocked,
+			signalStrengthDbm = dbm,
+			signalLevel = signalLevel(capabilities, wifi),
+			downstreamKbps = capabilities?.linkDownstreamBandwidthKbps,
+			upstreamKbps = capabilities?.linkUpstreamBandwidthKbps,
+		)
+	}
+
+	/** The system's 0–4 bars: Wi-Fi from its RSSI, cellular from the phone's signal strength. */
+	private fun signalLevel(capabilities: NetworkCapabilities?, wifi: WifiInfo?): Int? {
+		val rssi = wifi?.rssi?.takeIf { it in -126..-1 }
+		if (rssi != null) {
+			val manager = getSystemService(WifiManager::class.java) ?: return null
+			val max = manager.maxSignalLevel.takeIf { it > 0 } ?: return null
+			return Math.round(manager.calculateSignalLevel(rssi) * 4.0 / max).toInt()
+		}
+		if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) != true) return null
+		return runCatching { getSystemService(TelephonyManager::class.java)?.signalStrength?.level }.getOrNull()
 	}
 
 	/** Links are validated strictly; a file only ever opens the import preview, never replaces settings. */

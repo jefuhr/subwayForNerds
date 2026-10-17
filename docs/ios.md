@@ -85,6 +85,39 @@ fill the right column. Station info shows until a train is chosen. Narrow window
 View, Slide Over, and every iPhone) push the same screens instead. All four orientations are
 supported. Command-F opens station search and Command-R refreshes departures.
 
+## Local Track Map Resources
+
+The Map tab renders the original track-map PDF with a separate train overlay.
+Prepare the version-matched PDF and topology before a local native build:
+
+```sh
+node scripts/prepare-track-map.mjs --pdf /path/to/NYC_full_trackmap.pdf
+```
+
+The preparation command verifies the PDF SHA-256 against
+`data/track-map/nyc-2.6.8-v1.json` and copies resources to both native projects.
+Generated resource directories are ignored by Git. The source artwork is by
+vanshnookenraggen; written consent is still required before distributing an app
+that includes it. Without local resources, the Map tab reports that the map is
+unavailable and departure boards remain usable.
+
+The API path is `track-map/{mapVersion}/snapshot`. Track evidence and estimated
+position are separate. Unknown or unreviewed track assignments stay near a
+known station, or appear without a map position. Motion stops when evidence is
+stale or a request fails; the original evidence timestamp controls expiry.
+The topology's `coverage` records identify mapped and unresolved stop IDs.
+
+Run the focused recorded-HTTP map suite on a dedicated simulator:
+
+```sh
+SFN_SIMULATOR_ID=your-dedicated-simulator-uuid bash scripts/test-track-map-ios.sh
+```
+
+The runner defaults to local port 8192, selects only `TrackMapUITests`, and retains
+the result bundle, screenshots, and logs under `artifacts/track-map/`, including
+attachments from failed runs. Its request counters and outage controls are installed
+only in the local fixture server when `FIXTURE_TRACK_MAP=1`.
+
 ## Widgets
 
 Add **Closest favorite trains** from the iOS widget gallery after opening the app

@@ -49,6 +49,12 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
     return reply.send(json);
   };
   app.get(api + '/stations', (req, reply) => send(req, reply, service.catalog));
+	app.get<{ Params: { mapVersion: string } }>(api + '/track-map/:mapVersion/snapshot', (req, reply) => {
+		if (!service.trackMap) return reply.code(503).send({ error: 'Track map unavailable' });
+		if (req.params.mapVersion !== service.trackMapVersion) return reply.code(404).send({ error: 'Unsupported track map version' });
+		const snapshot = service.mapSnapshot();
+		return snapshot ? send(req, reply, snapshot) : reply.code(503).send({ error: 'Track map unavailable' });
+	});
   app.get<{ Params: { id: string } }>(api + '/stations/:id/board', (req, reply) => {
     const board = service.boards.get(req.params.id);
     return board ? send(req, reply, board) : reply.code(404).send({ error: 'Unknown station' });
@@ -102,6 +108,7 @@ export async function createServer(service = new TransitService({ fixtureDir: pr
 			arrivals: { status: arrivalsOk ? 'ok' : 'degraded' },
 			alerts: { status: alertsOk ? 'ok' : 'degraded', freshness: alertsFresh ? 'live' : 'uncertain' },
 			feeds, stationCount: service.catalog.length, njt: service.njt.health(now), slowZones: service.slowZones.health(now),
+			trackMap: { available: service.trackMapAvailable, version: service.trackMapVersion ?? null },
 		};
 	});
   app.get('/healthz', () => ({ status: 'ok' }));

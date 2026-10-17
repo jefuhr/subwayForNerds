@@ -119,9 +119,14 @@ struct BoardView: View {
 			} else if externalDepartures, let station = app.station {
 				NjtDeparturesSection(station: station)
 			} else {
-				if let error = app.boardError { Section { Notice(text: error).accessibilityIdentifier("boardError") } }
+				if let error = app.boardError {
+					Section {
+						Notice(text: error).accessibilityIdentifier("boardError")
+						if app.board == nil, !app.connected { deviceNetworkRows(provenance: nil) }
+					}
+				}
 				else if degraded { Section { Notice(text: "Some feeds are stale or unavailable. Check source ages below.") } }
-				if app.board != nil { Section { offlineStatus } }
+				if app.board != nil, app.boardIsCached { Section { offlineStatus } }
 				Section {
 					VStack(alignment: .leading, spacing: 0) {
 						BoardFilterControls(station: app.station, routes: routeChoices, direction: app.preference.direction, selectedRoutes: app.preference.routes,
@@ -132,7 +137,10 @@ struct BoardView: View {
 				}
 				if app.board == nil {
 					Section {
-						if app.boardError == nil { LoadingBar(title: "Loading departures", progress: app.boardLoad).accessibilityIdentifier("boardLoading") }
+						if app.boardError == nil {
+							LoadingBar(title: "Loading departures", progress: app.boardLoad).accessibilityIdentifier("boardLoading")
+							if !app.connected { deviceNetworkRows(provenance: nil) }
+						}
 						Button("Find a station") { stationPicker = .search }.actionStyle()
 					}
 				} else if groups.isEmpty {
@@ -219,29 +227,49 @@ struct BoardView: View {
 			.font(.caption2).foregroundStyle(.secondary)
 	}
 
-	/// Saved boards always say they are offline estimates and how old their source is;
-	/// live boards say how much of this station is ready for offline use.
+	/// Saved boards always say they are offline estimates and how old their source is.
 	private var offlineStatus: some View {
-		let readiness = app.readiness
 		// The oldest prediction, not the newest alerts or car-assignment report.
 		let source = app.board.flatMap(AppModel.predictionSourceTimestamp)
 		return VStack(alignment: .leading, spacing: 2) {
-			if app.boardIsCached {
-				Label(OfflineDisplay.estimateLabel(timestamp: source, now: app.now, preferences: app.offlinePreferences), systemImage: "icloud.slash")
-					.font(.caption.weight(.semibold))
-					.accessibilityIdentifier("boardOfflineEstimate")
-				Text(app.boardSavedAt.map { "Board saved \(Display.ageLabel($0, now: app.now)). Countdowns use this device's clock; trains that left are marked estimate passed." } ?? "Showing the last board from this visit; it was not saved offline.")
-					.font(.caption2).foregroundStyle(.secondary)
-			} else {
-				let trips = readiness.wanted.isEmpty ? "" : " · \(readiness.savedCount) of \(readiness.wanted.count) next trips\(readiness.partial.isEmpty ? "" : ", \(readiness.partial.count) partial")"
-				Label(readiness.boardFailed ? "Offline copy failed to save" : readiness.boardSaved ? "Saved for offline\(trips)" : "Saving for offline…", systemImage: readiness.boardFailed ? "exclamationmark.icloud" : readiness.boardSaved ? "checkmark.icloud" : "icloud.and.arrow.down")
-					.font(.caption2).foregroundStyle(.secondary)
-					.accessibilityIdentifier("offlineReadiness")
-			}
+			Label(OfflineDisplay.estimateLabel(timestamp: source, now: app.now, preferences: app.offlinePreferences), systemImage: "icloud.slash")
+				.font(.caption.weight(.semibold))
+				.accessibilityIdentifier("boardOfflineEstimate")
+			deviceNetworkRows(provenance: OfflineDisplay.boardProvenance(savedAt: app.boardSavedAt, now: app.now))
+		}
+	}
+
+	/// Live boards show only a cloud beside the freshness label for how much of this station is ready offline.
+	@ViewBuilder private var offlineReadinessIcon: some View {
+		if app.board != nil, !app.boardIsCached, !externalDepartures {
+			let readiness = app.readiness
+			let trips = readiness.wanted.isEmpty ? "" : " · \(readiness.savedCount) of \(readiness.wanted.count) next trips\(readiness.partial.isEmpty ? "" : ", \(readiness.partial.count) partial")"
+			let readinessText = readiness.boardFailed ? "Offline copy failed to save" : readiness.boardSaved ? "Saved for offline\(trips)" : "Saving for offline…"
+			Image(systemName: readiness.boardFailed ? "exclamationmark.icloud" : readiness.boardSaved ? "checkmark.icloud" : "icloud.and.arrow.down")
+				.font(.caption2.weight(.semibold)).foregroundStyle(readiness.boardFailed ? Color.orange : .secondary)
+				.accessibilityLabel(readinessText)
+				.accessibilityIdentifier("offlineReadiness")
+		}
+	}
+
+	/// What the phone is doing, what the app waits to fetch and, with a saved board, when it was saved.
+	private func deviceNetworkRows(provenance: String?) -> some View {
+		VStack(alignment: .leading, spacing: 2) {
+			DeviceNetworkLabel()
+			Text([app.networkActivity, provenance].compactMap { $0 }.joined(separator: " · "))
+				.font(.caption2).foregroundStyle(.secondary)
+				.accessibilityIdentifier("deviceNetworkDetail")
 		}
 	}
 
 	private var freshnessLabel: some View {
+		HStack(spacing: 5) {
+			freshnessText
+			offlineReadinessIcon
+		}
+	}
+
+	private var freshnessText: some View {
 		Label(externalDepartures ? "Station directory" : live ? (degraded ? "Partial live data" : "Live feed") : app.boardIsCached && app.board != nil ? (app.boardSavedAt == nil ? "Last board" : "Saved board · offline") : "Awaiting live data", systemImage: externalDepartures ? "map" : live ? "dot.radiowaves.left.and.right" : "clock")
 			.font(.caption2.weight(.semibold)).foregroundStyle(live ? app.theme.accent : app.theme.ink.opacity(0.7))
 			.accessibilityIdentifier("boardFreshness")

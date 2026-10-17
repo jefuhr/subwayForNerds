@@ -1,0 +1,3647 @@
+{
+	"sourceArtifactSha256": "27163017515f796850cdaff307065c92f41f7cb4d285a5c3ba546c05a0a2e265",
+	"sourcePdfSha256": "b28f75397b2e7b6ba0b67db6ea2181800baa0254a48261252f3d55c4f2b17c71",
+	"method": "Native PDF contact sheet visual review. Source platform path midpoints are recomputed by build.ts. Candidate coordinates/geographic fits are never copied into graph geometry.",
+	"reviews": [
+		{
+			"candidateIndex": 0,
+			"partId": "R03",
+			"labelIds": [
+				503
+			],
+			"platformPaths": [
+				7591,
+				7590
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 1,
+			"partId": "R04",
+			"labelIds": [
+				502
+			],
+			"platformPaths": [
+				7582,
+				7583
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 2,
+			"partId": "R05",
+			"labelIds": [
+				501
+			],
+			"platformPaths": [
+				7584,
+				7585
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 3,
+			"partId": "R06",
+			"labelIds": [
+				500
+			],
+			"platformPaths": [
+				7586,
+				7587
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 4,
+			"partId": "R15",
+			"labelIds": [
+				901
+			],
+			"platformPaths": [
+				7921,
+				7922
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 5,
+			"partId": "R17",
+			"labelIds": [
+				877
+			],
+			"platformPaths": [
+				7926,
+				7925
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 6,
+			"partId": "R18",
+			"labelIds": [
+				549
+			],
+			"platformPaths": [
+				7928,
+				7927
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 7,
+			"partId": "R20",
+			"labelIds": [
+				572
+			],
+			"platformPaths": [
+				7931,
+				7932
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 8,
+			"partId": "R21",
+			"labelIds": [
+				553
+			],
+			"platformPaths": [
+				7933,
+				7934
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 9,
+			"partId": "R22",
+			"labelIds": [
+				555
+			],
+			"platformPaths": [
+				7935,
+				7936
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 10,
+			"partId": "R28",
+			"labelIds": [
+				259
+			],
+			"platformPaths": [
+				7950
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 11,
+			"partId": "R30",
+			"labelIds": [
+				350
+			],
+			"platformPaths": [
+				7953,
+				7955
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 12,
+			"partId": "R32",
+			"labelIds": [
+				307
+			],
+			"platformPaths": [
+				7056,
+				7057
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 13,
+			"partId": "R33",
+			"labelIds": [
+				306
+			],
+			"platformPaths": [
+				7058,
+				7059
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 14,
+			"partId": "R34",
+			"labelIds": [
+				374
+			],
+			"platformPaths": [
+				7060,
+				7061
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 15,
+			"partId": "R35",
+			"labelIds": [
+				375
+			],
+			"platformPaths": [
+				7062,
+				7063
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 16,
+			"partId": "R39",
+			"labelIds": [
+				379
+			],
+			"platformPaths": [
+				7064,
+				7065
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 17,
+			"partId": "R42",
+			"labelIds": [
+				390
+			],
+			"platformPaths": [
+				7068,
+				7069
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 18,
+			"partId": "R43",
+			"labelIds": [
+				392
+			],
+			"platformPaths": [
+				7070,
+				7071
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 19,
+			"partId": "R44",
+			"labelIds": [
+				394
+			],
+			"platformPaths": [
+				7073
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 20,
+			"partId": "R45",
+			"labelIds": [
+				395
+			],
+			"platformPaths": [
+				7072
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 21,
+			"partId": "D25",
+			"labelIds": [
+				353
+			],
+			"platformPaths": [
+				7282,
+				7281
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 22,
+			"partId": "D42",
+			"labelIds": [
+				285
+			],
+			"platformPaths": [
+				7284,
+				7283,
+				7286,
+				7285
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 23,
+			"partId": "B14",
+			"labelIds": [
+				383
+			],
+			"platformPaths": [
+				7397,
+				7398
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-000.png"
+		},
+		{
+			"candidateIndex": 24,
+			"partId": "B15",
+			"labelIds": [
+				384
+			],
+			"platformPaths": [
+				7395,
+				7396
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 25,
+			"partId": "B17",
+			"labelIds": [
+				417
+			],
+			"platformPaths": [
+				7393,
+				7394
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 26,
+			"partId": "B18",
+			"labelIds": [
+				418
+			],
+			"platformPaths": [
+				7391,
+				7392
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 27,
+			"partId": "B19",
+			"labelIds": [
+				419
+			],
+			"platformPaths": [
+				7389,
+				7390
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 28,
+			"partId": "B20",
+			"labelIds": [
+				420
+			],
+			"platformPaths": [
+				7387,
+				7388
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 29,
+			"partId": "B21",
+			"labelIds": [
+				414
+			],
+			"platformPaths": [
+				7382,
+				7381
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 30,
+			"partId": "B22",
+			"labelIds": [
+				415
+			],
+			"platformPaths": [
+				7385,
+				7386
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 31,
+			"partId": "B23",
+			"labelIds": [
+				416
+			],
+			"platformPaths": [
+				7383,
+				7384
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 32,
+			"partId": "N02",
+			"labelIds": [
+				397
+			],
+			"platformPaths": [
+				7075,
+				7074
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 33,
+			"partId": "N05",
+			"labelIds": [
+				399
+			],
+			"platformPaths": [
+				7079,
+				7078
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 34,
+			"partId": "N06",
+			"labelIds": [
+				401
+			],
+			"platformPaths": [
+				7081,
+				7080
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 35,
+			"partId": "N07",
+			"labelIds": [
+				403
+			],
+			"platformPaths": [
+				7083,
+				7082
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 36,
+			"partId": "N10",
+			"labelIds": [
+				409
+			],
+			"platformPaths": [
+				7089,
+				7088
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 37,
+			"partId": "J12",
+			"labelIds": [
+				168
+			],
+			"platformPaths": [
+				8344,
+				8343
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 38,
+			"partId": "J13",
+			"labelIds": [
+				167
+			],
+			"platformPaths": [
+				8342,
+				8341
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 39,
+			"partId": "J14",
+			"labelIds": [
+				166
+			],
+			"platformPaths": [
+				8340,
+				8339
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 40,
+			"partId": "J15",
+			"labelIds": [
+				165
+			],
+			"platformPaths": [
+				8338,
+				8337
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 41,
+			"partId": "J16",
+			"labelIds": [
+				164
+			],
+			"platformPaths": [
+				8336,
+				8335
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 42,
+			"partId": "J17",
+			"labelIds": [
+				163
+			],
+			"platformPaths": [
+				8334,
+				8333
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 43,
+			"partId": "J19",
+			"labelIds": [
+				162
+			],
+			"platformPaths": [
+				8331,
+				8332
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 44,
+			"partId": "J27",
+			"labelIds": [
+				1815
+			],
+			"platformPaths": [
+				8319,
+				8318
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 45,
+			"partId": "J28",
+			"labelIds": [
+				1018
+			],
+			"platformPaths": [
+				8315,
+				8314
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 46,
+			"partId": "J29",
+			"labelIds": [
+				159
+			],
+			"platformPaths": [
+				8313,
+				8312
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 47,
+			"partId": "J30",
+			"labelIds": [
+				158
+			],
+			"platformPaths": [
+				8311,
+				8310
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-024.png"
+		},
+		{
+			"candidateIndex": 48,
+			"partId": "J31",
+			"labelIds": [
+				156
+			],
+			"platformPaths": [
+				8309,
+				8308
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 49,
+			"partId": "M11",
+			"labelIds": [
+				170
+			],
+			"platformPaths": [
+				8316,
+				8317
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 50,
+			"partId": "M12",
+			"labelIds": [
+				124
+			],
+			"platformPaths": [
+				8307,
+				8306
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 51,
+			"partId": "M14",
+			"labelIds": [
+				998
+			],
+			"platformPaths": [
+				8303,
+				8302
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 52,
+			"partId": "M16",
+			"labelIds": [
+				77
+			],
+			"platformPaths": [
+				8301,
+				8300
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 53,
+			"partId": "M19",
+			"labelIds": [
+				581
+			],
+			"platformPaths": [
+				8290
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 54,
+			"partId": "M21",
+			"labelIds": [
+				567
+			],
+			"platformPaths": [
+				8286,
+				8282
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 55,
+			"partId": "M22",
+			"labelIds": [
+				979
+			],
+			"platformPaths": [
+				8286,
+				8282
+			],
+			"verdict": "rejected",
+			"reason": "Fulton candidate is at Chambers",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 56,
+			"partId": "M04",
+			"labelIds": [
+				1015
+			],
+			"platformPaths": [
+				8323
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 57,
+			"partId": "M05",
+			"labelIds": [
+				1013
+			],
+			"platformPaths": [
+				8321
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 58,
+			"partId": "M06",
+			"labelIds": [
+				1011
+			],
+			"platformPaths": [
+				8321
+			],
+			"verdict": "rejected",
+			"reason": "Seneca candidate is at Forest",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 59,
+			"partId": "M09",
+			"labelIds": [
+				1009
+			],
+			"platformPaths": [
+				8327,
+				8328
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 60,
+			"partId": "M10",
+			"labelIds": [
+				171
+			],
+			"platformPaths": [
+				8329,
+				8330
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 61,
+			"partId": "A03",
+			"labelIds": [
+				771
+			],
+			"platformPaths": [
+				6580,
+				6579
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 62,
+			"partId": "A05",
+			"labelIds": [
+				798
+			],
+			"platformPaths": [
+				6576,
+				6575
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 63,
+			"partId": "A06",
+			"labelIds": [
+				800
+			],
+			"platformPaths": [
+				6574,
+				6573
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 64,
+			"partId": "A07",
+			"labelIds": [
+				802
+			],
+			"platformPaths": [
+				6577
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 65,
+			"partId": "A09",
+			"labelIds": [
+				768
+			],
+			"platformPaths": [
+				6572,
+				6571
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 66,
+			"partId": "A11",
+			"labelIds": [
+				792
+			],
+			"platformPaths": [
+				6581,
+				6582
+			],
+			"verdict": "rejected",
+			"reason": "155 St marker not visually established in contact sheet",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 67,
+			"partId": "A14",
+			"labelIds": [
+				809
+			],
+			"platformPaths": [
+				6583,
+				6584
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 68,
+			"partId": "A15",
+			"labelIds": [
+				826
+			],
+			"platformPaths": [
+				6570,
+				6569
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 69,
+			"partId": "A16",
+			"labelIds": [
+				814
+			],
+			"platformPaths": [
+				6568,
+				6567
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 70,
+			"partId": "A18",
+			"labelIds": [
+				817
+			],
+			"platformPaths": [
+				6586
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 71,
+			"partId": "A19",
+			"labelIds": [
+				818
+			],
+			"platformPaths": [
+				6588
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-048.png"
+		},
+		{
+			"candidateIndex": 72,
+			"partId": "A20",
+			"labelIds": [
+				819
+			],
+			"platformPaths": [
+				6590
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 73,
+			"partId": "A22",
+			"labelIds": [
+				850
+			],
+			"platformPaths": [
+				6594
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 74,
+			"partId": "A25",
+			"labelIds": [
+				857
+			],
+			"platformPaths": [
+				6601,
+				6602
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 75,
+			"partId": "A31",
+			"labelIds": [
+				560
+			],
+			"platformPaths": [
+				6550,
+				6549
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 76,
+			"partId": "A33",
+			"labelIds": [
+				923
+			],
+			"platformPaths": [
+				6552,
+				6551
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 77,
+			"partId": "A36",
+			"labelIds": [
+				564
+			],
+			"platformPaths": [
+				6603,
+				6604
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 78,
+			"partId": "A38",
+			"labelIds": [
+				979
+			],
+			"platformPaths": [
+				6595
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 79,
+			"partId": "A40",
+			"labelIds": [
+				201
+			],
+			"platformPaths": [
+				6596
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 80,
+			"partId": "A43",
+			"labelIds": [
+				157
+			],
+			"platformPaths": [
+				5619,
+				5618
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 81,
+			"partId": "A45",
+			"labelIds": [
+				206
+			],
+			"platformPaths": [
+				5623,
+				5622
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 82,
+			"partId": "A46",
+			"labelIds": [
+				310
+			],
+			"platformPaths": [
+				5625,
+				5624
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 83,
+			"partId": "A49",
+			"labelIds": [
+				318
+			],
+			"platformPaths": [
+				5631,
+				5630
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 84,
+			"partId": "A50",
+			"labelIds": [
+				320
+			],
+			"platformPaths": [
+				5633,
+				5632
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 85,
+			"partId": "A52",
+			"labelIds": [
+				319
+			],
+			"platformPaths": [
+				5635,
+				5634
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 86,
+			"partId": "A53",
+			"labelIds": [
+				327
+			],
+			"platformPaths": [
+				5636,
+				5637
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 87,
+			"partId": "A54",
+			"labelIds": [
+				328
+			],
+			"platformPaths": [
+				5638,
+				5639
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 88,
+			"partId": "A55",
+			"labelIds": [
+				329
+			],
+			"platformPaths": [
+				5640,
+				5641
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 89,
+			"partId": "A57",
+			"labelIds": [
+				332
+			],
+			"platformPaths": [
+				5643,
+				5644
+			],
+			"verdict": "rejected",
+			"reason": "Grant candidate is at 80 St",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 90,
+			"partId": "A59",
+			"labelIds": [
+				334
+			],
+			"platformPaths": [
+				5644,
+				5643
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 91,
+			"partId": "A60",
+			"labelIds": [
+				336
+			],
+			"platformPaths": [
+				5646,
+				5645
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 92,
+			"partId": "A63",
+			"labelIds": [
+				338
+			],
+			"platformPaths": [
+				5649,
+				5650
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 93,
+			"partId": "A64",
+			"labelIds": [
+				342
+			],
+			"platformPaths": [
+				5651,
+				5652
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 94,
+			"partId": "H01",
+			"labelIds": [
+				340
+			],
+			"platformPaths": [
+				5659
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 95,
+			"partId": "H02",
+			"labelIds": [
+				433
+			],
+			"platformPaths": [
+				5657,
+				5656
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-072.png"
+		},
+		{
+			"candidateIndex": 96,
+			"partId": "H03",
+			"labelIds": [
+				435
+			],
+			"platformPaths": [
+				5655,
+				5654
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 97,
+			"partId": "H04",
+			"labelIds": [
+				437
+			],
+			"platformPaths": [
+				5661,
+				5660
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 98,
+			"partId": "H12",
+			"labelIds": [
+				452
+			],
+			"platformPaths": [
+				5674,
+				5673
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 99,
+			"partId": "H13",
+			"labelIds": [
+				453
+			],
+			"platformPaths": [
+				5676,
+				5675
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 100,
+			"partId": "H14",
+			"labelIds": [
+				454
+			],
+			"platformPaths": [
+				5678,
+				5677
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 101,
+			"partId": "H06",
+			"labelIds": [
+				439
+			],
+			"platformPaths": [
+				5663,
+				5662
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 102,
+			"partId": "H07",
+			"labelIds": [
+				442
+			],
+			"platformPaths": [
+				5665,
+				5664
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 103,
+			"partId": "H08",
+			"labelIds": [
+				444
+			],
+			"platformPaths": [
+				5667,
+				5666
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 104,
+			"partId": "H09",
+			"labelIds": [
+				446
+			],
+			"platformPaths": [
+				5668,
+				5669
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 105,
+			"partId": "H10",
+			"labelIds": [
+				448
+			],
+			"platformPaths": [
+				5670,
+				5671
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 106,
+			"partId": "D03",
+			"labelIds": [
+				784
+			],
+			"platformPaths": [
+				5262,
+				5263
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 107,
+			"partId": "D04",
+			"labelIds": [
+				782
+			],
+			"platformPaths": [
+				5264,
+				5265
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 108,
+			"partId": "D05",
+			"labelIds": [
+				780
+			],
+			"platformPaths": [
+				5267
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 109,
+			"partId": "D06",
+			"labelIds": [
+				787
+			],
+			"platformPaths": [
+				5271,
+				5270
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 110,
+			"partId": "D07",
+			"labelIds": [
+				778
+			],
+			"platformPaths": [
+				5268,
+				5269
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 111,
+			"partId": "D08",
+			"labelIds": [
+				788
+			],
+			"platformPaths": [
+				5272,
+				5273
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 112,
+			"partId": "D09",
+			"labelIds": [
+				789
+			],
+			"platformPaths": [
+				5274,
+				5275
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 113,
+			"partId": "B06",
+			"labelIds": [
+				509
+			],
+			"platformPaths": [
+				5043,
+				5044
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 114,
+			"partId": "D17",
+			"labelIds": [
+				877
+			],
+			"platformPaths": [
+				4985,
+				4986
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 115,
+			"partId": "D22",
+			"labelIds": [
+				965
+			],
+			"platformPaths": [
+				8425,
+				8426
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 116,
+			"partId": "F14",
+			"labelIds": [
+				964
+			],
+			"platformPaths": [
+				4996,
+				4995
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 117,
+			"partId": "F16",
+			"labelIds": [
+				969
+			],
+			"platformPaths": [
+				5034
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 118,
+			"partId": "F18",
+			"labelIds": [
+				200
+			],
+			"platformPaths": [
+				4999
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 119,
+			"partId": "F20",
+			"labelIds": [
+				258
+			],
+			"platformPaths": [
+				5047,
+				5048
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-096.png"
+		},
+		{
+			"candidateIndex": 120,
+			"partId": "F21",
+			"labelIds": [
+				292
+			],
+			"platformPaths": [
+				5014,
+				5013
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 121,
+			"partId": "F22",
+			"labelIds": [
+				295
+			],
+			"platformPaths": [
+				5011,
+				5012
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 122,
+			"partId": "F23",
+			"labelIds": [
+				306
+			],
+			"platformPaths": [
+				5009,
+				5010
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 123,
+			"partId": "F24",
+			"labelIds": [
+				263
+			],
+			"platformPaths": [
+				5003,
+				5002
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 124,
+			"partId": "F27",
+			"labelIds": [
+				265
+			],
+			"platformPaths": [
+				5006,
+				5005
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 125,
+			"partId": "F29",
+			"labelIds": [
+				267
+			],
+			"platformPaths": [
+				5016,
+				5017
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 126,
+			"partId": "F30",
+			"labelIds": [
+				269
+			],
+			"platformPaths": [
+				5030,
+				5031
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 127,
+			"partId": "F32",
+			"labelIds": [
+				273
+			],
+			"platformPaths": [
+				5021,
+				5020
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 128,
+			"partId": "F02",
+			"labelIds": [
+				481
+			],
+			"platformPaths": [
+				6077,
+				6076
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 129,
+			"partId": "F03",
+			"labelIds": [
+				490
+			],
+			"platformPaths": [
+				6074,
+				6075
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 130,
+			"partId": "F04",
+			"labelIds": [
+				480
+			],
+			"platformPaths": [
+				6073,
+				6072
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 131,
+			"partId": "F05",
+			"labelIds": [
+				483
+			],
+			"platformPaths": [
+				6071,
+				6070
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 132,
+			"partId": "F07",
+			"labelIds": [
+				482
+			],
+			"platformPaths": [
+				6089,
+				6088
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 133,
+			"partId": "G09",
+			"labelIds": [
+				464
+			],
+			"platformPaths": [
+				6067,
+				6066
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 134,
+			"partId": "G10",
+			"labelIds": [
+				463
+			],
+			"platformPaths": [
+				6065,
+				6064
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 135,
+			"partId": "G11",
+			"labelIds": [
+				472
+			],
+			"platformPaths": [
+				6063,
+				6062
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 136,
+			"partId": "G13",
+			"labelIds": [
+				462
+			],
+			"platformPaths": [
+				6059,
+				6058
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 137,
+			"partId": "G15",
+			"labelIds": [
+				461
+			],
+			"platformPaths": [
+				6057,
+				6056
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 138,
+			"partId": "G16",
+			"labelIds": [
+				467
+			],
+			"platformPaths": [
+				6095,
+				6096
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 139,
+			"partId": "G18",
+			"labelIds": [
+				460
+			],
+			"platformPaths": [
+				6081,
+				6080
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 140,
+			"partId": "G19",
+			"labelIds": [
+				459
+			],
+			"platformPaths": [
+				6078,
+				6079
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 141,
+			"partId": "G20",
+			"labelIds": [
+				115
+			],
+			"platformPaths": [
+				6055,
+				6054
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 142,
+			"partId": "G21",
+			"labelIds": [
+				112
+			],
+			"platformPaths": [
+				6053,
+				6052
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 143,
+			"partId": "D14",
+			"labelIds": [
+				856
+			],
+			"platformPaths": [
+				6049
+			],
+			"verdict": "rejected",
+			"reason": "7 Av candidate is at Broadway 57 St",
+			"sheet": "anchors-120.png"
+		},
+		{
+			"candidateIndex": 144,
+			"partId": "G22",
+			"labelIds": [
+				63
+			],
+			"platformPaths": [
+				5134
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 145,
+			"partId": "G24",
+			"labelIds": [
+				67
+			],
+			"platformPaths": [
+				5133
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 146,
+			"partId": "G26",
+			"labelIds": [
+				62
+			],
+			"platformPaths": [
+				5131,
+				5132
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 147,
+			"partId": "G28",
+			"labelIds": [
+				70
+			],
+			"platformPaths": [
+				5129,
+				5130
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 148,
+			"partId": "G29",
+			"labelIds": [
+				74
+			],
+			"platformPaths": [
+				5127,
+				5128
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 149,
+			"partId": "G30",
+			"labelIds": [
+				76
+			],
+			"platformPaths": [
+				5135,
+				5136
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 150,
+			"partId": "G31",
+			"labelIds": [
+				177
+			],
+			"platformPaths": [
+				5125,
+				5126
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 151,
+			"partId": "G33",
+			"labelIds": [
+				182
+			],
+			"platformPaths": [
+				5116,
+				5115
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 152,
+			"partId": "G34",
+			"labelIds": [
+				190
+			],
+			"platformPaths": [
+				5118,
+				5117
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 153,
+			"partId": "103",
+			"labelIds": [
+				700
+			],
+			"platformPaths": [
+				9632,
+				9631
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 154,
+			"partId": "104",
+			"labelIds": [
+				702
+			],
+			"platformPaths": [
+				9630,
+				9629
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 155,
+			"partId": "107",
+			"labelIds": [
+				704
+			],
+			"platformPaths": [
+				9626,
+				9625
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 156,
+			"partId": "108",
+			"labelIds": [
+				708
+			],
+			"platformPaths": [
+				9624,
+				9623
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 157,
+			"partId": "109",
+			"labelIds": [
+				770
+			],
+			"platformPaths": [
+				9610,
+				9609
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 158,
+			"partId": "110",
+			"labelIds": [
+				710
+			],
+			"platformPaths": [
+				9608,
+				9607
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 159,
+			"partId": "111",
+			"labelIds": [
+				712
+			],
+			"platformPaths": [
+				9606,
+				9605
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 160,
+			"partId": "113",
+			"labelIds": [
+				714
+			],
+			"platformPaths": [
+				9604,
+				9603
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 161,
+			"partId": "114",
+			"labelIds": [
+				716
+			],
+			"platformPaths": [
+				9622,
+				9621
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 162,
+			"partId": "116",
+			"labelIds": [
+				765
+			],
+			"platformPaths": [
+				9618,
+				9617
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 163,
+			"partId": "119",
+			"labelIds": [
+				737
+			],
+			"platformPaths": [
+				9612,
+				9611
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 164,
+			"partId": "120",
+			"labelIds": [
+				747
+			],
+			"platformPaths": [
+				9600,
+				9599
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 165,
+			"partId": "121",
+			"labelIds": [
+				739
+			],
+			"platformPaths": [
+				9596,
+				9595
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 166,
+			"partId": "122",
+			"labelIds": [
+				741
+			],
+			"platformPaths": [
+				9594,
+				9593
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 167,
+			"partId": "123",
+			"labelIds": [
+				751
+			],
+			"platformPaths": [
+				9592,
+				9591
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-144.png"
+		},
+		{
+			"candidateIndex": 168,
+			"partId": "129",
+			"labelIds": [
+				915
+			],
+			"platformPaths": [
+				9581,
+				9580
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 169,
+			"partId": "131",
+			"labelIds": [
+				932
+			],
+			"platformPaths": [
+				9577,
+				9576
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 170,
+			"partId": "132",
+			"labelIds": [
+				560
+			],
+			"platformPaths": [
+				9575,
+				9574
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 171,
+			"partId": "134",
+			"labelIds": [
+				937
+			],
+			"platformPaths": [
+				9571,
+				9570
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 172,
+			"partId": "136",
+			"labelIds": [
+				941
+			],
+			"platformPaths": [
+				9567,
+				9566
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 173,
+			"partId": "137",
+			"labelIds": [
+				564
+			],
+			"platformPaths": [
+				9565,
+				9564
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 174,
+			"partId": "142",
+			"labelIds": [
+				949
+			],
+			"platformPaths": [
+				8939
+			],
+			"verdict": "rejected",
+			"reason": "Current South Ferry versus former loop platform needs closer review",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 175,
+			"partId": "229",
+			"labelIds": [
+				979
+			],
+			"platformPaths": [
+				9636
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 176,
+			"partId": "230",
+			"labelIds": [
+				981
+			],
+			"platformPaths": [
+				9637
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 177,
+			"partId": "231",
+			"labelIds": [
+				202
+			],
+			"platformPaths": [
+				9638
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 178,
+			"partId": "232",
+			"labelIds": [
+				260
+			],
+			"platformPaths": [
+				9649
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 179,
+			"partId": "233",
+			"labelIds": [
+				230
+			],
+			"platformPaths": [
+				8753
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 180,
+			"partId": "234",
+			"labelIds": [
+				205
+			],
+			"platformPaths": [
+				8795,
+				8793
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 181,
+			"partId": "236",
+			"labelIds": [
+				232
+			],
+			"platformPaths": [
+				8759,
+				8758
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 182,
+			"partId": "248",
+			"labelIds": [
+				238
+			],
+			"platformPaths": [
+				8764
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 183,
+			"partId": "252",
+			"labelIds": [
+				244
+			],
+			"platformPaths": [
+				8782,
+				8783
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 184,
+			"partId": "253",
+			"labelIds": [
+				245
+			],
+			"platformPaths": [
+				8784,
+				8785
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 185,
+			"partId": "254",
+			"labelIds": [
+				1302
+			],
+			"platformPaths": [
+				8787,
+				8786
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 186,
+			"partId": "255",
+			"labelIds": [
+				246
+			],
+			"platformPaths": [
+				8788,
+				8789
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 187,
+			"partId": "256",
+			"labelIds": [
+				247
+			],
+			"platformPaths": [
+				8790,
+				8791
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 188,
+			"partId": "242",
+			"labelIds": [
+				215
+			],
+			"platformPaths": [
+				8770,
+				8769
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 189,
+			"partId": "243",
+			"labelIds": [
+				220
+			],
+			"platformPaths": [
+				8772,
+				8771
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 190,
+			"partId": "244",
+			"labelIds": [
+				222
+			],
+			"platformPaths": [
+				8774,
+				8773
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 191,
+			"partId": "245",
+			"labelIds": [
+				224
+			],
+			"platformPaths": [
+				8776,
+				8775
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-168.png"
+		},
+		{
+			"candidateIndex": 192,
+			"partId": "246",
+			"labelIds": [
+				226
+			],
+			"platformPaths": [
+				8778,
+				8777
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 193,
+			"partId": "602",
+			"labelIds": [
+				610
+			],
+			"platformPaths": [
+				10269,
+				10270
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 194,
+			"partId": "603",
+			"labelIds": [
+				607
+			],
+			"platformPaths": [
+				10267,
+				10268
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 195,
+			"partId": "606",
+			"labelIds": [
+				602
+			],
+			"platformPaths": [
+				10264,
+				10263
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 196,
+			"partId": "607",
+			"labelIds": [
+				600
+			],
+			"platformPaths": [
+				10262,
+				10261
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 197,
+			"partId": "608",
+			"labelIds": [
+				598
+			],
+			"platformPaths": [
+				10242,
+				10241
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 198,
+			"partId": "609",
+			"labelIds": [
+				527
+			],
+			"platformPaths": [
+				10260,
+				10259
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 199,
+			"partId": "611",
+			"labelIds": [
+				525
+			],
+			"platformPaths": [
+				10256,
+				10255
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 200,
+			"partId": "613",
+			"labelIds": [
+				522
+			],
+			"platformPaths": [
+				10240,
+				10239
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 201,
+			"partId": "614",
+			"labelIds": [
+				594
+			],
+			"platformPaths": [
+				10252,
+				10251
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 202,
+			"partId": "615",
+			"labelIds": [
+				592
+			],
+			"platformPaths": [
+				10250,
+				10249
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 203,
+			"partId": "617",
+			"labelIds": [
+				596
+			],
+			"platformPaths": [
+				10246,
+				10245
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 204,
+			"partId": "618",
+			"labelIds": [
+				532
+			],
+			"platformPaths": [
+				10244,
+				10243
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 205,
+			"partId": "619",
+			"labelIds": [
+				514
+			],
+			"platformPaths": [
+				10237,
+				10238
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 206,
+			"partId": "402",
+			"labelIds": [
+				692
+			],
+			"platformPaths": [
+				10233,
+				10232
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 207,
+			"partId": "406",
+			"labelIds": [
+				690
+			],
+			"platformPaths": [
+				10231,
+				10230
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 208,
+			"partId": "407",
+			"labelIds": [
+				688
+			],
+			"platformPaths": [
+				10227,
+				10226
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 209,
+			"partId": "408",
+			"labelIds": [
+				686
+			],
+			"platformPaths": [
+				10225,
+				10224
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 210,
+			"partId": "409",
+			"labelIds": [
+				683
+			],
+			"platformPaths": [
+				10223,
+				10222
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 211,
+			"partId": "410",
+			"labelIds": [
+				681
+			],
+			"platformPaths": [
+				10221,
+				10220
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 212,
+			"partId": "411",
+			"labelIds": [
+				679
+			],
+			"platformPaths": [
+				10219,
+				10218
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 213,
+			"partId": "412",
+			"labelIds": [
+				677
+			],
+			"platformPaths": [
+				10217,
+				10216
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 214,
+			"partId": "413",
+			"labelIds": [
+				777
+			],
+			"platformPaths": [
+				10215,
+				10214
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 215,
+			"partId": "622",
+			"labelIds": [
+				533
+			],
+			"platformPaths": [
+				9232,
+				9231
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-192.png"
+		},
+		{
+			"candidateIndex": 216,
+			"partId": "623",
+			"labelIds": [
+				535
+			],
+			"platformPaths": [
+				9230,
+				9229
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 217,
+			"partId": "624",
+			"labelIds": [
+				537
+			],
+			"platformPaths": [
+				9228,
+				9227
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 218,
+			"partId": "625",
+			"labelIds": [
+				539
+			],
+			"platformPaths": [
+				9226,
+				9225
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 219,
+			"partId": "626",
+			"labelIds": [
+				543
+			],
+			"platformPaths": [
+				9224,
+				9223
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 220,
+			"partId": "627",
+			"labelIds": [
+				545
+			],
+			"platformPaths": [
+				9222,
+				9221
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 221,
+			"partId": "629",
+			"labelIds": [
+				905
+			],
+			"platformPaths": [
+				9218,
+				9217
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 222,
+			"partId": "630",
+			"labelIds": [
+				866
+			],
+			"platformPaths": [
+				9215,
+				9216
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 223,
+			"partId": "635",
+			"labelIds": [
+				572
+			],
+			"platformPaths": [
+				9194,
+				9193
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 224,
+			"partId": "636",
+			"labelIds": [
+				578
+			],
+			"platformPaths": [
+				9205,
+				9206
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 225,
+			"partId": "637",
+			"labelIds": [
+				959
+			],
+			"platformPaths": [
+				9202,
+				9200
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 226,
+			"partId": "418",
+			"labelIds": [
+				979
+			],
+			"platformPaths": [
+				9079,
+				9083
+			],
+			"verdict": "rejected",
+			"reason": "Fulton candidate is at Brooklyn Bridge",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 227,
+			"partId": "423",
+			"labelIds": [
+				260
+			],
+			"platformPaths": [
+				9242,
+				9241
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 228,
+			"partId": "204",
+			"labelIds": [
+				661
+			],
+			"platformPaths": [
+				10301,
+				10300
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 229,
+			"partId": "205",
+			"labelIds": [
+				659
+			],
+			"platformPaths": [
+				10299,
+				10298
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 230,
+			"partId": "206",
+			"labelIds": [
+				657
+			],
+			"platformPaths": [
+				10297,
+				10296
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 231,
+			"partId": "207",
+			"labelIds": [
+				655
+			],
+			"platformPaths": [
+				10295,
+				10294
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 232,
+			"partId": "209",
+			"labelIds": [
+				665
+			],
+			"platformPaths": [
+				10293,
+				10292
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 233,
+			"partId": "210",
+			"labelIds": [
+				651
+			],
+			"platformPaths": [
+				10291,
+				10290
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 234,
+			"partId": "211",
+			"labelIds": [
+				649
+			],
+			"platformPaths": [
+				10289,
+				10288
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 235,
+			"partId": "213",
+			"labelIds": [
+				613
+			],
+			"platformPaths": [
+				10317,
+				10316
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 236,
+			"partId": "215",
+			"labelIds": [
+				629
+			],
+			"platformPaths": [
+				10283,
+				10282
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 237,
+			"partId": "216",
+			"labelIds": [
+				632
+			],
+			"platformPaths": [
+				10329,
+				10328
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 238,
+			"partId": "217",
+			"labelIds": [
+				635
+			],
+			"platformPaths": [
+				10281,
+				10280
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 239,
+			"partId": "218",
+			"labelIds": [
+				638
+			],
+			"platformPaths": [
+				10279,
+				10278
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-216.png"
+		},
+		{
+			"candidateIndex": 240,
+			"partId": "219",
+			"labelIds": [
+				641
+			],
+			"platformPaths": [
+				10276,
+				10277
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 241,
+			"partId": "220",
+			"labelIds": [
+				644
+			],
+			"platformPaths": [
+				10330,
+				10331
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 242,
+			"partId": "221",
+			"labelIds": [
+				672
+			],
+			"platformPaths": [
+				10275,
+				10274
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 243,
+			"partId": "301",
+			"labelIds": [
+				719
+			],
+			"platformPaths": [
+				9645
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 244,
+			"partId": "302",
+			"labelIds": [
+				718
+			],
+			"platformPaths": [
+				9644,
+				9643
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 245,
+			"partId": "224",
+			"labelIds": [
+				721
+			],
+			"platformPaths": [
+				9647,
+				9646
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 246,
+			"partId": "225",
+			"labelIds": [
+				722
+			],
+			"platformPaths": [
+				9642,
+				9641
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 247,
+			"partId": "226",
+			"labelIds": [
+				725
+			],
+			"platformPaths": [
+				9639,
+				9640
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 248,
+			"partId": "502",
+			"labelIds": [
+				617
+			],
+			"platformPaths": [
+				10313,
+				10314
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 249,
+			"partId": "503",
+			"labelIds": [
+				616
+			],
+			"platformPaths": [
+				10311,
+				10312
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 250,
+			"partId": "504",
+			"labelIds": [
+				615
+			],
+			"platformPaths": [
+				10309,
+				10310
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 251,
+			"partId": "505",
+			"labelIds": [
+				614
+			],
+			"platformPaths": [
+				10308,
+				10307
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 252,
+			"partId": "702",
+			"labelIds": [
+				505
+			],
+			"platformPaths": [
+				8630,
+				8628
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 253,
+			"partId": "705",
+			"labelIds": [
+				99
+			],
+			"platformPaths": [
+				8627,
+				8626
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 254,
+			"partId": "706",
+			"labelIds": [
+				97
+			],
+			"platformPaths": [
+				8620,
+				8621
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 255,
+			"partId": "707",
+			"labelIds": [
+				103
+			],
+			"platformPaths": [
+				8623,
+				8622
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 256,
+			"partId": "708",
+			"labelIds": [
+				95
+			],
+			"platformPaths": [
+				8619,
+				8618
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 257,
+			"partId": "711",
+			"labelIds": [
+				90
+			],
+			"platformPaths": [
+				8615,
+				8614
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 258,
+			"partId": "712",
+			"labelIds": [
+				101
+			],
+			"platformPaths": [
+				8624,
+				8625
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 259,
+			"partId": "713",
+			"labelIds": [
+				88
+			],
+			"platformPaths": [
+				8610,
+				8611
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 260,
+			"partId": "719",
+			"labelIds": [
+				63
+			],
+			"platformPaths": [
+				8603,
+				8602
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		},
+		{
+			"candidateIndex": 261,
+			"partId": "Q03",
+			"labelIds": [
+				833
+			],
+			"platformPaths": [
+				6664
+			],
+			"verdict": "accepted-anchor-only",
+			"reason": "Visually matched the named station and platform in the local PDF contact sheet; no rail identity or connectivity is certified by this anchor.",
+			"sheet": "anchors-240.png"
+		}
+	]
+}

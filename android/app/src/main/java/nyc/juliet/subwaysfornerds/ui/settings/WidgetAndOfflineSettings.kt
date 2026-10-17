@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import nyc.juliet.subwaysfornerds.core.Display
@@ -194,7 +195,28 @@ fun OfflineSettingsScreen(model: AppModel, exit: ScreenExit, close: () -> Unit, 
 	ListScreen("Offline", exit = exit, onExit = close, tag = "offlineSettingsScreen") {
 		model.offlineActionError?.let { message -> section("actionError") { row { RowContainer { Notice(message, Modifier.testTag("offlineSettingsError")) } } } }
 		model.settingsError?.let { message -> section("settingsError") { row { RowContainer { Notice(message) } } } }
-		section("storage", header = "Storage", footer = "Offline boards, trips and your ride stay on this device and do not sync. These preferences transfer with your settings.") {
+		section("storage", header = "Connection and storage", footer = "Offline boards, trips and your ride stay on this device and do not sync. These preferences transfer with your settings.") {
+			// What the phone's network is doing comes first, so the rider knows why boards are or are not refreshing.
+			row {
+				RowContainer {
+					Column(Modifier.testTag("deviceNetworkStatus").semantics(mergeDescendants = true) {}) {
+						Text(model.deviceNetworkHeadline, style = TextRoles.subheadline.copy(fontWeight = FontWeight.SemiBold))
+						Text(model.deviceNetworkStatus.linkFacts.joinToString(" · "), style = TextRoles.caption, color = palette.muted, modifier = Modifier.testTag("deviceNetworkDetail"))
+					}
+				}
+			}
+			row {
+				RowContainer {
+					Column(Modifier.testTag("offlineSyncActivity").semantics(mergeDescendants = true) {}) {
+						val inFlight = model.fetchProgress.size
+						LabeledValue("Automatic refreshes", if (model.connected) "Active" else "Paused")
+						Text(
+							"${model.plannedRequestCount} boards and trips tracked" + (if (inFlight > 0) " · $inFlight downloading" else "") + " · " + model.deviceNetworkDetail,
+							style = TextRoles.caption, color = palette.muted,
+						)
+					}
+				}
+			}
 			val usage = model.offlineUsage
 			if (usage != null) {
 				row { RowContainer { LabeledValue("Stored", "${ByteCounts.file(usage.totalBytes)} of ${preferences.storageLimitMiB} MiB", Modifier.testTag("offlineUsage")) } }

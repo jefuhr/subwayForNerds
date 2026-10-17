@@ -1,0 +1,1224 @@
+{
+	"sourceSha256": "b28f75397b2e7b6ba0b67db6ea2181800baa0254a48261252f3d55c4f2b17c71",
+	"policy": "Retain explicit source geometry gaps; do not enlarge numerical seam tolerances or invent connecting rails. Per coordinator decision, the shared contract remains unchanged.",
+	"gaps": [
+		{
+			"id": "lex-source-gap-9111",
+			"corridor": "Lexington Avenue",
+			"from": {
+				"pathId": 9111,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 9112,
+				"endpoint": "start"
+			},
+			"distance": 0.9985933356480698,
+			"sourceEndpoints": [
+				[
+					2551.2308000000003,
+					4455.841100000001
+				],
+				[
+					2551.7131,
+					4454.9667
+				]
+			],
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "lex-level-transition.png",
+			"impact": "End-to-end traversal across this source boundary is unavailable even when surrounding station crosswalks are mapped. Candidate continuity is not automatically accepted."
+		},
+		{
+			"id": "lex-source-gap-9127",
+			"corridor": "Lexington Avenue",
+			"from": {
+				"pathId": 9127,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 8914,
+				"endpoint": "end"
+			},
+			"distance": 0.5267388442103834,
+			"sourceEndpoints": [
+				[
+					2841.1372,
+					3930.8577999999998
+				],
+				[
+					2841.3922000000002,
+					3930.3968999999997
+				]
+			],
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "lex-125-source.png",
+			"impact": "End-to-end traversal across this source boundary is unavailable even when surrounding station crosswalks are mapped. Candidate continuity is not automatically accepted."
+		},
+		{
+			"id": "lex-source-gap-9134",
+			"corridor": "Lexington Avenue",
+			"from": {
+				"pathId": 9134,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 9148,
+				"endpoint": "end"
+			},
+			"distance": 1.7435620149567836,
+			"sourceEndpoints": [
+				[
+					2783.4644000000003,
+					4031.5946000000004
+				],
+				[
+					2784.3069000000005,
+					4030.0681000000004
+				]
+			],
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "lex-125-source.png",
+			"impact": "End-to-end traversal across this source boundary is unavailable even when surrounding station crosswalks are mapped. Candidate continuity is not automatically accepted."
+		},
+		{
+			"id": "utica-sutter-a",
+			"corridor": "Eastern Parkway / New Lots",
+			"from": {
+				"pathId": 8748,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 8749,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					3093.0593,
+					8212.2275
+				],
+				[
+					3093.6389,
+					8214.2899
+				]
+			],
+			"distance": 2.1422954791520814,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"impact": "The surrounding platform crosswalks do not establish traversal across this boundary.",
+			"evidence": "utica-paths.png"
+		},
+		{
+			"id": "utica-sutter-b",
+			"corridor": "Eastern Parkway / New Lots",
+			"from": {
+				"pathId": 8749,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 8750,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					3097.7579,
+					8229.8339
+				],
+				[
+					3098.0425,
+					8230.8712
+				]
+			],
+			"distance": 1.0756339758486109,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"impact": "The surrounding platform crosswalks do not establish traversal across this boundary.",
+			"evidence": "utica-paths.png"
+		},
+		{
+			"id": "chambers-clark-south",
+			"corridor": "Broadway express / Clark Street",
+			"from": {
+				"pathId": 9355,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 9354,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					1104.9785,
+					6778.5644
+				],
+				[
+					1104.4828,
+					6779.4944000000005
+				]
+			],
+			"distance": 1.0538588567737543,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"impact": "The surrounding platform crosswalks do not establish traversal across this boundary.",
+			"evidence": "nassau-overlay.png (Chambers/Clark level transition)"
+		},
+		{
+			"id": "chambers-clark-north",
+			"corridor": "Broadway express / Clark Street",
+			"from": {
+				"pathId": 9356,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 9357,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					1108.1190000000001,
+					6780.3204
+				],
+				[
+					1107.1597000000002,
+					6782.1112
+				]
+			],
+			"distance": 2.0315563319786087,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"impact": "The surrounding platform crosswalks do not establish traversal across this boundary.",
+			"evidence": "nassau-overlay.png (Chambers/Clark level transition)"
+		},
+		{
+			"id": "gc-local-south",
+			"corridor": "Lexington / Grand Central",
+			"from": {
+				"pathId": 9123,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 9122,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					1862.1489000000001,
+					5624.3041
+				],
+				[
+					1861.2064,
+					5624.527
+				]
+			],
+			"distance": 0.9684991791427064,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "lex-lower-overlay.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "gc-local-north",
+			"corridor": "Lexington / Grand Central",
+			"from": {
+				"pathId": 9185,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 9156,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					1857.4932000000001,
+					5647.8065
+				],
+				[
+					1857.7168000000001,
+					5647.392
+				]
+			],
+			"distance": 0.4709641281455523,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "lex-lower-overlay.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "union-local-north",
+			"corridor": "Lexington / Union Square",
+			"from": {
+				"pathId": 9069,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 9150,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					1583.6724000000002,
+					6190.7235
+				],
+				[
+					1583.708,
+					6190.0336
+				]
+			],
+			"distance": 0.6908178993051778,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "lex-lower-overlay.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "elmhurst-express-south-a",
+			"corridor": "Queens Boulevard",
+			"from": {
+				"pathId": 6029,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 6030,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					3995.817,
+					5854.6576000000005
+				],
+				[
+					3994.0649000000003,
+					5853.6562
+				]
+			],
+			"distance": 2.018082349657505,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queens-source.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "elmhurst-express-south-b",
+			"corridor": "Queens Boulevard",
+			"from": {
+				"pathId": 6030,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 6031,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					3899.9139000000005,
+					5800.8862
+				],
+				[
+					3898.1646000000005,
+					5799.9029
+				]
+			],
+			"distance": 2.0067210518653478,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queens-source.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "elmhurst-express-north-a",
+			"corridor": "Queens Boulevard",
+			"from": {
+				"pathId": 6009,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 6010,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					3993.898,
+					5857.706
+				],
+				[
+					3992.145,
+					5856.7045
+				]
+			],
+			"distance": 2.0189133834816095,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queens-source.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "elmhurst-express-north-b",
+			"corridor": "Queens Boulevard",
+			"from": {
+				"pathId": 6010,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 6011,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					3897.957,
+					5803.9165
+				],
+				[
+					3896.2076,
+					5802.9332
+				]
+			],
+			"distance": 2.0068082245193946,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queens-source.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "elmhurst-local-south-a",
+			"corridor": "Queens Boulevard",
+			"from": {
+				"pathId": 5997,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 5996,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					3997.2671,
+					5851.3402
+				],
+				[
+					3996.3956000000003,
+					5850.8428
+				]
+			],
+			"distance": 1.0034535415248889,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queens-source.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "elmhurst-local-south-b",
+			"corridor": "Queens Boulevard",
+			"from": {
+				"pathId": 5996,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 5995,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					3902.7056000000002,
+					5798.2978
+				],
+				[
+					3900.9516,
+					5797.3112
+				]
+			],
+			"distance": 2.0124352312563056,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queens-source.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "elmhurst-local-north-a",
+			"corridor": "Queens Boulevard",
+			"from": {
+				"pathId": 5964,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 5965,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					3992.2398000000003,
+					5860.9042
+				],
+				[
+					3990.4868,
+					5859.9027
+				]
+			],
+			"distance": 2.0189133834816095,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queens-source.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "elmhurst-local-north-b",
+			"corridor": "Queens Boulevard",
+			"from": {
+				"pathId": 5965,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 5966,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					3896.3338000000003,
+					5807.0907
+				],
+				[
+					3894.5845000000004,
+					5806.1066
+				]
+			],
+			"distance": 2.00711317568272,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queens-source.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "queens-36-local-north",
+			"corridor": "Queens Boulevard",
+			"from": {
+				"pathId": 5761,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 5760,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					3120.7888000000003,
+					5588.2909
+				],
+				[
+					3120.2714,
+					5589.14
+				]
+			],
+			"distance": 0.9943206575349832,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queens-source.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "queens-53-express-north",
+			"corridor": "Queens Boulevard / 53 Street",
+			"from": {
+				"pathId": 5797,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 5798,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					1982.8687,
+					5409.532200000001
+				],
+				[
+					1981.1245000000001,
+					5408.5336
+				]
+			],
+			"distance": 2.009834719573014,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queens-source.png",
+			"impact": "Surrounding station crosswalks do not establish traversal across this source boundary."
+		},
+		{
+			"id": "nostrand-local-north-a",
+			"corridor": "Eighth Avenue / Fulton Street",
+			"from": {
+				"pathId": 5543,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 5544,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					2456.6805000000004,
+					7813.6696
+				],
+				[
+					2458.6777,
+					7813.8163
+				]
+			],
+			"distance": 2.00258051773187,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "nostrand-levels.png",
+			"impact": "Station crosswalks on either side do not establish traversal across the source break."
+		},
+		{
+			"id": "nostrand-local-north-b",
+			"corridor": "Eighth Avenue / Fulton Street",
+			"from": {
+				"pathId": 5544,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 5545,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					2589.7977,
+					7823.4123
+				],
+				[
+					2591.8051,
+					7823.558300000001
+				]
+			],
+			"distance": 2.0127023525598693,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "nostrand-levels.png",
+			"impact": "Station crosswalks on either side do not establish traversal across the source break."
+		},
+		{
+			"id": "nostrand-local-south-a",
+			"corridor": "Eighth Avenue / Fulton Street",
+			"from": {
+				"pathId": 5533,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 5532,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					2455.3169000000003,
+					7824.3974
+				],
+				[
+					2456.3127000000004,
+					7824.471100000001
+				]
+			],
+			"distance": 0.9985235750849402,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "nostrand-levels.png",
+			"impact": "Station crosswalks on either side do not establish traversal across the source break."
+		},
+		{
+			"id": "nostrand-local-south-b",
+			"corridor": "Eighth Avenue / Fulton Street",
+			"from": {
+				"pathId": 5532,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 5531,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					2587.5527,
+					7834.0751
+				],
+				[
+					2589.5586000000003,
+					7834.2218
+				]
+			],
+			"distance": 2.011257243616667,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "nostrand-levels.png",
+			"impact": "Station crosswalks on either side do not establish traversal across the source break."
+		},
+		{
+			"id": "west-four-express-north",
+			"corridor": "Eighth Avenue / Fulton Street",
+			"from": {
+				"pathId": 6397,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 6262,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					1350.6114,
+					6196.095899999999
+				],
+				[
+					1350.7487,
+					6195.8578
+				]
+			],
+			"distance": 0.2748506867370439,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "ind-midtown-source.png",
+			"impact": "Station crosswalks on either side do not establish traversal across the source break."
+		},
+		{
+			"id": "west-end-nine-south",
+			"corridor": "Southern BMT",
+			"from": {
+				"pathId": 7417,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 7421,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					1446.407,
+					8857.8791
+				],
+				[
+					1446.3876,
+					8857.9031
+				]
+			],
+			"distance": 0.03086033052268032,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "fourth-source.png",
+			"impact": "Station crosswalks on either side do not establish traversal across the source break."
+		},
+		{
+			"id": "sea-beach-south-newutrecht",
+			"corridor": "Southern BMT",
+			"from": {
+				"pathId": 7109,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 7015,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					1470.9261000000001,
+					9590.9292
+				],
+				[
+					1470.8872000000001,
+					9590.8973
+				]
+			],
+			"distance": 0.050307255937864524,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "sea-beach-source.png",
+			"impact": "Station crosswalks on either side do not establish traversal across the source break."
+		},
+		{
+			"id": "sea-beach-north-newutrecht",
+			"corridor": "Southern BMT",
+			"from": {
+				"pathId": 6983,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 7111,
+				"endpoint": "start"
+			},
+			"sourceEndpoints": [
+				[
+					1393.1495,
+					9460.9468
+				],
+				[
+					1393.1127000000001,
+					9460.9154
+				]
+			],
+			"distance": 0.04837561369099104,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "sea-beach-source.png",
+			"impact": "Station crosswalks on either side do not establish traversal across the source break."
+		},
+		{
+			"id": "bay-ridge-south-transition",
+			"corridor": "Southern BMT",
+			"from": {
+				"pathId": 6944,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 7047,
+				"endpoint": "end"
+			},
+			"sourceEndpoints": [
+				[
+					804.3860999999999,
+					9178.7063
+				],
+				[
+					804.5029,
+					9178.3308
+				]
+			],
+			"distance": 0.39324609343269934,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "fourth-source.png",
+			"impact": "Station crosswalks on either side do not establish traversal across the source break."
+		},
+		{
+			"id": "trunk-source-gap-7210",
+			"corridor": "Brighton north of Prospect Park",
+			"from": {
+				"pathId": 7210,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 7209,
+				"endpoint": "end"
+			},
+			"distance": 0.9133647683151624,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "brighton-upper-source.png",
+			"impact": "Crosswalks on either side do not establish traversability across this source break.",
+			"sourceEndpoints": [
+				[
+					2216.6646,
+					8375.7304
+				],
+				[
+					2216.5314,
+					8374.8268
+				]
+			]
+		},
+		{
+			"id": "trunk-source-gap-7246",
+			"corridor": "Brighton north of Prospect Park",
+			"from": {
+				"pathId": 7246,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 7245,
+				"endpoint": "end"
+			},
+			"distance": 0.9547242167254828,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "brighton-upper-source.png",
+			"impact": "Crosswalks on either side do not establish traversability across this source break.",
+			"sourceEndpoints": [
+				[
+					2220.2446,
+					8375.343700000001
+				],
+				[
+					2220.1073,
+					8374.3989
+				]
+			]
+		},
+		{
+			"id": "trunk-source-gap-7808",
+			"corridor": "Second Avenue to Broadway",
+			"from": {
+				"pathId": 7808,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 7807,
+				"endpoint": "end"
+			},
+			"distance": 0.9507906446740783,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "trunks-north-overlay.png",
+			"impact": "Crosswalks on either side do not establish traversability across this source break.",
+			"sourceEndpoints": [
+				[
+					2169.8894,
+					5255.0888
+				],
+				[
+					2169.0563,
+					5254.6306
+				]
+			]
+		},
+		{
+			"id": "trunk-source-gap-4817",
+			"corridor": "63 Street northbound",
+			"from": {
+				"pathId": 4817,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 4816,
+				"endpoint": "end"
+			},
+			"distance": 1.0001692506772257,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "trunks-north-overlay.png",
+			"impact": "Crosswalks on either side do not establish traversability across this source break.",
+			"sourceEndpoints": [
+				[
+					2297.6006,
+					5329.2162
+				],
+				[
+					2296.7208,
+					5328.7405
+				]
+			]
+		},
+		{
+			"id": "trunk-source-gap-4834",
+			"corridor": "57 Street Sixth Avenue southbound",
+			"from": {
+				"pathId": 4834,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 6610,
+				"endpoint": "start"
+			},
+			"distance": 0.648296012636208,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "trunks-north-overlay.png",
+			"impact": "Crosswalks on either side do not establish traversability across this source break.",
+			"sourceEndpoints": [
+				[
+					1845.4258,
+					5289.6571
+				],
+				[
+					1845.7394000000002,
+					5289.0897
+				]
+			]
+		},
+		{
+			"id": "uptown-source-gap-6311",
+			"corridor": "Inwood /168Street express level",
+			"from": {
+				"pathId": 6311,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 6540,
+				"endpoint": "start"
+			},
+			"distance": 0.10946949346855062,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "uptown-ind-source.png",
+			"impact": "Continuous physical track annotation does not invent a graph edge over this measured painted-vector gap.",
+			"sourceEndpoints": [
+				[
+					2738.21,
+					3005.0326000000005
+				],
+				[
+					2738.2139,
+					3004.9231999999993
+				]
+			]
+		},
+		{
+			"id": "uptown-source-gap-6355",
+			"corridor": "CPW103Street northbound",
+			"from": {
+				"pathId": 6355,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 6356,
+				"endpoint": "start"
+			},
+			"distance": 1.9361890868405396,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "trunks-north-overlay.png",
+			"impact": "Continuous physical track annotation does not invent a graph edge over this measured painted-vector gap.",
+			"sourceEndpoints": [
+				[
+					2280.196,
+					4199.9135
+				],
+				[
+					2279.2607000000003,
+					4201.6088
+				]
+			]
+		},
+		{
+			"id": "uptown-source-gap-6357",
+			"corridor": "CPW103Street northbound",
+			"from": {
+				"pathId": 6357,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 6356,
+				"endpoint": "end"
+			},
+			"distance": 0.9690954338965699,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "trunks-north-overlay.png",
+			"impact": "Continuous physical track annotation does not invent a graph edge over this measured painted-vector gap.",
+			"sourceEndpoints": [
+				[
+					2256.8127,
+					4242.2934
+				],
+				[
+					2257.2807000000003,
+					4241.4448
+				]
+			]
+		},
+		{
+			"id": "uptown-source-gap-5904",
+			"corridor": "CPW59Street /Sixth Avenue southbound",
+			"from": {
+				"pathId": 5904,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 5903,
+				"endpoint": "end"
+			},
+			"distance": 1.0483306968699506,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "cpw-59-source.png",
+			"impact": "Continuous physical track annotation does not invent a graph edge over this measured painted-vector gap.",
+			"sourceEndpoints": [
+				[
+					1713.2729000000002,
+					5212.0536
+				],
+				[
+					1712.7939000000001,
+					5212.9861
+				]
+			]
+		},
+		{
+			"id": "uptown-source-gap-4677",
+			"corridor": "CPW59Street /Sixth Avenue northbound",
+			"from": {
+				"pathId": 4677,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 4678,
+				"endpoint": "start"
+			},
+			"distance": 2.009908149642711,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "cpw-59-source.png",
+			"impact": "Continuous physical track annotation does not invent a graph edge over this measured painted-vector gap.",
+			"sourceEndpoints": [
+				[
+					1735.4008000000001,
+					5272.9547
+				],
+				[
+					1737.1519,
+					5273.9413
+				]
+			]
+		},
+		{
+			"id": "culver-source-gap-5077",
+			"corridor": "Culver local north of Bergen Street",
+			"from": {
+				"pathId": 5077,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 5076,
+				"endpoint": "end"
+			},
+			"distance": 0.9451879389835934,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "culver-north-overlay.png",
+			"impact": "Bergen/Smith local rails do not have a graph connection through the painted break toward Jay Street.",
+			"sourceEndpoints": [
+				[
+					1619.4941000000001,
+					7546.523300000001
+				],
+				[
+					1620.4059000000002,
+					7546.274300000001
+				]
+			]
+		},
+		{
+			"id": "culver-source-gap-5082",
+			"corridor": "Culver local north of Bergen Street",
+			"from": {
+				"pathId": 5082,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 5081,
+				"endpoint": "end"
+			},
+			"distance": 0.9771724770994344,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "culver-north-overlay.png",
+			"impact": "Bergen/Smith local rails do not have a graph connection through the painted break toward Jay Street.",
+			"sourceEndpoints": [
+				[
+					1620.8267,
+					7550.845600000001
+				],
+				[
+					1621.7465000000002,
+					7550.5157
+				]
+			]
+		},
+		{
+			"id": "broadway-source-gap-7534",
+			"corridor": "Astoria southbound level transition",
+			"from": {
+				"pathId": 7534,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 7574,
+				"endpoint": "end"
+			},
+			"distance": 0.17428060706866294,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queensboro-levels-source.png",
+			"impact": "Nearby stop crosswalks remain usable independently but cannot certify traversal across this source break.",
+			"sourceEndpoints": [
+				[
+					2859.7285,
+					5652.7011
+				],
+				[
+					2859.8327000000004,
+					5652.5614
+				]
+			]
+		},
+		{
+			"id": "broadway-source-gap-7573",
+			"corridor": "Astoria northbound level transition",
+			"from": {
+				"pathId": 7573,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 7570,
+				"endpoint": "end"
+			},
+			"distance": 0.20090796400298847,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "queensboro-levels-source.png",
+			"impact": "Nearby stop crosswalks remain usable independently but cannot certify traversal across this source break.",
+			"sourceEndpoints": [
+				[
+					2845.1199,
+					5678.0302
+				],
+				[
+					2845.26,
+					5677.886200000001
+				]
+			]
+		},
+		{
+			"id": "broadway-source-gap-7872",
+			"corridor": "Broadway southbound City Hall",
+			"from": {
+				"pathId": 7872,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 7960,
+				"endpoint": "start"
+			},
+			"distance": 0.9200224345084452,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "broadway-main-overlay.png",
+			"impact": "Nearby stop crosswalks remain usable independently but cannot certify traversal across this source break.",
+			"sourceEndpoints": [
+				[
+					1093.4716,
+					6871.3904999999995
+				],
+				[
+					1093.8784,
+					6870.5653
+				]
+			]
+		},
+		{
+			"id": "broadway-source-gap-7866",
+			"corridor": "Broadway southbound East River",
+			"from": {
+				"pathId": 7866,
+				"endpoint": "start"
+			},
+			"candidateTo": {
+				"pathId": 7865,
+				"endpoint": "end"
+			},
+			"distance": 0.9837425882827249,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "broadway-main-overlay.png",
+			"impact": "Nearby stop crosswalks remain usable independently but cannot certify traversal across this source break.",
+			"sourceEndpoints": [
+				[
+					1074.3749,
+					7233.4091
+				],
+				[
+					1075.0301,
+					7234.142900000001
+				]
+			]
+		},
+		{
+			"id": "broadway-source-gap-7864",
+			"corridor": "Broadway southbound East River",
+			"from": {
+				"pathId": 7864,
+				"endpoint": "end"
+			},
+			"candidateTo": {
+				"pathId": 7865,
+				"endpoint": "start"
+			},
+			"distance": 1.9774212120840782,
+			"status": "unresolved painted-vector gap; no graph connection created",
+			"evidence": "broadway-main-overlay.png",
+			"impact": "Nearby stop crosswalks remain usable independently but cannot certify traversal across this source break.",
+			"sourceEndpoints": [
+				[
+					1129.0178,
+					7259.6733
+				],
+				[
+					1127.1511,
+					7259.0209
+				]
+			]
+		}
+	],
+	"unresolvedConnections": [
+		{
+			"id": "bedford-C1-operating-continuity",
+			"corridor": "Concourse Bedford Park/Kingsbridge",
+			"sourcePaths": [
+				5221,
+				5248,
+				5252,
+				5254,
+				5239,
+				5232,
+				5233,
+				5284
+			],
+			"evidence": [
+				"bedford-ids.png",
+				"nyct-bedford-page19.png"
+			],
+			"reason": "Lower outerC1 trace5254 continues5252 to center5239 atBedford, while direct C1S observations belong to separately reviewed west outer5221. Primary historical layout labels C3/C4/C6,not modern CM. Do not infer regular track movement,join crossing paths,or relabel center asC1 to connect these fragments.",
+			"impact": "D03S/C1 andD04S/C1 remain disconnected; regular outer platform crosswalks are mapped independently; center operating code/moves remain unresolved."
+		}
+	]
+}

@@ -150,6 +150,8 @@ internal class ModelHarness : AutoCloseable {
 	val storage = TestSettingsStorage(File(directory, "settings"))
 	/** The endpoint of every transit request, in order. */
 	val requestEndpoints: MutableList<String> = java.util.Collections.synchronizedList(mutableListOf())
+	/** What the device collector reports to the system status screen. */
+	@Volatile var systemStatus: () -> nyc.juliet.subwaysfornerds.core.SystemRuntimeStatus = { nyc.juliet.subwaysfornerds.core.SystemRuntimeStatus() }
 	lateinit var model: AppModel
 
 	fun <T> onModel(block: suspend () -> T): T = runBlocking { withContext(scope.coroutineContext) { block() } }
@@ -181,6 +183,7 @@ internal class ModelHarness : AutoCloseable {
 				clock = { NOW },
 				fixedNow = NOW,
 				debug = debug,
+				systemStatus = { systemStatus() },
 			))
 		}
 		if (waitForLoad) waitFor("settings to load") { model.loaded }

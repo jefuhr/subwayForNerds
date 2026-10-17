@@ -44,7 +44,9 @@ export function normalizeFeed(feed: string, raw: any, catalog: Station[]): Map<s
       ...(ext.is_assigned != null ? { assigned: ext.is_assigned } : {}) };
     if (vehicle) train.position = { stopId: vehicle.stop_id,
       name: stops.get(parentStop(vehicle.stop_id || ''))?.name || vehicle.stop_id || 'Unknown stop',
-      ...(vehicle.current_status ? { status: vehicle.current_status } : {}),
+			// protobuf defaults are omitted by decode(); GTFS defines this default only
+			// when a current stop sequence gives the status its meaning.
+			...(vehicle.current_status || vehicle.current_stop_sequence != null ? { status: vehicle.current_status || 'IN_TRANSIT_TO' } : {}),
       ...(vehicle.timestamp != null ? { timestamp: Number(vehicle.timestamp) } : {}) };
     for (const entry of raw.entity || []) {
       if (entry.alert?.informed_entity?.some((s: any) => s.trip?.trip_id === descriptor.trip_id && (!s.trip.start_date || s.trip.start_date === descriptor.start_date))) {

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsSubway
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.Icon
@@ -63,6 +64,7 @@ import nyc.juliet.subwaysfornerds.ui.components.EmptyState
 import nyc.juliet.subwaysfornerds.ui.components.ScreenExit
 import nyc.juliet.subwaysfornerds.ui.fleet.FleetDetailScreen
 import nyc.juliet.subwaysfornerds.ui.fleet.FleetScreen
+import nyc.juliet.subwaysfornerds.ui.map.TrackMapScreen
 import nyc.juliet.subwaysfornerds.ui.navigation.AppTab
 import nyc.juliet.subwaysfornerds.ui.navigation.Route
 import nyc.juliet.subwaysfornerds.ui.settings.CombinedEditorScreen
@@ -74,6 +76,7 @@ import nyc.juliet.subwaysfornerds.ui.settings.OfflineSettingsScreen
 import nyc.juliet.subwaysfornerds.ui.settings.SettingsActions
 import nyc.juliet.subwaysfornerds.ui.settings.SettingsScreen
 import nyc.juliet.subwaysfornerds.ui.settings.StationSelectionScreen
+import nyc.juliet.subwaysfornerds.ui.settings.SystemStatusScreen
 import nyc.juliet.subwaysfornerds.ui.settings.WidgetDisplayScreen
 import nyc.juliet.subwaysfornerds.ui.settings.WidgetFiltersScreen
 import nyc.juliet.subwaysfornerds.ui.station.ContextScreen
@@ -118,7 +121,7 @@ fun AppRoot(model: AppModel, account: AccountModel, actions: SettingsActions) {
 						containerColor = palette.card,
 						modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical)).testTag("navigationRail"),
 					) {
-						AppTab.entries.forEach { tab ->
+						AppTab.ordered.forEach { tab ->
 							NavigationRailItem(
 								selected = navigator.tab == tab,
 								onClick = { navigator.select(tab) },
@@ -138,7 +141,7 @@ fun AppRoot(model: AppModel, account: AccountModel, actions: SettingsActions) {
 					containerColor = palette.background,
 					bottomBar = {
 						NavigationBar(containerColor = palette.card, modifier = Modifier.testTag("navigationBar")) {
-							AppTab.entries.forEach { tab ->
+							AppTab.ordered.forEach { tab ->
 								NavigationBarItem(
 									selected = navigator.tab == tab,
 									onClick = { navigator.select(tab) },
@@ -173,6 +176,7 @@ private fun tabIcon(tab: AppTab) = when (tab) {
 	AppTab.BOARD -> Icons.Filled.DirectionsSubway
 	AppTab.FLEET -> Icons.Filled.Train
 	AppTab.SETTINGS -> Icons.Filled.Settings
+	AppTab.MAP -> Icons.Filled.Map
 }
 
 @Composable
@@ -180,7 +184,8 @@ private fun TabContent(model: AppModel, account: AccountModel, actions: Settings
 	val navigator = model.navigator
 	val tab = navigator.tab
 	val stack = navigator.stack(tab)
-	val usesPanes = twoPane && tab != AppTab.SETTINGS
+	// The map fills the whole width on tablets instead of the list pane; its details push over it.
+	val usesPanes = twoPane && tab != AppTab.SETTINGS && tab != AppTab.MAP
 	// Choosing a row in the list pane replaces the detail column; inside details, screens push.
 	val openFromList: (Route) -> Unit = { route -> if (usesPanes) navigator.show(route, tab) else navigator.push(route) }
 	val openFromDetail: (Route) -> Unit = { route -> navigator.push(route) }
@@ -194,6 +199,7 @@ private fun TabContent(model: AppModel, account: AccountModel, actions: Settings
 				AppTab.BOARD -> BoardScreen(model, openFromList, if (usesPanes) selected else null)
 				AppTab.FLEET -> FleetScreen(model, "", ScreenExit.NONE, {}, openFromList, if (usesPanes) selected else null)
 				AppTab.SETTINGS -> SettingsScreen(model, account, actions, openFromDetail, wide)
+				AppTab.MAP -> TrackMapScreen(model, openFromDetail)
 			}
 		}
 	}
@@ -221,7 +227,7 @@ private fun TabContent(model: AppModel, account: AccountModel, actions: Settings
 				AppTab.FLEET -> Column(Modifier.fillMaxSize().padding(24.dp)) {
 					EmptyState("Choose a car or consist", "Reports, roster facts and movement history appear here.")
 				}
-				AppTab.SETTINGS -> {}
+				AppTab.SETTINGS, AppTab.MAP -> {}
 			}
 		}
 	}
@@ -247,6 +253,7 @@ fun RouteScreen(model: AppModel, account: AccountModel, route: Route, exit: Scre
 		Route.OfflineSettings -> OfflineSettingsScreen(model, exit, close, open)
 		Route.FleetPackScope -> FleetPackScopeScreen(model, exit, close)
 		Route.WidgetPreviews -> WidgetPreviewScreen(model, exit, close)
+		Route.SystemStatus -> SystemStatusScreen(model, exit, close)
 		Route.Lines -> LinesScreen(model, exit, close)
 		else -> OverlayScreen(model, account, route, close)
 	}

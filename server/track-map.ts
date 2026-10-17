@@ -1,6 +1,8 @@
 import type { SourceState, StopPrediction, Train } from '../shared/types';
-import type { TrackMapPlatform, TrackMapPoint, TrackMapSnapshot, TrackMapTopology, TrackMapTrain } from '../shared/track-map';
+import type { TrackMapPlatform, TrackMapPoint, TrackMapSlowZones, TrackMapSnapshot, TrackMapTopology, TrackMapTrain } from '../shared/track-map';
 import { matchedTrip, serviceTime, type Schedules } from './schedules';
+import type { SlowZoneService } from './slow-zones';
+import { slowZoneSummary } from '../shared/slow-zones';
 
 const LIVE_SECONDS = 90;
 const EXPIRE_SECONDS = 300;
@@ -67,7 +69,7 @@ export class TrackMapPlacement {
 		}
 	}
 
-	snapshot(trains: Iterable<Train>, sources: SourceState[], now: number, schedules?: Schedules): TrackMapSnapshot {
+	snapshot(trains: Iterable<Train>, sources: SourceState[], now: number, schedules?: Schedules, slowZones?: SlowZoneService): TrackMapSnapshot {
 		if (!Number.isFinite(now) || now <= 0) throw new RangeError('Invalid snapshot time');
 		const sourceIndex = new Map(sources.map(s => [s.id, s]));
 		const unique = new Map<string, Train>();
@@ -95,12 +97,36 @@ export class TrackMapPlacement {
 		return {
 			schemaVersion: 1, mapVersion: this.topology.mapVersion, pdfSha256: this.topology.pdfSha256,
 			generatedAt: now, sources, trains: rows,
+			slowZones: this.slowZoneSnapshot(slowZones, now),
 			coverage: {
 				placed: rows.filter(t => t.placement === 'track').length,
 				uncertain: rows.filter(t => t.placement === 'near-stop').length,
 				unplaced: rows.filter(t => t.placement === 'unplaced').length,
 			},
 		};
+	}
+
+	private slowZoneSnapshot(data: SlowZoneService | undefined, now: number): TrackMapSlowZones {
+		const result: TrackMapSlowZones = { dataThrough: data?.dataThrough ?? null, expiresAt: data?.expiresAt ?? null, zones: [], unmappedCount: 0 };
+		if (!data || result.expiresAt == null || !Number.isFinite(result.expiresAt) || now >= result.expiresAt || !data.live(now)) return result;
+		for (const zone of data.zones) {
+			// Exact directional stop IDs only. No route-letter, proximity or reverse-stop fallback.
+			const origins = new Set((this.platforms.get(zone.from) || []).map(p => p.nodeId));
+			const targets = new Set((this.platforms.get(zone.to) || []).map(p => p.nodeId));
+			let path: Path | undefined, uncertain = false;
+			for (const from of origins) for (const to of targets) {
+				const candidate = this.path(from, to);
+				if (candidate.limited || candidate.reachable && !candidate.path) uncertain = true;
+				if (candidate.path) {
+					if (path) uncertain = true;
+					path = candidate.path;
+				}
+			}
+			const paths = path && !uncertain ? [path.points.map(p => ({ ...p }))] : [];
+			if (!paths.length) result.unmappedCount++;
+			result.zones.push({ ...slowZoneSummary(zone), id: JSON.stringify([zone.from, zone.to, zone.kind, zone.since]), routes: [...zone.routes], paths });
+		}
+		return result;
 	}
 
 	private place(key: string, t: Train, source: SourceState | undefined, now: number, schedules?: Schedules): TrackMapTrain {

@@ -95,6 +95,16 @@ struct TrainDetailView: View {
 								.accessibilityLabel("Feed \(freshness), \(Display.ageLabel(train.timestamp, now: now))")
 						}
 						FactGrid(facts: facts(train, consist: consist))
+						if let summary = SlowZoneDisplay.summary(train.slowZones ?? []) {
+							HStack(alignment: .firstTextBaseline, spacing: 6) {
+								SlowZoneIcon(disruption: train.slowZones?.contains { SlowZoneDisplay.isDisruption($0.zone) } == true)
+								Text(summary)
+							}
+							.font(.subheadline)
+							.accessibilityElement(children: .ignore)
+							.accessibilityLabel(summary)
+							.accessibilityIdentifier("slowZoneSummary")
+						}
 						if let origin = boardingOrigin { Text("Boarding at \(origin.station.name)").font(.subheadline).accessibilityIdentifier("boardingStation") }
 					}
 					.listRowInsets(.vertical, 12)
@@ -107,6 +117,10 @@ struct TrainDetailView: View {
 				ChangesSection(changes: Display.changesAhead(train.changes, index: 0), now: now, cached: cached)
 				Section {
 					ForEach(Array(train.stops.enumerated()), id: \.offset) { index, stop in
+						// Each zone sits just before the stop where its segment ends.
+						ForEach(Array(SlowZoneDisplay.zones(train.slowZones, before: index).enumerated()), id: \.offset) { _, zone in
+							SlowZoneRow(zone: zone, cached: cached).listRowInsets(.vertical, 4)
+						}
 						let row = StopRow(stop: stop, now: now, offline: cached ? OfflineStopEstimate(sourceTimestamp: sourceTimestamp, estimatedNext: index == nextStopIndex, noEstimate: noEstimate) : nil)
 						Group {
 							if !cached, Display.freshness(train, now: now) == .live, !["SKIPPED", "NO_DATA"].contains(stop.relationship ?? ""), stop.stationId != nil, (stop.arrival ?? stop.departure ?? .infinity) >= now {
@@ -120,9 +134,14 @@ struct TrainDetailView: View {
 						.listRowInsets(.vertical, 6)
 					}
 				} header: { ListHeader(cached ? "Saved stopping pattern" : "Remaining stopping pattern") } footer: {
-					Text(cached
-						? "Offline estimates count down the saved predictions on this device's clock. They are not observed positions; delays, reroutes and cancellations after the source time are unknown. Connections need a live feed."
-						: "Arrival / departure · Eastern. Patterns reflect remaining feed predictions. Future track fields describe that stop, not the current train position. Operations IDs identify trips, not physical cars.")
+					VStack(alignment: .leading, spacing: 6) {
+						Text(cached
+							? "Offline estimates count down the saved predictions on this device's clock. They are not observed positions; delays, reroutes and cancellations after the source time are unknown. Connections need a live feed."
+							: "Arrival / departure · Eastern. Patterns reflect remaining feed predictions. Future track fields describe that stop, not the current train position. Operations IDs identify trips, not physical cars.")
+						if train.slowZones?.isEmpty == false {
+							Text(SlowZoneDisplay.attribution).accessibilityIdentifier("slowZoneAttribution")
+						}
+					}
 				}
 				if let pattern = train.scheduledPattern {
 					Section {
@@ -330,6 +349,26 @@ struct OfflineStopEstimate {
 	let estimatedNext: Bool
 	/// Why saved times get no countdown, such as a train canceled when saved.
 	var noEstimate: String?
+}
+
+/// An estimated slow segment between two stops. It is context, not a destination, so it never links.
+private struct SlowZoneRow: View {
+	let zone: TrainSlowZone
+	/// A cached trip never says the train is in the zone now.
+	let cached: Bool
+	var body: some View {
+		let title = SlowZoneDisplay.title(zone, cached: cached), detail = SlowZoneDisplay.detail(zone)
+		HStack(alignment: .firstTextBaseline, spacing: 6) {
+			SlowZoneIcon(disruption: SlowZoneDisplay.isDisruption(zone.zone))
+			VStack(alignment: .leading, spacing: 1) {
+				Text(title).font(.caption.weight(.semibold))
+				Text(detail).font(.caption2).foregroundStyle(.secondary)
+			}
+		}
+		.accessibilityElement(children: .ignore)
+		.accessibilityLabel("Estimated \(title). \(detail)")
+		.accessibilityIdentifier("slowZone_\(zone.from)_\(zone.to)")
+	}
 }
 
 private struct StopRow: View {

@@ -1,4 +1,4 @@
-import type { SourceState } from './types';
+import type { SlowZone, SourceState } from './types';
 
 /** Coordinates are PDF points, with the origin at the top left of the crop box. */
 export interface TrackMapPoint { x: number; y: number }
@@ -71,6 +71,20 @@ export interface TrackMapTrain {
 	freshness: 'live' | 'stale' | 'unavailable';
 	reason?: string;
 }
+/** Estimated conditions from Transit Lab (CC BY 4.0), not official speed restrictions. */
+export interface TrackMapSlowZone extends SlowZone {
+	id: string;
+	routes: string[];
+	/** Reviewed rail polylines in top-left PDF points; empty when mapping is uncertain. */
+	paths: TrackMapPoint[][];
+}
+export interface TrackMapSlowZones {
+	dataThrough: string | null;
+	/** Unix seconds; all active display must stop at this deadline, including cached data. */
+	expiresAt: number | null;
+	zones: TrackMapSlowZone[];
+	unmappedCount: number;
+}
 export interface TrackMapSnapshot {
 	schemaVersion: 1;
 	mapVersion: string;
@@ -78,5 +92,7 @@ export interface TrackMapSnapshot {
 	generatedAt: number;
 	sources: SourceState[];
 	trains: TrackMapTrain[];
+	/** Missing means no slow-zone data, for compatibility with older snapshots. */
+	slowZones?: TrackMapSlowZones;
 	coverage: { placed: number; uncertain: number; unplaced: number };
 }

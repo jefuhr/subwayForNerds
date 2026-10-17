@@ -70,7 +70,7 @@ object TrackMapContract {
 			} else if (train.motion != null && !validMotion(train.motion, page, revenue)) train.copy(motion = null)
 			else train
 		}
-		return snapshot.copy(trains = trains)
+		return snapshot.copy(trains = trains, slowZones = snapshot.slowZones?.let { TrackMapSlowZoneDisplay.validate(it, page) })
 	}
 
 	/** Motion must run forward, inside the page and its window, along revenue rail the installed map has. */

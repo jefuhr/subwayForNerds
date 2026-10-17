@@ -19,7 +19,8 @@ final class TrackMapUITests: XCTestCase, @unchecked Sendable {
 			let endpoint = ProcessInfo.processInfo.environment["SFN_WIDGET_QA_API"] ?? ""
 			let url = try XCTUnwrap(URL(string: endpoint), "Supply SFN_WIDGET_QA_API from the isolated map runner")
 			XCTAssertTrue(["localhost", "127.0.0.1"].contains(url.host ?? ""), "Recorded local HTTP is required; production is never a fallback")
-			XCTAssertEqual(url.port, 8192, "This suite owns only the coordinator-leased map fixture port")
+			let port = try XCTUnwrap(url.port, "Supply an explicit coordinator-leased fixture port")
+			XCTAssertTrue((1024...65535).contains(port), "Use an unprivileged coordinator-leased fixture port")
 			fixtureBase = url
 			XCUIDevice.shared.orientation = .portrait
 		}
@@ -95,6 +96,41 @@ final class TrackMapUITests: XCTestCase, @unchecked Sendable {
 		XCTAssertEqual(fitted.x, 3672, accuracy: 4)
 		XCTAssertEqual(fitted.y, 5770, accuracy: 4)
 		capture("fit-full-original-pdf", app)
+	}
+
+	func testEstimatedSlowZoneHighlightsLegendAndAccessibleDetails() throws {
+		let snapshot = try recordedSnapshot()
+		let payload = try XCTUnwrap(snapshot["slowZones"] as? [String: Any], "The integrated fixture must supply slow-zone estimates")
+		let zones = try XCTUnwrap(payload["zones"] as? [[String: Any]])
+		let mapped = try XCTUnwrap(zones.first { zone in
+			!(zone["paths"] as? [[Any]] ?? []).isEmpty && (zone["routes"] as? [String] ?? []).contains("L")
+		}, "Keep a reviewed L-line fixture segment for map acceptance")
+		let id = try XCTUnwrap(mapped["id"] as? String)
+		let segment = try XCTUnwrap(mapped["segment"] as? String)
+		let app = launch()
+		openMap(app)
+		search("Union Sq", app)
+		element("track-map-search-result-0", app).tap()
+		waitForKeyboardDismissal(app)
+		waitForUnionSquare(app)
+		let before = try viewport(app)
+		let legend = element("track-map-slow-zones", app)
+		XCTAssertTrue(legend.waitForExistence(timeout: 15))
+		XCTAssertTrue(legend.label.contains("Estimated slow zones"), legend.label)
+		XCTAssertTrue(legend.label.contains("Transit Lab"), legend.label)
+		capture("slow-zones-amber-under-trains", app)
+		selectL(app)
+		element("track-map-slow-zones", app).tap()
+		let row = element("track-map-slow-zone-\(id)", app)
+		if !row.waitForExistence(timeout: 5) { app.swipeUp() }
+		XCTAssertTrue(row.waitForExistence(timeout: 5))
+		XCTAssertTrue(row.label.contains(segment), row.label)
+		XCTAssertTrue(row.label.contains("Estimated"), row.label)
+		XCTAssertTrue(row.label.contains("Typically +"), row.label)
+		XCTAssertTrue(row.label.contains("Source: Transit Lab"), row.label)
+		capture("slow-zones-accessible-segment-delay-kind-source", app)
+		element("track-map-slow-zones-done", app).tap()
+		assertViewport(before, try viewport(app), "slow-zone details return")
 	}
 
 	func testRecordedTrainRouteFilterCertaintyAndDetailReturn() throws {

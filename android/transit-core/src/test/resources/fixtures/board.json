@@ -667,6 +667,17 @@
       "assigned": true,
       "feed": "gtfs",
       "timestamp": 1788656333,
+      "slowZone": {
+        "from": "633S",
+        "to": "634S",
+        "segment": "28 St → 23 St-Baruch College",
+        "kind": "slow",
+        "since": "2026-08-10",
+        "through": "2026-09-04",
+        "extraSeconds": 41.6,
+        "baselineSeconds": 92.4,
+        "slowDays": 20
+      },
       "alerts": [],
       "changes": [
         {

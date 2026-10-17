@@ -72,6 +72,7 @@ struct TrackMapContent: View {
 	@FocusState private var searching: Bool
 	@State private var station: TrackMapStationMatch?
 	@State private var showTrains = false
+	@State private var showSlowZones = false
 	@State private var trainsInView: TrackMapRect?
 	@State private var pendingTrain: String?
 	@State private var overlap: [TrackMapTrainState] = []
@@ -98,7 +99,12 @@ struct TrackMapContent: View {
 			VStack(spacing: 6) {
 				searchBar
 				if searching, !results.isEmpty { searchResults }
-				routeFilters
+				TimelineView(.periodic(from: .now, by: 1)) { _ in
+					VStack(spacing: 6) {
+						routeFilters
+						slowZoneLegend
+					}
+				}
 				Spacer(minLength: 0)
 				if let station { stationCard(station) }
 				if let banner { statusBanner(banner) }
@@ -125,6 +131,9 @@ struct TrackMapContent: View {
 				pendingTrain = key
 				showTrains = false
 			}
+		}
+		.sheet(isPresented: $showSlowZones) {
+			TrackMapSlowZonesView(session: session, now: { [store] in store.now() })
 		}
 		.confirmationDialog("Choose a train", isPresented: $showOverlap, titleVisibility: .visible) {
 			ForEach(overlap) { state in
@@ -228,8 +237,32 @@ struct TrackMapContent: View {
 	// MARK: Route filters
 
 	private var routes: [String] {
-		let shown = session.snapshot.map(TrackMapRoutes.routes) ?? []
+		let shown = session.snapshot.map { TrackMapRoutes.routes(in: $0, now: store.now()) } ?? []
 		return TrackMapRoutes.order.filter { shown.contains($0) || session.selectedRoutes.contains($0) }
+	}
+
+	private var slowZoneLegend: some View {
+		let state = TrackMapSlowZonePresenter.state(session.snapshot, now: store.now(), routes: session.selectedRoutes, frozenAt: session.frozenAt)
+		let label: String = switch state.status {
+		case .active: "Estimated slow zones · \(state.zones.count)\(state.cached ? " · Cached" : "")"
+		case .expired: "Slow-zone estimates expired"
+		case .unavailable: "Slow-zone estimates unavailable"
+		}
+		return Button { showSlowZones = true } label: {
+			HStack(spacing: 6) {
+				Image(systemName: "line.diagonal").font(.body.weight(.heavy)).foregroundStyle(Color(red: 0.85, green: 0.45, blue: 0.03))
+				Text(label).font(.caption.weight(.semibold))
+				Text("Transit Lab").font(.caption2)
+				Image(systemName: "chevron.right").font(.caption2)
+			}
+			.padding(.horizontal, 12)
+			.frame(minHeight: 44)
+			.foregroundStyle(app.theme.ink)
+			.background(app.theme.background.opacity(0.96), in: Capsule())
+			.overlay { Capsule().strokeBorder(Color.orange.opacity(0.7)) }
+		}
+		.accessibilityLabel("\(label). Amber lines show estimated slow zones. Source: Transit Lab. Show zone details")
+		.accessibilityIdentifier("track-map-slow-zones")
 	}
 
 	@ViewBuilder private var routeFilters: some View {

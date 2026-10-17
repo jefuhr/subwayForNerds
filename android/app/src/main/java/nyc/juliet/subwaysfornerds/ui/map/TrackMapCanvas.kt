@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -56,11 +57,15 @@ import kotlin.math.sin
 
 /** Length of the drawn train body at close zoom, in PDF points. A symbol size; its shape follows real rail points. */
 private const val TRAIN_BODY_POINTS = 22.0
+internal val SlowZoneAmber = Color(0xFFFF9800)
 private val OutsidePage = Color(0xFFE6E6E6)
 
 /** The canvas's rounded camera for acceptance tests; it is also spoken as the canvas's state description. */
 val TrackMapViewportKey = SemanticsPropertyKey<TrackMapViewportSummary>("TrackMapViewport")
 var SemanticsPropertyReceiver.trackMapViewport by TrackMapViewportKey
+
+val TrackMapSlowZoneCountKey = SemanticsPropertyKey<Int>("TrackMapSlowZoneCount")
+var SemanticsPropertyReceiver.trackMapSlowZoneCount by TrackMapSlowZoneCountKey
 
 /**
  * The artwork with trains over it. The PDF keeps its original colours in every app theme. Markers are a fixed
@@ -85,9 +90,11 @@ internal fun TrackMapCanvas(
 	val viewport by remember(map) { derivedStateOf { map.camera?.summary() } }
 	Canvas(
 		modifier
+			.clipToBounds()
 			.testTag("track-map-canvas")
 			.semantics {
 				contentDescription = description
+				trackMapSlowZoneCount = map.slowZones(time()).count { it.paths.isNotEmpty() }
 				viewport?.let { trackMapViewport = it; stateDescription = it.description }
 				customActions = listOf(
 					CustomAccessibilityAction("Zoom in") { zoomBy(map, page, 2.0); true },
@@ -118,6 +125,17 @@ internal fun TrackMapCanvas(
 		val view = camera.viewport(size.width.toDouble(), size.height.toDouble())
 		drawRect(OutsidePage)
 		drawArtwork(renderer, view, camera, page, bitmapPaint)
+		// Reviewed slow-zone paths sit above the artwork and below all train markers.
+		for (zone in map.slowZones(time())) for (points in zone.paths) {
+			val path = Path().apply {
+				points.forEachIndexed { i, point ->
+					val at = view.toScreen(point)
+					if (i == 0) moveTo(at.x.toFloat(), at.y.toFloat()) else lineTo(at.x.toFloat(), at.y.toFloat())
+				}
+			}
+			drawPath(path, SlowZoneAmber, alpha = 0.5f, style = Stroke(10.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+			drawPath(path, SlowZoneAmber, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+		}
 		val markers = map.markers(time(), reducedMotion)
 		for (marker in markers) drawTrain(marker, view, camera, measurer)
 	}

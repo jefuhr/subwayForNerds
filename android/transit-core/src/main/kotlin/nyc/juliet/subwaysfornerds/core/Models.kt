@@ -85,6 +85,41 @@ val TransitJson = Json { ignoreUnknownKeys = true; encodeDefaults = true; explic
 )
 @Serializable data class ScheduledPattern(val shape: String, val headsign: String, val stops: List<String>, val source: String)
 
+/**
+ * An estimated slow segment between two consecutive GTFS stops, from Transit Lab's weekday run times.
+ * It is not an official MTA speed restriction. `kind` stays a string so future kinds still decode;
+ * only "disruption" reads differently. `since` and `through` are calendar dates (YYYY-MM-DD).
+ */
+interface SlowZoneEstimate {
+	val from: String
+	val to: String
+	val segment: String
+	val kind: String
+	val since: String
+	val through: String
+	val extraSeconds: Double
+	val baselineSeconds: Double
+	val slowDays: Int
+}
+
+/** The zone a board row's train is in right now. */
+@Serializable data class SlowZone(
+	override val from: String, override val to: String, override val segment: String, override val kind: String,
+	override val since: String, override val through: String,
+	override val extraSeconds: Double, override val baselineSeconds: Double, override val slowDays: Int,
+) : SlowZoneEstimate
+
+/** A zone ahead of a train. `toIndex` is the segment's end stop in this snapshot's `Train.stops`; the current zone comes first. */
+@Serializable data class TrainSlowZone(
+	override val from: String, override val to: String, override val segment: String, override val kind: String,
+	override val since: String, override val through: String,
+	override val extraSeconds: Double, override val baselineSeconds: Double, override val slowDays: Int,
+	val toIndex: Int,
+	@EncodeDefault(NEVER) val current: Boolean? = null,
+) : SlowZoneEstimate {
+	val zone: SlowZone get() = SlowZone(from, to, segment, kind, since, through, extraSeconds, baselineSeconds, slowDays)
+}
+
 @Serializable data class Train(
 	val key: String, val feed: String, val tripId: String, val route: String, val destination: String,
 	val direction: String, val timestamp: Double, val stops: List<StopPrediction> = emptyList(), val alerts: List<String> = emptyList(),
@@ -99,6 +134,7 @@ val TransitJson = Json { ignoreUnknownKeys = true; encodeDefaults = true; explic
 	@EncodeDefault(NEVER) val relationship: String? = null,
 	@EncodeDefault(NEVER) val consist: Consist? = null,
 	@EncodeDefault(NEVER) val scheduledPattern: ScheduledPattern? = null,
+	@EncodeDefault(NEVER) val slowZones: List<TrainSlowZone>? = null,
 )
 
 @Serializable data class OnwardStop(val stationId: String, val stopId: String, val name: String, val time: Double? = null)
@@ -120,6 +156,7 @@ val TransitJson = Json { ignoreUnknownKeys = true; encodeDefaults = true; explic
 	@EncodeDefault(NEVER) val consist: Consist? = null,
 	@EncodeDefault(NEVER) val gap: Double? = null,
 	@EncodeDefault(NEVER) val basis: String? = null,
+	@EncodeDefault(NEVER) val slowZone: SlowZone? = null,
 	@kotlinx.serialization.Transient internal val explicitNullDeparture: Boolean = false,
 )
 

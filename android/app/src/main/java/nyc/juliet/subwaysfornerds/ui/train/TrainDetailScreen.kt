@@ -53,6 +53,7 @@ import nyc.juliet.subwaysfornerds.core.Display
 import nyc.juliet.subwaysfornerds.core.Freshness
 import nyc.juliet.subwaysfornerds.core.OfflineDisplay
 import nyc.juliet.subwaysfornerds.core.OfflineIdentity
+import nyc.juliet.subwaysfornerds.core.SlowZoneDisplay
 import nyc.juliet.subwaysfornerds.core.StopPrediction
 import nyc.juliet.subwaysfornerds.core.Train
 import nyc.juliet.subwaysfornerds.core.TrainFavoriteRules
@@ -76,6 +77,8 @@ import nyc.juliet.subwaysfornerds.ui.components.RawJsonDisclosure
 import nyc.juliet.subwaysfornerds.ui.components.RouteBullet
 import nyc.juliet.subwaysfornerds.ui.components.RowContainer
 import nyc.juliet.subwaysfornerds.ui.components.ScreenExit
+import nyc.juliet.subwaysfornerds.ui.components.SlowZoneSegmentRow
+import nyc.juliet.subwaysfornerds.ui.components.SlowZoneSummary
 import nyc.juliet.subwaysfornerds.ui.components.section
 import nyc.juliet.subwaysfornerds.ui.navigation.Route
 import nyc.juliet.subwaysfornerds.ui.theme.TextRoles
@@ -92,6 +95,9 @@ data class TrainPresentation(
 	val nextStopIndex: Int?,
 	val error: String?,
 ) {
+	/** A connected, current report; saved, failed and stale ones are not live. */
+	fun live(now: Double): Boolean = !cached && train != null && Display.freshness(train, now) == Freshness.LIVE
+
 	companion object {
 		fun of(live: TripDetail?, failure: TripFailure?, saved: CachedTrip?, savedLoaded: Boolean, snapshotOnly: Boolean, connected: Boolean, now: Double): TrainPresentation {
 			val data = if (snapshotOnly) null else live
@@ -189,6 +195,7 @@ fun TrainDetailScreen(model: AppModel, route: Route.Train, exit: ScreenExit, clo
 							)
 						}
 						FactGrid(trainFacts(train, consist, shown.cached, now))
+						SlowZoneDisplay.summary(train.slowZones)?.let { SlowZoneSummary(it) }
 						origin?.let { Text("Boarding at ${it.station.name}", style = TextRoles.subheadline, modifier = Modifier.testTag("boardingStation")) }
 					}
 				}
@@ -206,13 +213,19 @@ fun TrainDetailScreen(model: AppModel, route: Route.Train, exit: ScreenExit, clo
 			"changes", header = "Different from normal",
 			footer = "Compared with weekday daytime service. Scheduled variations differ from disruptions; advisory notices may not affect every train.",
 		) { changes.forEach { change -> row(change.id) { ChangeRow(change, now, shown.cached, model.timeFormat) } } }
+		val zonesByStop = SlowZoneDisplay.byStop(train)
+		val live = shown.live(now)
 		section(
 			"stops",
 			header = if (shown.cached) "Saved stopping pattern" else "Remaining stopping pattern",
-			footer = if (shown.cached) "Offline estimates count down the saved predictions on this device's clock. They are not observed positions; delays, reroutes and cancellations after the source time are unknown. Connections need a live feed."
-			else "Arrival / departure · Eastern. Patterns reflect remaining feed predictions. Future track fields describe that stop, not the current train position. Operations IDs identify trips, not physical cars.",
+			footer = listOfNotNull(
+				if (shown.cached) "Offline estimates count down the saved predictions on this device's clock. They are not observed positions; delays, reroutes and cancellations after the source time are unknown. Connections need a live feed."
+				else "Arrival / departure · Eastern. Patterns reflect remaining feed predictions. Future track fields describe that stop, not the current train position. Operations IDs identify trips, not physical cars.",
+				SlowZoneDisplay.attribution.takeIf { !train.slowZones.isNullOrEmpty() },
+			).joinToString("\n"),
 		) {
 			train.stops.forEachIndexed { index, stop ->
+				zonesByStop[index]?.forEach { zone -> row("slowZone$index:${zone.from}") { SlowZoneSegmentRow(zone, live) } }
 				row("stop$index") {
 					val connectable = !shown.cached && Display.freshness(train, now) == Freshness.LIVE && stop.relationship !in setOf("SKIPPED", "NO_DATA") &&
 						stop.stationId != null && (stop.arrival ?: stop.departure ?: Double.POSITIVE_INFINITY) >= now

@@ -84,4 +84,23 @@ import kotlinx.serialization.Serializable
 	val sources: List<SourceState>,
 	val trains: List<TrackMapTrain>,
 	val coverage: TrackMapSnapshotCoverage,
+	@EncodeDefault(NEVER) val slowZones: TrackMapSlowZones? = null,
 )
+
+/** Estimated conditions, independent of train evidence clocks. Expiry is Unix seconds. */
+@Serializable data class TrackMapSlowZones(
+	val dataThrough: String? = null,
+	val expiresAt: Double? = null,
+	val zones: List<TrackMapSlowZone>,
+	val unmappedCount: Int,
+)
+
+/** Only reviewed rail paths, in top-left PDF points; no client-side geometry inference. */
+@Serializable data class TrackMapSlowZone(
+	val id: String,
+	val routes: List<String>,
+	val paths: List<List<TrackMapPoint>>,
+	override val from: String, override val to: String, override val segment: String, override val kind: String,
+	override val since: String, override val through: String,
+	override val extraSeconds: Double, override val baselineSeconds: Double, override val slowDays: Int,
+) : SlowZoneEstimate

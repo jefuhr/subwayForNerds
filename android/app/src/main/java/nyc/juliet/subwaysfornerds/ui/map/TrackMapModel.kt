@@ -28,6 +28,9 @@ import nyc.juliet.subwaysfornerds.core.TrackMapFreshness
 import nyc.juliet.subwaysfornerds.core.TrackMapMotionMath
 import nyc.juliet.subwaysfornerds.core.TrackMapPlacement
 import nyc.juliet.subwaysfornerds.core.TrackMapSnapshot
+import nyc.juliet.subwaysfornerds.core.TrackMapSlowZone
+import nyc.juliet.subwaysfornerds.core.TrackMapSlowZoneDisplay
+import nyc.juliet.subwaysfornerds.core.SlowZoneDisplay
 import nyc.juliet.subwaysfornerds.core.TrackMapStation
 import nyc.juliet.subwaysfornerds.core.TrackMapTopology
 import nyc.juliet.subwaysfornerds.core.TrackMapTrain
@@ -95,6 +98,7 @@ class TrackMapModel(
 	var routeFilter by mutableStateOf<Set<String>>(emptySet()); private set
 	var query by mutableStateOf("")
 	var showTrainList by mutableStateOf(false)
+	var showSlowZoneList by mutableStateOf(false)
 
 	private var visible = false
 	private var foreground = false
@@ -186,7 +190,19 @@ class TrackMapModel(
 	// MARK: Derived
 
 	/** Routes present in the snapshot, in line order. */
-	val routes: List<String> get() = snapshot?.trains?.map { it.route }?.distinct()?.sortedWith(compareBy({ routeOrder(it) }, { it })).orEmpty()
+	val routes: List<String> get() = (snapshot?.trains.orEmpty().map { it.route } + TrackMapSlowZoneDisplay.active(snapshot?.slowZones, clock()).flatMap { it.routes }).distinct().sortedWith(compareBy({ routeOrder(it) }, { it }))
+
+	/** Evaluated against wall time, even when no trains move or polling is suspended. */
+	fun slowZones(now: Double): List<TrackMapSlowZone> = TrackMapSlowZoneDisplay.active(snapshot?.slowZones, now, routeFilter)
+
+	fun slowZoneStatus(now: Double): String {
+		val value = snapshot?.slowZones ?: return "Slow-zone estimates unavailable"
+		if (!TrackMapSlowZoneDisplay.isActive(value, now)) return if (value.expiresAt == null || value.expiresAt?.isFinite() != true) "Slow-zone estimates unavailable" else "Slow-zone estimates expired · highlights hidden"
+		val count = slowZones(now).count { it.paths.isNotEmpty() }
+		val cached = if (frozenSince != null) " · cached" else ""
+		val date = value.dataThrough?.let { " · through ${SlowZoneDisplay.date(it)}" }.orEmpty()
+		return "$count estimated slow ${if (count == 1) "zone" else "zones"}$cached$date"
+	}
 
 	fun toggleRoute(route: String) { routeFilter = if (route in routeFilter) routeFilter - route else routeFilter + route }
 	fun clearRoutes() { routeFilter = emptySet() }

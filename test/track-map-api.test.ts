@@ -48,6 +48,9 @@ test('track map snapshot uses cached feeds and rejects incompatible map versions
 		const mismatch = await app.inject('/subwaysForNerds/api/v1/track-map/other-v1/snapshot');
 		assert.equal(mismatch.statusCode, 404);
 		assert.equal(mismatch.json().error, 'Unsupported track map version');
+		const health = (await app.inject('/subwaysForNerds/api/v1/health')).json();
+		assert.equal(health.trackMap.available, true);
+		assert.equal(health.slowZones.status, 'unavailable');
 		assert.equal(fetched, 0);
 	} finally { await app.close(); }
 });
@@ -59,7 +62,9 @@ test('missing topology disables only the map and is visible in health', async ()
 	try {
 		const response = await app.inject('/subwaysForNerds/api/v1/track-map/nyc-2.6.8-v1/snapshot');
 		assert.equal(response.statusCode, 503);
-		assert.equal((await app.inject('/subwaysForNerds/api/v1/health')).json().trackMap.available, false);
+		const health = (await app.inject('/subwaysForNerds/api/v1/health')).json();
+		assert.equal(health.trackMap.available, false);
+		assert.equal(health.slowZones.status, 'unavailable');
 		assert.equal((await app.inject('/subwaysForNerds/api/v1/stations/602/board')).statusCode, 200);
 	} finally { await app.close(); }
 });

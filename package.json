@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.13"
+    "node": ">=22.15"
   },
   "scripts": {
     "dev": "concurrently -k 'tsx watch server/index.ts' 'vite --host 0.0.0.0'",
@@ -30,6 +30,7 @@
     "csv-parse": "^6.0.0",
     "fastify": "^5.0.0",
     "fflate": "^0.8.2",
+    "hyparquet": "1.31.2",
     "jose": "6.2.12",
     "lucide-react": "^0.468.0",
     "protobufjs": "^7.5.0",

@@ -7,7 +7,7 @@ import type { FleetOfflineManifest } from '../shared/offline';
 
 test('native contract fixtures reproduce real API responses with deterministic recorded data', async () => {
   const generated = await nativeFixtures();
-  assert.equal(Object.keys(generated).length, 10);
+  assert.equal(Object.keys(generated).length, 11);
   for (const [name, data] of Object.entries(generated)) {
     const bytes = await readFile(new URL(`fixtures/native/${name}`, import.meta.url));
     const swiftBytes = await readFile(new URL(`../ios/TransitCore/Tests/TransitCoreTests/Fixtures/${name}`, import.meta.url));
@@ -37,6 +37,13 @@ test('native contract fixtures reproduce real API responses with deterministic r
   assert.ok(trip.key.includes('/?=#'));
   assert.ok((generated['edge-board.json'] as Board).departures.some(departure => !('assigned' in departure)));
   assert.ok((generated['transfers.json'] as TransferResult).connections.length > 0);
+  // Slow zones are synthetic fixture rows: one current zone with a disruption ahead, and one zone ahead only.
+  const slow = (generated['slow-zone-trip.json'] as { train: Train }).train;
+  assert.deepEqual(slow.slowZones!.map(zone => [zone.from, zone.to, zone.kind, zone.toIndex, zone.current ?? false]), [['633S', '634S', 'slow', 0, true], ['419S', '420S', 'disruption', 9, false]]);
+  assert.deepEqual((generated['trip.json'] as { train: Train }).train.slowZones!.map(zone => [zone.from, zone.to, zone.current ?? false]), [['L02N', 'L01N', false]]);
+  const tagged = (generated['board.json'] as Board).departures.filter(departure => departure.slowZone);
+  assert.ok(tagged.length > 0 && tagged.every(departure => departure.tripKey === slow.key && departure.slowZone!.to === '634S'));
+  assert.ok((generated['edge-board.json'] as Board).departures.every(departure => !('slowZone' in departure)));
 });
 
 test('portable settings fixtures are identical in web, Swift, and Kotlin tests', async () => {

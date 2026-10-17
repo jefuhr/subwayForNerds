@@ -291,6 +291,10 @@ final class TrackMapCanvasView: UIView, @preconcurrency PDFViewDelegate, UIGestu
 		overlay.markers = placed.markers
 		animatingInView = placed.animating
 		overlay.highlights = input.highlights.map(viewPoint)
+		// Draw reviewed slow-zone paths below train markers. The clock runs for any
+		// accepted snapshot, including snapshots with no trains and Reduce Motion.
+		overlay.slowZonePaths = TrackMapSlowZonePresenter.state(input.snapshot, now: now(), routes: input.routes, frozenAt: input.frozenAt)
+			.highlightedPaths.map { $0.map(viewPoint) }
 		overlay.closeZoom = pdfView.scaleFactor >= Self.closeZoom
 		overlay.setNeedsDisplay()
 		let time = ProcessInfo.processInfo.systemUptime
@@ -362,12 +366,28 @@ final class TrackMapOverlayView: UIView {
 	var markers: [TrackMapPlacedMarker] = []
 	private var markerElements: [String: TrackMapMarkerElement] = [:]
 	var highlights: [CGPoint] = []
+	var slowZonePaths: [[CGPoint]] = []
 	var closeZoom = false
 	var accent = UIColor.tintColor
 	var onActivate: ((String) -> Void)?
 
 	override func draw(_ rect: CGRect) {
 		guard let context = UIGraphicsGetCurrentContext() else { return }
+		for points in slowZonePaths {
+			guard let first = points.first else { continue }
+			let path = UIBezierPath()
+			path.move(to: first)
+			for point in points.dropFirst() { path.addLine(to: point) }
+			path.lineCapStyle = .round
+			path.lineJoinStyle = .round
+			// A translucent amber halo keeps the reviewed rail visible at every zoom.
+			UIColor.systemOrange.withAlphaComponent(0.28).setStroke()
+			path.lineWidth = 11
+			path.stroke()
+			UIColor(trackMapRGB: 0xD97706).withAlphaComponent(0.9).setStroke()
+			path.lineWidth = 4
+			path.stroke()
+		}
 		for point in highlights {
 			context.setStrokeColor(accent.cgColor)
 			context.setLineWidth(3)

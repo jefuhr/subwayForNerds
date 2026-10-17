@@ -74,6 +74,7 @@ import nyc.juliet.subwaysfornerds.core.TrackMapCertainty
 import nyc.juliet.subwaysfornerds.core.TrackMapHitTest
 import nyc.juliet.subwaysfornerds.core.TrackMapPlacement
 import nyc.juliet.subwaysfornerds.core.TrackMapStation
+import nyc.juliet.subwaysfornerds.core.TrackMapSlowZoneDisplay
 import nyc.juliet.subwaysfornerds.core.TrackMapTrain
 import nyc.juliet.subwaysfornerds.ui.AppModel
 import nyc.juliet.subwaysfornerds.ui.components.ChipRow
@@ -169,7 +170,17 @@ private fun ReadyMap(model: AppModel, map: TrackMapModel, resources: TrackMapRes
 	}
 	val reducedMotion = rememberReducedMotion()
 	var frameNow by remember { mutableDoubleStateOf(map.clock()) }
-	val now = model.now
+	// Expiry ticks independently of train animation and of successful network polls.
+	var slowZoneNow by remember { mutableDoubleStateOf(map.clock()) }
+	LaunchedEffect(map.active, map.snapshot?.slowZones) {
+		slowZoneNow = map.clock()
+		while (map.active && TrackMapSlowZoneDisplay.isActive(map.snapshot?.slowZones, slowZoneNow)) {
+			val remaining = (map.snapshot?.slowZones?.expiresAt ?: break) - slowZoneNow
+			delay(kotlin.math.ceil(remaining * 1000).toLong().coerceIn(1L, 1000L))
+			slowZoneNow = map.clock()
+		}
+	}
+	val now = maxOf(model.now, slowZoneNow)
 	val markers = map.markers(now, reducedMotion)
 	// The frame ticker runs only while the map is on screen in the foreground and something moves.
 	val animating = map.active && !reducedMotion && renderer != null && markers.any { it.display.animating }
@@ -182,7 +193,7 @@ private fun ReadyMap(model: AppModel, map: TrackMapModel, resources: TrackMapRes
 	renderer?.let { LaunchedEffect(it) { it.run() } }
 	var choices by remember { mutableStateOf<List<MapChoice>?>(null) }
 	val focus = LocalFocusManager.current
-	BackHandler(enabled = map.showTrainList) { map.showTrainList = false }
+	BackHandler(enabled = map.showTrainList || map.showSlowZoneList) { map.showTrainList = false; map.showSlowZoneList = false }
 
 	fun openTrain(key: String) { choices = null; open(Route.Train(key)) }
 	fun openStation(id: String) { choices = null; model.openTransferStationBoard(id) }
@@ -207,7 +218,7 @@ private fun ReadyMap(model: AppModel, map: TrackMapModel, resources: TrackMapRes
 					}
 				}) {
 					if (renderer != null) {
-						val description = "Track map. ${markers.size} trains drawn. $unplaced not on the map. Use Trains for a list."
+						val description = "Track map. ${markers.size} trains drawn. $unplaced not on the map. ${map.slowZoneStatus(now)}. Amber lines show estimated slow zones. Use Trains or Slow zones for lists."
 						TrackMapCanvas(
 							map, renderer, page,
 							time = renderTime,
@@ -241,6 +252,7 @@ private fun ReadyMap(model: AppModel, map: TrackMapModel, resources: TrackMapRes
 			}
 		}
 	}
+	if (map.showSlowZoneList) SlowZoneList(map, now)
 	choices?.let { found -> OverlapChooser(found, onTrain = ::openTrain, onStation = ::openStation, onDismiss = { choices = null }) }
 }
 
@@ -320,6 +332,7 @@ private fun MapFooter(map: TrackMapModel, now: Double, attribution: String, part
 		Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
 			if (map.snapshot == null) map.progress?.let { load -> LoadingBar("Loading train positions", load.fraction?.toFloat(), load.percentLabel, load.spokenPercent, load.detail) }
 			StatusLine(map.status(now))
+			SlowZoneLegend(map, now)
 			if (partial) Text("Partial coverage: trains appear only on reviewed lines; others are counted as not on the map.", style = TextRoles.caption2, color = palette.muted)
 			Credit(attribution)
 		}

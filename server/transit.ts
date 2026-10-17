@@ -1,6 +1,7 @@
 import { directionLabel } from '../shared/departureGroups';
 import type { AlertSelector, Board, Departure, ServiceAlert, SourceState, Station, Train } from '../shared/types';
 import { changesAhead, changeSummary } from '../shared/changes';
+import { currentSlowZone, slowZoneSummary } from '../shared/slow-zones';
 import { extension } from './decode';
 import { parentStop } from './catalog';
 import corridorDefinitions from '../data/corridors.json';
@@ -121,7 +122,7 @@ export function locationFor(train: Train) {
 export function buildBoard(station: Station, trains: Iterable<Train>, states: SourceState[], alerts: ServiceAlert[], catalog: Station[], now = nowSeconds()): Board {
   const departures: Departure[] = [];
   for (const train of trains) for (let i = 0; i < train.stops.length; i++) {
-    const stop = train.stops[i], part = station.parts.find(p => p.id === parentStop(stop.id));
+    const stop = train.stops[i], slowZone = currentSlowZone(train), part = station.parts.find(p => p.id === parentStop(stop.id));
     if (!part) continue;
     const time = stop.departure ?? stop.arrival;
     // Retain stale last-known rows. Fresh, passed predictions leave the board.
@@ -137,6 +138,7 @@ export function buildBoard(station: Station, trains: Iterable<Train>, states: So
       stopsAway: train.position?.stopId ? (train.stops.findIndex(s => s.id === train.position!.stopId) >= 0 ? i - train.stops.findIndex(s => s.id === train.position!.stopId) : null) : null,
       assigned: train.assigned, feed: train.feed, timestamp: train.timestamp,
       ...(train.consist ? { consist: train.consist } : {}),
+      ...(slowZone ? { slowZone: slowZoneSummary(slowZone) } : {}),
       relationship: stop.relationship === 'SKIPPED' ? 'SKIPPED' : train.relationship,
       alerts: train.alerts,
       changes: changesAhead(train.changes, i).map(changeSummary),

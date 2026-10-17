@@ -21,6 +21,9 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
@@ -124,7 +127,7 @@ class TrackMapE2ETest {
 	}
 
 	@Test
-	fun routeFilterAccessibleCertaintyAndRecordedTrainDetailReturn() = withMap { _ ->
+	fun routeFilterAccessibleCertaintyAndRecordedTrainDetailReturn() = withMap { scenario ->
 		val snapshot = recordedSnapshot()
 		val trains = trains(snapshot)
 		assertTrue("The recorded detail trip is missing", trains.any { it.getString("key") == TRIP })
@@ -133,6 +136,8 @@ class TrackMapE2ETest {
 		node("track-map-result-602").performClick()
 		val before = viewport()
 		selectL()
+		scenario.onActivity { activity -> assertEquals("Selected line must reach the model before inspecting rows", setOf("L"), network.model(activity).trackMap.routeFilter) }
+		network.evidence.note("L filter verified in UI and model before list/detail regression")
 		node("track-map-trains").performClick()
 		reveal("track-map-train-$TRIP")
 		val row = node("track-map-train-$TRIP").fetchSemanticsNode()
@@ -358,7 +363,8 @@ class TrackMapE2ETest {
 	private fun withMap(block: (ActivityScenario<MainActivity>) -> Unit) {
 		val server = network.requireRecordedServer()
 		assertEquals("Map outage acceptance uses the in-process gate, not device radio settings", NativeNetworkAcceptanceRule.ConnectivityMode.IN_PROCESS, network.connectivity)
-		assertEquals("This suite owns only fixture port 8194", 8194, java.net.URI(server.endpoint).port)
+		val fixturePort = androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("SFN_TRACK_MAP_FIXTURE_PORT")?.toIntOrNull() ?: 8194
+		assertEquals("Use only the coordinator-leased map fixture port", fixturePort, java.net.URI(server.endpoint).port)
 		assertEquals("Recorded September clock changed", 1788656380.0, server.now, 0.0)
 		control(unavailable = false, reset = true)
 		network.persist(Settings(theme = "hacker"), server.station)
@@ -391,7 +397,12 @@ class TrackMapE2ETest {
 			it.config.getOrNull(SemanticsProperties.ContentDescription)?.any { label -> label == "Line L" || label == "Line L, shown" } == true
 		}
 		await("L route filter") { compose.onAllNodes(lineL).fetchSemanticsNodes().isNotEmpty() }
-		compose.onAllNodes(lineL).onFirst().performClick()
+		val chip = compose.onAllNodes(lineL).onFirst()
+		network.evidence.note("L chip before scroll bounds=${chip.fetchSemanticsNode().boundsInWindow}")
+		chip.performScrollTo().assertIsDisplayed().performClick()
+		await("L filter selected") { compose.onAllNodes(lineL).onFirst().fetchSemanticsNode().config.getOrNull(SemanticsProperties.Selected) == true }
+		compose.onAllNodes(lineL).onFirst().assertIsSelected()
+		network.evidence.note("L chip is selected after scrolling into view")
 	}
 	private fun back() {
 		when {

@@ -26,3 +26,29 @@ test('native fixture counts only map requests and can fail and recover that endp
 		assert.deepEqual((await app.inject('/__test/track-map')).json(), { requests: 1, unavailable: false });
 	} finally { await app.close(); }
 });
+
+test('recorded slow-zone map overlay retains all three segment estimates on reviewed rails', async () => {
+	const { createFixtureService, fixtureNow } = await import('./fixture-service');
+	const originalNow = Date.now;
+	Date.now = () => fixtureNow * 1000;
+	let fixture: Awaited<ReturnType<typeof createFixtureService>> | undefined;
+	try {
+		fixture = await createFixtureService();
+		const snapshot = fixture.service.mapSnapshot(fixtureNow);
+		assert.ok(snapshot, 'The bundled map topology must load');
+		const overlay = snapshot.slowZones;
+		assert.ok(overlay, 'The map API must include slow-zone data');
+		assert.equal(overlay.dataThrough, '2026-09-04');
+		assert.ok(overlay.expiresAt! > fixtureNow);
+		assert.equal(overlay.zones.length, 3);
+		assert.equal(overlay.unmappedCount, 0);
+		assert.deepEqual(overlay.zones.map(zone => [zone.from, zone.to]), [['633S', '634S'], ['419S', '420S'], ['L02N', 'L01N']]);
+		for (const zone of overlay.zones) {
+			assert.ok(zone.paths.length > 0, zone.segment);
+			assert.ok(zone.paths.every(path => path.length >= 2 && path.every(point => Number.isFinite(point.x) && Number.isFinite(point.y))), zone.segment);
+		}
+	} finally {
+		await fixture?.close();
+		Date.now = originalNow;
+	}
+});

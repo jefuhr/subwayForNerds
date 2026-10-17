@@ -105,6 +105,27 @@ class AndroidTransitCacheTest {
 		} finally { root.deleteRecursively() }
 	}
 
+	@Test fun slowZonesSurviveTheOfflineStoreButNeverMoveOntoPartialTrips() = runTest {
+		val root = Files.createTempDirectory("sfn-slow-zones").toFile()
+		try {
+			val zone = SlowZone("633S", "634S", "28 St → 23 St-Baruch College", "slow", "2026-08-10", "2026-09-04", 41.6, 92.4, 20)
+			val ahead = TrainSlowZone(zone.from, zone.to, zone.segment, zone.kind, zone.since, zone.through, zone.extraSeconds, zone.baselineSeconds, zone.slowDays, toIndex = 0, current = true)
+			val row = departure("zoned").copy(slowZone = zone)
+			val store = AndroidTransitCache(root, "https://example.test/api/", clock = { 100.0 })
+			store.saveBoard(Board(station, generatedAt = 100.0, departures = listOf(row, departure("plain"))))
+			store.saveTrip(TripDetail(trip("zoned").train.copy(stops = listOf(StopPrediction("634S", "23 St-Baruch College", arrival = 1000.0)), slowZones = listOf(ahead))))
+			store.saveDeparture(row.copy(key = "partial", tripKey = "partial"), station)
+			val reopened = AndroidTransitCache(root, "https://example.test/api/", clock = { 100.0 })
+			val rows = reopened.loadBoard(station.id)!!.departures.associateBy { it.key }
+			assertEquals(zone, rows.getValue("zoned").slowZone)
+			assertNull(rows.getValue("plain").slowZone)
+			assertEquals(listOf(ahead), reopened.loadTrip("zoned")!!.train.slowZones)
+			// A trip rebuilt from a board row has no stop list for a zone index to point into.
+			assertEquals(zone, reopened.tripSnapshot("partial")!!.departure!!.slowZone)
+			assertNull(reopened.loadTrip("partial")!!.train.slowZones)
+		} finally { root.deleteRecursively() }
+	}
+
 	@Test fun partialTripNamesBoardingStationAndNeverReplacesCompleteTrip() = runTest {
 		val root = Files.createTempDirectory("sfn-partial").toFile()
 		try {

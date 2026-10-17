@@ -70,6 +70,8 @@ public struct TrackMapAcceptedSnapshot: Sendable, Equatable {
 	public let invalidGeometry: [String: String]
 	/// Headings for trains held at a platform whose directed rail gives one clear direction.
 	public let stoppedHeadings: [String: Double]
+	public let slowZones: [TrackMapSlowZone]
+	public let invalidSlowZoneGeometry: [String: String]
 	public func source(for train: TrackMapTrain) -> SourceState? { snapshot.sources.first { $0.id == train.feed } }
 }
 
@@ -152,7 +154,17 @@ public struct TrackMapIndex: Sendable {
 			if let problem = geometryProblem(train) { invalid[train.key] = problem }
 			else if let heading = stoppedHeading(train) { stopped[train.key] = heading }
 		}
-		return TrackMapAcceptedSnapshot(snapshot: snapshot, trains: trains, invalidGeometry: invalid, stoppedHeadings: stopped)
+		var zoneIDs = Set<String>()
+		var zones: [TrackMapSlowZone] = []
+		var invalidZones: [String: String] = [:]
+		for zone in snapshot.slowZones?.zones ?? [] where zoneIDs.insert(zone.id).inserted {
+			zones.append(zone)
+			if zone.paths.isEmpty { invalidZones[zone.id] = "Not on map: no reviewed rail path" }
+			else if zone.paths.contains(where: { path in
+				path.count < 2 || !path.allSatisfy { $0.isFinite && pageRect.contains($0) } || !path.contains { $0 != path.first }
+			}) { invalidZones[zone.id] = "Not on map: invalid rail path" }
+		}
+		return TrackMapAcceptedSnapshot(snapshot: snapshot, trains: trains, invalidGeometry: invalid, stoppedHeadings: stopped, slowZones: zones, invalidSlowZoneGeometry: invalidZones)
 	}
 
 	/// A train without motion, drawn on its platform's node, faces along the directed rail

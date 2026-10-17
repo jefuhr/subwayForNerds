@@ -196,14 +196,17 @@ public struct TrackMapSnapshot: Codable, Sendable, Equatable {
 	public var sources: [SourceState]
 	public var trains: [TrackMapTrain]
 	public var coverage: TrackMapSnapshotCoverage
+	/// Absent on older servers. Its expiry is independent of train evidence.
+	public var slowZones: TrackMapSlowZones?
 
 	public init(schemaVersion: Int = TrackMapContract.schemaVersion, mapVersion: String = TrackMapContract.mapVersion, pdfSha256: String = TrackMapContract.pdfSHA256,
-		generatedAt: TimeInterval, sources: [SourceState] = [], trains: [TrackMapTrain] = [], coverage: TrackMapSnapshotCoverage = TrackMapSnapshotCoverage()) {
+		generatedAt: TimeInterval, sources: [SourceState] = [], trains: [TrackMapTrain] = [], coverage: TrackMapSnapshotCoverage = TrackMapSnapshotCoverage(), slowZones: TrackMapSlowZones? = nil) {
 		self.schemaVersion = schemaVersion; self.mapVersion = mapVersion; self.pdfSha256 = pdfSha256; self.generatedAt = generatedAt
 		self.sources = sources; self.trains = trains; self.coverage = coverage
+		self.slowZones = slowZones
 	}
 
-	private enum CodingKeys: String, CodingKey { case schemaVersion, mapVersion, pdfSha256, generatedAt, sources, trains, coverage }
+	private enum CodingKeys: String, CodingKey { case schemaVersion, mapVersion, pdfSha256, generatedAt, sources, trains, coverage, slowZones }
 
 	public init(from decoder: Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -215,5 +218,6 @@ public struct TrackMapSnapshot: Codable, Sendable, Equatable {
 		sources = try container.decode([SourceState].self, forKey: .sources)
 		trains = try container.decode([TrackMapTrain].self, forKey: .trains)
 		coverage = try container.decode(TrackMapSnapshotCoverage.self, forKey: .coverage)
+		slowZones = try container.decodeIfPresent(TrackMapSlowZones.self, forKey: .slowZones)
 	}
 }

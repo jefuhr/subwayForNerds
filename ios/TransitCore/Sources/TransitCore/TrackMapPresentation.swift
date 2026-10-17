@@ -176,8 +176,9 @@ public enum TrackMapRoutes {
 
 	public static func isMapRoute(_ route: String) -> Bool { rank[route] != nil }
 
-	public static func routes(in accepted: TrackMapAcceptedSnapshot) -> [String] {
-		Set(accepted.trains.map(\.route).filter(isMapRoute)).sorted { rank[$0]! < rank[$1]! }
+	public static func routes(in accepted: TrackMapAcceptedSnapshot, now: TimeInterval = Date().timeIntervalSince1970) -> [String] {
+		let zones = TrackMapSlowZonePresenter.state(accepted, now: now).zones.flatMap { $0.zone.routes }
+		return Set((accepted.trains.map(\.route) + zones).filter(isMapRoute)).sorted { rank[$0]! < rank[$1]! }
 	}
 
 	/// The same colors as the app's route bullets.

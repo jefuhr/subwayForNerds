@@ -18,7 +18,7 @@ object OfflineIdentity {
 	fun boardSourceTimestamp(board: Board): Double? = (board.sources.mapNotNull { it.timestamp } + board.departures.map { it.timestamp }).filter { it.isFinite() && it > 0 }.maxOrNull()
 }
 object OfflineDisplay {
-	const val estimatedNextStopLabel = "Estimated next stop · not observed"
+	const val estimatedNextStopLabel = "Estimated next stop"
 	const val partialTripLabel = "Partial trip · onward stops from the station board"
 	fun isEstimateUsable(timestamp: Double?, now: Double, preferences: OfflineSettings): Boolean = timestamp != null && timestamp.isFinite() && timestamp > 0 && now.isFinite() && timestamp <= now && now - timestamp <= preferences.estimateLimit
 	fun prediction(time: Double?, timestamp: Double?, now: Double, preferences: OfflineSettings, timeFormat: String = "12h"): Countdown = countdown(time, timestamp, now, true, preferences, timeFormat)

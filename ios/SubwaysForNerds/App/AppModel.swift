@@ -18,6 +18,11 @@ private struct SavedPreferences: Codable {
 	var endpoint: String?
 }
 
+/// Settings screens other tabs can push, such as System status from the offline card.
+enum SettingsDestination: Hashable {
+	case systemStatus
+}
+
 @MainActor @Observable
 final class AppModel {
 	var stations: [Station] = []
@@ -49,6 +54,8 @@ final class AppModel {
 	var catalogError: String?
 	var now = Date().timeIntervalSince1970
 	var selectedTab = 0
+	/// Screens pushed over Settings by value, so other tabs can open one.
+	var settingsPath: [SettingsDestination] = []
 	var nearbyLocation: CLLocation?
 	var locationError: String?
 	var locating = false
@@ -92,8 +99,6 @@ final class AppModel {
 	/// Saves that could not be written. Shown until the user dismisses them.
 	var offlineFailures: [OfflineSaveFailure] = []
 	var offlineActionError: String?
-	/// Trip keys the selected board wants saved, and those already saved in full.
-	var readiness = OfflineReadiness()
 	/// A trip to open on the board tab, independent of the selected station.
 	var openTripKey: String?
 	/// Latest fetched details for trips whose details are open, kept after the
@@ -416,7 +421,6 @@ final class AppModel {
 		persist()
 		// Cached content belongs to one endpoint; restore this endpoint's ride and boards.
 		board = nil; boardSavedAt = nil; activeRide = nil; activeRideTrip = nil; savedTrips = []; surroundingTrips = [:]; liveTrips = [:]
-		readiness = OfflineReadiness()
 		planOffline()
 		Task {
 			await restoreOffline()
@@ -657,7 +661,12 @@ final class AppModel {
 		board = cached.board
 		boardSavedAt = cached.savedAt
 		boardIsCached = true
-		updateReadiness()
+	}
+
+	/// Opens System status in the Settings tab; Back returns to Settings.
+	func openSystemStatus() {
+		selectedTab = 2
+		settingsPath = [.systemStatus]
 	}
 
 	/// Keeps the board on screen as offline estimates when it cannot be refreshed.
@@ -674,17 +683,13 @@ final class AppModel {
 		boardIsCached = true
 		if board == nil { await loadCachedBoard(id) }
 		guard id == stationID else { return }
-		if board == nil {
-			boardError = connected ? "Could not reach the train feed. Pull to retry or choose a saved station." : noConnectionMessage(savedBoard: false)
-		} else {
-			boardError = connected ? "Showing a saved board. Reconnect for current predictions." : noConnectionMessage(savedBoard: true)
-		}
+		// A saved board is labeled by its offline estimate card, so only a missing one is an error.
+		boardError = board != nil ? nil : connected ? "Could not reach the train feed. Pull to retry or choose a saved station." : noConnectionMessage()
 	}
 
 	/// Starts with "No connection" and says what the phone is doing about it.
-	private func noConnectionMessage(savedBoard: Bool) -> String {
-		savedBoard ? "No connection · \(deviceNetworkStatus.activitySummary). Showing a saved board; times are offline estimates."
-			: "No connection · \(deviceNetworkStatus.activitySummary). No saved board for this station; choose a saved station or reconnect."
+	private func noConnectionMessage() -> String {
+		"No connection · \(deviceNetworkStatus.activitySummary). No saved board for this station; choose a saved station or reconnect."
 	}
 
 	func reloadOfflineStatus() async {
@@ -705,7 +710,6 @@ final class AppModel {
 		savedTrips = saved
 		offlineFailures = failures
 		offlineUsage = usage
-		await refreshReadiness()
 	}
 
 	/// Measures storage off the main actor, then reads memory, power, and the latest feed latency.
@@ -842,9 +846,6 @@ final class AppModel {
 		if viewed == nil, value.station.id == stationID {
 			// The live board is now also the saved copy offline estimates come from.
 			if saved { boardSavedAt = savedAt }
-			updateReadiness()
-			readiness.boardSaved = saved
-			readiness.boardFailed = !saved
 		}
 		return saved
 	}
@@ -872,7 +873,6 @@ final class AppModel {
 		let requests = plannedRequests()
 		let targets = requests.map(\.target)
 		if targets != trackedFetches { trackedFetches = targets }
-		updateReadiness()
 		Task { await prefetcher.track(requests) }
 	}
 
@@ -1005,7 +1005,6 @@ final class AppModel {
 			guard requestedEndpoint == endpoint, openTrips[key] != nil, !Task.isCancelled else { return }
 			liveTrips[key, default: LiveTrip()].failure = (error as? TransitAPIError) == .notFound ? .notFound : .unavailable(error.localizedDescription)
 		}
-		if readiness.wanted.contains(key) { await refreshReadiness() }
 	}
 
 	/// Starts publishing one fetch's download to `fetchProgress`.
@@ -1046,29 +1045,6 @@ final class AppModel {
 		return deviceNetworkStatus.syncLine(trackedBoards: boards, trackedTrips: trackedFetches.count - boards, inFlight: fetchesInFlight)
 	}
 
-	private func updateReadiness() {
-		if readiness.stationID != stationID { readiness = OfflineReadiness(stationID: stationID) }
-		guard let board, board.station.id == stationID else { readiness.wanted = []; return }
-		if boardSavedAt != nil { readiness.boardSaved = true }
-		readiness.wanted = OfflinePlanner.tripKeysToSnapshot(board, preferences: offlinePreferences)
-	}
-
-	private func refreshReadiness() async {
-		updateReadiness()
-		guard let transitStore, !readiness.wanted.isEmpty else { return }
-		let requestedEndpoint = endpoint
-		let id = stationID
-		var saved = Set<String>()
-		var partial = Set<String>()
-		for key in readiness.wanted {
-			guard let trip = await transitStore.trip(key: key, endpoint: requestedEndpoint) else { continue }
-			if trip.isComplete { saved.insert(key) } else { partial.insert(key) }
-		}
-		guard id == stationID, requestedEndpoint == endpoint else { return }
-		readiness.saved = saved
-		readiness.partial = partial
-	}
-
 	private func connectionChanged() async {
 		let isConnected = networkConnected && !outageSimulated
 		guard isConnected != connected else { updateDeviceNetworkStatus(); return }
@@ -1100,7 +1076,7 @@ final class AppModel {
 		guard status != deviceNetworkStatus else { return }
 		deviceNetworkStatus = status
 		// A "No connection" notice names what the phone is doing, so it follows the path.
-		if !connected, boardError?.hasPrefix("No connection") == true { boardError = noConnectionMessage(savedBoard: board != nil) }
+		if !connected, board == nil, boardError?.hasPrefix("No connection") == true { boardError = noConnectionMessage() }
 	}
 
 	/// The data service's radio generation. Reading it needs no permission and is nil on the simulator.
@@ -1353,11 +1329,11 @@ final class AppModel {
 		combinedBoard = value
 		board = value.board
 		boardIsCached = !connected || !members.contains { $0.board != nil && !$0.cached }
-		boardError = value.warnings.isEmpty ? nil : value.warnings.joined(separator: "\n")
+		// Saved members are labeled by the offline estimate card, so only real problems are errors.
+		let problems = value.warnings(includeSaved: false)
+		boardError = problems.isEmpty ? nil : problems.joined(separator: "\n")
 		let supported = members.filter { $0.station.departureMode != "external" }
 		boardSavedAt = !supported.isEmpty && supported.allSatisfy { $0.savedAt != nil } ? supported.compactMap(\.savedAt).min() : nil
-		updateReadiness()
-		readiness.boardSaved = boardSavedAt != nil
 	}
 
 	var allLineKeys: [String] {
@@ -1495,18 +1471,6 @@ struct LiveTrip: Equatable {
 	enum Failure: Equatable { case notFound, unavailable(String) }
 	var detail: TripDetail?
 	var failure: Failure?
-}
-
-/// How much of the selected station is saved for offline use.
-struct OfflineReadiness: Equatable {
-	var stationID: String?
-	var boardSaved = false
-	var boardFailed = false
-	/// Next trips per route and direction the preferences ask to keep.
-	var wanted: [String] = []
-	var saved: Set<String> = []
-	var partial: Set<String> = []
-	var savedCount: Int { wanted.filter(saved.contains).count }
 }
 
 /// Fails every request immediately, as when the device has no connection.

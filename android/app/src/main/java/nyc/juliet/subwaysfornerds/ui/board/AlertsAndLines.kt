@@ -51,7 +51,7 @@ fun AlertsScreen(model: AppModel, close: () -> Unit) {
 			row { RowContainer { SourcesTable(sources, now) } }
 		}
 		if (alerts.isEmpty()) section("empty") {
-			row { EmptyState("No matching alerts", "An empty alert list does not guarantee normal service. Check the alert feed age above.", Modifier.fillMaxWidth().padding(16.dp)) }
+			row { EmptyState("No matching alerts", null, Modifier.fillMaxWidth().padding(16.dp)) }
 		}
 		alerts.forEach { alert ->
 			section("alert:${alert.id}") {
@@ -101,7 +101,7 @@ private fun lineSystem(route: String): String = when {
 fun LinesScreen(model: AppModel, exit: ScreenExit, close: () -> Unit) {
 	val keys = model.allLineKeys
 	ListScreen("Lines", exit = exit, onExit = close, tag = "linesScreen") {
-		section("all", footer = "Applies to stations, departures, connections, alerts, and station widgets. Station filters still apply. Saved trips, your active ride, and fleet history stay accessible.") {
+		section("all") {
 			row { ActionButton("Enable all lines", { model.setHiddenLines(emptyList()) }, Modifier.padding(start = 4.dp).testTag("enableAllLines")) }
 			row { ActionButton("Hide all lines", { model.setHiddenLines(keys) }, Modifier.padding(start = 4.dp).testTag("hideAllLines")) }
 		}

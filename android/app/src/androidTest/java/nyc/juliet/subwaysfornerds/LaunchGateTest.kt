@@ -4,7 +4,6 @@ import android.content.Intent
 import android.util.Base64
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
@@ -36,7 +35,6 @@ class LaunchGateTest {
 	@get:Rule(order = 1) val compose = createEmptyComposeRule()
 	@get:Rule(order = 2) val failures = FailureArtifacts(compose)
 	private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
-	private val savedBoardNotice = "Showing a saved board"
 	private val redirect = "https://redirect.invalid/api/v1/"
 
 	@Before fun setUp() {
@@ -58,7 +56,8 @@ class LaunchGateTest {
 
 	@Test fun anUnarmedLaunchIgnoresResetRedirectAndSettingsExtras() {
 		activities.launch(testExtras())
-		compose.waitUntilAtLeastOneExists(hasText(savedBoardNotice, substring = true), 15_000)
+		// The saved board is on screen with its offline estimate card; there is no separate notice for it.
+		compose.waitUntilAtLeastOneExists(hasTestTag("boardOfflineEstimate"), 15_000)
 		compose.onNodeWithTag("importPreview").assertDoesNotExist()
 		compose.onRoot().saveScreenshot("launch-unarmed-extras-ignored")
 		assertNull(AppContainer.launchOptions)

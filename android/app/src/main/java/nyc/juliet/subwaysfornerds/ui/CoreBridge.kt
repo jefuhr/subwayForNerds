@@ -61,7 +61,8 @@ object CoreBridge {
 			members = members,
 			origins = merged.origins.mapValues { (_, origin) -> BoardOrigin(origin.station, origin.departure, origin.cached, origin.savedAt) },
 			cachedDepartureKeys = merged.cachedDepartureKeys,
-			warnings = merged.warnings,
+			// The offline estimate card already says a member board is saved, so only the other member problems are warned about.
+			warnings = merged.warnings(includeSaved = false),
 		)
 	}
 

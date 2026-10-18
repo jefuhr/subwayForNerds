@@ -1,12 +1,16 @@
 package nyc.juliet.subwaysfornerds.ui.board
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -17,14 +21,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import nyc.juliet.subwaysfornerds.core.Display
 import nyc.juliet.subwaysfornerds.core.Freshness
 import nyc.juliet.subwaysfornerds.core.OfflineDisplay
 import nyc.juliet.subwaysfornerds.ui.AppModel
-import nyc.juliet.subwaysfornerds.ui.components.ActionChip
-import nyc.juliet.subwaysfornerds.ui.components.ChipRow
 import nyc.juliet.subwaysfornerds.ui.components.RouteBullet
 import nyc.juliet.subwaysfornerds.ui.components.RowContainer
 import nyc.juliet.subwaysfornerds.ui.navigation.Route
@@ -52,35 +55,42 @@ fun ActiveRideBanner(model: AppModel, open: (Route) -> Unit) {
 	}
 	val next = if (withdrawn == null) OfflineDisplay.estimatedNextStopIndex(stops, now) else null
 	var confirmEnd by rememberSaveable { mutableStateOf(false) }
-	RowContainer(Modifier.testTag("activeRideBanner")) {
-		Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-			Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-				train?.route?.let { RouteBullet(it, small = true) }
-				Column {
-					Text("Your ride" + (train?.let { " · ${it.destination}" } ?: ""), style = TextRoles.subheadlineBold)
-					when {
-						withdrawn != null -> Text(withdrawn, style = TextRoles.caption)
-						next != null -> {
-							// Always an estimate: the next stop comes from predictions, never an observed position.
-							val stop = stops[next]
-							val countdown = OfflineDisplay.countdown(stop, source, now, cached, model.offlinePreferences, model.timeFormat, staleAfter)
-							Text(
-								"Estimated next stop ${stop.name} · " + if (countdown.unit == "min") "${countdown.value} min" else "${countdown.value} ${countdown.unit}",
-								style = TextRoles.caption, modifier = Modifier.testTag("rideNextStop"),
-							)
+	RowContainer(Modifier.testTag("activeRideBanner"), padding = PaddingValues(0.dp)) {
+		Row(verticalAlignment = Alignment.CenterVertically) {
+			Column(
+				Modifier.weight(1f)
+					.clickable(role = Role.Button, onClickLabel = "Open ride details") { open(Route.Train(ride.key)) }
+					.testTag("openRide")
+					.padding(start = 16.dp, top = 10.dp, bottom = 10.dp),
+				verticalArrangement = Arrangement.spacedBy(4.dp),
+			) {
+				Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+					train?.route?.let { RouteBullet(it, small = true) }
+					Column {
+						Text("Your ride" + (train?.let { " · ${it.destination}" } ?: ""), style = TextRoles.subheadlineBold)
+						when {
+							withdrawn != null -> Text(withdrawn, style = TextRoles.caption)
+							next != null -> {
+								// Always an estimate: the next stop comes from predictions, never an observed position.
+								val stop = stops[next]
+								val countdown = OfflineDisplay.countdown(stop, source, now, cached, model.offlinePreferences, model.timeFormat, staleAfter)
+								Text(
+									"Estimated next stop ${stop.name} · " + if (countdown.unit == "min") "${countdown.value} min" else "${countdown.value} ${countdown.unit}",
+									style = TextRoles.caption, modifier = Modifier.testTag("rideNextStop"),
+								)
+							}
+							trip == null -> Text("No saved details for this train yet.", style = TextRoles.caption)
+							else -> Text("Every saved stop time has passed · estimate passed", style = TextRoles.caption)
 						}
-						trip == null -> Text("No saved details for this train yet.", style = TextRoles.caption)
-						else -> Text("Every saved stop time has passed · estimate passed", style = TextRoles.caption)
 					}
 				}
+				if (cached && trip != null) {
+					Text(OfflineDisplay.estimateLabel(source, now, model.offlinePreferences), style = TextRoles.caption2, color = palette.muted)
+				}
+				if (trip != null) OfflineDisplay.completenessLabel(trip.isComplete)?.let { Text(it, style = TextRoles.caption2.copy(fontWeight = FontWeight.SemiBold)) }
 			}
-			if (cached && trip != null) {
-				Text(OfflineDisplay.estimateLabel(source, now, model.offlinePreferences) + (if (next == null) "" else " · next stop not observed"), style = TextRoles.caption2, color = palette.muted)
-			}
-			if (trip != null) OfflineDisplay.completenessLabel(trip.isComplete)?.let { Text(it, style = TextRoles.caption2.copy(fontWeight = FontWeight.SemiBold)) }
-			ChipRow {
-				ActionChip("Ride details", { open(Route.Train(ride.key)) }, Modifier.testTag("openRide"), icon = Icons.AutoMirrored.Filled.List)
-				ActionChip("End ride", { confirmEnd = true }, Modifier.testTag("endRideFromBanner"), icon = Icons.Filled.Cancel)
+			IconButton(onClick = { confirmEnd = true }, modifier = Modifier.padding(end = 4.dp).testTag("endRideFromBanner")) {
+				Icon(Icons.Filled.Close, contentDescription = "End ride", tint = palette.action)
 			}
 		}
 	}

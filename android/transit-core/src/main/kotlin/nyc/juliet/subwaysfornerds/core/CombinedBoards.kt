@@ -18,7 +18,14 @@ data class MemberBoardSnapshot(val station: Station, val board: Board? = null, v
 data class DepartureOrigin(val station: Station, val departure: Departure, val cached: Boolean, val savedAt: Double? = null)
 data class CombinedBoardSnapshot(val board: Board, val members: List<MemberBoardSnapshot>, val origins: Map<String, DepartureOrigin>) {
 	val cachedDepartureKeys: Set<String> get() = origins.filterValues { it.cached }.keys
-	val warnings: List<String> get() = members.mapNotNull { member ->
+	val warnings: List<String> get() = warnings(includeSaved = true)
+	/**
+	 * Member notices. `includeSaved = false` is for screens that already say the board is saved: a cached member with
+	 * a board then has nothing to warn about, even after a failed refresh. Members without a board and external
+	 * (official tools) members always warn.
+	 */
+	fun warnings(includeSaved: Boolean): List<String> = members.mapNotNull { member ->
+		if (!includeSaved && member.cached && member.board != null && !member.board.usesExternalDepartures) return@mapNotNull null
 		val message = member.error ?: when { member.board == null -> "Departures unavailable"; member.board.usesExternalDepartures -> "Use official departure tools"; member.cached -> "Saved departures · offline estimates"; else -> null }
 		message?.let { "${member.station.name}: $it" }
 	}

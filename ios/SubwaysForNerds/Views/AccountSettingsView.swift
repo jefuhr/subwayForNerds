@@ -52,7 +52,6 @@ struct AccountSettingsSection: View {
 				Button("Sign out") { Task { await account.logout() } }
 				Button("Delete account", role: .destructive) { confirmDelete = true }
 			} else {
-				Text("Sign in to keep your settings across devices, or continue using the app without an account.").font(.footnote)
 				NativeAppleSignInButton { Task { await account.login("apple") } }
 					.frame(height: 44).disabled(account.signingIn).accessibilityIdentifier("signInApple")
 				GoogleSignInButton { Task { await account.login("google") } }.disabled(account.signingIn).accessibilityIdentifier("signInGoogle")
@@ -64,7 +63,7 @@ struct AccountSettingsSection: View {
 				}
 			}
 			Link("Privacy", destination: URL(string: "https://juliet.nyc/subwaysForNerds/privacy.html")!)
-		} header: { ListHeader("Account and sync") } footer: { Text("Your current station stays separate on each device. Signing out keeps local settings.") }
+		} header: { ListHeader("Account and sync") }
 		.onChange(of: account.account?.id) { _, _ in choices = AccountConflictChoices() }
 		.onChange(of: account.conflicts.isEmpty) { _, empty in
 			if empty { choices = AccountConflictChoices() }

@@ -7,9 +7,11 @@ final class TransferFiltersUITests: XCTestCase {
 
 	func testSharedAndSeparateTransferFiltersAndStationBoardReturn() {
 		var app = launch()
-		// A favorite chip brings the board back to the train's station later.
+		// A favorite brings the board back to the train's station later, through the picker.
 		app.buttons["toggleFavorite"].tap()
 		openConnections(in: app)
+		XCTAssertTrue(app.staticTexts["Next 30 minutes"].waitForExistence(timeout: 5), "The transfer window stays; the disclaimer prose is gone")
+		XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Connections are not guaranteed'")).count, 0)
 		screenshot("transfer-filters-shared", app: app)
 
 		// Shared mode edits station 601's board filters, never the selected 602 board.
@@ -44,9 +46,7 @@ final class TransferFiltersUITests: XCTestCase {
 		// Separate mode copies 601's board filters on first use, then edits independently.
 		setSeparateFilters(true, in: app)
 		tab("Board", in: app).tap()
-		let favorite = app.buttons["favoriteStation_602"]
-		XCTAssertTrue(favorite.waitForExistence(timeout: 10))
-		favorite.tap()
+		chooseFavorite("602", in: app)
 		openConnections(in: app)
 		XCTAssertTrue(app.buttons["transferDirection_SOUTH"].isSelected, "Separate mode starts from the board filters")
 		select(app.buttons["transferDirection_NORTH"])
@@ -76,11 +76,18 @@ final class TransferFiltersUITests: XCTestCase {
 		setSeparateFilters(false, in: app)
 		setSeparateFilters(true, in: app)
 		tab("Board", in: app).tap()
-		let restored = app.buttons["favoriteStation_602"]
-		if restored.waitForExistence(timeout: 5) { restored.tap() }
+		chooseFavorite("602", in: app)
 		openConnections(in: app)
 		XCTAssertTrue(app.buttons["transferDirection_NORTH"].isSelected, "Re-enabling reuses the saved transfer entry")
 		screenshot("transfer-filters-separate-relaunch", app: app)
+	}
+
+	/// Favorites lead the station picker, which is how a favorite is chosen now.
+	private func chooseFavorite(_ id: String, in app: XCUIApplication) {
+		app.buttons["findStation"].tap()
+		let station = app.buttons["station_" + id]
+		scrollTo(station, in: app)
+		station.tap()
 	}
 
 	private func launch(reset: Bool = true) -> XCUIApplication {

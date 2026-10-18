@@ -86,8 +86,14 @@ public struct CombinedBoardSnapshot: Sendable, Equatable {
 	public let members: [MemberBoardSnapshot]
 	public let origins: [String: DepartureOrigin]
 	public var cachedDepartureKeys: Set<String> { Set(origins.filter { $0.value.cached }.map(\.key)) }
-	public var warnings: [String] {
+	public var warnings: [String] { warnings(includeSaved: true) }
+	/// Widgets use the default, which names every member that is saved or failed. The app's board passes
+	/// `includeSaved: false`: a member that shows a saved board is an offline estimate the board already labels,
+	/// so neither its "saved" note nor an error that only kept it from refreshing (such as "Feed unavailable")
+	/// is a notice. Members with no board to show, and external members, still warn.
+	public func warnings(includeSaved: Bool) -> [String] {
 		members.compactMap { member in
+			if !includeSaved, member.cached, let board = member.board, !board.usesExternalDepartures { return nil }
 			let message = member.error ?? (member.board == nil ? "Departures unavailable" : member.board?.usesExternalDepartures == true ? "Use official departure tools" : member.cached ? "Saved departures · offline estimates" : nil)
 			return message.map { "\(member.station.name): \($0)" }
 		}

@@ -130,7 +130,7 @@ fun ContextScreen(model: AppModel, stationID: String, exit: ScreenExit, close: (
 			return@ListScreen
 		}
 		if (combined != null) {
-			section("members", header = "Member stations", footer = "Open a station for its entrances, accessibility, and equipment reports.") {
+			section("members", header = "Member stations") {
 				combined.stationIDs.forEach { id ->
 					row(id) {
 						val member = model.stations.firstOrNull { it.id == id }
@@ -197,7 +197,7 @@ fun ContextScreen(model: AppModel, stationID: String, exit: ScreenExit, close: (
 				RowContainer { Text(if (equipmentSource?.fetchedAt == null) "Equipment feed not yet available" else "No equipment records matched this station", style = TextRoles.subheadline, color = palette.muted) }
 			}
 		}
-		section("entrances", header = "Entrances · ${current.entrances.size}", footer = "Entrance coordinates are published locations, not walking directions.") {
+		section("entrances", header = "Entrances · ${current.entrances.size}") {
 			current.entrances.forEachIndexed { index, entrance -> row("entrance$index") { EntranceRow(station, entrance, index) } }
 			if (current.entrances.isEmpty()) row { RowContainer { Text("No entrance data available", style = TextRoles.subheadline, color = palette.muted) } }
 		}

@@ -149,7 +149,6 @@ fun StationPickerScreen(model: AppModel, mode: StationPickerMode, close: () -> U
 		section(
 			"results",
 			headerContent = { ListHeader(summary, Modifier.testTag("nearbyStationSummary")) },
-			footer = if (location != null) "Straight-line distance to the closest station in each complex." else null,
 		) {
 			matches.forEach { station ->
 				row(station.id) { StationResult(model, station, location, { choose(station) }) }

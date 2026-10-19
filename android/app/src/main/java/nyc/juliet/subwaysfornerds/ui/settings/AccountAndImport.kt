@@ -142,7 +142,7 @@ fun ImportPreviewScreen(model: AppModel, account: AccountModel, close: () -> Uni
 
 /** Optional accounts. Sign-in opens the server's browser page in a Custom Tab. */
 fun LazyListScope.accountSection(model: AppModel, account: AccountModel) {
-	section("account", header = "Account and sync", footer = "Your current station stays separate on each device. Signing out keeps local settings.") {
+	section("account", header = "Account and sync") {
 		if (account.pendingUnreadable) row { PendingSignInRecovery(account) }
 		when {
 			!account.ready -> row { RowContainer { Text("Checking account availability…", style = TextRoles.footnote) } }
@@ -198,7 +198,6 @@ fun LazyListScope.accountSection(model: AppModel, account: AccountModel) {
 				row { DeleteAccountButton(account) }
 			}
 			else -> {
-				row { RowContainer { Text("Sign in to keep your settings across devices, or continue using the app without an account.", style = TextRoles.footnote) } }
 				account.providers.forEach { provider ->
 					row("signIn:$provider") {
 						ActionButton("Continue with ${provider.replaceFirstChar { it.uppercase() }}", { account.login(provider) }, Modifier.padding(start = 4.dp).testTag("signIn_$provider"), enabled = !account.signingIn && !account.pendingUnreadable)

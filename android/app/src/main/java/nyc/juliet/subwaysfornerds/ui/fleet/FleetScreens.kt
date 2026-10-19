@@ -268,7 +268,6 @@ fun FleetScreen(model: AppModel, initialSearch: String, exit: ScreenExit, close:
 		section(
 			"rows",
 			header = "${counted(current.total)} matching ${if (filters.view == "cars") "cars" else "groups"}",
-			footer = "Missing from a feed does not mean inactive.",
 		) {
 			current.error?.let { message -> row { RowContainer { Notice(message) } } }
 			current.rows.forEach { row ->
@@ -293,11 +292,7 @@ fun FleetScreen(model: AppModel, initialSearch: String, exit: ScreenExit, close:
 				}
 			}
 			if (current.rows.isEmpty()) row {
-				EmptyState(
-					"No matching cars",
-					if (usingSaved && filters.status == "reporting") "Saved reports are historical. Choose any reporting status to browse this download." else "Try another car number or change the filters.",
-					Modifier.fillMaxWidth().padding(16.dp),
-				)
+				EmptyState("No matching cars", null, Modifier.fillMaxWidth().padding(16.dp))
 			}
 		}
 		section("pages") {
@@ -321,11 +316,6 @@ fun FleetScreen(model: AppModel, initialSearch: String, exit: ScreenExit, close:
 					if (expanded) Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
 						current.coverage.forEach { Text("${it.category}: ${counted(it.count)} cars. ${it.note}", style = TextRoles.caption) }
 						current.sources.forEach { EvidenceView(it) }
-						Text(
-							if (usingSaved) "Inventory and coverage refer to this saved scope, including linked cars. Historical formations can mention other cars whose details are outside the pack."
-							else "“All” covers the imported inventory, not every vehicle ever built. Collection starts when the server runs; historical movements cannot be reconstructed from a missing feed.",
-							style = TextRoles.caption, color = palette.muted,
-						)
 					}
 				}
 			}
@@ -490,7 +480,7 @@ fun FleetDetailScreen(model: AppModel, route: Route.FleetDetail, exit: ScreenExi
 		}
 		val now = model.now
 		val live = if (model.connected && !usingSaved && error == null) current.cars.firstOrNull { FleetRules.observedNow(it, now) && (!id.startsWith("observed:") || it.last?.consistId == id) }?.last else null
-		section("now", footer = "Reported order does not establish the leading end. Historical formations are not confirmed current links.") {
+		section("now") {
 			if (kind != "cars" && current.cars.isNotEmpty() && current.cars.size <= 20 && current.cars.all { TrainFavorites.validCarID(it.id) }) {
 				row("favoriteConsist") { FavoriteConsistRow(model, current.cars.map { it.id }) }
 			}
@@ -548,8 +538,7 @@ fun FleetDetailScreen(model: AppModel, route: Route.FleetDetail, exit: ScreenExi
 		section(
 			"history",
 			header = if (usingSaved) "Downloaded movement history" else "Observed changes · last 30 days",
-			footer = if (usingSaved) "All changes included in this saved history window are available using Load more history. Historical events can mention cars outside the saved scope. Times are observation times, not inferred movement times."
-			else "Latest 200 changes. Prepare a fleet pack in Settings to save 7 or 30 days of history. Times are observation times, not inferred movement times.",
+			footer = if (usingSaved) null else "Latest 200 changes",
 		) {
 			current.history.forEachIndexed { index, observation ->
 				row("event$index") {

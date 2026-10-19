@@ -24,7 +24,7 @@ struct ContextView: View {
 							}
 						} else { Text("Unavailable station \(id)").foregroundStyle(.secondary) }
 					}
-				} header: { ListHeader("Member stations") } footer: { Text("Open a station for its entrances, accessibility, and equipment reports.") }
+				} header: { ListHeader("Member stations") }
 			} else if station.departureMode == "external" {
 				Section {
 					VStack(alignment: .leading, spacing: 3) {
@@ -81,7 +81,7 @@ struct ContextView: View {
 							.listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 8))
 						}
 						if context.entrances.isEmpty { Text("No entrance data available").font(.subheadline).foregroundStyle(.secondary) }
-					} header: { ListHeader("Entrances · \(context.entrances.count)") } footer: { Text("Entrance coordinates are published locations, not walking directions.") }
+					} header: { ListHeader("Entrances · \(context.entrances.count)") }
 					if !context.sources.isEmpty {
 						Section { SourcesView(sources: context.sources, now: app.now) } header: { ListHeader("Source freshness") }
 					}
@@ -150,7 +150,7 @@ struct AlertsView: View {
 				}
 				SourcesView(sources: sources.filter { $0.id == "subway-alerts" }, now: app.now)
 			}
-			if alerts.isEmpty { ContentUnavailableView("No matching alerts", systemImage: "checkmark.circle", description: Text("An empty alert list does not guarantee normal service. Check the alert feed age above.")) }
+			if alerts.isEmpty { ContentUnavailableView("No matching alerts", systemImage: "checkmark.circle") }
 			ForEach(alerts) { alert in
 				Section {
 					VStack(alignment: .leading, spacing: 6) {

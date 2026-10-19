@@ -46,7 +46,7 @@ class AppModelTest {
 		waitFor("the live board") { model.board != null && !model.boardIsCached && model.boardSavedAt != null }
 		assertEquals(STATION, model.board!!.station.id)
 		assertNull(model.boardError)
-		assertTrue(model.readiness.boardSaved)
+		assertNotNull(model.boardSavedAt)
 		assertTrue(transit.requests.contains("board:$STATION"))
 		// Widgets receive the same merged, untrimmed board the screen shows.
 		waitFor("the widget board hook") { widgets.boards.any { it.station.id == STATION } }
@@ -68,9 +68,44 @@ class AppModelTest {
 		waitFor("the live board to be saved") { model.boardSavedAt != null && !model.boardIsCached }
 		transit.online = false
 		onModel { model.setNetworkConnected(false) }
-		waitFor("the saved board notice") { model.boardIsCached && model.boardError != null }
+		waitFor("the saved board") { model.boardIsCached && !model.connected }
 		assertNotNull(model.board)
-		assertEquals("No connection. Showing a saved board; times are offline estimates.", model.boardError)
+		// The offline estimate card says it; a saved board never carries an error notice.
+		assertNull(model.boardError)
+	}
+
+	@Test fun aSavedBoardWhileConnectedHasNoErrorNoticeEither() {
+		start()
+		activate()
+		waitFor("the live board to be saved") { model.boardSavedAt != null && !model.boardIsCached }
+		transit.online = false
+		// An explicit refresh joins a fetch already in flight, so ask until the failure is handled.
+		repeat(100) {
+			if (onModel { model.boardIsCached }) return@repeat
+			onModel { model.refreshBoard() }
+			Thread.sleep(50)
+		}
+		waitFor("the saved board after a failed refresh") { model.boardIsCached }
+		assertTrue("The device is still connected; only the feed failed", model.connected)
+		assertNotNull(model.board)
+		assertNull(model.boardError)
+	}
+
+	@Test fun withoutASavedBoardAFailedFeedStillSaysSo() {
+		start(online = false)
+		activate()
+		waitFor("the feed failure notice") { model.boardError == "Could not reach the train feed. Pull to retry or choose a saved station." }
+		assertNull(model.board)
+	}
+
+	@Test fun anOfflineCardTapShowsSystemStatusInSettings() {
+		start()
+		onModel { model.navigator.show(Route.SystemStatus, AppTab.SETTINGS) }
+		assertEquals(AppTab.SETTINGS, model.navigator.tab)
+		assertEquals(listOf<Route>(Route.SystemStatus), model.navigator.stack(AppTab.SETTINGS))
+		onModel { model.navigator.back() }
+		assertEquals(AppTab.SETTINGS, model.navigator.tab)
+		assertTrue(model.navigator.stack(AppTab.SETTINGS).isEmpty())
 	}
 
 	@Test fun aFailedSourceKeepsItsLastRowsOnScreen() {
@@ -151,6 +186,52 @@ class AppModelTest {
 		assertTrue(model.combinedBoard!!.origins.values.all { it.station.id == STATION })
 		assertTrue(model.combinedBoard!!.warnings.any { it.startsWith("Grand Central-42 St") })
 		assertEquals("direction", model.preference.view)
+	}
+
+	/** A two-member combined station whose members both load live, so saved copies exist for each. */
+	private fun startLiveCombinedStation() {
+		start()
+		activate()
+		waitFor("the catalog") { model.stations.isNotEmpty() }
+		val recorded = TransitJson.decodeFromString(Board.serializer(), fixture("board.json"))
+		val other = model.stations.first { it.id == "610" }
+		transit.boardOverride = { id -> if (id == "610") recorded.copy(station = other) else null }
+		val id = onModel { model.saveCombinedStation(null, "Union Sq + Grand Central", listOf(STATION, "610")) }
+		waitFor("both members live") { model.stationID == id && model.combinedBoard?.members?.let { members -> members.size == 2 && members.all { it.board != null && !it.cached } } == true && !model.boardIsCached }
+	}
+
+	@Test fun aCombinedStationOfSavedBoardsHasNoErrorNoticeEither() {
+		startLiveCombinedStation()
+		waitFor("both members saved to disk") { model.boardSavedAt != null }
+		transit.online = false
+		onModel { model.setNetworkConnected(false) }
+		waitFor("the saved combined board") { model.boardIsCached && model.combinedBoard?.members?.all { it.cached && it.board != null } == true }
+		// Core still words each cached member for the widget; the app's board shows no notice for them.
+		assertTrue(model.combinedBoard!!.members.size == 2)
+		assertNull(model.boardError)
+	}
+
+	@Test fun aFailedRefreshOverASavedCombinedBoardHasNoErrorNotice() {
+		startLiveCombinedStation()
+		// Still connected, but the feed fails: each member keeps its last board with a "Feed unavailable" error.
+		transit.online = false
+		repeat(100) {
+			if (onModel { model.combinedBoard?.members?.all { it.cached && it.error != null } } == true) return@repeat
+			onModel { model.refreshBoard() }
+			Thread.sleep(50)
+		}
+		waitFor("the members' failed refreshes") { model.combinedBoard?.members?.all { it.cached && it.board != null && it.error != null } == true }
+		assertTrue(model.connected)
+		assertNull(model.boardError)
+	}
+
+	@Test fun aCombinedStationStillReportsMembersThatFailed() {
+		start()
+		activate()
+		waitFor("the catalog") { model.stations.isNotEmpty() }
+		onModel { model.saveCombinedStation(null, "Union Sq + Grand Central", listOf(STATION, "610")) }
+		waitFor("the failed member to be reported") { model.boardError?.contains("Grand Central-42 St: Feed unavailable") == true }
+		assertTrue("A saved member must not add a notice of its own: ${model.boardError}", model.boardError?.contains("Saved departures") != true)
 	}
 
 	@Test fun aFailedAcceptanceKeepsPreviousSettingsAndThePreview() {

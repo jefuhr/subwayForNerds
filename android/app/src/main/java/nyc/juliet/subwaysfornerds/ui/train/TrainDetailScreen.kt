@@ -209,20 +209,13 @@ fun TrainDetailScreen(model: AppModel, route: Route.Train, exit: ScreenExit, clo
 			}
 		}
 		val changes = Display.changesAhead(train.changes, 0)
-		if (changes.isNotEmpty()) section(
-			"changes", header = "Different from normal",
-			footer = "Compared with weekday daytime service. Scheduled variations differ from disruptions; advisory notices may not affect every train.",
-		) { changes.forEach { change -> row(change.id) { ChangeRow(change, now, shown.cached, model.timeFormat) } } }
+		if (changes.isNotEmpty()) section("changes", header = "Different from normal") { changes.forEach { change -> row(change.id) { ChangeRow(change, now, shown.cached, model.timeFormat) } } }
 		val zonesByStop = SlowZoneDisplay.byStop(train)
 		val live = shown.live(now)
 		section(
 			"stops",
 			header = if (shown.cached) "Saved stopping pattern" else "Remaining stopping pattern",
-			footer = listOfNotNull(
-				if (shown.cached) "Offline estimates count down the saved predictions on this device's clock. They are not observed positions; delays, reroutes and cancellations after the source time are unknown. Connections need a live feed."
-				else "Arrival / departure · Eastern. Patterns reflect remaining feed predictions. Future track fields describe that stop, not the current train position. Operations IDs identify trips, not physical cars.",
-				SlowZoneDisplay.attribution.takeIf { !train.slowZones.isNullOrEmpty() },
-			).joinToString("\n"),
+			footer = SlowZoneDisplay.attribution.takeIf { !train.slowZones.isNullOrEmpty() },
 		) {
 			train.stops.forEachIndexed { index, stop ->
 				zonesByStop[index]?.forEach { zone -> row("slowZone$index:${zone.from}") { SlowZoneSegmentRow(zone, live) } }
@@ -249,7 +242,6 @@ fun TrainDetailScreen(model: AppModel, route: Route.Train, exit: ScreenExit, clo
 						if (expanded) Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
 							Text("Shape ${pattern.shape} · ${pattern.source}", style = TextRoles.caption)
 							Text(pattern.stops.joinToString(" → "), style = TextRoles.caption)
-							Text("Static context only; live predictions take precedence.", style = TextRoles.caption, color = palette.muted)
 						}
 					}
 				}
@@ -289,7 +281,7 @@ private fun OfflineProvenance(model: AppModel, shown: TrainPresentation, saved: 
 				Text(OfflineDisplay.estimateLabel(shown.sourceTimestamp, now, model.offlinePreferences), style = TextRoles.subheadlineBold)
 			}
 			if (snapshotOnly) Text(
-				"Saved PATH arrival · historical. PATH reports name a station arrival, not one train, so this copy is never refreshed.",
+				"Saved PATH arrival · historical",
 				style = TextRoles.caption.copy(fontWeight = FontWeight.SemiBold), modifier = Modifier.testTag("savedPathSnapshot"),
 			)
 			if (!shown.showingSnapshot) {
@@ -299,7 +291,6 @@ private fun OfflineProvenance(model: AppModel, shown: TrainPresentation, saved: 
 				Text("Saved ${Display.ageLabel(saved.savedAt, now)}$kept", style = TextRoles.caption, color = palette.muted)
 				OfflineDisplay.completenessLabel(saved.isComplete)?.let { Text(it, style = TextRoles.caption.copy(fontWeight = FontWeight.SemiBold), modifier = Modifier.testTag("partialTripLabel")) }
 			}
-			Text("Car numbers and the train's current position are not shown offline.", style = TextRoles.caption2, color = palette.muted)
 			Column(Modifier.testTag("trainDeviceNetworkStatus").semantics(mergeDescendants = true) {}) {
 				Text(model.deviceNetworkHeadline, style = TextRoles.caption2.copy(fontWeight = FontWeight.SemiBold))
 				Text(model.deviceNetworkDetail, style = TextRoles.caption2, color = palette.muted)
@@ -337,7 +328,6 @@ private fun RideActions(
 				else if (!positional) ActionChip("I'm on this train", { if (model.activeRide != null) confirmReplace = true else startRide() }, Modifier.testTag("startRide"), icon = Icons.Filled.Train, enabled = !working)
 			}
 		}
-		if (positional) Text("PATH reports identify a station arrival, not one train, so rides can't follow them.", style = TextRoles.caption2, color = palette.muted)
 		model.offlineActionError?.let { Notice(it, Modifier.testTag("offlineActionError")) }
 	}
 	if (confirmRemove) AlertDialog(
@@ -360,7 +350,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.consistSection(model:
 	section(
 		"consist",
 		header = "Car numbers · Helium · reported ${Display.ageLabel(consist.updatedAt, now)}",
-		footer = "Tap a car for its fleet history. Reported order does not confirm the front of the train.",
 	) {
 		TrainFavorites.consistIDs(consist, feed)?.let { ids -> row("favoriteConsist") { FavoriteConsistRow(model, ids) } }
 		row("cars") {

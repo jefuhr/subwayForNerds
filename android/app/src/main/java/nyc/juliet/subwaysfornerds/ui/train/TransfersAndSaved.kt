@@ -179,7 +179,7 @@ fun TransferScreen(model: AppModel, route: Route.Transfers, exit: ScreenExit, cl
 			}
 			return@ListScreen
 		}
-		section("arrival", footer = "Next 30 minutes · raw time gaps, no walking allowance. Boarding areas may require stairs, passageways, or different platform access. Connections are not guaranteed.") {
+		section("arrival", footer = "Next 30 minutes") {
 			row {
 				RowContainer {
 					Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -194,10 +194,7 @@ fun TransferScreen(model: AppModel, route: Route.Transfers, exit: ScreenExit, cl
 			if (stale) row { RowContainer { Notice("Predictions are stale or the arrival estimate has passed. Awaiting an update.", Modifier.testTag("transfersStale")) } }
 			current.message?.let { message -> row { RowContainer { Notice(message) } } }
 		}
-		if (stationID != null) section(
-			"filters",
-			footer = if (separate) "Filters saved for transfers at this station only." else "Filters shared with this station's board.",
-		) {
+		if (stationID != null) section("filters") {
 			row("filters") {
 				androidx.compose.foundation.layout.Box(Modifier.padding(start = 12.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)) {
 					StationFilterRow(
@@ -265,7 +262,7 @@ fun SavedTripsScreen(model: AppModel, exit: ScreenExit, close: () -> Unit, open:
 	LaunchedEffect(Unit) { model.reloadOfflineStatus() }
 	ListScreen("Saved trains", exit = exit, onExit = close, tag = "savedTripsScreen") {
 		model.offlineActionError?.let { message -> section("error") { row { RowContainer { Notice(message) } } } }
-		section("trips", footer = "Saved trains stay on this device until you remove them. Their times are the predictions from when they were saved.") {
+		section("trips") {
 			model.savedTrips.forEach { trip ->
 				row(trip.key) {
 					Row(verticalAlignment = Alignment.CenterVertically) {

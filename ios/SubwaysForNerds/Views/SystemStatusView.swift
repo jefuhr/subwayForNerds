@@ -45,8 +45,8 @@ struct SystemStatusView: View {
 				LabeledContent("Total app storage", value: bytes(storage.totalAppBytes)).font(.subheadline.weight(.semibold))
 					.accessibilityIdentifier("systemStatusTotalStorage")
 				storageBar(storage)
-				storageRow(.appBundle, storage, identifier: "systemStatusAppBundleStorage", detail: "Installed app, widgets, and frameworks")
-				storageRow(.settings, storage, identifier: "systemStatusSettingsStorage", detail: "Settings, preferences, and widget choices. Your account session is kept in the Keychain.")
+				storageRow(.appBundle, storage, identifier: "systemStatusAppBundleStorage")
+				storageRow(.settings, storage, identifier: "systemStatusSettingsStorage")
 				storageRow(.cache, storage, identifier: "systemStatusCacheStorage", detail: cacheDetail(storage))
 				storageRow(.fleet, storage, identifier: "systemStatusFleetStorage", detail: fleetDetail)
 				LabeledContent("Available on device", value: storage.deviceFreeBytes.map { free in
@@ -75,13 +75,14 @@ struct SystemStatusView: View {
 		.accessibilityLabel(AppStorageBreakdown.Category.allCases.map { "\($0.title) \(Int((storage.fraction($0) * 100).rounded())) percent" }.joined(separator: ", "))
 	}
 
-	private func storageRow(_ category: AppStorageBreakdown.Category, _ storage: AppStorageBreakdown, identifier: String, detail: String) -> some View {
+	/// Rows with sizes to break down, such as the cache and the fleet download, carry a detail line.
+	private func storageRow(_ category: AppStorageBreakdown.Category, _ storage: AppStorageBreakdown, identifier: String, detail: String? = nil) -> some View {
 		VStack(alignment: .leading, spacing: 2) {
 			HStack(spacing: 8) {
 				Circle().fill(shade(category)).frame(width: 9, height: 9).accessibilityHidden(true)
 				LabeledContent(category.title, value: "\(bytes(storage.bytes(category))) · \(Int((storage.fraction(category) * 100).rounded()))%")
 			}.font(.subheadline)
-			Text(detail).font(.caption).foregroundStyle(.secondary).padding(.leading, 17)
+			if let detail { Text(detail).font(.caption).foregroundStyle(.secondary).padding(.leading, 17) }
 		}
 		.accessibilityElement(children: .combine)
 		.accessibilityIdentifier(identifier)
@@ -131,7 +132,7 @@ struct SystemStatusView: View {
 			} else {
 				Text("Measuring memory…").font(.subheadline).foregroundStyle(.secondary)
 			}
-		} header: { ListHeader("Memory") } footer: { Text("App RAM is the footprint iOS counts against the app's memory limit.") }
+		} header: { ListHeader("Memory") }
 	}
 
 	private func deviceSection(_ status: SystemStatusSnapshot?) -> some View {

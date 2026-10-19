@@ -109,14 +109,14 @@ fun ListScreen(
 
 /** A centered message for an empty list, like iOS ContentUnavailableView. */
 @Composable
-fun EmptyState(title: String, description: String, modifier: Modifier = Modifier, extra: @Composable ColumnScope.() -> Unit = {}) {
+fun EmptyState(title: String, description: String?, modifier: Modifier = Modifier, extra: @Composable ColumnScope.() -> Unit = {}) {
 	androidx.compose.foundation.layout.Column(
 		modifier.padding(vertical = 12.dp).semantics(mergeDescendants = true) {},
 		horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
 		verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
 	) {
 		Text(title, style = nyc.juliet.subwaysfornerds.ui.theme.TextRoles.headline, color = palette.ink)
-		Text(description, style = nyc.juliet.subwaysfornerds.ui.theme.TextRoles.footnote, color = palette.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+		description?.let { Text(it, style = nyc.juliet.subwaysfornerds.ui.theme.TextRoles.footnote, color = palette.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
 		extra()
 	}
 }

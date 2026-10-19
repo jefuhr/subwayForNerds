@@ -22,7 +22,16 @@ struct AppRootView: View {
 			// Tags are stable integers; the map sits between Board and Fleet but takes the next free tag.
 			Tab("Map", systemImage: "map", value: 3) { TrackMapScreen() }
 			Tab("Fleet", systemImage: "train.side.front.car", value: 1) { FleetSplitView() }
-			Tab("Settings", systemImage: "gearshape", value: 2) { NavigationStack { SettingsView() } }
+			Tab("Settings", systemImage: "gearshape", value: 2) {
+				NavigationStack(path: $app.settingsPath) {
+					SettingsView()
+						.navigationDestination(for: SettingsDestination.self) { destination in
+							switch destination {
+							case .systemStatus: SystemStatusView()
+							}
+						}
+				}
+			}
 		}
 		.onOpenURL { url in
 			if url.isFileURL { app.previewSettingsFile(url) }

@@ -28,9 +28,7 @@ struct SettingsTransferSection: View {
 			}.accessibilityIdentifier("exportSettings")
 			Button("Import settings") { importing = true }.accessibilityIdentifier("importSettings")
 			if let message = error ?? app.settingsError { Text(message).foregroundStyle(.red).font(.footnote).accessibilityIdentifier("settingsError") }
-		} header: { ListHeader("Move your settings") } footer: {
-			Text("Move combined stations, hidden lines, favorite stations and trains, station selection, themes, board and transfer filters, widget and offline preferences between devices with a .nerds file. Offline boards, saved trains and your ride stay on this device. No account is needed.")
-		}
+		} header: { ListHeader("Move your settings") }
 		.fileImporter(isPresented: $importing, allowedContentTypes: [.nerdsSettings]) { result in
 			switch result { case .success(let url): app.previewSettingsFile(url); case .failure(let failure): error = failure.localizedDescription }
 		}

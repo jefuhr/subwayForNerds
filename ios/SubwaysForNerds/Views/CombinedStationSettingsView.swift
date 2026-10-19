@@ -9,7 +9,7 @@ struct CombinedStationsView: View {
 			Section {
 				Button { adding = true } label: { Label("Create combined station", systemImage: "plus") }
 					.accessibilityIdentifier("addCombinedStation")
-			} footer: { Text("Bring departures from multiple stations into one board. Original stations stay available.") }
+			}
 			Section {
 				ForEach(app.combinedStations.keys.sorted(), id: \.self) { id in
 					if let definition = app.combinedStations[id] {
@@ -52,7 +52,7 @@ struct CombinedStationEditor: View {
 			Section {
 				TextField("Combined station name", text: $name).accessibilityIdentifier("combinedStationName")
 					.focused($nameFocused).submitLabel(.done).onSubmit { nameFocused = false }
-			} footer: { Text("Choose at least two stations. Each departure will show where to board.") }
+			}
 			Section {
 				HStack {
 					Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
@@ -126,7 +126,7 @@ struct LineVisibilityView: View {
 			Section {
 				Button("Enable all lines") { app.setHiddenLines([]) }.accessibilityIdentifier("enableAllLines")
 				Button("Hide all lines") { app.setHiddenLines(app.allLineKeys) }.accessibilityIdentifier("hideAllLines")
-			} footer: { Text("Applies to stations, departures, connections, alerts, and station widgets. Station filters still apply. Saved trips, your active ride, and fleet history stay accessible.") }
+			}
 			if let error = app.settingsError { Section { Notice(text: error) } }
 			ForEach(systems, id: \.self) { group in
 				let routes = app.allLineKeys.filter { system($0) == group }

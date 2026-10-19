@@ -53,7 +53,7 @@ internal fun SlowZoneList(map: TrackMapModel, now: Double) {
 						Text("Estimated ${SlowZoneDisplay.label(zone)}", style = TextRoles.subheadline, color = palette.ink)
 						Text(zone.segment, style = TextRoles.footnote, color = palette.ink)
 						Text("Typically +${SlowZoneDisplay.seconds(zone.extraSeconds)} · ${SlowZoneDisplay.seconds(zone.baselineSeconds)} baseline", style = TextRoles.caption, color = palette.ink)
-						Text("Since ${SlowZoneDisplay.date(zone.since)} · through ${SlowZoneDisplay.date(zone.through)} · Transit Lab", style = TextRoles.caption2, color = palette.muted)
+						Text("Since ${SlowZoneDisplay.date(zone.since)} · through ${SlowZoneDisplay.date(zone.through)}", style = TextRoles.caption2, color = palette.muted)
 						if (zone.paths.isEmpty()) Text("Location not highlighted: no reviewed map geometry", style = TextRoles.caption, color = palette.muted)
 					}
 					HorizontalDivider(color = palette.line)

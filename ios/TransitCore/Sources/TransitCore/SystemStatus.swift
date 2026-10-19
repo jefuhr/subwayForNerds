@@ -165,16 +165,10 @@ extension DeviceNetworkStatus {
 		}
 	}
 
-	/// The measured latency and, for radios, why no signal bars are shown.
+	/// The measured latency, or that none has been measured yet.
 	public func signalStrengthDetail(roundTripMilliseconds: Int?) -> String? {
 		guard state == .connected else { return nil }
-		let latency = roundTripMilliseconds.map { "\($0) ms API latency" } ?? "No server response measured yet"
-		let note: String? = switch linkTransports.first {
-		case .wifi?: "iOS does not share Wi-Fi signal strength (dBm) with apps"
-		case .cellular?: "iOS does not share cellular signal bars with apps"
-		default: nil
-		}
-		return ([latency] + [note].compactMap { $0 }).joined(separator: " · ")
+		return roundTripMilliseconds.map { "\($0) ms API latency" } ?? "No server response measured yet"
 	}
 
 	/// "Wi-Fi (Home) · also Cellular (5G)", or "None" without a usable interface.

@@ -71,10 +71,7 @@ fun WidgetDisplayScreen(model: AppModel, lockScreen: Boolean, exit: ScreenExit, 
 	fun save(value: WidgetDisplay) { if (lockScreen) model.setWidgetLockScreen(widgets.lockScreen.copy(display = value)) else model.setWidgetDisplay(value) }
 	val fields = if (lockScreen) Labels.lockScreenFields else Labels.widgetFields
 	ListScreen(if (lockScreen) "Lock screen display" else "Home screen display", exit = exit, onExit = close, tag = "${prefix}DisplayScreen") {
-		section(
-			"refresh", header = "Refresh",
-			footer = "Your preferred interval is saved with your settings. Android refreshes widgets in the background no more often than every 15 minutes; the refresh button and opening the app update them sooner.",
-		) {
+		section("refresh", header = "Refresh") {
 			row {
 				ChipRow(Modifier.padding(horizontal = 12.dp).testTag("${prefix}RefreshInterval")) {
 					val current = options.refreshInterval ?: 5
@@ -82,11 +79,7 @@ fun WidgetDisplayScreen(model: AppModel, lockScreen: Boolean, exit: ScreenExit, 
 				}
 			}
 		}
-		section(
-			"layout", header = "Layout",
-			footer = if (lockScreen) "Each direction gets its own column. Fit as many as possible fills the available space with up to six trains per direction. Lock screen widgets appear only where your device's launcher supports them."
-			else "Directions use arrows. Train counts adapt to the widget size and text size. Lock screen display is configured separately.",
-		) {
+		section("layout", header = "Layout") {
 			row { SwitchRow("Compact rows", options.compact, { save(options.copy(compact = it)) }, Modifier.testTag("${prefix}Compact")) }
 			row {
 				Column(Modifier.padding(vertical = 4.dp)) {
@@ -111,15 +104,10 @@ fun WidgetDisplayScreen(model: AppModel, lockScreen: Boolean, exit: ScreenExit, 
 					ChipRow(Modifier.padding(horizontal = 12.dp).testTag("${prefix}TimeStyle")) {
 						Labels.timeStyles.forEach { style -> ChoiceChip(Labels.timeStyleTitle(style), options.timeStyle == style, { save(options.copy(timeStyle = style)) }) }
 					}
-					Text("Android widgets always show arrival clock times with the report time, so they stay accurate between refreshes.", style = TextRoles.caption, color = palette.muted, modifier = Modifier.padding(horizontal = 16.dp))
 				}
 			}
 		}
-		section(
-			"fields", header = "Show information",
-			footer = if (lockScreen) "These settings apply only to lock screen widgets. Car details appear only when reported and still current. Saved predictions always remain marked as offline estimates."
-			else "These settings apply only to Home screen widgets, in either filter mode. Car details appear only when reported and still current. Small widgets shorten details to fit. Saved predictions always remain marked as offline estimates.",
-		) {
+		section("fields", header = "Show information") {
 			if (lockScreen) row { SwitchRow("Show service icons", widgets.lockScreen.showService, { model.setWidgetLockScreen(widgets.lockScreen.copy(showService = it)) }, Modifier.testTag("widgetLockShowService")) }
 			fields.forEach { field ->
 				row(field) {
@@ -146,7 +134,7 @@ fun WidgetFiltersScreen(model: AppModel, stationID: String, exit: ScreenExit, cl
 	val station = model.allStations.firstOrNull { it.id == stationID }
 	val preference = model.settings.widgets.stations[stationID] ?: StationSettings(view = "direction")
 	ListScreen(station?.name ?: "Widget filters", exit = exit, onExit = close, tag = "widgetFilters") {
-		section("lines", header = "Widget lines", footer = "With no lines selected, all globally enabled lines are shown. Global line settings always apply.") {
+		section("lines", header = "Widget lines") {
 			row {
 				Row(
 					Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(preference.routes.isEmpty(), role = Role.RadioButton) { model.clearWidgetRoutes(stationID) }
@@ -173,7 +161,7 @@ fun WidgetFiltersScreen(model: AppModel, stationID: String, exit: ScreenExit, cl
 				}
 			}
 		}
-		section("grouping", header = "Grouping", footer = "The smallest widgets show the next train in each direction. Larger widgets show more trains with your chosen grouping.") {
+		section("grouping", header = "Grouping") {
 			row {
 				ChipRow(Modifier.padding(horizontal = 12.dp).testTag("widgetGrouping")) {
 					Labels.boardViews.forEach { view -> ChoiceChip(Labels.boardViewTitle(view), preference.view == view, { model.setWidgetView(view, stationID) }, contentDescription = Labels.boardViewLabel(view)) }
@@ -195,7 +183,7 @@ fun OfflineSettingsScreen(model: AppModel, exit: ScreenExit, close: () -> Unit, 
 	ListScreen("Offline", exit = exit, onExit = close, tag = "offlineSettingsScreen") {
 		model.offlineActionError?.let { message -> section("actionError") { row { RowContainer { Notice(message, Modifier.testTag("offlineSettingsError")) } } } }
 		model.settingsError?.let { message -> section("settingsError") { row { RowContainer { Notice(message) } } } }
-		section("storage", header = "Connection and storage", footer = "Offline boards, trips and your ride stay on this device and do not sync. These preferences transfer with your settings.") {
+		section("storage", header = "Connection and storage") {
 			// What the phone's network is doing comes first, so the rider knows why boards are or are not refreshing.
 			row {
 				RowContainer {
@@ -237,7 +225,7 @@ fun OfflineSettingsScreen(model: AppModel, exit: ScreenExit, close: () -> Unit, 
 			row { NavigationRow("Saved trains", { open(Route.SavedTrips) }, Modifier.testTag("offlineSavedTrains"), value = "${model.savedTrips.size}") }
 			row { ActionButton("Clear automatic downloads", { confirmClear = true }, Modifier.padding(start = 4.dp).testTag("clearAutomaticOffline"), enabled = !working, destructive = true) }
 		}
-		section("viewed", header = "Viewed station", footer = "Each board you view keeps its next departures for every line and direction, plus full stop lists for the next trains, while you are connected.") {
+		section("viewed", header = "Viewed station") {
 			row {
 				Stepper("Departures per line and direction", preferences.departuresPerLineDirection, 1..20, "offlineDepartures") { value -> update { it.copy(departuresPerLineDirection = value) } }
 			}
@@ -246,10 +234,7 @@ fun OfflineSettingsScreen(model: AppModel, exit: ScreenExit, close: () -> Unit, 
 			}
 			row { SwitchRow("Save trains I open", preferences.saveOpenedTrips, { value -> update { it.copy(saveOpenedTrips = value) } }, Modifier.testTag("offlineSaveOpenedTrips")) }
 		}
-		section(
-			"other", header = "Other stations",
-			footer = "Favorite boards, and boards within this straight-line distance of the station you are viewing, are saved in the background while the app is open. Your location is not used. Saving their trips works for favorites even with the distance off.",
-		) {
+		section("other", header = "Other stations") {
 			row {
 				ChipRow(Modifier.padding(horizontal = 12.dp).testTag("offlineRadius")) {
 					listOf(0, 1320, 2640, 5280, 10560, 26400).forEach { feet ->
@@ -259,24 +244,18 @@ fun OfflineSettingsScreen(model: AppModel, exit: ScreenExit, close: () -> Unit, 
 			}
 			row { SwitchRow("Also save trips at favorite and nearby stations", preferences.preloadOtherStationTrips, { value -> update { it.copy(preloadOtherStationTrips = value) } }, Modifier.testTag("offlinePreloadOtherTrips")) }
 		}
-		section(
-			"estimates", header = "Offline countdowns",
-			footer = "Without a connection, countdowns use saved predictions until their source is this old, then show the last clock times. Every offline time is labeled as an estimate with its source age; passed times say estimate passed.",
-		) {
+		section("estimates", header = "Offline countdowns") {
 			row {
 				ChipRow(Modifier.padding(horizontal = 12.dp)) {
 					listOf(5, 15, 30, 60, 120).forEach { minutes -> ChoiceChip("$minutes min", preferences.estimateLimitMinutes == minutes, { update { it.copy(estimateLimitMinutes = minutes) } }, Modifier.testTag("offlineEstimateLimit_$minutes")) }
 				}
 			}
 		}
-		section(
-			"retention", header = "Keep automatic copies",
-			footer = "Automatic boards and trips expire after this many hours and the oldest are removed above the storage limit. Saved trains and your current ride are kept until you remove them.",
-		) {
+		section("retention", header = "Keep automatic copies") {
 			row { ChipRow(Modifier.padding(horizontal = 12.dp)) { listOf(1, 6, 12, 24).forEach { hours -> ChoiceChip("$hours h", preferences.retentionHours == hours, { update { it.copy(retentionHours = hours) } }, Modifier.testTag("offlineRetention_$hours")) } } }
 			row { ChipRow(Modifier.padding(horizontal = 12.dp)) { listOf(25, 50, 100, 250).forEach { mib -> ChoiceChip("$mib MiB", preferences.storageLimitMiB == mib, { update { it.copy(storageLimitMiB = mib) } }, Modifier.testTag("offlineStorageLimit_$mib")) } } }
 		}
-		section("ride", footer = "While you are on a train, Home screen and lock screen widgets show its next stops instead of a station board.") {
+		section("ride") {
 			row { SwitchRow("Widgets follow my ride", preferences.widgetsFollowActiveRide, { value -> update { it.copy(widgetsFollowActiveRide = value) } }, Modifier.testTag("offlineWidgetsFollowRide")) }
 		}
 	}
@@ -316,7 +295,7 @@ fun FleetPackScopeScreen(model: AppModel, exit: ScreenExit, close: () -> Unit) {
 	LaunchedEffect(Unit) { fleet.loadFacets() }
 	fun toggled(value: String, values: List<String>) = if (value in values) values - value else (values + value).sorted()
 	ListScreen("Fleet download scope", exit = exit, onExit = close, tag = "fleetPackScopeScreen") {
-		section("history", footer = "Everything includes all car types and estimated home yards, with the history window chosen above.") {
+		section("history") {
 			row {
 				ChipRow(Modifier.padding(horizontal = 12.dp).testTag("fleetPackHistory")) {
 					listOf(7, 30).forEach { days -> ChoiceChip("$days days", selection.historyDays == days, { fleet.chooseSelection(selection.copy(historyDays = days)) }, enabled = !disabled) }
@@ -324,16 +303,13 @@ fun FleetPackScopeScreen(model: AppModel, exit: ScreenExit, close: () -> Unit) {
 			}
 			row { ActionButton("Everything", { fleet.chooseSelection(FleetPackSelection(historyDays = selection.historyDays)) }, Modifier.padding(start = 4.dp).testTag("fleetPackEverything"), enabled = !disabled) }
 		}
-		section("equipment", header = "Car types", footer = "Select multiple exact equipment types. Choosing All car types removes this filter.") {
+		section("equipment", header = "Car types") {
 			row { ScopeChoice("All car types", selection.equipment.isEmpty(), "fleetPackAllEquipment", !disabled) { fleet.chooseSelection(selection.copy(equipment = emptyList())) } }
 			(fleet.facets.equipment + selection.equipment).filter { it.isNotEmpty() }.distinct().sorted().forEach { equipment ->
 				row(equipment) { ScopeChoice(equipment, equipment in selection.equipment, "fleetPackEquipment_$equipment", !disabled) { fleet.chooseSelection(selection.copy(equipment = toggled(equipment, selection.equipment))) } }
 			}
 		}
-		section(
-			"yards", header = "Estimated home yards",
-			footer = "Yards are estimates from reports and source records. Multiple yard selections match exact names. Unknown includes cars without an estimated home yard. Car type and yard filters must both match.",
-		) {
+		section("yards", header = "Estimated home yards") {
 			row { ScopeChoice("All estimated home yards", selection.yards.isEmpty(), "fleetPackAllYards", !disabled) { fleet.chooseSelection(selection.copy(yards = emptyList())) } }
 			(fleet.facets.yard + selection.yards + "unknown").filter { it.isNotEmpty() }.distinct().sorted().forEach { yard ->
 				row(yard) { ScopeChoice(if (yard == "unknown") "Unknown / unreported" else yard, yard in selection.yards, "fleetPackYard_$yard", !disabled) { fleet.chooseSelection(selection.copy(yards = toggled(yard, selection.yards))) } }

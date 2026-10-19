@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,27 +31,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.DownloadForOffline
-import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sensors
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -72,16 +65,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -97,7 +89,6 @@ import nyc.juliet.subwaysfornerds.ui.CoreBridge
 import nyc.juliet.subwaysfornerds.ui.DepartureSection
 import nyc.juliet.subwaysfornerds.ui.Labels
 import nyc.juliet.subwaysfornerds.ui.components.ActionButton
-import nyc.juliet.subwaysfornerds.ui.components.ActionChip
 import nyc.juliet.subwaysfornerds.ui.components.ChipRow
 import nyc.juliet.subwaysfornerds.ui.components.ChoiceChip
 import nyc.juliet.subwaysfornerds.ui.components.EmptyState
@@ -112,6 +103,7 @@ import nyc.juliet.subwaysfornerds.ui.components.RowContainer
 import nyc.juliet.subwaysfornerds.ui.components.SourcesTable
 import nyc.juliet.subwaysfornerds.ui.components.openLink
 import nyc.juliet.subwaysfornerds.ui.components.section
+import nyc.juliet.subwaysfornerds.ui.navigation.AppTab
 import nyc.juliet.subwaysfornerds.ui.navigation.Route
 import nyc.juliet.subwaysfornerds.ui.navigation.StationPickerMode
 import nyc.juliet.subwaysfornerds.ui.theme.TextRoles
@@ -287,10 +279,9 @@ private fun LazyListScope.boardContent(model: AppModel, open: (Route) -> Unit, s
 	if (external && station != null) { njtDeparturesSection(station, configured = false); return }
 
 	val error = model.boardError
-	val live = BoardLogic.live(board, model.combinedBoard, model.connected, model.boardIsCached, now)
 	val degraded = BoardLogic.degraded(board, model.combinedBoard, now)
 	if (error != null) section("boardError") { row { RowContainer { Notice(error, Modifier.testTag("boardError")) } } }
-	else if (degraded && board != null) section("degraded") { row { RowContainer { Notice("Some feeds are stale or unavailable. Check source ages below.") } } }
+	else if (BoardLogic.degradedNoticeVisible(board, degraded, model.boardIsCached)) section("degraded") { row { RowContainer { Notice("Some feeds are stale or unavailable. Check source ages below.") } } }
 	if (board != null && model.boardIsCached) section("offline") { row { OfflineStatus(model) } }
 	section("filters") { row("filters") { Filters(model) } }
 
@@ -305,15 +296,10 @@ private fun LazyListScope.boardContent(model: AppModel, open: (Route) -> Unit, s
 		section("empty") {
 			row {
 				val title = if (configuredNJT && board.departures.isEmpty()) "No arrival predictions" else "No departures match"
-				val description = Display.njtPredictionMessage(board, now, model.boardIsCached)
-					?: "An empty board does not mean service is suspended. Try all directions and lines, or refresh the feed."
-				EmptyState(title, description, Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("boardNoPredictions"))
+				EmptyState(title, Display.njtPredictionMessage(board, now, model.boardIsCached), Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("boardNoPredictions"))
 			}
 			row { ActionButton("Reset filters", { model.resetFilters() }, Modifier.padding(start = 4.dp)) }
-			if (model.hiddenRoutes.isNotEmpty()) {
-				row { RowContainer { Text("Some lines are hidden in settings. Resetting station filters keeps those lines hidden.", style = TextRoles.footnote, color = palette.muted) } }
-				row { ActionButton("Manage lines", { model.navigator.push(Route.Lines) }, Modifier.testTag("manageLines").padding(start = 4.dp)) }
-			}
+			if (model.hiddenRoutes.isNotEmpty()) row { ActionButton("Manage lines", { model.navigator.push(Route.Lines) }, Modifier.testTag("manageLines").padding(start = 4.dp)) }
 		}
 	}
 	groups.forEach { group -> platformSection(model, group, predecessors.getValue(group.id), station, model.preference.view, now, open, selected) }
@@ -322,109 +308,80 @@ private fun LazyListScope.boardContent(model: AppModel, open: (Route) -> Unit, s
 		njtDeparturesSection(displayBoard.station, configured = true)
 		displayBoard.njt?.cacheError?.let { cacheError -> section("njtCache") { row { RowContainer { Notice("NJ Transit cache: $cacheError") } } } }
 	}
-	if (board != null) section(
-		"feedCheck", header = "Feed check",
-		footer = "Times are predictions, not promises. Track labels are feed-reported. Times shown in New York time.",
-	) { row { RowContainer { SourcesTable(board.sources, now) } } }
+	if (board != null) section("feedCheck", header = "Feed check") { row { RowContainer { SourcesTable(board.sources, now) } } }
 }
 
 @Composable
 private fun StationHeading(model: AppModel, open: (Route) -> Unit, external: Boolean) {
-	val station = model.station
-	val now = model.now
-	val live = BoardLogic.live(model.board, model.combinedBoard, model.connected, model.boardIsCached, now)
-	val degraded = BoardLogic.degraded(model.board, model.combinedBoard, now)
 	val favorite = model.stationID in model.favorites
-	Column(Modifier.padding(start = 16.dp, end = 4.dp, top = 2.dp, bottom = 6.dp)) {
-		Row(verticalAlignment = Alignment.CenterVertically) {
-			Row(
-				Modifier.weight(1f).heightIn(min = 48.dp)
-					.clickable(role = Role.Button, onClickLabel = "Find a station") { model.navigator.push(Route.StationPicker(StationPickerMode.SEARCH)) }
-					.testTag("selectedStation"),
-				verticalAlignment = Alignment.CenterVertically,
-			) {
-				Text(station?.name ?: "Your next train", style = TextRoles.headline, modifier = Modifier.weight(1f, fill = false))
-				Icon(Icons.Filled.KeyboardArrowDown, contentDescription = null, tint = palette.muted, modifier = Modifier.size(18.dp))
-			}
-			FavoriteStar(favorite, if (favorite) "Remove favorite station" else "Favorite this station", { model.toggleFavorite(model.stationID) }, Modifier.testTag("toggleFavorite"))
-		}
-		androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(end = 10.dp)) {
-			Text(BoardLogic.metadata(station, model.stationID, model.combinedStations[model.stationID]?.stationIDs?.size), style = TextRoles.caption2, color = palette.muted)
-			val label = BoardLogic.freshnessLabel(external, live, degraded, model.boardIsCached, model.board != null, model.boardSavedAt)
-			Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-				Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.testTag("boardFreshness").semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }) {
-					Icon(if (external) Icons.Filled.Map else if (live) Icons.Filled.Sensors else Icons.Filled.Schedule, contentDescription = null, tint = if (live) palette.action else palette.muted, modifier = Modifier.size(13.dp))
-					Text(label, style = TextRoles.caption2.copy(fontWeight = FontWeight.SemiBold), color = if (live) palette.action else palette.muted)
-				}
-				// Kept outside the live region so offline save progress does not interrupt TalkBack.
-				if (model.board != null && !model.boardIsCached && !external) OfflineReadinessIcon(model)
-			}
+	Row(Modifier.padding(start = 16.dp, end = 4.dp, top = 2.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+		Row(
+			Modifier.weight(1f).heightIn(min = 48.dp)
+				.clickable(role = Role.Button, onClickLabel = "Find a station") { model.navigator.push(Route.StationPicker(StationPickerMode.SEARCH)) }
+				.testTag("selectedStation"),
+			verticalAlignment = Alignment.CenterVertically,
+		) {
+			Text(model.station?.name ?: "Your next train", style = TextRoles.headline, modifier = Modifier.weight(1f, fill = false))
+			Icon(Icons.Filled.KeyboardArrowDown, contentDescription = null, tint = palette.muted, modifier = Modifier.size(18.dp))
 		}
 		StationActions(model, open, external)
+		FavoriteStar(favorite, if (favorite) "Remove favorite station" else "Favorite this station", { model.toggleFavorite(model.stationID) }, Modifier.testTag("toggleFavorite"))
 	}
 }
 
-/** Station actions and other favorites share one scrolling row rather than a menu. */
+/** Station info and alerts are icon buttons beside the favorite star. */
 @Composable
 private fun StationActions(model: AppModel, open: (Route) -> Unit, external: Boolean) {
 	val context = LocalContext.current
-	ChipRow(Modifier.padding(top = 2.dp)) {
-		if (model.station != null) ActionChip("Station info", { open(Route.StationInfo(model.stationID)) }, Modifier.testTag("stationInfo"), icon = Icons.Filled.Info)
-		if (external) ActionChip("Alerts", { openLink(context, TransitLinks.njtAlerts) }, icon = Icons.AutoMirrored.Filled.OpenInNew)
-		else {
-			val count = model.displayBoard?.alerts?.size ?: 0
-			ActionChip("Alerts ($count)", { model.navigator.push(Route.Alerts) }, Modifier.testTag("stationAlerts"), icon = Icons.Filled.Warning, iconTint = if (count > 0) palette.warning else palette.muted)
-		}
-		if (model.savedTrips.isNotEmpty()) ActionChip("Saved trains (${model.savedTrips.size})", { open(Route.SavedTrips) }, Modifier.testTag("savedTrips"), icon = Icons.Filled.DownloadForOffline)
-		model.favoriteStations.filter { it.id != model.stationID }.forEach { favorite ->
-			ActionChip(favorite.name, { model.selectStation(favorite.id) }, Modifier.testTag("favoriteStation_${favorite.id}").semantics { contentDescription = "Favorite station ${favorite.name}" }, icon = Icons.Filled.Star)
+	if (model.station != null) IconButton(onClick = { open(Route.StationInfo(model.stationID)) }, modifier = Modifier.testTag("stationInfo")) {
+		Icon(Icons.Filled.Info, contentDescription = "Station info", tint = palette.action)
+	}
+	// External stations have no alerts of their own to count, so their button opens the operator's alerts page.
+	val count = if (external) 0 else model.displayBoard?.alerts?.size ?: 0
+	IconButton(
+		onClick = { if (external) openLink(context, TransitLinks.njtAlerts) else model.navigator.push(Route.Alerts) },
+		modifier = Modifier.testTag("stationAlerts").semantics { contentDescription = if (external) "Alerts" else "Alerts, $count" },
+	) {
+		Box {
+			Icon(Icons.Filled.Warning, contentDescription = null, tint = if (count > 0) palette.warning else palette.muted)
+			if (count > 0) AlertCountBadge(count, Modifier.align(Alignment.TopEnd).offset(x = 8.dp, y = (-6).dp))
 		}
 	}
 }
 
-/** Saved boards say they are offline estimates and how old their source is. */
+/** A small count over the alerts icon. The button's label already says the number, so TalkBack skips this. */
+@Composable
+private fun AlertCountBadge(count: Int, modifier: Modifier = Modifier) {
+	Box(
+		modifier.defaultMinSize(minWidth = 16.dp, minHeight = 16.dp).background(palette.warning, CircleShape).padding(horizontal = 4.dp).clearAndSetSemantics { testTag = "stationAlertsCount" },
+		contentAlignment = Alignment.Center,
+	) {
+		Text(if (count > 99) "99+" else count.toString(), style = TextRoles.caption2.copy(fontWeight = FontWeight.Bold), color = palette.background, maxLines = 1)
+	}
+}
+
+/** Saved boards say they are offline estimates and how old their source is; tapping opens System status. */
 @Composable
 private fun OfflineStatus(model: AppModel) {
 	val board = model.board ?: return
 	if (!model.boardIsCached) return
-	RowContainer {
+	RowContainer(Modifier.testTag("boardOfflineCard").clickable(role = Role.Button, onClickLabel = "Open system status") { model.navigator.show(Route.SystemStatus, AppTab.SETTINGS) }, minHeight = 48.dp) {
 		Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-			val source = model.predictionSourceTimestamp(board)
 			Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.testTag("boardOfflineEstimate").semantics(mergeDescendants = true) {}) {
 				Icon(Icons.Filled.CloudOff, contentDescription = null, tint = palette.warning, modifier = Modifier.size(15.dp))
-				Text(OfflineDisplay.estimateLabel(source, model.now, model.offlinePreferences), style = TextRoles.caption.copy(fontWeight = FontWeight.SemiBold))
+				Text(OfflineDisplay.estimateLabel(model.predictionSourceTimestamp(board), model.now, model.offlinePreferences), style = TextRoles.caption.copy(fontWeight = FontWeight.SemiBold))
 			}
-			DeviceNetworkSummary(
-				model,
-				model.boardSavedAt?.let { "Board saved ${Display.ageLabel(it, model.now)}. Countdowns use this device's clock; trains that left are marked estimate passed." }
-					?: "Showing the last board from this visit; it was not saved offline.",
-			)
+			Text(model.deviceNetworkHeadline, style = TextRoles.caption2.copy(fontWeight = FontWeight.SemiBold), color = palette.ink, modifier = Modifier.testTag("deviceNetworkStatus"))
 		}
 	}
 }
 
-/** Live boards show how much is ready offline as one compact icon beside the feed label. */
+/** What the phone's network is doing and what the app is waiting to fetch. */
 @Composable
-private fun OfflineReadinessIcon(model: AppModel) {
-	val readiness = model.readiness
-	val icon: ImageVector = if (readiness.boardFailed) Icons.Filled.ErrorOutline else if (readiness.boardSaved) Icons.Filled.CloudDone else Icons.Filled.CloudDownload
-	Icon(
-		icon,
-		contentDescription = BoardLogic.readinessLabel(readiness.boardFailed, readiness.boardSaved, readiness.savedCount, readiness.wanted.size, readiness.partial.size),
-		tint = palette.muted,
-		modifier = Modifier.size(14.dp).testTag("offlineReadiness"),
-	)
-}
-
-/** What the phone's network is doing and what the app is waiting to fetch, then any board provenance. */
-@Composable
-private fun DeviceNetworkSummary(model: AppModel, provenance: String? = null) {
+private fun DeviceNetworkSummary(model: AppModel) {
 	Column(Modifier.testTag("deviceNetworkStatus").semantics(mergeDescendants = true) {}) {
 		Text(model.deviceNetworkHeadline, style = TextRoles.caption2.copy(fontWeight = FontWeight.SemiBold), color = palette.ink)
-		Text(
-			listOfNotNull(model.deviceNetworkDetail, provenance).joinToString(" · "),
-			style = TextRoles.caption2, color = palette.muted, modifier = Modifier.testTag("deviceNetworkDetail"),
-		)
+		Text(model.deviceNetworkDetail, style = TextRoles.caption2, color = palette.muted, modifier = Modifier.testTag("deviceNetworkDetail"))
 	}
 }
 
@@ -511,7 +468,7 @@ private fun LazyListScope.njtDeparturesSection(station: Station, configured: Boo
 
 private fun LazyListScope.njtPositionsSection(board: Board, now: Double, cached: Boolean) {
 	val positions = Display.currentVehiclePositions(board.vehiclePositions, now)
-	section("njtPositions", header = "Reported vehicle locations", footer = "GPS reports age independently of arrival estimates. Locations over five minutes old are hidden.") {
+	section("njtPositions", header = "Reported vehicle locations", footer = "Locations over five minutes old are hidden.") {
 		if (positions.isEmpty()) row { RowContainer { Text("No recent vehicle locations are reported.", style = TextRoles.footnote, color = palette.muted) } }
 		positions.forEach { position ->
 			row(position.id) {

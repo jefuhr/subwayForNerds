@@ -60,13 +60,17 @@ const val MAX_SETTINGS_BYTES = 1_048_576
 	val stations: Map<String, StationSettings> = emptyMap(), val display: WidgetDisplay = WidgetDisplay(),
 	val lockScreen: LockScreenSettings = LockScreenSettings(),
 )
+/** Which details a board departure row shows. Native rows and the web app read the same four switches. */
+@Serializable data class DepartureRowSettings(
+	val showTrackProvenance: Boolean = false, val combinePosition: Boolean = true, val showConsist: Boolean = true, val showHeadway: Boolean = true,
+)
 @Serializable data class CombinedStation(val name: String, val stationIDs: List<String>)
 @Serializable data class Settings(
 	val combinedStations: Map<String, CombinedStation> = emptyMap(), val hiddenRoutes: List<String> = emptyList(),
 	val favorites: List<String> = emptyList(), val theme: String = "subway", val stations: Map<String, StationSettings> = emptyMap(),
 	val trainFavorites: TrainFavorites = TrainFavorites(), val stationSelection: StationSelection = StationSelection(),
 	val units: UnitSettings = UnitSettings(), val offline: OfflineSettings = OfflineSettings(), val widgets: WidgetSettings = WidgetSettings(),
-	val transfers: TransferSettings = TransferSettings(),
+	val transfers: TransferSettings = TransferSettings(), val departureRows: DepartureRowSettings = DepartureRowSettings(),
 )
 @Serializable data class NerdsFile(val format: String = "subways-for-nerds", val version: Int = NerdsCodec.VERSION, val exportedAt: String, val lastStation: String, val settings: Settings)
 @Serializable data class SettingsRevision(val revision: Long, val settings: Settings? = null)
@@ -74,7 +78,7 @@ class SettingsException(message: String = "This is not a valid Subway Nerds sett
 
 /** Strict portable format boundary. Device location, sessions, cached data and active rides never enter it. */
 object NerdsCodec {
-	const val VERSION = 5
+	const val VERSION = 6
 	val directions = listOf("ALL", "NORTH", "SOUTH", "TO_NY", "TO_NJ", "UNKNOWN")
 	val widgetFields = listOf("stationName", "destination", "track", "service", "carType", "carCount", "carNumbers", "location", "updatedAt", "refreshButton", "groupHeaders")
 	private val strict = Json(TransitJson) { ignoreUnknownKeys = false; prettyPrint = true }
@@ -125,6 +129,10 @@ object NerdsCodec {
 			TransferFilter(choice(entry["direction"], directions), strings(entry["routes"], 128).sorted())
 		})
 	}
+	private fun departureRows(value: JsonElement?): DepartureRowSettings {
+		val v = obj(value); keys(v, setOf("showTrackProvenance", "combinePosition", "showConsist", "showHeadway"))
+		return DepartureRowSettings(bool(v["showTrackProvenance"]), bool(v["combinePosition"]), bool(v["showConsist"]), bool(v["showHeadway"]))
+	}
 	private fun display(value: JsonElement?): WidgetDisplay {
 		val v = obj(value); keys(v, setOf("fields", "compact", "trainsPerDirection", "timeStyle"), setOf("refreshInterval"))
 		val fields = strings(v["fields"], widgetFields.size).sorted(); if (!widgetFields.containsAll(fields)) invalid()
@@ -134,7 +142,7 @@ object NerdsCodec {
 	fun validate(settings: Settings): Settings = validate(TransitJson.encodeToJsonElement(Settings.serializer(), settings))
 	fun validate(value: JsonElement): Settings {
 		size(value.toString())
-		val v = obj(value); keys(v, setOf("favorites", "theme", "stations", "widgets"), setOf("trainFavorites", "stationSelection", "units", "offline", "combinedStations", "hiddenRoutes", "transfers"))
+		val v = obj(value); keys(v, setOf("favorites", "theme", "stations", "widgets"), setOf("trainFavorites", "stationSelection", "units", "offline", "combinedStations", "hiddenRoutes", "transfers", "departureRows"))
 		val w = obj(v["widgets"]); keys(w, setOf("matchAppFilters", "stations", "display"), setOf("lockScreen", "stationSelection"))
 		val d = display(w["display"])
 		val lock = if (!w.containsKey("lockScreen")) LockScreenSettings(WidgetDisplay(d.fields.filter { it in listOf("stationName", "carType", "carCount") }, true, 2, d.timeStyle)) else {
@@ -173,7 +181,9 @@ object NerdsCodec {
 		return Settings(combined, if (v.containsKey("hiddenRoutes")) strings(v["hiddenRoutes"], 128).sorted() else emptyList(), strings(v["favorites"]), string(v["theme"]), stations(v["stations"]), favorites,
 			if (v.containsKey("stationSelection")) selection(v["stationSelection"]) else StationSelection(), units, offline, WidgetSettings(widgetSelection, bool(w["matchAppFilters"]), stations(w["stations"]), d, lock),
 			// Device and account settings saved before transfer filters existed use shared filters.
-			if (v.containsKey("transfers")) transfers(v["transfers"]) else TransferSettings())
+			if (v.containsKey("transfers")) transfers(v["transfers"]) else TransferSettings(),
+			// Settings saved before row display options existed use the defaults.
+			if (v.containsKey("departureRows")) departureRows(v["departureRows"]) else DepartureRowSettings())
 	}
 	fun decode(text: String): NerdsFile {
 		size(text)
@@ -188,6 +198,7 @@ object NerdsCodec {
 		val s = obj(v["settings"])
 		if (listOf("combinedStations", "hiddenRoutes").any { s.containsKey(it) != (version >= 4) } || s.containsKey("offline") != (version >= 3)) invalid()
 		if (s.containsKey("transfers") != (version >= 5)) invalid()
+		if (s.containsKey("departureRows") != (version >= 6)) invalid()
 		if (version >= 2 && (!s.containsKey("trainFavorites") || !s.containsKey("stationSelection") || !obj(s["widgets"]).containsKey("stationSelection"))) invalid()
 		return NerdsFile(version = version, exportedAt = exported, lastStation = string(v["lastStation"]), settings = validate(s))
 	}

@@ -729,20 +729,20 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		let app = launch(settingsFile: encoded)
 		XCTAssertTrue(app.navigationBars["Import settings"].waitForExistence(timeout: 10))
 		app.buttons["Cancel"].tap()
-		XCTAssertTrue(app.buttons["theme_subway"].waitForExistence(timeout: 5))
+		scrollTo(app.buttons["theme_subway"], in: app)
 		XCTAssertTrue(app.buttons["theme_subway"].isSelected)
 		app.terminate()
 		let restored = launch(reset: false, settingsFile: encoded)
 		XCTAssertTrue(restored.navigationBars["Import settings"].waitForExistence(timeout: 10))
 		let confirm = restored.buttons["confirmSettingsImport"]
 		scrollTo(confirm, in: restored); confirm.tap()
-		XCTAssertTrue(restored.buttons["theme_hello-kitty"].waitForExistence(timeout: 5))
+		scrollTo(restored.buttons["theme_hello-kitty"], in: restored)
 		XCTAssertTrue(restored.buttons["theme_hello-kitty"].isSelected)
 		screenshot("settings-imported", app: restored)
 		restored.terminate()
 		let relaunched = launch(reset: false)
 		relaunched.tab("Settings").tap()
-		XCTAssertTrue(relaunched.buttons["theme_hello-kitty"].waitForExistence(timeout: 5))
+		scrollTo(relaunched.buttons["theme_hello-kitty"], in: relaunched)
 		XCTAssertTrue(relaunched.buttons["theme_hello-kitty"].isSelected)
 		let export = relaunched.buttons["exportSettings"]
 		scrollTo(export, in: relaunched); export.tap()
@@ -780,7 +780,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		app.terminate()
 		app = launch(reset: false, settingsFile: encoded)
 		scrollTo(app.buttons["confirmSettingsImport"], in: app); app.buttons["confirmSettingsImport"].tap()
-		XCTAssertTrue(app.buttons["theme_hello-kitty"].waitForExistence(timeout: 5))
+		scrollTo(app.buttons["theme_hello-kitty"], in: app)
 		app.terminate()
 		app = launch(reset: false)
 		app.tab("Settings").tap()
@@ -792,7 +792,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		XCTAssertTrue(app.buttons["timeFormat_12h"].isSelected)
 		app.buttons["timeFormat_24h"].tap()
 		screenshot("units-settings-after-import", app: app)
-		scrollTo(app.buttons["favoriteTrainsSettings"], in: app); app.buttons["favoriteTrainsSettings"].tap()
+		scrollTo(app.buttons["favoriteTrainsSettings"], in: app, towardTop: true); app.buttons["favoriteTrainsSettings"].tap()
 		XCTAssertTrue(app.buttons["removeFavoriteCar_nyct:R211A:4149"].waitForExistence(timeout: 5))
 		XCTAssertTrue(app.buttons["removeFavoriteConsist"].exists)
 		XCTAssertTrue(app.buttons["Any member car"].isSelected)
@@ -873,7 +873,7 @@ final class SubwaysForNerdsUITests: XCTestCase {
 		var app = launch()
 		app.tab("Settings").tap()
 		let kitty = app.buttons["theme_hello-kitty"]
-		XCTAssertTrue(kitty.waitForExistence(timeout: 5)); kitty.tap()
+		scrollTo(kitty, in: app); kitty.tap()
 		XCTAssertGreaterThanOrEqual(kitty.frame.height, 44)
 		XCTAssertFalse(app.staticTexts["Pink with a purpose"].exists)
 		screenshot("compact-themes-hello-kitty", app: app)
@@ -909,9 +909,12 @@ final class SubwaysForNerdsUITests: XCTestCase {
 	}
 
 	private func scrollTo(_ element: XCUIElement, in app: XCUIApplication, towardTop: Bool = false) {
-		for _ in 0..<12 {
-			if element.exists && element.isHittable { return }
-			if towardTop { app.swipeDown() } else { app.swipeUp() }
+		// Try the requested direction first, then the other: a control can sit above the current scroll position.
+		for toward in [towardTop, !towardTop] {
+			for _ in 0..<12 {
+				if element.exists && element.isHittable { return }
+				if toward { app.swipeDown() } else { app.swipeUp() }
+			}
 		}
 		XCTAssertTrue(element.waitForExistence(timeout: 10))
 	}

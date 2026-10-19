@@ -38,9 +38,12 @@ import XCTest
 		app.navigationBars.buttons.element(boundBy: 0).tap()
 		let prepare = app.buttons["checkFleetDownload"]
 		scrollTo(prepare, in: app)
+		keepClearOfTabBar(prepare, in: app)
 		prepare.tap()
 		let preparing = app.descendants(matching: .any)["preparingFleetPack"].firstMatch
-		XCTAssertTrue(preparing.waitForExistence(timeout: 10))
+		let appeared = preparing.waitForExistence(timeout: 10)
+		if !appeared { screenshot("Fleet pack preparing bar missing", app: app) }
+		XCTAssertTrue(appeared)
 		XCTAssertEqual(preparing.label, "Preparing fleet pack")
 		// Server build progress weighs stages by estimate, so it reads as approximate.
 		waitForValue(of: preparing, matching: #"^about \d{1,3} percent\. Step \d of \d · .+$"#)
@@ -92,6 +95,14 @@ import XCTest
 			app.swipeUp()
 		}
 		XCTAssertTrue(element.waitForExistence(timeout: 10))
+	}
+
+	/// A row that is technically hittable can still sit under the floating tab bar, so nudge it up first.
+	private func keepClearOfTabBar(_ element: XCUIElement, in app: XCUIApplication) {
+		for _ in 0..<4 where element.frame.midY > app.frame.height * 0.7 {
+			let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
+			from.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35)))
+		}
 	}
 
 	private func screenshot(_ name: String, app: XCUIApplication) {

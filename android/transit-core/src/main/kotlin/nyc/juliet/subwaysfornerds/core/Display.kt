@@ -77,12 +77,14 @@ open class DisplayRules {
 		return if (seconds < 60) "${seconds}s ago" else if (seconds < 3600) "${seconds / 60}m ago" else "${seconds / 3600}h ago"
 	}
 	fun boardable(departure: Departure): Boolean = departure.relationship !in listOf("SKIPPED", "CANCELED", "DELETED", "NO_DATA")
-	fun boardingLabel(departure: Departure): String {
+	/** The platform line of a row; [provenance] adds whether the track is reported or only scheduled. */
+	fun boardingLabel(departure: Departure, provenance: Boolean = true): String {
 		val area = departure.area.trim().ifEmpty { departure.partId }
 		val actual = departure.actualTrack?.trim()?.takeIf { it.isNotEmpty() }
 		val track = actual ?: departure.scheduledTrack?.trim()?.takeIf { it.isNotEmpty() } ?: return "$area · Track unknown"
-		val label = "Track $track"; val provenance = if (actual == null) "scheduled" else "reported"
-		return if (area == label || area.endsWith(" · $label")) "$area · $provenance" else "$area · $label · $provenance"
+		val label = "Track $track"; val provenanceLabel = if (actual == null) "scheduled" else "reported"
+		val suffix = if (provenance) " · $provenanceLabel" else ""
+		return if (area == label || area.endsWith(" · $label")) "$area$suffix" else "$area · $label$suffix"
 	}
 	fun currentConsist(consist: Consist?, now: Double): Boolean = consist != null && listOf(consist.updatedAt, consist.fetchedAt).all { it.isFinite() && it > 0 && now - it <= 300 && it <= now + 60 }
 	fun consistSummary(cars: List<ConsistCar>): String {

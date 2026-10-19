@@ -237,3 +237,28 @@ test('offline preferences survive clients that predate them and permit omission 
 		assert.deepEqual((await app.inject({ url: '/api/v1/account/settings', headers })).json().settings, { ...defaults(), theme: 'hello-kitty' });
 	} finally { await app.close(); }
 });
+
+test('legacy clients cannot erase non-default departure row settings', async () => {
+	const app = await fixture();
+	try {
+		const challenge = (await app.inject({ method: 'POST', url: '/api/v1/auth/challenges', payload: { provider: 'apple', platform: 'native', intent: 'login' } })).json();
+		const login = (await app.inject({ method: 'POST', url: '/api/v1/auth/apple/exchange', payload: { challenge: challenge.id, identityToken: 'valid-' + challenge.nonce, code: 'x' } })).json();
+		const headers = { authorization: 'Bearer ' + login.token };
+		const put = (payload: object, revision: number) => app.inject({ method: 'PUT', url: '/api/v1/account/settings', headers: { ...headers, 'if-match': `"${revision}"` }, payload });
+		const legacy: any = defaults(); delete legacy.departureRows;
+		assert.equal((await put(legacy, 0)).statusCode, 200);
+		assert.equal((await put(legacy, 1)).statusCode, 200);
+		let revision = 2;
+		for (const key of ['showTrackProvenance', 'combinePosition', 'showConsist', 'showHeadway'] as const) {
+			const settings = defaults(); settings.departureRows[key] = !settings.departureRows[key];
+			assert.equal((await put(settings, revision++)).statusCode, 200);
+			assert.equal((await put(legacy, revision - 1)).statusCode, 412, 'stale revision checked first');
+			const rejected = await put(legacy, revision);
+			assert.equal(rejected.statusCode, 409, key);
+			assert.match(rejected.json().error, /row display settings/);
+			assert.deepEqual((await app.inject({ url: '/api/v1/account/settings', headers })).json(), { revision, settings });
+		}
+		assert.equal((await put(defaults(), revision++)).statusCode, 200);
+		assert.equal((await put(legacy, revision)).statusCode, 200);
+	} finally { await app.close(); }
+});

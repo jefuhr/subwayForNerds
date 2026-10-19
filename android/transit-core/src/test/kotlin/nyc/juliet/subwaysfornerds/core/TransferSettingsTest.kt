@@ -24,14 +24,14 @@ class TransferSettingsTest {
 		assertEquals(transfers(), encoded["transfers"])
 	}
 
-	@Test fun exportsVersionFiveWithTransfersAndRoundTrips() {
+	@Test fun exportsVersionSixWithTransfersAndRoundTrips() {
 		val settings = Settings(transfers = TransferSettings(true, mapOf("601" to TransferFilter("SOUTH", listOf("L", "2")), "unknown" to TransferFilter())))
 		val text = NerdsCodec.encode(settings, "602", Instant.parse("2026-10-13T12:00:00Z"))
 		val raw = TransitJson.parseToJsonElement(text).jsonObject
-		assertEquals(JsonPrimitive(5), raw["version"])
+		assertEquals(JsonPrimitive(6), raw["version"])
 		assertTrue(raw.getValue("settings").jsonObject.containsKey("transfers"))
 		val decoded = NerdsCodec.decode(text)
-		assertEquals(5, decoded.version)
+		assertEquals(6, decoded.version)
 		// Routes normalize to sorted order like station filters; entries never carry a view.
 		assertEquals(listOf("2", "L"), decoded.settings.transfers.stations.getValue("601").routes)
 		assertEquals(NerdsCodec.validate(settings), decoded.settings)
@@ -40,13 +40,14 @@ class TransferSettingsTest {
 	}
 
 	@Test fun versionFiveRequiresTransfers() {
-		assertThrows(SettingsException::class.java) { NerdsCodec.decode(file(5, JsonObject(current - "transfers"))) }
-		assertEquals(Settings(), NerdsCodec.decode(file(5, current)).settings)
+		val legacy = JsonObject(current - "departureRows")
+		assertThrows(SettingsException::class.java) { NerdsCodec.decode(file(5, JsonObject(legacy - "transfers"))) }
+		assertEquals(Settings(), NerdsCodec.decode(file(5, legacy)).settings)
 	}
 
 	@Test fun olderPortableVersionsCannotContainTransfersAndDefaultToShared() {
 		for (version in 1..4) {
-			val values = (current - "transfers").toMutableMap()
+			val values = (current - "transfers" - "departureRows").toMutableMap()
 			if (version < 4) { values.remove("combinedStations"); values.remove("hiddenRoutes") }
 			if (version < 3) values.remove("offline")
 			if (version < 2) {
@@ -132,8 +133,10 @@ class TransferSettingsTest {
 			"future:station" to TransferFilter("ALL", listOf("S", "SIR")),
 			"path-wtc" to TransferFilter("TO_NJ"),
 		)), file.settings.transfers)
+		// Older files import with default row settings and re-export as the current version.
+		assertEquals(DepartureRowSettings(), file.settings.departureRows)
 		val again = NerdsCodec.decode(NerdsCodec.encode(file.settings, file.lastStation, Instant.parse(file.exportedAt)))
-		assertEquals(file, again)
+		assertEquals(file.copy(version = NerdsCodec.VERSION), again)
 		// Separate transfer entries never change the station's own board filters.
 		assertEquals(StationSettings("NORTH", listOf("4"), "family"), file.settings.stations.getValue("602"))
 	}

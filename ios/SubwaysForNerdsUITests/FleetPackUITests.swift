@@ -43,7 +43,8 @@ import XCTest
 		XCTAssertFalse(app.buttons["downloadFleet"].exists)
 		prepare.tap()
 		let download = app.buttons["downloadFleet"]
-		XCTAssertTrue(download.waitForExistence(timeout: 30))
+		revealWhenReady(download, in: app)
+		XCTAssertTrue(download.exists)
 		let archiveSize = app.descendants(matching: .any)["fleetPackArchiveSize"].firstMatch
 		reveal(archiveSize, in: app)
 		XCTAssertTrue(archiveSize.exists)
@@ -85,6 +86,14 @@ import XCTest
 	}
 	private func tab(_ name: String, in app: XCUIApplication) -> XCUIElement {
 		app.tabBars.buttons[name].exists ? app.tabBars.buttons[name] : app.buttons[name].firstMatch
+	}
+	/// The list only realizes rows near the viewport, so scroll while waiting for a control that appears after a server step.
+	private func revealWhenReady(_ element: XCUIElement, in app: XCUIApplication, timeout: TimeInterval = 60) {
+		let deadline = Date().addingTimeInterval(timeout)
+		while Date() < deadline {
+			if element.waitForExistence(timeout: 2) { return }
+			app.swipeUp()
+		}
 	}
 	private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
 		for _ in 0..<20 {

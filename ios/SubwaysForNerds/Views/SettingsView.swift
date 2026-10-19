@@ -32,6 +32,16 @@ struct SettingsView: View {
 				Text("When off, connections at a station use that station's board filters. When on, each transfer station starts from its board filters and then keeps its own.")
 			}
 			Section {
+				Toggle("Track source (reported/scheduled)", isOn: Binding(get: { app.departureRows.showTrackProvenance }, set: { app.setShowTrackProvenance($0) }))
+					.accessibilityIdentifier("departureRowsTrackProvenance")
+				Toggle("Position on one line", isOn: Binding(get: { app.departureRows.combinePosition }, set: { app.setCombinePosition($0) }))
+					.accessibilityIdentifier("departureRowsCombinePosition")
+				Toggle("Car numbers", isOn: Binding(get: { app.departureRows.showConsist }, set: { app.setShowConsist($0) }))
+					.accessibilityIdentifier("departureRowsConsist")
+				Toggle("Gap after previous train", isOn: Binding(get: { app.departureRows.showHeadway }, set: { app.setShowHeadway($0) }))
+					.accessibilityIdentifier("departureRowsHeadway")
+			} header: { ListHeader("Departure rows") } footer: { Text("Controls the details shown in departure rows.") }
+			Section {
 				choiceRow(DistanceUnit.allCases, selected: app.units.distance, title: "Distance units", identifier: "distanceUnits", label: { $0.shortTitle }, spoken: { $0.title }) { app.setDistanceUnit($0) }
 				choiceRow(TimeFormat.allCases, selected: app.units.time, title: "Time format", identifier: "timeFormat", label: { $0.title }, spoken: { $0.title }) { app.setTimeFormat($0) }
 			} header: { ListHeader("Units") } footer: { Text("Applies to the app and widgets. Times are New York time. Automatic uses m/km nearby and ft/mi for favorite radius.") }

@@ -442,7 +442,7 @@ private struct PlatformSection: View {
 	}
 	private var subtitle: String {
 		switch order {
-		case .track: "\(part?.line ?? group.partId) · \(group.track.map { "Track \($0) · \(group.reportedTrack ? "reported" : "scheduled")" } ?? "Track unknown")"
+		case .track: "\(part?.line ?? group.partId) · \(Display.trackGroupLabel(track: group.track, reported: group.reportedTrack, showProvenance: app.departureRows.showTrackProvenance))"
 		case .direction: "All platforms"
 		case .service: Display.directionLabel(group.direction)
 		case .family, .corridor: group.label
@@ -555,13 +555,10 @@ struct DepartureRow: View {
 			  Display.freshness(departure, now: now) == .live, let before = previous.time, let after = departure.time else { return nil }
 		return Int(((after - before) / 60).rounded())
 	}
-	// Built in steps: as one expression this exceeded CI's type-checking time limit.
-	private var positionDetail: String {
-		var detail = "Stop-relative position"
-		if let stops = departure.stopsAway, stops >= 0 { detail = "\(stops) \(stops == 1 ? "stop" : "stops") away" }
-		if let reported = departure.locationTimestamp { detail += " · \(Display.ageLabel(reported, now: now))" }
-		return detail
-	}
+	private var positionDetail: String { Display.stopDetail(stopsAway: departure.stopsAway, reportedAt: departure.locationTimestamp, now: now) }
+	private var rows: DepartureRowSettings { app.departureRows }
+	/// GPS vehicle rows and NJ Transit rows keep their own position rendering and the gap beside it.
+	private var combinesPosition: Bool { rows.combinePosition && departure.vehiclePosition == nil && !departure.feed.hasPrefix("njt-") }
 	var body: some View {
 		HStack(alignment: .top, spacing: 8) {
 			RouteBullet(route: departure.route, small: true)
@@ -581,27 +578,15 @@ struct DepartureRow: View {
 					countdownColumn
 				}
 				if showPlatform {
-					Text(Display.boardingLabel(departure))
+					Text(Display.boardingLabel(departure, showProvenance: rows.showTrackProvenance))
 						.font(.caption2).foregroundStyle(.secondary).accessibilityIdentifier("boardingPlatform_\(departure.key)")
 				}
-				if let position = departure.vehiclePosition {
-					if let current = Display.currentVehiclePositions([position], now: now).first {
-						Text(Display.vehiclePositionLabel(current, now: now, cached: cached)).font(.caption)
-					}
-				} else if !departure.feed.hasPrefix("njt-"), !departure.location.isEmpty || slowZone != nil {
-					HStack(alignment: .firstTextBaseline, spacing: 6) {
-						if !departure.location.isEmpty { Text((historical ? "Last report: " : "") + departure.location) }
-						if let slowZone { SlowZoneTag(zone: slowZone) }
-					}
-					.font(.caption)
+				if combinesPosition {
+					combinedPosition
+				} else {
+					splitPosition
 				}
-				HStack(alignment: .firstTextBaseline) {
-					if !departure.feed.hasPrefix("njt-") { Text(positionDetail) }
-					Spacer(minLength: 4)
-					if let gap, gap > 0 { Text("+\(gap)m after previous") }
-				}
-				.font(.caption2).foregroundStyle(.secondary)
-				if !cached, Display.currentConsist(departure.consist, now: now), let consist = departure.consist {
+				if rows.showConsist, !cached, Display.currentConsist(departure.consist, now: now), let consist = departure.consist {
 					Text("\(Array(Set(consist.cars.compactMap(\.type))).sorted().joined(separator: " / ")) · \(Display.consistSummary(consist.cars))\(Display.freshness(consist.updatedAt, now: now) == .live ? "" : " · last reported")")
 						.font(.caption2).foregroundStyle(.secondary).lineLimit(1)
 				}
@@ -618,6 +603,43 @@ struct DepartureRow: View {
 		.accessibilityElement(children: .combine)
 	}
 
+	/// Location, stops away, and age as one wrapping line, with the slow-zone tag after it.
+	@ViewBuilder private var combinedPosition: some View {
+		let line = Display.positionLine(location: departure.location, historical: historical, stopsAway: departure.stopsAway, reportedAt: departure.locationTimestamp, now: now)
+		HStack(alignment: .firstTextBaseline, spacing: 6) {
+			if line.location.isEmpty {
+				Text(line.detail).font(.caption2).foregroundStyle(.secondary)
+			} else if line.detail.isEmpty {
+				Text(line.location).font(.caption)
+			} else {
+				Text(line.location).font(.caption) + Text(" · " + line.detail).font(.caption2).foregroundStyle(.secondary)
+			}
+			if let slowZone { SlowZoneTag(zone: slowZone) }
+		}
+		.accessibilityIdentifier("positionLine_\(departure.key)")
+	}
+
+	/// Today's layout: the location on one line, stops and age on the next, and the gap beside them.
+	@ViewBuilder private var splitPosition: some View {
+		if let position = departure.vehiclePosition {
+			if let current = Display.currentVehiclePositions([position], now: now).first {
+				Text(Display.vehiclePositionLabel(current, now: now, cached: cached)).font(.caption)
+			}
+		} else if !departure.feed.hasPrefix("njt-"), !departure.location.isEmpty || slowZone != nil {
+			HStack(alignment: .firstTextBaseline, spacing: 6) {
+				if !departure.location.isEmpty { Text((historical ? "Last report: " : "") + departure.location) }
+				if let slowZone { SlowZoneTag(zone: slowZone) }
+			}
+			.font(.caption)
+		}
+		HStack(alignment: .firstTextBaseline) {
+			if !departure.feed.hasPrefix("njt-") { Text(positionDetail) }
+			Spacer(minLength: 4)
+			if rows.showHeadway, let gap, gap > 0 { Text(Display.splitHeadwayLabel(gap)) }
+		}
+		.font(.caption2).foregroundStyle(.secondary)
+	}
+
 	private var countdownColumn: some View {
 		VStack(alignment: .trailing, spacing: 0) {
 			if Display.boardable(departure) {
@@ -627,6 +649,10 @@ struct DepartureRow: View {
 				}
 				Text(countdown.unit == "min" ? (cached ? "offline est. " : "") + Display.clockTime(departure.time, format: app.units.time) : countdown.unit)
 					.font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+				if combinesPosition, rows.showHeadway, let gap, gap > 0 {
+					Text(Display.headwayLabel(gap)).font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+						.accessibilityLabel(Display.headwayAccessibilityLabel(gap))
+				}
 			} else {
 				Text("—").font(.title2.weight(.bold))
 				Text("not boarding").font(.caption2).foregroundStyle(.secondary)

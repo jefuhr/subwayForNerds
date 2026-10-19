@@ -47,7 +47,7 @@ test('native contract fixtures reproduce real API responses with deterministic r
 });
 
 test('portable settings fixtures are identical in web, Swift, and Kotlin tests', async () => {
-  for (const name of ['settings.nerds', 'favorites.nerds', 'offline.nerds', 'combined-stations.nerds', 'transfers.nerds']) {
+  for (const name of ['settings.nerds', 'favorites.nerds', 'offline.nerds', 'combined-stations.nerds', 'transfers.nerds', 'departure-rows.nerds']) {
     const source = await readFile(new URL(`fixtures/${name}`, import.meta.url));
     const swift = await readFile(new URL(`../ios/TransitCore/Tests/TransitCoreTests/Fixtures/${name}`, import.meta.url));
     const kotlin = await readFile(new URL(`../android/transit-core/src/test/resources/fixtures/${name}`, import.meta.url));

@@ -1,4 +1,4 @@
-/** The public .nerds v5 contract, with v1-v4 migration. Keep Swift and Kotlin in lockstep. */
+/** The public .nerds v6 contract, with v1-v5 migration. Keep Swift and Kotlin in lockstep. */
 export const MAX_SETTINGS_BYTES = 1024 * 1024;
 export type UnitSettings = { distance: 'auto' | 'mi' | 'ft' | 'm' | 'km'; time: '12h' | '24h' };
 export const defaultUnits = (): UnitSettings => ({ distance: 'auto', time: '12h' });
@@ -22,19 +22,21 @@ export type CombinedStation = { name: string; stationIDs: string[] };
 export type TransferStationSettings = { direction: string; routes: string[] };
 export type TransferSettings = { separateFilters: boolean; stations: Record<string, TransferStationSettings> };
 export const defaultTransfers = (): TransferSettings => ({ separateFilters: false, stations: {} });
+export type DepartureRowSettings = { showTrackProvenance: boolean; combinePosition: boolean; showConsist: boolean; showHeadway: boolean };
+export const defaultDepartureRows = (): DepartureRowSettings => ({ showTrackProvenance: false, combinePosition: true, showConsist: true, showHeadway: true });
 export type Settings = {
 	combinedStations: Record<string, CombinedStation>; hiddenRoutes: string[];
 	favorites: string[]; theme: string; stations: Record<string, StationSettings>;
-	trainFavorites: TrainFavorites; stationSelection: StationSelection; units: UnitSettings; offline: OfflineSettings; transfers: TransferSettings;
+	trainFavorites: TrainFavorites; stationSelection: StationSelection; units: UnitSettings; offline: OfflineSettings; transfers: TransferSettings; departureRows: DepartureRowSettings;
 	widgets: { stationSelection: { followApp: boolean; selection: StationSelection }; matchAppFilters: boolean; stations: Record<string, StationSettings>; display: WidgetDisplay; lockScreen: { display: WidgetDisplay; directionOrder: 'downtownLeft' | 'uptownLeft'; showService: boolean } };
 };
-export type NerdsFile = { format: 'subways-for-nerds'; version: 1 | 2 | 3 | 4 | 5; exportedAt: string; lastStation: string; settings: Settings };
+export type NerdsFile = { format: 'subways-for-nerds'; version: 1 | 2 | 3 | 4 | 5 | 6; exportedAt: string; lastStation: string; settings: Settings };
 export type SettingsRevision = { revision: number; settings: Settings | null };
 export type Conflict = { path: string; local: unknown; remote: unknown };
 export type Resolutions = Record<string, 'local' | 'remote'>;
 export const widgetFields = ['stationName', 'destination', 'track', 'service', 'carType', 'carCount', 'carNumbers', 'location', 'updatedAt', 'refreshButton', 'groupHeaders'];
 export function defaults(): Settings {
-	return { combinedStations: {}, hiddenRoutes: [], favorites: [], theme: 'subway', stations: {}, trainFavorites: { cars: [], consists: [], match: 'exact' }, stationSelection: defaultStationSelection(), units: defaultUnits(), offline: defaultOffline(), transfers: defaultTransfers(), widgets: { stationSelection: { followApp: true, selection: defaultStationSelection() }, matchAppFilters: false, stations: {}, lockScreen: { display: { fields: ['carType', 'stationName'], compact: true, trainsPerDirection: 2, timeStyle: 'minutes' }, directionOrder: 'downtownLeft', showService: true }, display: {
+	return { combinedStations: {}, hiddenRoutes: [], favorites: [], theme: 'subway', stations: {}, trainFavorites: { cars: [], consists: [], match: 'exact' }, stationSelection: defaultStationSelection(), units: defaultUnits(), offline: defaultOffline(), transfers: defaultTransfers(), departureRows: defaultDepartureRows(), widgets: { stationSelection: { followApp: true, selection: defaultStationSelection() }, matchAppFilters: false, stations: {}, lockScreen: { display: { fields: ['carType', 'stationName'], compact: true, trainsPerDirection: 2, timeStyle: 'minutes' }, directionOrder: 'downtownLeft', showService: true }, display: {
 		fields: ['stationName', 'destination', 'track', 'carType', 'updatedAt', 'refreshButton', 'groupHeaders'].sort(), compact: true, trainsPerDirection: 0, timeStyle: 'countdown',
 	} } };
 }
@@ -119,6 +121,10 @@ function transfers(value: unknown): TransferSettings {
 		return { direction: entry.direction, routes: strings(entry.routes, 128).sort() };
 	}) };
 }
+function departureRows(value: unknown): DepartureRowSettings {
+	const v = object(value); keys(v, Object.keys(defaultDepartureRows()));
+	return { showTrackProvenance: boolean(v.showTrackProvenance), combinePosition: boolean(v.combinePosition), showConsist: boolean(v.showConsist), showHeadway: boolean(v.showHeadway) };
+}
 function validateDisplay(value: unknown): WidgetDisplay {
 	const d = object(value); keys(d, ['fields', 'compact', 'trainsPerDirection', 'timeStyle', ...(Object.hasOwn(d, 'refreshInterval') ? ['refreshInterval'] : [])]);
 	if (Object.hasOwn(d, 'refreshInterval') && ![1, 2, 5, 10, 15, 30, 60].includes(d.refreshInterval)) invalid();
@@ -128,7 +134,7 @@ function validateDisplay(value: unknown): WidgetDisplay {
 }
 export function validateSettings(value: unknown): Settings {
 	if (new TextEncoder().encode(JSON.stringify(value)).length > MAX_SETTINGS_BYTES) throw new Error('Settings files must be smaller than 1 MiB.');
-	const v = object(value); keys(v, ['favorites', 'theme', 'stations', 'widgets', ...['trainFavorites', 'stationSelection', 'units', 'offline', 'combinedStations', 'hiddenRoutes', 'transfers'].filter(k => Object.hasOwn(v, k))]);
+	const v = object(value); keys(v, ['favorites', 'theme', 'stations', 'widgets', ...['trainFavorites', 'stationSelection', 'units', 'offline', 'combinedStations', 'hiddenRoutes', 'transfers', 'departureRows'].filter(k => Object.hasOwn(v, k))]);
 	const w = object(v.widgets); keys(w, ['matchAppFilters', 'stations', 'display', ...['lockScreen', 'stationSelection'].filter(k => Object.hasOwn(w, k))]);
 	const display = validateDisplay(w.display);
 	const lock = w.lockScreen === undefined ? { display: { fields: display.fields.filter(f => ['stationName', 'carType', 'carCount'].includes(f)), compact: true, trainsPerDirection: 2, timeStyle: display.timeStyle }, directionOrder: 'downtownLeft', showService: true } : object(w.lockScreen);
@@ -140,6 +146,7 @@ export function validateSettings(value: unknown): Settings {
 		units: Object.hasOwn(v, 'units') ? units(v.units) : defaultUnits(),
 		offline: Object.hasOwn(v, 'offline') ? offline(v.offline) : defaultOffline(),
 		transfers: Object.hasOwn(v, 'transfers') ? transfers(v.transfers) : defaultTransfers(),
+		departureRows: Object.hasOwn(v, 'departureRows') ? departureRows(v.departureRows) : defaultDepartureRows(),
 		trainFavorites: Object.hasOwn(v, 'trainFavorites') ? trainFavorites(v.trainFavorites) : { cars: [], consists: [], match: 'exact' },
 		stationSelection: Object.hasOwn(v, 'stationSelection') ? stationSelection(v.stationSelection) : defaultStationSelection(), widgets: {
 		stationSelection: { followApp: boolean(widgetSelection.followApp), selection: stationSelection(widgetSelection.selection) },
@@ -151,10 +158,12 @@ export function decodeNerds(text: string): NerdsFile {
 	if (new TextEncoder().encode(text).length > MAX_SETTINGS_BYTES) throw new Error('Settings files must be smaller than 1 MiB.');
 	let v: Record<string, any>; try { v = object(JSON.parse(text)); } catch { return invalid(); }
 	if (v.format !== 'subways-for-nerds') invalid();
-	if (![1, 2, 3, 4, 5].includes(v.version)) throw new Error('This settings version is not supported. Update Subway Nerds and try again.');
+	if (![1, 2, 3, 4, 5, 6].includes(v.version)) throw new Error('This settings version is not supported. Update Subway Nerds and try again.');
 	keys(v, ['format', 'version', 'exportedAt', 'lastStation', 'settings']);
 	if (typeof v.exportedAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(v.exportedAt) || !Number.isFinite(Date.parse(v.exportedAt))) invalid();
 	if (['combinedStations', 'hiddenRoutes'].some(key => Object.hasOwn(object(v.settings), key) !== (v.version >= 4))) invalid();
+	// Departure row preferences arrived in v6; older files cannot carry them.
+	if (Object.hasOwn(object(v.settings), 'departureRows') !== (v.version >= 6)) invalid();
 	// Transfer filters arrived in v5: required there, and never part of an older file.
 	if (Object.hasOwn(object(v.settings), 'transfers') !== (v.version >= 5)) invalid();
 	// Offline preferences arrived in v3: required there, and never part of an older file.
@@ -163,7 +172,7 @@ export function decodeNerds(text: string): NerdsFile {
 	return { format: 'subways-for-nerds', version: v.version, exportedAt: v.exportedAt, lastStation: string(v.lastStation), settings: validateSettings(v.settings) };
 }
 export function encodeNerds(settings: Settings, lastStation: string): string {
-	const text = JSON.stringify({ format: 'subways-for-nerds', version: 5, exportedAt: new Date().toISOString(), lastStation: string(lastStation), settings: validateSettings(settings) }, null, 2);
+	const text = JSON.stringify({ format: 'subways-for-nerds', version: 6, exportedAt: new Date().toISOString(), lastStation: string(lastStation), settings: validateSettings(settings) }, null, 2);
 	decodeNerds(text); return text;
 }
 export function equal(a: unknown, b: unknown): boolean {

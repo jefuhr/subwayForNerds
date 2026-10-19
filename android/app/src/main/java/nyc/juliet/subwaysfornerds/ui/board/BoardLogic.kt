@@ -61,7 +61,7 @@ object BoardLogic {
 	}
 
 	/** A group's heading and subtitle, by board view. */
-	fun heading(section: DepartureSection, station: Station?, view: String): Pair<String, String> {
+	fun heading(section: DepartureSection, station: Station?, view: String, showProvenance: Boolean): Pair<String, String> {
 		val part = station?.parts?.firstOrNull { it.id == section.partId }
 		val heading = when (view) {
 			"service" -> "Service " + Display.routeLabel(section.service ?: section.label)
@@ -73,7 +73,7 @@ object BoardLogic {
 			else -> Display.directionLabel(section.direction)
 		}
 		val subtitle = when (view) {
-			"track" -> "${part?.line ?: section.partId} · " + (section.track?.let { "Track $it · ${if (section.reportedTrack) "reported" else "scheduled"}" } ?: "Track unknown")
+			"track" -> "${part?.line ?: section.partId} · " + (section.track?.let { "Track $it" + if (showProvenance) " · ${if (section.reportedTrack) "reported" else "scheduled"}" else "" } ?: "Track unknown")
 			"direction" -> "All platforms"
 			"service" -> Display.directionLabel(section.direction)
 			else -> section.label

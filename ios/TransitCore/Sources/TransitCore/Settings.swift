@@ -6,6 +6,17 @@ public struct CombinedStation: Codable, Sendable, Equatable {
 	public init(name: String, stationIDs: [String]) { self.name = name; self.stationIDs = stationIDs }
 }
 
+/// Which details board departure rows show. Defaults keep rows short.
+public struct DepartureRowSettings: Codable, Sendable, Equatable {
+	public var showTrackProvenance = false
+	public var combinePosition = true
+	public var showConsist = true
+	public var showHeadway = true
+	public init(showTrackProvenance: Bool = false, combinePosition: Bool = true, showConsist: Bool = true, showHeadway: Bool = true) {
+		self.showTrackProvenance = showTrackProvenance; self.combinePosition = combinePosition; self.showConsist = showConsist; self.showHeadway = showHeadway
+	}
+}
+
 public struct PortableSettings: Codable, Sendable, Equatable {
 	public var combinedStations: [String: CombinedStation] = [:]
 	public var hiddenRoutes: [String] = []
@@ -18,8 +29,9 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 	public var units = UnitPreferences()
 	public var offline = OfflinePreferences()
 	public var transfers = TransferPreferences()
+	public var departureRows = DepartureRowSettings()
 	public init() {}
-	private enum CodingKeys: String, CodingKey { case favorites, theme, stations, widgets, trainFavorites, stationSelection, units, offline, combinedStations, hiddenRoutes, transfers }
+	private enum CodingKeys: String, CodingKey { case favorites, theme, stations, widgets, trainFavorites, stationSelection, units, offline, combinedStations, hiddenRoutes, transfers, departureRows }
 	public init(from decoder: Decoder) throws {
 		let values = try decoder.container(keyedBy: CodingKeys.self)
 		combinedStations = values.contains(.combinedStations) ? try values.decode([String: CombinedStation].self, forKey: .combinedStations) : [:]
@@ -34,6 +46,8 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 		offline = values.contains(.offline) ? try values.decode(OfflinePreferences.self, forKey: .offline) : OfflinePreferences()
 		// Files before v5 and older device or account records share board filters.
 		transfers = values.contains(.transfers) ? try values.decode(TransferPreferences.self, forKey: .transfers) : TransferPreferences()
+		// Files before v6 and older device or account records use the default row details.
+		departureRows = values.contains(.departureRows) ? try values.decode(DepartureRowSettings.self, forKey: .departureRows) : DepartureRowSettings()
 	}
 	public static func == (lhs: PortableSettings, rhs: PortableSettings) -> Bool { (try? lhs.json()) == (try? rhs.json()) }
 	public func validated() throws -> PortableSettings {
@@ -66,7 +80,7 @@ public struct PortableSettings: Codable, Sendable, Equatable {
 public struct NerdsSettingsFile: Codable, Sendable, Identifiable {
 	public static let maxBytes = 1_048_576
 	public var format = "subways-for-nerds"
-	public static let currentVersion = 5
+	public static let currentVersion = 6
 	public var version = NerdsSettingsFile.currentVersion
 	public var exportedAt: String
 	public var lastStation: String
@@ -82,7 +96,7 @@ public struct NerdsSettingsFile: Codable, Sendable, Identifiable {
 		let value = try JSONDecoder().decode(JSONValue.self, from: data)
 		let root = try SettingsValidation.object(value, keys: ["format", "version", "exportedAt", "lastStation", "settings"])
 		guard root["format"] == .string("subways-for-nerds") else { throw SettingsError.invalid }
-		guard case .number(let version) = root["version"], [1, 2, 3, 4, 5].contains(version) else { throw SettingsError.message("This settings version is not supported. Update Subway Nerds and try again.") }
+		guard case .number(let version) = root["version"], [1, 2, 3, 4, 5, 6].contains(version) else { throw SettingsError.message("This settings version is not supported. Update Subway Nerds and try again.") }
 		let timestamp = try SettingsValidation.string(root["exportedAt"])
 		let formatter = ISO8601DateFormatter(); formatter.formatOptions.insert(.withFractionalSeconds)
 		guard formatter.date(from: timestamp) != nil || ISO8601DateFormatter().date(from: timestamp) != nil else { throw SettingsError.invalid }
@@ -98,6 +112,8 @@ public struct NerdsSettingsFile: Codable, Sendable, Identifiable {
 		guard (settings["offline"] != nil) == (version >= 3) else { throw SettingsError.invalid }
 		// Transfer filters arrived in v5: required there, and never part of an older file.
 		guard (settings["transfers"] != nil) == (version >= 5) else { throw SettingsError.invalid }
+		// Departure row display settings arrived in v6: required there, and never part of an older file.
+		guard (settings["departureRows"] != nil) == (version >= 6) else { throw SettingsError.invalid }
 		return try JSONDecoder().decode(Self.self, from: data)
 	}
 	public func data() throws -> Data {
@@ -149,14 +165,19 @@ private enum SettingsValidation {
 		let transfers = try object(value, keys: ["separateFilters", "stations"])
 		try boolean(transfers["separateFilters"]); try stations(transfers["stations"], view: false)
 	}
+	static func departureRows(_ value: JSONValue?) throws {
+		let rows = try object(value, keys: ["showTrackProvenance", "combinePosition", "showConsist", "showHeadway"])
+		for field in rows.values { try boolean(field) }
+	}
 	static func settings(_ value: JSONValue?) throws {
 		let rawRoot = try object(value)
 		let rootKeys: Set<String> = ["favorites", "theme", "stations", "widgets"]
-		let root = try object(value, keys: rootKeys.union(["trainFavorites", "stationSelection", "units", "offline", "combinedStations", "hiddenRoutes", "transfers"].filter { rawRoot[$0] != nil }))
+		let root = try object(value, keys: rootKeys.union(["trainFavorites", "stationSelection", "units", "offline", "combinedStations", "hiddenRoutes", "transfers", "departureRows"].filter { rawRoot[$0] != nil }))
 		if let value = root["combinedStations"] { try combinedStations(value) }
 		if let value = root["hiddenRoutes"] { _ = try strings(value, limit: 128) }
 		if let value = root["offline"] { try offline(value) }
 		if let value = root["transfers"] { try transfers(value) }
+		if let value = root["departureRows"] { try departureRows(value) }
 		if let value = root["trainFavorites"] { try trainFavorites(value) }
 		if let value = root["stationSelection"] { try stationSelection(value) }
 		if let value = root["units"] {

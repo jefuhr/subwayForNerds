@@ -27,7 +27,7 @@ struct OfflineSettingsTests {
 		var settings = PortableSettings()
 		settings.offline = OfflinePreferences(departuresPerLineDirection: 20, nearbyRadiusFeet: 0, estimateLimitMinutes: 120, widgetsFollowActiveRide: true)
 		let file = NerdsSettingsFile(settings: settings, lastStation: "602")
-		#expect(file.version == 5)
+		#expect(file.version == 6)
 		let restored = try NerdsSettingsFile.decode(file.data())
 		#expect(restored.settings.offline == settings.offline)
 		#expect(restored.settings == settings)
@@ -80,14 +80,14 @@ struct OfflineSettingsTests {
 		var file = try root(), settings = file["settings"] as! [String: Any]
 		settings.removeValue(forKey: "offline"); file["settings"] = settings
 		#expect(throws: (any Error).self) { try decode(file) }
-		settings.removeValue(forKey: "combinedStations"); settings.removeValue(forKey: "hiddenRoutes"); settings.removeValue(forKey: "transfers")
+		settings.removeValue(forKey: "combinedStations"); settings.removeValue(forKey: "hiddenRoutes"); settings.removeValue(forKey: "transfers"); settings.removeValue(forKey: "departureRows")
 		for version in [1, 2] {
 			var older = try root(); older["version"] = version
 			#expect(throws: (any Error).self) { try decode(older) }
 			older["settings"] = settings
 			#expect(try decode(older).settings.offline == OfflinePreferences())
 		}
-		var future = try root(); future["version"] = 6
+		var future = try root(); future["version"] = 7
 		#expect(throws: (any Error).self) { try decode(future) }
 	}
 

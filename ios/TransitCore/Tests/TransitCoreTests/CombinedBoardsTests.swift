@@ -62,7 +62,7 @@ struct CombinedBoardsTests {
 		settings.combinedStations[id] = CombinedStation(name: "Downtown", stationIDs: ["628", "624"])
 		settings.hiddenRoutes = ["A"]
 		let file = try NerdsSettingsFile.decode(NerdsSettingsFile(settings: settings, lastStation: id).data())
-		#expect(file.version == 5)
+		#expect(file.version == 6)
 		#expect(file.settings == settings)
 		var remote = PortableSettings(); remote.hiddenRoutes = ["C"]
 		let merged = try SettingsMerge.merge(base: PortableSettings(), local: settings, remote: remote)

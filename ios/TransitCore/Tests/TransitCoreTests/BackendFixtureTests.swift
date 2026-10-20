@@ -50,6 +50,38 @@ import TransitCore
 		#expect(board.departures.contains { $0.scheduledTrack == "0" })
 	}
 
+	@Test func fixtureLabelsFollowTheTrainsTrunkAndRenderAsServed() throws {
+		let board: Board = try roundTrip("board")
+		let edge: Board = try roundTrip("edge-board")
+		let transfers: TransferResult = try roundTrip("transfers")
+		// Pattern is trunk plus local/express, never the platform's raw MTA line name.
+		func patterns(_ rows: [Departure]) -> [String: Set<String>] {
+			Dictionary(grouping: rows, by: \.route).mapValues { Set($0.map(\.pattern)) }
+		}
+		let boardPatterns = patterns(board.departures)
+		#expect(boardPatterns["4"] == ["Lex local"])
+		#expect(boardPatterns["6"] == ["Lex local"])
+		#expect(boardPatterns["L"] == ["Canarsie"])
+		for route in ["N", "Q", "R"] { #expect(boardPatterns[route] == ["Broadway"], "\(route)") }
+		let transferPatterns = patterns(transfers.connections)
+		#expect(transferPatterns["1"] == ["7 Av local"])
+		#expect(transferPatterns["2"] == ["7 Av express"])
+		#expect(transferPatterns["3"] == ["7 Av express"])
+		#expect(transferPatterns["F"] == ["6 Av"])
+		// The platform line is a short segment (or absent); no raw compound name reaches a row.
+		let rows = board.departures + edge.departures + transfers.connections
+		#expect(!rows.isEmpty)
+		for row in rows {
+			#expect(!row.pattern.contains(" - ") && !row.area.contains(" - "), "\(row.route) \(row.pattern) | \(row.area)")
+			let label = Display.boardingLabel(row, showProvenance: false)
+			#expect(label.components(separatedBy: "Track ").count == 2, Comment(rawValue: label))
+		}
+		let uptownF = try #require(transfers.connections.first { $0.route == "F" && $0.area.hasSuffix("Track B2") })
+		#expect(Display.boardingLabel(uptownF, showProvenance: false) == "6 Av · Uptown · Track B2")
+		let westSideL = try #require(board.departures.first { $0.route == "L" && $0.area.hasSuffix("Track 2") })
+		#expect(Display.boardingLabel(westSideL, showProvenance: false) == "Canarsie · West Side · Track 2")
+	}
+
 	private func roundTrip<T: Codable & Equatable>(_ name: String) throws -> T {
 		let file = try #require(Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures"))
 		let decoded = try JSONDecoder().decode(T.self, from: Data(contentsOf: file))

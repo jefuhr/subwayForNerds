@@ -111,4 +111,19 @@ class DepartureRowSettingsTest {
 		assertEquals("Broadway - Brighton · Track A4 · reported", Display.boardingLabel(tracked))
 		assertEquals("Broadway - Brighton · Track A4", Display.boardingLabel(tracked, provenance = false))
 	}
+
+	@Test fun boardingLabelWithoutLineNameAreaDoesNotDuplicateTrack() {
+		val base = Departure("k", "t", "G", "Church Av", "NORTH", "G05N", "p", "Northbound", null, null, pattern = "Crosstown–Culver", patternSource = "reported", location = "", feed = "gtfs", timestamp = 0.0)
+		val withTrack = base.copy(area = "Northbound · Track B2", actualTrack = "B2", scheduledTrack = "B2")
+		assertEquals("Northbound · Track B2", Display.boardingLabel(withTrack, provenance = false))
+		assertEquals("Northbound · Track B2 · reported", Display.boardingLabel(withTrack, provenance = true))
+		assertEquals("Northbound · Track B2 · scheduled", Display.boardingLabel(withTrack.copy(actualTrack = null), provenance = true))
+		assertEquals("Northbound · Track B2", Display.boardingLabel(base.copy(scheduledTrack = "B2"), provenance = false))
+		assertEquals("Northbound · Track B2 · scheduled", Display.boardingLabel(base.copy(scheduledTrack = "B2")))
+		assertEquals("Northbound · Track unknown", Display.boardingLabel(base, provenance = false))
+		val segment = base.copy(area = "Brighton · Manhattan · Track A4", actualTrack = "A4", scheduledTrack = "A4")
+		assertEquals("Brighton · Manhattan · Track A4", Display.boardingLabel(segment, provenance = false))
+		assertEquals("Brighton · Manhattan · Track A4 · reported", Display.boardingLabel(segment))
+		assertEquals("Brighton · Manhattan · Track A4", Display.boardingLabel(segment.copy(area = "Brighton · Manhattan"), provenance = false))
+	}
 }

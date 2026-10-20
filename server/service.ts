@@ -117,7 +117,7 @@ export class TransitService {
       }
     }
     const boards = new Map<string, Board>();
-    for (const s of this.catalog) boards.set(s.id, this.njt.enabled && s.id.startsWith('njt-lr-') ? this.njt.board(s, now) : buildBoard(s, byStation.get(s.id) || [], states, this.alerts, this.catalog, now));
+    for (const s of this.catalog) boards.set(s.id, this.njt.enabled && s.id.startsWith('njt-lr-') ? this.njt.board(s, now) : buildBoard(s, byStation.get(s.id) || [], states, this.alerts, this.catalog, now, this.schedules));
     this.boards = boards;
     this.details.clear();
     for (const slot of this.slots.values()) for (const train of slot.trains.values()) {

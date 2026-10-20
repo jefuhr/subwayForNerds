@@ -25,6 +25,27 @@ struct DepartureRowDisplayTests {
 		#expect(Display.boardingLabel(row, showProvenance: false) == "Track A4")
 	}
 
+	@Test func boardingLabelRendersAreasWithoutALineName() {
+		var row = departure()
+		// A single-line station's area has no line name; the actual track is not repeated.
+		row.area = "Northbound · Track B2"
+		row.actualTrack = "B2"; row.scheduledTrack = nil
+		#expect(Display.boardingLabel(row, showProvenance: false) == "Northbound · Track B2")
+		#expect(Display.boardingLabel(row, showProvenance: true) == "Northbound · Track B2 · reported")
+		// Without a track in the area, the scheduled track is appended once.
+		row.area = "Northbound"
+		row.actualTrack = nil; row.scheduledTrack = "B2"
+		#expect(Display.boardingLabel(row, showProvenance: false) == "Northbound · Track B2")
+		#expect(Display.boardingLabel(row, showProvenance: true) == "Northbound · Track B2 · scheduled")
+		// A multi-line complex still prefixes its short segment, as before.
+		row.area = "Brighton · Manhattan · Track A4"
+		row.actualTrack = "A4"; row.scheduledTrack = nil
+		#expect(Display.boardingLabel(row, showProvenance: false) == "Brighton · Manhattan · Track A4")
+		#expect(Display.boardingLabel(row, showProvenance: true) == "Brighton · Manhattan · Track A4 · reported")
+		row.area = "Brighton · Manhattan"
+		#expect(Display.boardingLabel(row, showProvenance: false) == "Brighton · Manhattan · Track A4")
+	}
+
 	@Test func unknownTrackStaysWithoutProvenance() {
 		var row = departure(track: nil)
 		row.scheduledTrack = nil; row.actualTrack = nil

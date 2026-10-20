@@ -22,7 +22,7 @@ const mockRows = async (page: Page, customize = (rows: any[]) => rows) => {
 		board.departures = customize(Array.from({ length: 3 }, (_, index) => ({
 			...seed, key: `row-display-${index}`, route: '4', partId: '635', direction: 'NORTH',
 			actualTrack: index < 2 ? 'A4' : undefined, scheduledTrack: 'A4',
-			area: 'Lexington Av · Uptown · Track A4', destination: 'Woodlawn',
+			area: 'Lex · Uptown · Track A4', destination: 'Woodlawn',
 			time: now + 120 + index * 300, timestamp: now, staleAfter: 90,
 			location: 'At Newkirk Plaza', stopsAway: 1, locationTimestamp: now - 25,
 			consist: { cars: [{ number: '4149', type: 'R211A' }], updatedAt: now, fetchedAt: now, source: 'helium' },
@@ -44,7 +44,7 @@ test('default rows are compact and each direct setting changes rows and persists
 	await expect(page.locator('.train-row')).toHaveCount(3);
 	await expect(page.locator('.platform-track')).toHaveText('TRACK A4');
 	await chooseView(page, 'By direction · all platforms');
-	await expect(page.locator('.train-boarding').first()).toHaveText('Lexington Av · Uptown · Track A4');
+	await expect(page.locator('.train-boarding').first()).toHaveText('Lex · Uptown · Track A4');
 	await expect(page.locator('.train-boarding').last()).not.toContainText('scheduled');
 	const position = page.locator('.train-location').first();
 	await expect(position).toHaveText('At Newkirk Plaza · 1 stop away · 25s ago');
@@ -86,7 +86,7 @@ test('combined positions keep historical prefixes, slow zones and missing-part f
 		rows[0].slowZone = { from: 'a', to: 'b', segment: 'Newkirk Plaza to Avenue H', kind: 'slow', since: '2026-09-01', through: '2026-09-30', extraSeconds: 42, baselineSeconds: 90, slowDays: 3 };
 		rows[1].location = ''; rows[1].stopsAway = 2;
 		rows[2].location = ''; delete rows[2].stopsAway; delete rows[2].locationTimestamp;
-		delete rows[2].actualTrack; delete rows[2].scheduledTrack; rows[2].area = 'Lexington Av · Uptown';
+		delete rows[2].actualTrack; delete rows[2].scheduledTrack; rows[2].area = 'Lex · Uptown';
 		return rows;
 	});
 	await page.goto('./?station=602');

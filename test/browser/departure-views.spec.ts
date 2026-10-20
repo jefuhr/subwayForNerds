@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
     // A reload or offline switch can abandon the request while it is being mocked.
     try { response = await route.fetch(); board = await response.json(); } catch { await route.abort().catch(() => {}); return; }
     const seed = board.departures[0];
-    board.departures = Array.from({ length: 8 }, (_, i) => ({ ...seed, key: `train-${i}`, route: i < 4 ? '4' : 'L', partId: i < 4 ? '635' : 'L03', direction: 'NORTH', actualTrack: String(i % 2 + 1), scheduledTrack: undefined, time: 1788656500 + i * 60, area: i < 4 ? `Lexington Av · Uptown · Track ${i % 2 + 1}` : `Canarsie · West Side · Track ${i % 2 + 1}` }));
+    board.departures = Array.from({ length: 8 }, (_, i) => ({ ...seed, key: `train-${i}`, route: i < 4 ? '4' : 'L', partId: i < 4 ? '635' : 'L03', direction: 'NORTH', actualTrack: String(i % 2 + 1), scheduledTrack: undefined, time: 1788656500 + i * 60, area: i < 4 ? `Lex · Uptown · Track ${i % 2 + 1}` : `Canarsie · West Side · Track ${i % 2 + 1}` }));
     await route.fulfill({ response, json: board }).catch(() => {});
   });
 });

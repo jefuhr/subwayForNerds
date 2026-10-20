@@ -5,6 +5,8 @@ import { currentSlowZone, slowZoneSummary } from '../shared/slow-zones';
 import { extension } from './decode';
 import { parentStop } from './catalog';
 import corridorDefinitions from '../data/corridors.json';
+import { boardingArea, segmentName, trunkLabel } from './lines';
+import type { Schedules } from './schedules';
 
 export const FEED_ROUTES: Record<string, string[]> = {
   gtfs: ['1','2','3','4','5','6','6X','7','7X','GS'], 'gtfs-ace': ['A','C','E','H'],
@@ -79,23 +81,21 @@ export function alertActive(alert: ServiceAlert, now: number) {
   return !alert.periods.length || alert.periods.some(p => (p.start == null || p.start <= now) && (p.end == null || p.end > now));
 }
 
-// Names come from the official station Line field. Local/express is inferred only
-// within known station corridors, not from a route's usual daytime reputation.
-const corridorAliases: Record<string, string> = { 'Lexington Av': 'Lex', 'Broadway - 7Av': 'Broadway–7 Av', '6th Av - Culver': '6 Av–Culver', '8th Av - Fulton St': '8 Av–Fulton' };
-const corridorCache = new WeakMap<Station[], Map<string, Station['parts'][number]>>();
+// Local/express inference stays scoped to the existing reviewed corridors.
+const corridorCache = new WeakMap<Station[], Map<string, { part: Station['parts'][number]; borough: string }>>();
 function corridors(catalog: Station[]) {
   let cached = corridorCache.get(catalog);
   if (!cached) {
-    cached = new Map(catalog.flatMap(s => s.parts.map(p => [p.id, p] as const))); corridorCache.set(catalog, cached);
+    cached = new Map(catalog.flatMap(s => s.parts.map(part => [part.id, { part, borough: s.borough }] as const))); corridorCache.set(catalog, cached);
   }
   return cached;
 }
-export function patternFor(train: Train, stopId: string, catalog: Station[]): { label: string; source: 'inferred' | 'static' } {
+export function patternFor(train: Train, stopId: string, catalog: Station[], schedules?: Schedules, paths?: WeakMap<Train, Set<string>>): { label: string; source: 'inferred' | 'static' } {
   const context = corridors(catalog);
-  const part = context.get(parentStop(stopId));
-  const corridor = part?.line || 'Service pattern';
+  const entry = context.get(parentStop(stopId));
+  const segment = entry ? segmentName(entry.part, entry.borough) : 'Service pattern';
   const definition = corridorDefinitions.find(c => c.stops.includes(parentStop(stopId)));
-  const label = definition?.name || corridorAliases[corridor] || corridor;
+  const label = trunkLabel(train, segment, stopId, schedules, paths);
   if (!definition) return { label, source: 'static' };
   const index = train.stops.findIndex(s => s.id === stopId);
   const ahead: number[] = [];
@@ -119,8 +119,9 @@ export function locationFor(train: Train) {
   }
   return train.stops[0] ? `Next reported stop · ${train.stops[0].name}` : 'Position unavailable';
 }
-export function buildBoard(station: Station, trains: Iterable<Train>, states: SourceState[], alerts: ServiceAlert[], catalog: Station[], now = nowSeconds()): Board {
+export function buildBoard(station: Station, trains: Iterable<Train>, states: SourceState[], alerts: ServiceAlert[], catalog: Station[], now = nowSeconds(), schedules?: Schedules): Board {
   const departures: Departure[] = [];
+  const paths = new WeakMap<Train, Set<string>>();
   for (const train of trains) for (let i = 0; i < train.stops.length; i++) {
     const stop = train.stops[i], slowZone = currentSlowZone(train), part = station.parts.find(p => p.id === parentStop(stop.id));
     if (!part) continue;
@@ -128,11 +129,11 @@ export function buildBoard(station: Station, trains: Iterable<Train>, states: So
     // Retain stale last-known rows. Fresh, passed predictions leave the board.
     if (now - train.timestamp <= 90 && time != null && time < now - 30) continue;
     const direction = stop.id.endsWith('N') ? 'NORTH' : stop.id.endsWith('S') ? 'SOUTH' : train.direction;
-    const pattern = patternFor(train, stop.id, catalog);
+    const pattern = patternFor(train, stop.id, catalog, schedules, paths);
     const relevantTrack = stop.actualTrack || stop.scheduledTrack;
     departures.push({ key: `${train.key}|${stop.id}|${i}`, tripKey: train.key, route: train.route, destination: train.destination,
       direction, stopId: stop.id, partId: part.id,
-      area: `${part.line} · ${direction === 'NORTH' ? part.north : direction === 'SOUTH' ? part.south : directionLabel(direction)}${relevantTrack ? ` · Track ${relevantTrack}` : ''}`,
+      area: boardingArea(station, part, direction === 'NORTH' ? part.north : direction === 'SOUTH' ? part.south : directionLabel(direction), relevantTrack),
       time, arrival: stop.arrival, departure: stop.departure, scheduledTrack: stop.scheduledTrack, actualTrack: stop.actualTrack,
       pattern: pattern.label, patternSource: pattern.source, location: locationFor(train), locationTimestamp: train.position?.timestamp,
       stopsAway: train.position?.stopId ? (train.stops.findIndex(s => s.id === train.position!.stopId) >= 0 ? i - train.stops.findIndex(s => s.id === train.position!.stopId) : null) : null,

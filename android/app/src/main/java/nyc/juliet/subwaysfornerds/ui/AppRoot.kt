@@ -225,7 +225,7 @@ private fun TabContent(model: AppModel, account: AccountModel, actions: Settings
 				// Side by side, station info fills the detail column until a train is chosen.
 				AppTab.BOARD -> model.station?.let { ContextScreen(model, it.id, ScreenExit.NONE, {}, openFromDetail) }
 				AppTab.FLEET -> Column(Modifier.fillMaxSize().padding(24.dp)) {
-					EmptyState("Choose a car or consist", "Reports, roster facts and movement history appear here.")
+					EmptyState("Choose a car or consist", null)
 				}
 				AppTab.SETTINGS, AppTab.MAP -> {}
 			}

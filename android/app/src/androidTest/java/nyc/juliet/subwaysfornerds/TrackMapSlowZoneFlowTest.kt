@@ -36,8 +36,11 @@ class TrackMapSlowZoneFlowTest {
 		try {
 			compose.waitUntil(30_000) { exists("tab_map") }
 			node("tab_map").performClick()
-			compose.waitUntil(45_000) { exists("track-map-canvas") && exists("track-map-slow-zones") }
+			compose.waitUntil(45_000) { exists("track-map-canvas") }
 			compose.waitUntil(35_000) { count() > 0 }
+			// The legend moved into the trains panel; the map overlay no longer carries it.
+			assertFalse("The slow zone pill belongs to the trains panel", exists("track-map-slow-zones"))
+			assertTrue("The line chips belong to the trains panel", compose.onAllNodes(hasText("All lines")).fetchSemanticsNodes(atLeastOneRootRequired = false).isEmpty())
 			scenario.onActivity { activity ->
 				val map = network.model(activity).trackMap
 				val path = map.slowZones(map.clock()).first { it.paths.isNotEmpty() }.paths.first()
@@ -50,6 +53,9 @@ class TrackMapSlowZoneFlowTest {
 			assertTrue("Expected visible amber pixels on reviewed rail", highlightedPixels > 10)
 			val viewport = node("track-map-canvas").fetchSemanticsNode().config[TrackMapViewportKey]
 			shot("slow-zone-map-amber-highlights")
+			node("track-map-trains").performClick()
+			compose.waitUntil(5_000) { exists("track-map-slow-zones") && compose.onAllNodes(hasText("All lines")).fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty() }
+			shot("slow-zone-map-trains-panel")
 			node("track-map-slow-zones").performClick()
 			compose.waitUntil(5_000) { exists("track-map-slow-zone-list") }
 			var firstID = ""
@@ -66,6 +72,9 @@ class TrackMapSlowZoneFlowTest {
 			assertTrue(detail.contains("Estimated") && detail.contains("typically +") && detail.contains("Transit Lab"))
 			shot("slow-zone-map-accessible-details")
 			node("track-map-slow-zone-close").performClick()
+			// Close the panel so the canvas matches the "before" crop it is compared with.
+			node("track-map-trains").performClick()
+			compose.waitUntil(5_000) { !exists("track-map-slow-zones") }
 			scenario.onActivity { activity -> network.model(activity).trackMap.toggleRoute("__no_matching_route__") }
 			compose.waitUntil(5_000) { count() == 0 }
 			val filteredPixels = amberPixels(canvasBitmap(visibleBitmap("after filtering")))

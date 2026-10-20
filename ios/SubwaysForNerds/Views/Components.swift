@@ -197,9 +197,7 @@ struct ChangesSection: View {
 						.accessibilityLabel("\(change.classification) · \(changeText(change, stale: stale))")
 					}
 				}
-			} header: { ListHeader("Different from normal") } footer: {
-				Text("Compared with weekday daytime service. Scheduled variations differ from disruptions; advisory notices may not affect every train.")
-			}
+			} header: { ListHeader("Different from normal") }
 		}
 	}
 }

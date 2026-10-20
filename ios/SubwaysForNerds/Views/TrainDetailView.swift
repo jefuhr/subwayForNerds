@@ -134,13 +134,8 @@ struct TrainDetailView: View {
 						.listRowInsets(.vertical, 6)
 					}
 				} header: { ListHeader(cached ? "Saved stopping pattern" : "Remaining stopping pattern") } footer: {
-					VStack(alignment: .leading, spacing: 6) {
-						Text(cached
-							? "Offline estimates count down the saved predictions on this device's clock. They are not observed positions; delays, reroutes and cancellations after the source time are unknown. Connections need a live feed."
-							: "Arrival / departure · Eastern. Patterns reflect remaining feed predictions. Future track fields describe that stop, not the current train position. Operations IDs identify trips, not physical cars.")
-						if train.slowZones?.isEmpty == false {
-							Text(SlowZoneDisplay.attribution).accessibilityIdentifier("slowZoneAttribution")
-						}
+					if train.slowZones?.isEmpty == false {
+						Text(SlowZoneDisplay.attribution).accessibilityIdentifier("slowZoneAttribution")
 					}
 				}
 				if let pattern = train.scheduledPattern {
@@ -149,7 +144,6 @@ struct TrainDetailView: View {
 							VStack(alignment: .leading, spacing: 4) {
 								Text("Shape \(pattern.shape) · \(pattern.source)")
 								Text(pattern.stops.joined(separator: " → "))
-								Text("Static context only; live predictions take precedence.").foregroundStyle(.secondary)
 							}
 							.font(.caption)
 						}
@@ -198,7 +192,7 @@ struct TrainDetailView: View {
 					.font(.subheadline.weight(.semibold))
 					.accessibilityIdentifier("offlineEstimateLabel")
 				if snapshotOnly {
-					Text("Saved PATH arrival · historical. PATH reports name a station arrival, not one train, so this copy is never refreshed.")
+					Text("Saved PATH arrival · historical")
 						.font(.caption.weight(.semibold)).accessibilityIdentifier("savedPathSnapshot")
 				}
 				DeviceNetworkLabel(identifier: "trainDeviceNetworkStatus")
@@ -207,10 +201,7 @@ struct TrainDetailView: View {
 				let provenance = !showingSnapshot ? (saved == nil ? "Last report from this visit · not saved offline" : "Last report from this visit · newer than the saved copy")
 					: saved.map { "Saved \(Display.ageLabel($0.savedAt, now: now))\($0.manuallySaved ? " · kept until you remove it" : isRide ? " · kept for your ride" : "")" }
 				if let provenance {
-					Text("\(provenance) · car numbers and the train's current position are not shown offline")
-						.font(.caption).foregroundStyle(.secondary)
-				} else {
-					Text("Car numbers and the train's current position are not shown offline.").font(.caption2).foregroundStyle(.secondary)
+					Text(provenance).font(.caption).foregroundStyle(.secondary)
 				}
 				if showingSnapshot, let saved, let label = OfflineDisplay.completenessLabel(saved) {
 					Text(label).font(.caption.weight(.semibold)).accessibilityIdentifier("partialTripLabel")
@@ -264,9 +255,6 @@ struct TrainDetailView: View {
 				}
 				Spacer(minLength: 0)
 			}
-			if OfflineIdentity.isPositionalTrip(tripKey) {
-				Text("PATH reports identify a station arrival, not one train, so rides can't follow them.").font(.caption2).foregroundStyle(.secondary)
-			}
 			if let message = app.offlineActionError { Notice(text: message).accessibilityIdentifier("offlineActionError") }
 		}
 	}
@@ -303,9 +291,7 @@ struct TrainDetailView: View {
 				}
 			}
 			.listRowInsets(.vertical, 8)
-		} header: { ListHeader("Car numbers · Helium · reported \(Display.ageLabel(consist.updatedAt, now: now))") } footer: {
-			Text("Tap a car for its fleet history. Reported order does not confirm the front of the train.")
-		}
+		} header: { ListHeader("Car numbers · Helium · reported \(Display.ageLabel(consist.updatedAt, now: now))") }
 	}
 
 	private func facts(_ train: Train, consist: Consist?) -> [(label: String, value: String)] {
@@ -473,7 +459,7 @@ struct TransferView: View {
 					}
 					if stale { Notice(text: "Predictions are stale or the arrival estimate has passed. Awaiting an update.") }
 					if let message = data.message { Notice(text: message) }
-				} footer: { Text("Next 30 minutes · raw time gaps, no walking allowance. Boarding areas may require stairs, passageways, or different platform access. Connections are not guaranteed.") }
+				} footer: { Text("Next 30 minutes") }
 				if let stationID {
 					Section {
 						BoardFilterControls(station: station, routes: TransferFilters.choices(stationRoutes: station?.routes ?? [], connections: data.connections, hiddenRoutes: app.hiddenRoutes),
@@ -481,8 +467,6 @@ struct TransferView: View {
 							setDirection: { app.setTransferDirection($0, for: stationID) }, toggleRoute: { app.toggleTransferRoute($0, for: stationID) },
 							clearRoutes: { app.clearTransferRoutes(for: stationID) }, identifierPrefix: "transfer")
 							.listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 8))
-					} footer: {
-						Text(app.transferPreferences.separateFilters ? "Transfer filters for this station are saved separately from its board." : "Filters are shared with this station's board.")
 					}
 					.accessibilityIdentifier("transferFilters")
 				}
@@ -525,7 +509,6 @@ struct TransferView: View {
 						Section {
 							Text("No connections match these filters.").foregroundStyle(.secondary).accessibilityIdentifier("transferNoMatches")
 							Button("Reset filters") { app.resetTransferFilters(for: stationID) }.actionStyle().accessibilityIdentifier("transferResetFilters")
-							if !app.hiddenRoutes.isEmpty { Text("Some lines are hidden in settings. Resetting transfer filters keeps those lines hidden.").font(.footnote).foregroundStyle(.secondary) }
 						}
 					}
 				}

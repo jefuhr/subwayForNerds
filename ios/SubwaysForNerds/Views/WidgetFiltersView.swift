@@ -16,12 +16,12 @@ struct WidgetFiltersView: View {
 						HStack { RouteBullet(route: route, small: true); Text("Line \(route)") }
 					}.accessibilityIdentifier("widgetRoute_\(route)")
 				}
-			} header: { ListHeader("Widget lines") } footer: { Text("With no lines selected, all globally enabled lines are shown. Global line settings always apply.") }
+			} header: { ListHeader("Widget lines") }
 			Section {
 				Picker("Grouping", selection: Binding(get: { preference.view }, set: { app.setWidgetView($0, stationID: station.id) })) {
 					ForEach(BoardSortOrder.allCases) { Text($0.title).tag($0) }
 				}.accessibilityIdentifier("widgetGrouping")
-			} footer: { Text("The smallest widgets show the next train in each direction. Larger widgets show more trains with your chosen grouping.") }
+			}
 		}.themedList().navigationTitle(station.name).navigationBarTitleDisplayMode(.inline)
 	}
 }

@@ -74,7 +74,7 @@ import kotlinx.coroutines.CancellationException
 @Composable
 fun CombinedStationsScreen(model: AppModel, exit: ScreenExit, close: () -> Unit, open: (Route) -> Unit) {
 	ListScreen("Combined stations", exit = exit, onExit = close, tag = "combinedStations") {
-		section("create", footer = "Bring departures from multiple stations into one board. Original stations stay available.") {
+		section("create") {
 			row {
 				TextButton(onClick = { model.navigator.push(Route.CombinedEditor()) }, modifier = Modifier.padding(start = 4.dp).testTag("addCombinedStation")) {
 					Icon(Icons.Filled.Add, contentDescription = null, tint = palette.action); Text(" Create combined station", color = palette.action)
@@ -127,7 +127,7 @@ fun CombinedEditorScreen(model: AppModel, route: Route.CombinedEditor, close: ()
 			) { Text("Save", color = if (canSave) palette.action else palette.muted) }
 		},
 	) {
-		section("name", footer = "Choose at least two stations. Each departure will show where to board.") {
+		section("name") {
 			row {
 				OutlinedTextField(
 					value = name, onValueChange = { name = it }, label = { Text("Combined station name") }, singleLine = true,
@@ -210,7 +210,7 @@ fun StationSelectionScreen(model: AppModel, widget: Boolean, exit: ScreenExit, c
 	}
 	val identifier = if (widget) "widget" else "app"
 	ListScreen(if (widget) "Widget station" else "Station selection", exit = exit, onExit = close, tag = "stationSelection_$identifier") {
-		if (widget) section("follow", footer = "Applies to Home screen and lock screen widgets. Your separate widget choice is kept when following the app.") {
+		if (widget) section("follow") {
 			row { SwitchRow("Follow app station selection", widgetSelection.followApp, { model.setWidgetStationSelection(widgetSelection.copy(followApp = it)) }, Modifier.testTag("widgetFollowAppStation")) }
 			if (widgetSelection.followApp) {
 				row { RowContainer { LabeledValue("App setting", Labels.stationModeTitle(model.settings.stationSelection.mode)) } }
@@ -218,10 +218,7 @@ fun StationSelectionScreen(model: AppModel, widget: Boolean, exit: ScreenExit, c
 			}
 		}
 		if (widget && widgetSelection.followApp) return@ListScreen
-		section(
-			"mode", header = "Open automatically",
-			footer = if (widget) "Uses your latest available location when widgets refresh." else "Uses your location when the board opens. Choosing a station yourself always takes priority.",
-		) {
+		section("mode", header = "Open automatically") {
 			Labels.stationModes.forEach { mode ->
 				row(mode) {
 					Row(
@@ -235,10 +232,7 @@ fun StationSelectionScreen(model: AppModel, widget: Boolean, exit: ScreenExit, c
 				}
 			}
 		}
-		if (selection.mode == "nearbyFavorite") section(
-			"radius", header = "Favorite radius",
-			footer = "Choose the closest favorite only when it is inside this radius. At or beyond the radius, show the closest station. Distance is measured in a straight line, not walking distance.",
-		) { row { RadiusEditor(selection.radiusFeet, model.distanceUnit, identifier) { save(selection.copy(radiusFeet = it)) } } }
+		if (selection.mode == "nearbyFavorite") section("radius", header = "Favorite radius") { row { RadiusEditor(selection.radiusFeet, model.distanceUnit, identifier) { save(selection.copy(radiusFeet = it)) } } }
 	}
 }
 
@@ -296,10 +290,7 @@ fun FavoriteTrainsScreen(model: AppModel, exit: ScreenExit, close: () -> Unit, o
 				}
 			}
 		}
-		section(
-			"match", header = "Match saved consists",
-			footer = "Exact consist requires every saved car, in any order. Any member car highlights a train with at least one car from a saved consist. Individually saved cars always match. Changing this keeps all your favorites.",
-		) {
+		section("match", header = "Match saved consists") {
 			Labels.trainMatches.forEach { match ->
 				row(match) {
 					Row(

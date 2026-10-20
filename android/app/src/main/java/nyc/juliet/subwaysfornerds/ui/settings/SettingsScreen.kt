@@ -88,10 +88,7 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 			row {
 				Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
 					Image(painterResource(R.drawable.kitty), contentDescription = null, modifier = Modifier.size(44.dp))
-					Column {
-						Text("subways for nerds.", style = TextRoles.headline)
-						Text("Know the system. Make your next move.", style = TextRoles.caption, color = palette.muted)
-					}
+					Text("subways for nerds.", style = TextRoles.headline)
 				}
 			}
 		}
@@ -102,14 +99,14 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 			row { NavigationRow("Favorite trains", { open(Route.FavoriteTrains) }, Modifier.testTag("favoriteTrainsSettings")) }
 			row { SwitchRow("Save transfer filters separately", model.settings.transfers.separateFilters, { model.setSeparateTransferFilters(it) }, Modifier.testTag("separateTransferFilters"), subtitle = TransferText.mode(model.settings.transfers)) }
 		}
-		section("departureRows", header = "Departure rows", footer = "Controls the details shown in departure rows.") {
+		section("departureRows", header = "Departure rows") {
 			val rows = model.departureRows
 			row { SwitchRow("Track source (reported/scheduled)", rows.showTrackProvenance, { model.setShowTrackProvenance(it) }, Modifier.testTag("departureRowsTrackSource")) }
 			row { SwitchRow("Position on one line", rows.combinePosition, { model.setCombinePosition(it) }, Modifier.testTag("departureRowsCombinePosition")) }
 			row { SwitchRow("Car numbers", rows.showConsist, { model.setShowConsist(it) }, Modifier.testTag("departureRowsCarNumbers")) }
 			row { SwitchRow("Gap after previous train", rows.showHeadway, { model.setShowHeadway(it) }, Modifier.testTag("departureRowsGap")) }
 		}
-		section("units", header = "Units", footer = "Applies to the app and widgets. Times are New York time. Automatic uses m/km nearby and ft/mi for favorite radius.") {
+		section("units", header = "Units") {
 			row {
 				ChipRow(Modifier.padding(horizontal = 12.dp).semantics { contentDescription = "Distance units" }) {
 					Labels.distanceUnits.forEach { unit ->
@@ -124,10 +121,7 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 			}
 		}
 		section("theme", header = "Theme") { row { ThemeGrid(model, wide) } }
-		section(
-			"widgets", header = "Widgets",
-			footer = "Widgets use your station selection and show both directions with arrival clock times. Android refreshes them in the background at most every 15 minutes; tap a widget's refresh button for a new report.",
-		) {
+		section("widgets", header = "Widgets") {
 			val widgetSelection = model.settings.widgets.stationSelection
 			row { NavigationRow("Widget station", { open(Route.StationSelectionSettings(widget = true)) }, Modifier.testTag("widgetStationSelectionSettings"), value = if (widgetSelection.followApp) "Same as app" else Labels.stationModeTitle(widgetSelection.selection.mode)) }
 			row { NavigationRow("Home screen display", { open(Route.WidgetDisplay(lockScreen = false)) }, Modifier.testTag("widgetDisplaySettings")) }
@@ -140,10 +134,7 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 			if (model.favorites.isEmpty() && selection.mode == "favorite") row { RowContainer { Text("Add a favorite station or choose Closest station above.", style = TextRoles.footnote, color = palette.muted) } }
 			if (model.debugBuild) row { NavigationRow("Widget previews", { open(Route.WidgetPreviews) }, Modifier.testTag("widgetPreviews")) }
 		}
-		section(
-			"widgetLocation", header = "Widget location",
-			footer = "Off by default. When on, widgets may use a recent location in the background to choose your station. Android asks separately for background access on the app's permission page. Coordinates stay on this device; without a current fix, widgets keep a saved station and say so.",
-		) {
+		section("widgetLocation", header = "Widget location") {
 			val status = model.widgetLocationStatus
 			row {
 				SwitchRow(
@@ -155,7 +146,7 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 			}
 			if (status.enabled && !status.backgroundAllowed) row { ActionButton("Allow background location", { actions.enableWidgetLocation() }, Modifier.padding(start = 4.dp).testTag("allowBackgroundLocation")) }
 		}
-		section("offline", header = "Offline", footer = "Boards you view, nearby boards, and saved trains work offline, with estimates clearly labeled.") {
+		section("offline", header = "Offline") {
 			row {
 				NavigationRow(
 					"Offline boards and trains", { open(Route.OfflineSettings) }, Modifier.testTag("offlineSettings"),
@@ -163,10 +154,7 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 				)
 			}
 		}
-		section(
-			"fleet", header = "Offline fleet",
-			footer = "Prepare to see the archive size and saved-size estimate, then choose Download or Update. Keep the app open while saving. One validated pack replaces your previous copy. Saved reports are historical; events can mention cars outside the saved scope. Failed or canceled downloads preserve your previous copy.",
-		) {
+		section("fleet", header = "Offline fleet") {
 			row { NavigationRow("Download scope", { open(Route.FleetPackScope) }, Modifier.testTag("fleetPackScope"), subtitle = fleet.selection.scopeDescription, enabled = !fleet.isDownloading) }
 			val saved = fleet.offlineManifest
 			if (saved != null) row {
@@ -177,10 +165,10 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 						Text("${counted(saved.counts.cars)} cars · ${counted(saved.counts.events)} movement events", style = TextRoles.caption)
 						Text("History: ${easternDate(saved.historyStart, model.timeFormat)} – ${easternDate(saved.historyEnd, model.timeFormat)}", style = TextRoles.caption, color = palette.muted)
 						Text(saved.pack?.selection?.scopeDescription ?: "All cars · Previously saved retained history", style = TextRoles.caption, modifier = Modifier.testTag("savedFleetScope"))
-						saved.pack?.let { Text("${counted(it.counts.matchedCars)} selected cars + ${counted(it.counts.linkedCars)} linked cars for complete fixed sets and recent formations.", style = TextRoles.caption) }
+						saved.pack?.let { Text("${counted(it.counts.matchedCars)} selected cars + ${counted(it.counts.linkedCars)} linked cars", style = TextRoles.caption) }
 					}
 				}
-			} else row { RowContainer { Text("Save selected cars, their source records and last reports, with 7 or 30 days of movement history.", style = TextRoles.footnote) } }
+			}
 			fleet.availablePack?.let { pack ->
 				row {
 					RowContainer {
@@ -189,7 +177,7 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 							LabeledValue("Saved-size estimate", ByteCounts.file(pack.estimatedSavedByteLength), Modifier.testTag("fleetPackSavedEstimate"))
 							LabeledValue("Linked cars", counted(pack.counts.linkedCars))
 							Text("${counted(pack.counts.matchedCars)} selected cars · ${counted(pack.counts.cars)} cars including linked members · ${counted(pack.counts.events)} movement events", style = TextRoles.caption)
-							Text("Prepared ${easternDate(pack.generatedAt, model.timeFormat)}. Linked cars keep documented fixed sets and recent formations complete. Actual saved size may differ from the estimate.", style = TextRoles.caption, color = palette.muted)
+							Text("Prepared ${easternDate(pack.generatedAt, model.timeFormat)}", style = TextRoles.caption, color = palette.muted)
 						}
 					}
 				}
@@ -219,16 +207,13 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 			if (fleet.store == null) row { RowContainer { Notice("Download storage is unavailable. Try reopening the app.") } }
 			fleet.error?.let { message -> row { RowContainer { Notice(message) } } }
 		}
-		section(
-			"transfer", header = "Move your settings",
-			footer = "Move combined stations, hidden lines, favorite stations and trains, station selection, themes, filters, widget and offline preferences between devices with a .nerds file. Offline boards, saved trains and your ride stay on this device. No account is needed.",
-		) {
+		section("transfer", header = "Move your settings") {
 			row { ActionButton("Export settings", { actions.exportSettings() }, Modifier.padding(start = 4.dp).testTag("exportSettings")) }
 			row { ActionButton("Import settings", { actions.importSettings() }, Modifier.padding(start = 4.dp).testTag("importSettings")) }
 			model.settingsError?.let { message -> row { RowContainer { Text(message, style = TextRoles.footnote, color = palette.danger, modifier = Modifier.testTag("settingsError")) } } }
 		}
 		accountSection(model, account)
-		section("system", header = "System", footer = "App storage breakdown, network signal and link speed, memory use, and device health.") {
+		section("system", header = "System") {
 			row {
 				NavigationRow(
 					"System status", { open(Route.SystemStatus) }, Modifier.testTag("systemStatusSettings"),
@@ -236,7 +221,7 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 				)
 			}
 		}
-		if (model.debugBuild) section("debug", header = "Development server", footer = "Use a reachable API base address ending in /api/v1/. Your favorites, filters, and theme are saved on this device.") {
+		if (model.debugBuild) section("debug", header = "Development server") {
 			row { EndpointEditor(model) }
 		}
 		section("about", header = "About") {
@@ -244,11 +229,6 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 			row { LinkButton("Usage statistics", "https://juliet.nyc/subwaysForNerds/stats", Modifier.padding(start = 4.dp)) }
 			row { LinkButton("A juliet.nyc project", "https://juliet.nyc", Modifier.padding(start = 4.dp)) }
 			row { LinkButton("Report an issue on GitHub", "https://github.com/jefuhr/subwayForNerds/issues/new", Modifier.padding(start = 4.dp).testTag("createGithubIssue")) }
-			row {
-				RowContainer {
-					Text("Times are predictions, not promises. Location finds nearby and favorite stations in the app and, when allowed, widgets. Location and station search text stay on this device.", style = TextRoles.caption, color = palette.muted)
-				}
-			}
 		}
 	}
 	if (confirmDelete) AlertDialog(

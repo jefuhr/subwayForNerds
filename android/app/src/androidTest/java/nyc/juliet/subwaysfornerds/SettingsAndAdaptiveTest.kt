@@ -92,8 +92,66 @@ class SettingsFlowTest {
 		openSettings()
 		compose.onNodeWithTag("settingsScreen").performScrollToNode(hasTestTag("widgetDisplaySettings"))
 		compose.onNodeWithTag("widgetDisplaySettings").performClick()
-		compose.waitUntilAtLeastOneExists(hasText("Android widgets always show arrival clock times", substring = true), 5_000)
+		compose.waitUntilAtLeastOneExists(hasTestTag("widgetDisplayScreen"), 5_000)
+		// The stored iPhone and iPad style stays visible and labeled; the grey caption explaining Android's own style is gone.
+		compose.onNodeWithTag("widgetDisplayScreen").performScrollToNode(hasTestTag("widgetTimeStyle"))
+		compose.onNodeWithText("Arrival display on iPhone and iPad").assertExists()
+		assertNoText("Android widgets always show arrival clock times")
 		compose.onRoot().saveScreenshot("settings-widget-display")
+	}
+
+	@Test fun settingsDropTheTaglineAndExplanatoryFooters() {
+		openSettings()
+		compose.onNodeWithText("subways for nerds.").assertExists()
+		// Every section still has its rows; only the prose that explains how they work is gone.
+		for (anchor in listOf("combinedStationsSettings", "widgetStationSelectionSettings", "widgetBackgroundLocation", "offlineSettings", "fleetPackScope", "exportSettings", "systemStatusSettings", "createGithubIssue")) {
+			compose.onNodeWithTag("settingsScreen").performScrollToNode(hasTestTag(anchor))
+			compose.onNodeWithTag(anchor).assertExists()
+			assertNoText(*SETTINGS_PROSE)
+		}
+		compose.onNodeWithTag("settingsScreen").performScrollToNode(hasTestTag("distanceUnits_auto"))
+		assertNoText(*SETTINGS_PROSE)
+		compose.onRoot().saveScreenshot("settings-without-footers")
+	}
+
+	@Test fun offlineSettingsAndSystemStatusDropExplanatoryFooters() {
+		openSettings()
+		compose.onNodeWithTag("settingsScreen").performScrollToNode(hasTestTag("offlineSettings"))
+		compose.onNodeWithTag("offlineSettings").performClick()
+		compose.waitUntilAtLeastOneExists(hasTestTag("offlineSettingsScreen"), 5_000)
+		for (anchor in listOf("offlineDepartures_increment", "offlineEstimateLimit_60", "offlineSavedTrains")) {
+			compose.onNodeWithTag("offlineSettingsScreen").performScrollToNode(hasTestTag(anchor))
+			assertNoText(*OFFLINE_PROSE)
+		}
+		compose.onRoot().saveScreenshot("settings-offline-without-footers")
+		compose.onNodeWithTag("navigateBack").performClick()
+		compose.onNodeWithTag("settingsScreen").performScrollToNode(hasTestTag("systemStatusSettings"))
+		compose.onNodeWithTag("systemStatusSettings").performClick()
+		compose.waitUntilAtLeastOneExists(hasTestTag("systemStatusScreen"), 5_000)
+		for (anchor in listOf("systemStatusTotalStorage", "deviceNetworkStatus", "systemStatusRamUsed", "refreshSystemStatus")) {
+			compose.onNodeWithTag("systemStatusScreen").performScrollToNode(hasTestTag(anchor))
+			assertNoText(*SYSTEM_STATUS_PROSE)
+		}
+		// Sizes, counts and status stay: they are data, not explanation.
+		compose.onNodeWithTag("systemStatusScreen").performScrollToNode(hasTestTag("systemStatusFleetStorage"))
+		compose.onNodeWithTag("systemStatusFleetStorage").assertTextContains("Not downloaded", substring = true)
+	}
+
+	private fun assertNoText(vararg phrases: String) {
+		for (phrase in phrases) assertTrue("'$phrase' should be gone", compose.onAllNodes(hasText(phrase, substring = true)).fetchSemanticsNodes().isEmpty())
+	}
+
+	private companion object {
+		val SETTINGS_PROSE = arrayOf(
+			"Know the system. Make your next move.", "Applies to the app and widgets.", "Widgets use your station selection", "Off by default. When on",
+			"Boards you view, nearby boards", "Prepare to see the archive size", "Move combined stations, hidden lines", "App storage breakdown, network signal",
+			"Use a reachable API base address", "Times are predictions, not promises. Location finds",
+		)
+		val OFFLINE_PROSE = arrayOf(
+			"Each board you view keeps", "Favorite boards, and boards within", "Without a connection, countdowns use saved", "Automatic boards and trips expire",
+			"While you are on a train, Home screen", "Offline boards, trips and your ride stay on this device",
+		)
+		val SYSTEM_STATUS_PROSE = arrayOf("Settings include your account session", "Signal and link speed are the system's own estimates", "App RAM is the process's total footprint")
 	}
 }
 

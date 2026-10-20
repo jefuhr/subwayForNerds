@@ -65,7 +65,7 @@ class SlowZoneFlowTest {
 		var scenario = ActivityScenario.launch(MainActivity::class.java)
 		try {
 			// 1. The live board tags the train with its typical extra time and reads the zone aloud.
-			awaitTexts("boardFreshness", "the recorded board to load live") { texts -> texts.any { it == "Live feed" || it == "Partial live data" } }
+			await("the recorded board to load live") { exists("boardList") && !exists("boardOfflineEstimate") && taggedKeys("departure_").isNotEmpty() }
 			assertTrue("Departure ${row.key} is not on the board", reveal(row.key))
 			val tag = "slowZoneTag_${row.key}"
 			await("the slow zone tag") { exists(tag) }
@@ -104,7 +104,7 @@ class SlowZoneFlowTest {
 			back()
 			network.loseConnectivity()
 			scrollBoardToTop()
-			awaitTexts("boardFreshness", "the board to be labeled saved and offline", 45_000) { it.contains("Saved board · offline") }
+			await("the board to be shown as saved and offline", 45_000) { exists("boardOfflineEstimate") }
 			assertTrue("Departure ${row.key} should stay on the saved board", reveal(row.key))
 			assertFalse("Cached boards must hide the live slow zone tag", exists(tag))
 			assertTrue("No row on a cached board may show a slow zone tag: ${taggedKeys("slowZoneTag_")}", taggedKeys("slowZoneTag_").isEmpty())

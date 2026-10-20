@@ -121,7 +121,7 @@ fun TrackMapScreen(model: AppModel, open: (Route) -> Unit) {
 private fun MapUnavailable(map: TrackMapModel, detail: String?, attribution: String?) {
 	Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
 		StatusLine(map.status(map.clock()))
-		if (detail != null) EmptyState("Track map unavailable", "$detail Departures, trains and fleet keep working.")
+		if (detail != null) EmptyState("Track map unavailable", detail)
 		attribution?.let { Credit(it) }
 	}
 }
@@ -218,7 +218,7 @@ private fun ReadyMap(model: AppModel, map: TrackMapModel, resources: TrackMapRes
 					}
 				}) {
 					if (renderer != null) {
-						val description = "Track map. ${markers.size} trains drawn. $unplaced not on the map. ${map.slowZoneStatus(now)}. Amber lines show estimated slow zones. Use Trains or Slow zones for lists."
+						val description = "Track map. ${markers.size} trains drawn. $unplaced not on the map. ${map.slowZoneStatus(now)}. Amber lines show estimated slow zones. Use Trains for the train list, line filter and slow zone details."
 						TrackMapCanvas(
 							map, renderer, page,
 							time = renderTime,
@@ -300,7 +300,7 @@ private fun MapChrome(map: TrackMapModel, catalog: List<Station>, onFit: () -> U
 		}
 		val results = map.search(map.query, catalog)
 		if (map.query.isNotBlank()) {
-			if (results.isEmpty()) Text("No mapped station matches. The map covers reviewed lines only.", style = TextRoles.caption, color = palette.muted, modifier = Modifier.padding(vertical = 4.dp))
+			if (results.isEmpty()) Text("No mapped station matches.", style = TextRoles.caption, color = palette.muted, modifier = Modifier.padding(vertical = 4.dp))
 			results.forEach { result ->
 				Row(
 					Modifier.fillMaxWidth().clickable(onClickLabel = "Show on map") { onSearchResult(result.station) }.padding(vertical = 2.dp).testTag("track-map-result-${result.stationId}"),
@@ -315,14 +315,6 @@ private fun MapChrome(map: TrackMapModel, catalog: List<Station>, onFit: () -> U
 				}
 			}
 		}
-		val routes = map.routes
-		if (routes.isNotEmpty()) ChipRow(Modifier.fillMaxWidth()) {
-			ChoiceChip("All lines", map.routeFilter.isEmpty(), { map.clearRoutes() })
-			routes.forEach { route ->
-				val label = Display.displayRoute(route)
-				ChoiceChip(label, route in map.routeFilter, { map.toggleRoute(route) }, contentDescription = "Line $label${if (route in map.routeFilter) ", shown" else ""}")
-			}
-		}
 	}
 }
 
@@ -332,8 +324,7 @@ private fun MapFooter(map: TrackMapModel, now: Double, attribution: String, part
 		Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
 			if (map.snapshot == null) map.progress?.let { load -> LoadingBar("Loading train positions", load.fraction?.toFloat(), load.percentLabel, load.spokenPercent, load.detail) }
 			StatusLine(map.status(now))
-			SlowZoneLegend(map, now)
-			if (partial) Text("Partial coverage: trains appear only on reviewed lines; others are counted as not on the map.", style = TextRoles.caption2, color = palette.muted)
+			if (partial) Text("Partial coverage", style = TextRoles.caption2, color = palette.muted)
 			Credit(attribution)
 		}
 	}
@@ -352,6 +343,8 @@ private fun TrainList(map: TrackMapModel, visible: List<TrackMapMarker>, plotted
 				IconButton(onClick = { map.showTrainList = false }) { Icon(Icons.Filled.Close, contentDescription = "Close trains list") }
 			}
 			LazyColumn(Modifier.fillMaxWidth().testTag("track-map-train-list")) {
+				if (map.routes.isNotEmpty()) item(key = "route-filter") { RouteFilter(map) }
+				item(key = "slow-zones") { Box(Modifier.padding(horizontal = 12.dp)) { SlowZoneLegend(map, now) } }
 				items(visible, key = { it.train.key }) { marker -> TrainRow(map, TrackMapRow(marker.train, marker.evidence), marker, onOpen) }
 				if (elsewhere.isNotEmpty()) {
 					item(key = "elsewhere-heading") { TrainListHeading("Elsewhere on the map (${elsewhere.size})") }
@@ -365,6 +358,18 @@ private fun TrainList(map: TrackMapModel, visible: List<TrackMapMarker>, plotted
 					item(key = "empty") { Text("No trains match these lines right now.", style = TextRoles.caption, color = palette.muted, modifier = Modifier.padding(12.dp)) }
 				}
 			}
+		}
+	}
+}
+
+/** Line chips edit the same selected lines that filter the map markers and the lists below. */
+@Composable
+private fun RouteFilter(map: TrackMapModel) {
+	ChipRow(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+		ChoiceChip("All lines", map.routeFilter.isEmpty(), { map.clearRoutes() })
+		map.routes.forEach { route ->
+			val label = Display.displayRoute(route)
+			ChoiceChip(label, route in map.routeFilter, { map.toggleRoute(route) }, contentDescription = "Line $label${if (route in map.routeFilter) ", shown" else ""}")
 		}
 	}
 }

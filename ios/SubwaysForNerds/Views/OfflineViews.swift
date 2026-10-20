@@ -30,43 +30,51 @@ struct ActiveRideBanner: View {
 			let withdrawn = ["CANCELED", "DELETED"].contains(trip?.train?.relationship ?? "") ? "Canceled in the last report · no estimate"
 				: trip?.train?.assigned == false ? "Not assigned to a train in the last report · no estimate" : nil
 			let next = withdrawn == nil ? OfflineDisplay.estimatedNextStopIndex(stops, now: app.now) : nil
-			VStack(alignment: .leading, spacing: 4) {
-				HStack(alignment: .center, spacing: 8) {
-					if let route = trip?.train?.route { RouteBullet(route: route, small: true) }
-					VStack(alignment: .leading, spacing: 1) {
-						Text("Your ride\(trip?.train.map { " · \($0.destination)" } ?? "")").font(.subheadline.weight(.semibold))
-						if let withdrawn {
-							Text(withdrawn).font(.caption)
-						} else if let next {
-							// Always an estimate: the next stop comes from predictions, never an observed position.
-							let stop = stops[next]
-							let countdown = OfflineDisplay.countdown(stop: stop, sourceTimestamp: source, now: app.now, cached: cached, preferences: app.offlinePreferences, timeFormat: app.units.time, staleAfter: trip?.train.map { Display.predictionStaleAfter($0.staleAfter, feed: $0.feed) })
-							Text("Estimated next stop \(stop.name) · \(countdown.unit == "min" ? "\(countdown.value) min" : "\(countdown.value) \(countdown.unit)")")
-								.font(.caption.monospacedDigit())
-								.accessibilityIdentifier("rideNextStop")
-						} else if trip == nil {
-							Text("No saved details for this train yet.").font(.caption)
-						} else {
-							Text("Every saved stop time has passed · estimate passed").font(.caption)
+			HStack(alignment: .center, spacing: 0) {
+				Button { open(ride.tripKey) } label: {
+					VStack(alignment: .leading, spacing: 4) {
+						HStack(alignment: .center, spacing: 8) {
+							if let route = trip?.train?.route { RouteBullet(route: route, small: true) }
+							VStack(alignment: .leading, spacing: 1) {
+								Text("Your ride\(trip?.train.map { " · \($0.destination)" } ?? "")").font(.subheadline.weight(.semibold))
+								if let withdrawn {
+									Text(withdrawn).font(.caption)
+								} else if let next {
+									// Always an estimate: the next stop comes from predictions, never an observed position.
+									let stop = stops[next]
+									let countdown = OfflineDisplay.countdown(stop: stop, sourceTimestamp: source, now: app.now, cached: cached, preferences: app.offlinePreferences, timeFormat: app.units.time, staleAfter: trip?.train.map { Display.predictionStaleAfter($0.staleAfter, feed: $0.feed) })
+									Text("Estimated next stop \(stop.name) · \(countdown.unit == "min" ? "\(countdown.value) min" : "\(countdown.value) \(countdown.unit)")")
+										.font(.caption.monospacedDigit())
+										.accessibilityIdentifier("rideNextStop")
+								} else if trip == nil {
+									Text("No saved details for this train yet.").font(.caption)
+								} else {
+									Text("Every saved stop time has passed · estimate passed").font(.caption)
+								}
+							}
+							Spacer(minLength: 4)
 						}
+						if cached, trip != nil {
+							Text(OfflineDisplay.estimateLabel(timestamp: source, now: app.now, preferences: app.offlinePreferences))
+								.font(.caption2).foregroundStyle(.secondary)
+						}
+						if let trip, let label = OfflineDisplay.completenessLabel(trip) { Text(label).font(.caption2.weight(.semibold)) }
 					}
-					Spacer(minLength: 4)
+					.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
 				}
-				if cached, trip != nil {
-					Text(OfflineDisplay.estimateLabel(timestamp: source, now: app.now, preferences: app.offlinePreferences) + (next == nil ? "" : " · next stop not observed"))
-						.font(.caption2).foregroundStyle(.secondary)
+				.buttonStyle(.plain)
+				.accessibilityHint("Opens ride details")
+				.accessibilityIdentifier("openRide")
+				Button { confirmEnd = true } label: {
+					Image(systemName: "xmark").font(.body.weight(.semibold)).frame(width: 44, height: 44).contentShape(Rectangle())
 				}
-				if let trip, let label = OfflineDisplay.completenessLabel(trip) { Text(label).font(.caption2.weight(.semibold)) }
-				HStack(spacing: 6) {
-					Button { open(ride.tripKey) } label: { Label("Ride details", systemImage: "list.bullet").chip() }
-						.buttonStyle(.plain).accessibilityIdentifier("openRide")
-					Button { confirmEnd = true } label: { Label("End ride", systemImage: "xmark.circle").chip() }
-						.buttonStyle(.plain).accessibilityIdentifier("endRideFromBanner")
-						.confirmationDialog("End this ride?", isPresented: $confirmEnd, titleVisibility: .visible) {
-							Button("End ride", role: .destructive) { Task { await app.endRide() } }
-							Button("Cancel", role: .cancel) {}
-						} message: { Text("Its snapshot then expires like other cached trips unless you saved it.") }
-				}
+				.buttonStyle(.borderless)
+				.accessibilityLabel("End ride")
+				.accessibilityIdentifier("endRideFromBanner")
+				.confirmationDialog("End this ride?", isPresented: $confirmEnd, titleVisibility: .visible) {
+					Button("End ride", role: .destructive) { Task { await app.endRide() } }
+					Button("Cancel", role: .cancel) {}
+				} message: { Text("Its snapshot then expires like other cached trips unless you saved it.") }
 			}
 			.accessibilityElement(children: .contain)
 			.accessibilityIdentifier("activeRideBanner")
@@ -93,7 +101,7 @@ struct SavedTripsView: View {
 					}
 				}
 				if app.savedTrips.isEmpty { Text("Use Save trip offline in train details to keep a train here.").foregroundStyle(.secondary) }
-			} footer: { Text("Saved trains stay on this device until you remove them. Their times are the predictions from when they were saved.") }
+			}
 		}
 		.themedList().navigationTitle("Saved trains").navigationBarTitleDisplayMode(.inline)
 		.task { await app.reloadOfflineStatus() }
@@ -150,23 +158,23 @@ struct OfflineSettingsView: View {
 					.accessibilityIdentifier("offlineTripDetails")
 				Toggle("Save trains I open", isOn: Binding(get: { preferences.saveOpenedTrips }, set: { value in update { $0.saveOpenedTrips = value } }))
 					.accessibilityIdentifier("offlineSaveOpenedTrips")
-			} header: { ListHeader("Viewed station") } footer: { Text("Each board you view keeps its next departures for every line and direction, plus full stop lists for the next trains, while you are connected.") }
+			} header: { ListHeader("Viewed station") }
 			Section {
 				choiceRow(Self.radiusChoices, selected: preferences.nearbyRadiusFeet, identifier: "offlineRadius", label: { $0 == 0 ? "Off" : app.units.distance.radiusLabel(feet: $0) }) { value in update { $0.nearbyRadiusFeet = value } }
 				Toggle("Also save trips at favorite and nearby stations", isOn: Binding(get: { preferences.preloadOtherStationTrips }, set: { value in update { $0.preloadOtherStationTrips = value } }))
 					.accessibilityIdentifier("offlinePreloadOtherTrips")
-			} header: { ListHeader("Other stations") } footer: { Text("Favorite boards, and boards within this straight-line distance of the station you are viewing, are saved in the background while the app is open. Your location is not used. Saving their trips works for favorites even with the distance off.") }
+			} header: { ListHeader("Other stations") }
 			Section {
 				choiceRow(OfflinePreferences.estimateLimitChoices, selected: preferences.estimateLimitMinutes, identifier: "offlineEstimateLimit", label: { "\($0) min" }) { value in update { $0.estimateLimitMinutes = value } }
-			} header: { ListHeader("Offline countdowns") } footer: { Text("Without a connection, countdowns use saved predictions until their source is this old, then show the last clock times. Every offline time is labeled as an estimate with its source age; passed times say estimate passed.") }
+			} header: { ListHeader("Offline countdowns") }
 			Section {
 				choiceRow(OfflinePreferences.retentionChoices, selected: preferences.retentionHours, identifier: "offlineRetention", label: { "\($0) h" }) { value in update { $0.retentionHours = value } }
 				choiceRow(OfflinePreferences.storageLimitChoices, selected: preferences.storageLimitMiB, identifier: "offlineStorageLimit", label: { "\($0) MiB" }) { value in update { $0.storageLimitMiB = value } }
-			} header: { ListHeader("Keep automatic copies") } footer: { Text("Automatic boards and trips expire after this many hours and the oldest are removed above the storage limit. Saved trains and your current ride are kept until you remove them.") }
+			} header: { ListHeader("Keep automatic copies") }
 			Section {
 				Toggle("Widgets follow my ride", isOn: Binding(get: { preferences.widgetsFollowActiveRide }, set: { value in update { $0.widgetsFollowActiveRide = value } }))
 					.accessibilityIdentifier("offlineWidgetsFollowRide")
-			} footer: { Text("While you are on a train, Home and Lock Screen widgets show its next stops instead of a station board.") }
+			}
 		}
 		.themedList().navigationTitle("Offline").navigationBarTitleDisplayMode(.inline)
 		.task { await app.reloadOfflineStatus() }
@@ -211,7 +219,7 @@ struct OfflineSettingsView: View {
 					Button("Clear automatic downloads", role: .destructive) { Task { working = true; await app.removeAutomaticOfflineData(); working = false } }
 					Button("Cancel", role: .cancel) {}
 				} message: { Text("Removes boards and trips saved automatically for this server. Saved trains and your current ride are kept. Boards are saved again while you browse online.") }
-		} header: { ListHeader("Connection and storage") } footer: { Text("Offline boards, trips and your ride stay on this device and do not sync. These preferences transfer with your settings.") }
+		} header: { ListHeader("Connection and storage") }
 	}
 
 	/// Direct choices instead of a menu, so the current value stays visible.

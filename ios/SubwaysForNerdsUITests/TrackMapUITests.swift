@@ -114,13 +114,16 @@ final class TrackMapUITests: XCTestCase, @unchecked Sendable {
 		waitForKeyboardDismissal(app)
 		waitForUnionSquare(app)
 		let before = try viewport(app)
+		// The overlay no longer carries the pill; the amber lines stay drawn and the row lives in the menu.
+		XCTAssertFalse(element("track-map-slow-zones", app).exists, "The slow-zone pill left the map overlay")
+		capture("slow-zones-amber-under-trains", app)
+		openTrains(app)
 		let legend = element("track-map-slow-zones", app)
 		XCTAssertTrue(legend.waitForExistence(timeout: 15))
 		XCTAssertTrue(legend.label.contains("Estimated slow zones"), legend.label)
 		XCTAssertTrue(legend.label.contains("Transit Lab"), legend.label)
-		capture("slow-zones-amber-under-trains", app)
 		selectL(app)
-		element("track-map-slow-zones", app).tap()
+		legend.tap()
 		let row = element("track-map-slow-zone-\(id)", app)
 		if !row.waitForExistence(timeout: 5) { app.swipeUp() }
 		XCTAssertTrue(row.waitForExistence(timeout: 5))
@@ -128,9 +131,48 @@ final class TrackMapUITests: XCTestCase, @unchecked Sendable {
 		XCTAssertTrue(row.label.contains("Estimated"), row.label)
 		XCTAssertTrue(row.label.contains("Typically +"), row.label)
 		XCTAssertTrue(row.label.contains("Source: Transit Lab"), row.label)
+		XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS ' · Source: Transit Lab'")).count, 0, "Zones no longer repeat the source")
+		XCTAssertTrue(element("track-map-slow-zone-source", app).exists, "The one Transit Lab attribution stays at the top")
+		XCTAssertFalse(element("track-map-slow-zones-done", app).exists, "Details are pushed inside the menu, with no nested Done")
 		capture("slow-zones-accessible-segment-delay-kind-source", app)
-		element("track-map-slow-zones-done", app).tap()
+		app.navigationBars["Estimated slow zones"].buttons.element(boundBy: 0).tap()
+		XCTAssertTrue(element("track-map-route-all", app).waitForExistence(timeout: 5), "Back returns to the map menu")
+		closeTrains(app)
 		assertViewport(before, try viewport(app), "slow-zone details return")
+	}
+
+	func testMapOverlayKeepsFiltersAndSlowZonesInTheMenu() throws {
+		let snapshot = try recordedSnapshot()
+		let trains = try XCTUnwrap(snapshot["trains"] as? [[String: Any]])
+		let routeByKey = Dictionary(uniqueKeysWithValues: trains.compactMap { train -> (String, String)? in
+			guard let key = train["key"] as? String, let route = train["route"] as? String else { return nil }
+			return (key, route)
+		})
+		let app = launch()
+		openMap(app)
+		for id in ["track-map-route-all", "track-map-route-L", "track-map-slow-zones"] {
+			XCTAssertFalse(element(id, app).exists, "\(id) must not sit on the map")
+		}
+		XCTAssertTrue(element("track-map-attribution", app).exists, "The required map attribution stays on screen")
+		capture("map-overlay-without-filters", app)
+
+		openTrains(app)
+		XCTAssertTrue(app.navigationBars["Map"].exists, "The menu is titled Map")
+		let all = element("track-map-route-all", app), slow = element("track-map-slow-zones", app)
+		XCTAssertTrue(all.waitForExistence(timeout: 10) && slow.waitForExistence(timeout: 10))
+		XCTAssertTrue(all.isSelected, "All lines start selected")
+		XCTAssertLessThan(all.frame.minY, slow.frame.minY, "Line chips come before the slow-zone row")
+		capture("map-menu-filters-and-slow-zones", app)
+		selectL(app)
+		XCTAssertFalse(all.isSelected)
+		let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "track-map-train-")).allElementsBoundByIndex
+		XCTAssertFalse(rows.isEmpty)
+		for row in rows {
+			XCTAssertEqual(routeByKey[String(row.identifier.dropFirst("track-map-train-".count))], "L", "The chip filters the list live")
+		}
+		slow.tap()
+		XCTAssertTrue(element("track-map-slow-zone-source", app).waitForExistence(timeout: 10), "The row opens the slow-zone details")
+		capture("map-menu-slow-zone-details", app)
 	}
 
 	func testRecordedTrainRouteFilterCertaintyAndDetailReturn() throws {
@@ -144,7 +186,9 @@ final class TrackMapUITests: XCTestCase, @unchecked Sendable {
 		waitForKeyboardDismissal(app)
 		waitForUnionSquare(app)
 		let before = try viewport(app)
+		openTrains(app)
 		selectL(app)
+		closeTrains(app)
 		// Check overlay placement against recorded top-left PDF points. Exact rail coverage
 		// in the source topology and visual artwork review remain separate acceptance gates.
 		let train = try XCTUnwrap(trains.first { $0["key"] as? String == tripKey })
@@ -157,7 +201,7 @@ final class TrackMapUITests: XCTestCase, @unchecked Sendable {
 		let markerFrame = marker.frame
 		XCTAssertEqual(Double(markerFrame.midX), Double(canvasFrame.midX) + (x - before.x) * before.zoom, accuracy: 4, "Marker x must align with the PDF viewport")
 		XCTAssertEqual(Double(markerFrame.midY), Double(canvasFrame.midY) + (y - before.y) * before.zoom, accuracy: 4, "Marker y must use the PDF's top-left coordinate contract")
-		element("track-map-trains", app).tap()
+		openTrains(app)
 		let row = element("track-map-train-\(tripKey)", app)
 		reveal(row, app)
 		XCTAssertTrue(row.label.contains("L"), row.label)
@@ -188,8 +232,8 @@ final class TrackMapUITests: XCTestCase, @unchecked Sendable {
 		let reason = try XCTUnwrap(unplaced["reason"] as? String, "The fixture must explain why the train is unplaced")
 		let app = launch()
 		openMap(app)
+		openTrains(app)
 		selectL(app)
-		element("track-map-trains", app).tap()
 		let row = element("track-map-train-\(key)", app)
 		reveal(row, app)
 		XCTAssertFalse(row.label.isEmpty)
@@ -205,8 +249,8 @@ final class TrackMapUITests: XCTestCase, @unchecked Sendable {
 		let key = try XCTUnwrap(uncertain["key"] as? String)
 		let app = launch()
 		openMap(app)
+		openTrains(app)
 		selectL(app)
-		element("track-map-trains", app).tap()
 		let row = element("track-map-train-\(key)", app)
 		reveal(row, app)
 		XCTAssertTrue(row.label.contains("reported"), row.label)
@@ -394,6 +438,19 @@ final class TrackMapUITests: XCTestCase, @unchecked Sendable {
 		XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: focused, object: nil)], timeout: 10), .completed,
 			"Search must finish centering Union Square before recording its viewport")
 	}
+	/// The line chips live in the menu behind the list button.
+	private func openTrains(_ app: XCUIApplication) {
+		element("track-map-trains", app).tap()
+		XCTAssertTrue(element("track-map-route-all", app).waitForExistence(timeout: 10), "The menu leads with the line chips")
+	}
+
+	private func closeTrains(_ app: XCUIApplication) {
+		app.buttons["Done"].tap()
+		XCTAssertTrue(element("track-map-canvas", app).waitForExistence(timeout: 10))
+		XCTAssertFalse(element("track-map-route-all", app).waitForExistence(timeout: 2), "The menu closed")
+	}
+
+	/// Selects L in the open menu.
 	private func selectL(_ app: XCUIApplication) {
 		let route = element("track-map-route-L", app)
 		XCTAssertTrue(route.waitForExistence(timeout: 20))

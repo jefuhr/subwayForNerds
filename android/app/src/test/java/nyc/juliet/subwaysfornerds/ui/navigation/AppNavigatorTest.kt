@@ -44,6 +44,28 @@ class AppNavigatorTest {
 		assertEquals(listOf<Route>(Route.StationInfo("602")), navigator.current)
 	}
 
+	@Test fun showingSystemStatusFromTheBoardSelectsSettingsAndBackReturnsToSettings() {
+		val navigator = AppNavigator()
+		navigator.push(Route.Train("a"))
+		navigator.show(Route.SystemStatus, AppTab.SETTINGS)
+		assertEquals(AppTab.SETTINGS, navigator.tab)
+		assertEquals(listOf<Route>(Route.SystemStatus), navigator.current)
+		assertEquals("The board's own stack must not be disturbed", listOf<Route>(Route.Train("a")), navigator.stack(AppTab.BOARD))
+
+		assertTrue(navigator.back())
+		assertEquals("Back from System status returns to Settings, not the board", AppTab.SETTINGS, navigator.tab)
+		assertTrue(navigator.current.isEmpty())
+	}
+
+	@Test fun showingSystemStatusReplacesWhateverSettingsAlreadyHad() {
+		val navigator = AppNavigator()
+		navigator.select(AppTab.SETTINGS)
+		navigator.push(Route.OfflineSettings)
+		navigator.select(AppTab.BOARD)
+		navigator.show(Route.SystemStatus, AppTab.SETTINGS)
+		assertEquals(listOf<Route>(Route.SystemStatus), navigator.stack(AppTab.SETTINGS))
+	}
+
 	@Test fun anOpenedStationBoardReturnsToTheTransferThenTheTrain() {
 		val navigator = AppNavigator()
 		val transfers = Route.Transfers("a", "A01N", "Times Sq", 3, stationID = "611")

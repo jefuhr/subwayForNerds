@@ -13,10 +13,7 @@ struct SettingsView: View {
 			Section {
 				HStack(spacing: 12) {
 					Image("Kitty").resizable().scaledToFit().frame(width: 44, height: 44).accessibilityHidden(true)
-					VStack(alignment: .leading, spacing: 1) {
-						Text("subways for nerds.").font(.headline)
-						Text("Know the system. Make your next move.").font(.caption).foregroundStyle(.secondary)
-					}
+					Text("subways for nerds.").font(.headline)
 				}
 				.listRowInsets(.vertical, 8)
 			}
@@ -28,9 +25,7 @@ struct SettingsView: View {
 				NavigationLink("Favorite trains") { FavoriteTrainsSettingsView() }.accessibilityIdentifier("favoriteTrainsSettings")
 				Toggle("Save transfer filters separately", isOn: Binding(get: { app.transferPreferences.separateFilters }, set: { app.setSeparateTransferFilters($0) }))
 					.accessibilityIdentifier("separateTransferFilters")
-			} header: { ListHeader("Board") } footer: {
-				Text("When off, connections at a station use that station's board filters. When on, each transfer station starts from its board filters and then keeps its own.")
-			}
+			} header: { ListHeader("Board") }
 			Section {
 				Toggle("Track source (reported/scheduled)", isOn: Binding(get: { app.departureRows.showTrackProvenance }, set: { app.setShowTrackProvenance($0) }))
 					.accessibilityIdentifier("departureRowsTrackProvenance")
@@ -40,11 +35,11 @@ struct SettingsView: View {
 					.accessibilityIdentifier("departureRowsConsist")
 				Toggle("Gap after previous train", isOn: Binding(get: { app.departureRows.showHeadway }, set: { app.setShowHeadway($0) }))
 					.accessibilityIdentifier("departureRowsHeadway")
-			} header: { ListHeader("Departure rows") } footer: { Text("Controls the details shown in departure rows.") }
+			} header: { ListHeader("Departure rows") }
 			Section {
 				choiceRow(DistanceUnit.allCases, selected: app.units.distance, title: "Distance units", identifier: "distanceUnits", label: { $0.shortTitle }, spoken: { $0.title }) { app.setDistanceUnit($0) }
 				choiceRow(TimeFormat.allCases, selected: app.units.time, title: "Time format", identifier: "timeFormat", label: { $0.title }, spoken: { $0.title }) { app.setTimeFormat($0) }
-			} header: { ListHeader("Units") } footer: { Text("Applies to the app and widgets. Times are New York time. Automatic uses m/km nearby and ft/mi for favorite radius.") }
+			} header: { ListHeader("Units") }
 			Section {
 				// Five columns fit all ten themes in two rows on wider screens.
 				LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: dynamicType.isAccessibilitySize ? 1 : sizeClass == .regular ? 5 : 2), spacing: 6) {
@@ -69,22 +64,20 @@ struct SettingsView: View {
 				}
 				if app.favorites.isEmpty && (app.widgetPreferences.stationSelection.followApp ? app.stationSelection : app.widgetPreferences.stationSelection.selection).mode == .favorite { Text("Add a favorite station or choose Closest station above.").font(.footnote).foregroundStyle(.secondary) }
 				if app.widgetStore == nil { Notice(text: "Widget sharing is unavailable. Build both targets with the same App Group enabled.") }
-			} header: { ListHeader("Widgets") } footer: {
-				Text("Widgets use your station selection and show both directions. iOS schedules updates; tap the widget’s refresh button for a new report.")
-			}
+			} header: { ListHeader("Widgets") }
 			Section {
 				NavigationLink { OfflineSettingsView() } label: {
 					LabeledContent("Offline boards and trains", value: app.savedTrips.isEmpty ? "\(app.offlinePreferences.departuresPerLineDirection) per line" : "\(app.savedTrips.count) saved")
 				}.accessibilityIdentifier("offlineSettings")
-			} header: { ListHeader("Offline") } footer: { Text("Boards you view, nearby boards, and saved trains work offline, with estimates clearly labeled.") }
+			} header: { ListHeader("Offline") }
 			offlineSection
 			SettingsTransferSection()
 			AccountSettingsSection()
 			Section {
-				NavigationLink { SystemStatusView() } label: {
+				NavigationLink(value: SettingsDestination.systemStatus) {
 					LabeledContent("System status", value: app.deviceNetworkStatus.state == .connected ? "Online" : app.deviceNetworkStatus.shortActivity)
 				}.accessibilityIdentifier("systemStatusSettings")
-			} header: { ListHeader("System") } footer: { Text("App storage breakdown, network link quality, memory use, and device health.") }
+			} header: { ListHeader("System") }
 			#if DEBUG
 			Section { NavigationLink("Widget previews") { WidgetPreviewView() }.accessibilityIdentifier("widgetPreviews") }
 			Section {
@@ -103,7 +96,7 @@ struct SettingsView: View {
 				}
 				.buttonStyle(.borderless).actionStyle().font(.subheadline)
 				if let error = endpointError { Notice(text: error) }
-			} header: { ListHeader("Development server") } footer: { Text("Use a reachable API base address ending in /api/v1/. Your favorites, filters, and theme are saved on this device.") }
+			} header: { ListHeader("Development server") }
 			#endif
 			Section {
 				Group {
@@ -114,7 +107,6 @@ struct SettingsView: View {
 						.accessibilityIdentifier("createGithubIssue")
 				}
 				.font(.subheadline).actionStyle()
-				Text("Times are predictions, not promises. Location finds nearby and favorite stations in the app and, when allowed, widgets. Location and station search text stay on this device.").font(.caption).foregroundStyle(.secondary)
 			} header: { ListHeader("About") }
 		}.themedList().navigationTitle("Settings").navigationBarTitleDisplayMode(.inline)
 			.task { endpoint = app.endpoint; await app.loadFleetPackFacets() }
@@ -177,10 +169,10 @@ struct SettingsView: View {
 					Text(saved.pack?.selection.scopeDescription ?? "All cars · Previously saved retained history")
 						.font(.caption).accessibilityIdentifier("savedFleetScope")
 					if let pack = saved.pack {
-						Text("\(pack.counts.matchedCars.formatted()) selected cars + \(pack.counts.linkedCars.formatted()) linked cars for complete fixed sets and recent formations.").font(.caption)
+						Text("\(pack.counts.matchedCars.formatted()) selected cars + \(pack.counts.linkedCars.formatted()) linked cars").font(.caption)
 					}
 				}
-			} else { Text("Save selected cars, their source records and last reports, with 7 or 30 days of movement history.").font(.footnote) }
+			}
 			if let available = app.availablePack {
 				VStack(alignment: .leading, spacing: 2) {
 					LabeledContent("Archive size", value: ByteCountFormatter.string(fromByteCount: available.archiveByteLength, countStyle: .file))
@@ -189,7 +181,7 @@ struct SettingsView: View {
 						.font(.subheadline).accessibilityIdentifier("fleetPackSavedEstimate")
 					LabeledContent("Linked cars", value: available.counts.linkedCars.formatted()).font(.subheadline)
 					Text("\(available.counts.matchedCars.formatted()) selected cars · \(available.counts.cars.formatted()) cars including linked members · \(available.counts.events.formatted()) movement events").font(.caption)
-					Text("Prepared \(easternDate(available.generatedAt, timeFormat: app.units.time)). Linked cars keep documented fixed sets and recent formations complete. Actual saved size may differ from the estimate.")
+					Text("Prepared \(easternDate(available.generatedAt, timeFormat: app.units.time))")
 						.font(.caption).foregroundStyle(.secondary)
 				}
 			}
@@ -233,7 +225,7 @@ struct SettingsView: View {
 			}
 			if app.offlineStore == nil { Notice(text: "Download storage is unavailable. Try reopening the app.") }
 			if let error = app.downloadError { Notice(text: error) }
-		} header: { ListHeader("Offline fleet") } footer: { Text("Prepare to see the archive size and saved-size estimate, then choose Download or Update. Keep the app open while saving. One validated pack replaces your previous copy. Saved reports are historical; events can mention cars outside the saved scope. Failed or canceled downloads preserve your previous copy.") }
+		} header: { ListHeader("Offline fleet") }
 	}
 }
 
@@ -251,7 +243,7 @@ private struct FleetPackSelectionView: View {
 				Button("Everything") {
 					app.setFleetPackSelection(FleetPackSelection(historyDays: app.fleetPackSelection.historyDays))
 				}.actionStyle().accessibilityIdentifier("fleetPackEverything")
-			} footer: { Text("Everything includes all car types and estimated home yards, with the history window chosen above.") }
+			}
 			Section {
 				choice("All car types", selected: app.fleetPackSelection.equipment.isEmpty, id: "fleetPackAllEquipment") { update(equipment: []) }
 				ForEach(Array(Set(app.fleetPackFacets.equipment + app.fleetPackSelection.equipment)).filter { !$0.isEmpty }.sorted(), id: \.self) { equipment in
@@ -259,7 +251,7 @@ private struct FleetPackSelectionView: View {
 						update(equipment: toggled(equipment, in: app.fleetPackSelection.equipment))
 					}
 				}
-			} header: { ListHeader("Car types") } footer: { Text("Select multiple exact equipment types. Choosing All car types removes this filter.") }
+			} header: { ListHeader("Car types") }
 			Section {
 				choice("All estimated home yards", selected: app.fleetPackSelection.yards.isEmpty, id: "fleetPackAllYards") { update(yards: []) }
 				ForEach(Array(Set(app.fleetPackFacets.yard + app.fleetPackSelection.yards + ["unknown"])).filter { !$0.isEmpty }.sorted(), id: \.self) { yard in
@@ -267,7 +259,7 @@ private struct FleetPackSelectionView: View {
 						update(yards: toggled(yard, in: app.fleetPackSelection.yards))
 					}
 				}
-			} header: { ListHeader("Estimated home yards") } footer: { Text("Yards are estimates from reports and source records. Multiple yard selections match exact names. Unknown includes cars without an estimated home yard. Car type and yard filters must both match.") }
+			} header: { ListHeader("Estimated home yards") }
 			if let error = app.fleetPackFacetsError { Section { Notice(text: error) } }
 			Section { Button("Reload car types and yards") { Task { await app.loadFleetPackFacets() } }.actionStyle().disabled(!app.connected) }
 		}
@@ -316,7 +308,7 @@ struct StationSelectionSettingsView: View {
 						LabeledContent("App setting", value: app.stationSelection.mode.title)
 						if app.stationSelection.mode == .nearbyFavorite { LabeledContent("Radius", value: app.units.distance.radiusLabel(feet: app.stationSelection.radiusFeet)) }
 					}
-				} footer: { Text("Applies to Home and Lock Screen widgets. Your separate widget choice is kept when following the app.") }
+				}
 			}
 			if !widget || !app.widgetPreferences.stationSelection.followApp {
 				StationSelectionControls(selection: selection, unit: app.units.distance, identifier: widget ? "widget" : "app", editingRadius: $editingRadius)
@@ -347,7 +339,7 @@ private struct StationSelectionControls: View {
 			Picker("Open automatically", selection: $selection.mode) {
 				ForEach(StationSelection.Mode.allCases) { mode in Text(mode.title).tag(mode) }
 			}.pickerStyle(.inline).labelsHidden().accessibilityIdentifier(identifier + "StationMode")
-		} header: { ListHeader("Open automatically") } footer: { Text(identifier == "widget" ? "Uses your latest available location when Home and Lock Screen widgets refresh." : "Uses your location when the board opens. Choosing a station yourself always takes priority.") }
+		} header: { ListHeader("Open automatically") }
 		if selection.mode == .nearbyFavorite {
 			Section {
 				HStack {
@@ -364,7 +356,7 @@ private struct StationSelectionControls: View {
 					}
 				Text(unit.radiusLabel(feet: Int(draftRadius))).font(.footnote).foregroundStyle(.secondary)
 				if validRadius == nil { Text(unit.radiusRangeDescription).font(.footnote).foregroundStyle(.red) }
-			} header: { ListHeader("Favorite radius") } footer: { Text("Choose the closest favorite only when it is inside this radius. At or beyond the radius, show the closest station. Distance is measured in a straight line, not walking distance.") }
+			} header: { ListHeader("Favorite radius") }
 			.onAppear { radiusText = unit.radiusInput(feet: selection.radiusFeet); draftRadius = Double(selection.radiusFeet) }
 			.onChange(of: radiusText) { _, _ in if let radius = validRadius { draftRadius = Double(radius) } }
 			.onChange(of: selection.radiusFeet) { _, value in radiusText = unit.radiusInput(feet: value); draftRadius = Double(value) }
@@ -398,7 +390,7 @@ struct FavoriteTrainsSettingsView: View {
 				Picker("Match saved consists", selection: Binding(get: { app.trainFavorites.match }, set: { app.setTrainMatch($0) })) {
 					ForEach(TrainFavorites.Match.allCases) { match in Text(match.title).tag(match) }
 				}.pickerStyle(.inline).labelsHidden().accessibilityIdentifier("favoriteTrainMatch")
-			} header: { ListHeader("Match saved consists") } footer: { Text("Exact consist requires every saved car, in any order. Any member car highlights a train with at least one car from a saved consist. Individually saved cars always match. Changing this keeps all your favorites.") }
+			} header: { ListHeader("Match saved consists") }
 			Section {
 				ForEach(app.trainFavorites.cars, id: \.self) { id in
 					HStack {

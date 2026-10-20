@@ -47,10 +47,7 @@ fun SystemStatusScreen(model: AppModel, exit: ScreenExit, close: () -> Unit) {
 	val manifest = model.fleet.offlineManifest
 	val fleetBytes = maxOf(storage.fleetBytes, manifest?.byteLength ?: 0L)
 	ListScreen("System status", exit = exit, onExit = close, tag = "systemStatusScreen") {
-		section(
-			"storage", header = "App storage",
-			footer = "Settings include your account session and interface choices. Android may clear temporary cache when space runs low; offline boards and the fleet download stay until removed.",
-		) {
+		section("storage", header = "App storage") {
 			row { RowContainer { LabeledValue("Total app storage", ByteCounts.file(storage.totalAppBytes), Modifier.testTag("systemStatusTotalStorage")) } }
 			val shares = listOf(storage.appFraction, storage.settingsFraction, storage.cacheFraction, storage.fraction(fleetBytes))
 			if (storage.totalAppBytes > 0) row { RowContainer { StorageBar(shares) } }
@@ -79,7 +76,7 @@ fun SystemStatusScreen(model: AppModel, exit: ScreenExit, close: () -> Unit) {
 				}
 			}
 		}
-		section("network", header = "Network", footer = "Signal and link speed are the system's own estimates, not a speed test. Response time is the last complete board, train or station list request.") {
+		section("network", header = "Network") {
 			row {
 				RowContainer {
 					Column(Modifier.testTag("deviceNetworkStatus").semantics(mergeDescendants = true) {}) {
@@ -112,7 +109,7 @@ fun SystemStatusScreen(model: AppModel, exit: ScreenExit, close: () -> Unit) {
 			}
 			row { SwitchRow("Simulate no connection", model.outageSimulated, { model.setSimulatedOutage(it) }, Modifier.testTag("simulateOutage")) }
 		}
-		section("memory", header = "Memory", footer = "App RAM is the process's total footprint. Android updates it at most every few minutes.") {
+		section("memory", header = "Memory") {
 			row {
 				RowContainer {
 					Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

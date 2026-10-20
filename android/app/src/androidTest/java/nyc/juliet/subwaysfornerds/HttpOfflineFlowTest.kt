@@ -79,7 +79,7 @@ class HttpOfflineFlowTest {
 		var scenario = ActivityScenario.launch(MainActivity::class.java)
 		try {
 			// 1. The live board arrives over recorded HTTP.
-			awaitTexts("boardFreshness", "the recorded board to load live") { texts -> texts.any { it == "Live feed" || it == "Partial live data" } }
+			awaitLiveBoard()
 			assertTrue("The app did not fetch the board over HTTP: ${network.gate.passed}", network.gate.passed.drop(preflight).any { it.contains("/stations/${server.station}/board") })
 			assertOnlyRecordedDepartures(recordedByKey.keys)
 			network.screenshot("01-live-board")
@@ -115,7 +115,8 @@ class HttpOfflineFlowTest {
 			back()
 			scrollBoardToTop()
 			await("the ride banner") { exists("activeRideBanner") }
-			awaitTexts("savedTrips", "the saved trains chip") { it.contains("Saved trains (1)") }
+			// Saved trains are reached from Settings › Offline now; the board header carries no chip for them.
+			assertFalse("The board header has no Saved trains chip", exists("savedTrips"))
 			network.screenshot("03-ride-and-saved")
 
 			// 4. Connectivity loss: the same activity keeps only saved data, labeled offline.
@@ -142,8 +143,7 @@ class HttpOfflineFlowTest {
 			assertOfflineTrain("kept for your ride", "07-reopened-ride-offline-header")
 			network.screenshot("07-reopened-ride-offline")
 			back()
-			scrollBoardToTop()
-			node("savedTrips").performClick()
+			openSavedTrainsFromSettings()
 			await("the saved trains list") { exists("savedTrip_${saved.key}") }
 			network.screenshot("08-reopened-saved-list")
 			node("savedTrip_${saved.key}").performClick()
@@ -195,11 +195,13 @@ class HttpOfflineFlowTest {
 
 	private fun assertOfflineBoard(recordedKeys: Set<String>) {
 		scrollBoardToTop()
-		awaitTexts("boardFreshness", "the board to be labeled saved and offline", 45_000) { it.contains("Saved board · offline") }
-		// The notice depends on whether a refresh was attempted after loading; when shown it must be this one.
+		await("the board to be shown as saved and offline", 45_000) { exists("boardOfflineEstimate") }
+		// A saved board carries no error notice and no degraded-feeds notice; the estimate card says it.
 		val notice = texts("boardError")
-		assertTrue("Board notice: $notice", notice.isEmpty() || notice == listOf(NO_CONNECTION_BOARD))
-		network.evidence.note("offline board notice: ${notice.ifEmpty { listOf("(none)") }}")
+		assertTrue("A saved board must not show a board error: $notice", notice.isEmpty())
+		val feeds = compose.onAllNodes(hasText("Some feeds are stale or unavailable", substring = true), useUnmergedTree = true).fetchSemanticsNodes(atLeastOneRootRequired = false)
+		assertTrue("A saved board must not show the degraded feeds notice", feeds.isEmpty())
+		assertFalse("The header no longer labels the board as saved", exists("boardFreshness"))
 		val estimate = texts("boardOfflineEstimate")
 		assertTrue("Saved board times must say they are estimates with their source age: $estimate", estimate.any { ESTIMATE.matches(it) })
 		assertFalse("Offline readiness is a live-only label", exists("offlineReadiness"))
@@ -207,7 +209,7 @@ class HttpOfflineFlowTest {
 		val banner = texts("activeRideBanner")
 		assertTrue("Ride banner: $banner", banner.any { it.startsWith("Your ride") })
 		assertTrue("The ride banner must label saved times as estimates: $banner", banner.any { ESTIMATE_PREFIX.containsMatchIn(it) })
-		assertTrue(texts("savedTrips").contains("Saved trains (1)"))
+		assertFalse(exists("savedTrips"))
 		assertOnlyRecordedDepartures(recordedKeys)
 		scrollBoardToTop()
 	}
@@ -221,7 +223,7 @@ class HttpOfflineFlowTest {
 		val screen = texts("trainDetails")
 		assertTrue("Provenance should say '$kept': $screen", screen.any { it.contains(kept) })
 		assertTrue(screen.contains(NO_CONNECTION_TRAIN))
-		assertTrue(screen.contains("Car numbers and the train's current position are not shown offline."))
+		assertFalse("The grey sentence repeating that cars and position are hidden offline is gone: $screen", screen.contains("Car numbers and the train's current position are not shown offline."))
 		assertTrue("The car numbers fact should say they are not shown offline", screen.contains("Not shown offline"))
 		network.screenshot(screenshot)
 		assertTrue("Saved stops should be labeled as a saved pattern", scrollIn("trainDetails", hasText("Saved stopping pattern")))
@@ -237,6 +239,24 @@ class HttpOfflineFlowTest {
 	}
 
 	// MARK: Navigation
+
+	/** Saved trains live in Settings › Offline, not in the board header. */
+	private fun openSavedTrainsFromSettings() {
+		node("tab_settings").performClick()
+		await("the settings list") { exists("settingsScreen") }
+		node("settingsScreen").performScrollToNode(hasTestTag("offlineSettings"))
+		node("offlineSettings").performClick()
+		await("the offline settings list") { exists("offlineSettingsScreen") }
+		node("offlineSettingsScreen").performScrollToNode(hasTestTag("offlineSavedTrains"))
+		node("offlineSavedTrains").performClick()
+	}
+
+	/** The first live board has rows and none of the saved-board labels. */
+	private fun awaitLiveBoard() {
+		await("the recorded board to load live") { compose.onAllNodes(tagPrefix("departure_"), useUnmergedTree = true).fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty() }
+		assertFalse("A live board has no offline estimate card", exists("boardOfflineEstimate"))
+		assertFalse("A live board has no board error", exists("boardError"))
+	}
 
 	private fun node(tag: String): SemanticsNodeInteraction = compose.onAllNodesWithTag(tag).onFirst()
 
@@ -334,7 +354,6 @@ class HttpOfflineFlowTest {
 	private fun tagPrefix(prefix: String) = SemanticsMatcher("test tag starts with $prefix") { it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith(prefix) == true }
 
 	private companion object {
-		const val NO_CONNECTION_BOARD = "No connection. Showing a saved board; times are offline estimates."
 		const val NO_CONNECTION_TRAIN = "No connection. Showing offline estimates."
 		val ESTIMATE = Regex("^(Offline estimate|Last known times) · source \\d+[smh] ago$")
 		val ESTIMATE_PREFIX = Regex("^(Offline estimate|Last known times) · source \\d+[smh] ago")

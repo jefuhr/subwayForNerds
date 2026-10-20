@@ -41,24 +41,15 @@ object BoardLogic {
 
 	fun trainSources(board: Board?) = board?.sources.orEmpty().filter { it.id !in ancillary }
 
-	fun live(board: Board?, combined: CombinedView?, connected: Boolean, cached: Boolean, now: Double): Boolean {
-		if (combined != null) return connected && combined.members.any { !it.cached && it.board?.let { member -> Display.hasLivePredictions(member, now) } == true }
-		return board?.let { Display.hasLivePredictions(it, now, cached) } ?: false
-	}
-
 	fun degraded(board: Board?, combined: CombinedView?, now: Double): Boolean =
 		combined?.members?.any { it.cached || it.board == null || it.error != null } == true ||
 			trainSources(board).any { Display.freshness(it, now) != Freshness.LIVE || it.error != null }
 
+	/** Saved boards always have aged sources, so only a live board with a failing source gets this notice. */
+	fun degradedNoticeVisible(board: Board?, degraded: Boolean, cached: Boolean): Boolean = board != null && degraded && !cached
+
 	fun externalDepartures(board: Board?, station: Station?): Boolean =
 		board?.usesExternalDepartures ?: (station?.let { it.departureMode == "external" || it.isNjt } ?: false)
-
-	fun freshnessLabel(external: Boolean, live: Boolean, degraded: Boolean, cached: Boolean, hasBoard: Boolean, savedAt: Double?): String = when {
-		external -> "Station directory"
-		live -> if (degraded) "Partial live data" else "Live feed"
-		cached && hasBoard -> if (savedAt == null) "Last board" else "Saved board · offline"
-		else -> "Awaiting live data"
-	}
 
 	/** A group's heading and subtitle, by board view. */
 	fun heading(section: DepartureSection, station: Station?, view: String, showProvenance: Boolean): Pair<String, String> {
@@ -84,14 +75,4 @@ object BoardLogic {
 	fun metadata(station: Station?, stationID: String, combinedCount: Int?): String =
 		if (combinedCount != null) "Combined station · $combinedCount stations"
 		else (station?.municipality?.let { "$it, " } ?: "") + Labels.borough(station?.borough ?: "NYC") + " · Station $stationID"
-
-	/** Readiness for offline use, or the saved board's provenance when it is cached. */
-	fun readinessLabel(failed: Boolean, saved: Boolean, savedCount: Int, wanted: Int, partial: Int): String {
-		val trips = if (wanted == 0) "" else " · $savedCount of $wanted next trips" + (if (partial == 0) "" else ", $partial partial")
-		return when {
-			failed -> "Offline copy failed to save"
-			saved -> "Saved for offline$trips"
-			else -> "Saving for offline…"
-		}
-	}
 }

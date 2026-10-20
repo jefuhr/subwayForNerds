@@ -90,8 +90,6 @@ struct StationPickerView: View {
 			} header: {
 				ListHeader("\(matches.count) station \(matches.count == 1 ? "complex" : "complexes") · \(nearbyLocation != nil ? "closest first" : nearbySort && app.locating ? "finding your location" : "favorites first")")
 					.accessibilityIdentifier("nearbyStationSummary")
-			} footer: {
-				if nearbyLocation != nil { Text("Straight-line distance to the closest station in each complex.") }
 			}
 		}
 		.themedList().navigationTitle(nearbySort ? "Stations near you" : "Find a station").navigationBarTitleDisplayMode(.inline)

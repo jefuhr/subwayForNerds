@@ -31,6 +31,29 @@ final class CombinedStationsTests: XCTestCase {
 		screenshot("combined-stations-originals-remain-searchable", app: app)
 	}
 
+	func testSavedCombinedBoardShowsNoMemberWarningOrDegradedNotice() {
+		var app = launch()
+		let name = "Downtown saved"
+		createCombinedStation(name, in: app)
+		XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'departure_'")).firstMatch.waitForExistence(timeout: 30))
+		// While connected, a member that has not loaded yet shows "Loading departures…". The notice clears
+		// once every member has a live board, and each board is saved before it is shown.
+		let loading = app.descendants(matching: .any)["boardError"].firstMatch
+		XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: loading)], timeout: 40), .completed,
+			"Every member board loads live and is saved: \(loading.exists ? loading.label : "")")
+		app.terminate()
+
+		app = launch(reset: false, offline: true)
+		assertSelectedStation(name, in: app)
+		XCTAssertTrue(app.descendants(matching: .any)["boardOfflineEstimate"].firstMatch.waitForExistence(timeout: 20), "A combined board of saved members is an offline estimate")
+		let error = app.descendants(matching: .any)["boardError"].firstMatch
+		XCTAssertFalse(error.exists, "Saved members add no board error, but it reads: \(error.exists ? error.label : "")")
+		for text in ["Saved departures", "Some feeds are stale or unavailable", "Showing a saved board"] {
+			XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", text)).count, 0, "\(text) must not appear")
+		}
+		screenshot("combined-stations-saved-board", app: app)
+	}
+
 	func testCombinedFavoriteAndIndependentStationFiltersSurviveRelaunch() {
 		var app = launch()
 		selectStation("628", query: "Fulton", name: "Fulton St", in: app)
@@ -60,8 +83,10 @@ final class CombinedStationsTests: XCTestCase {
 		assertSelected(app.buttons["direction_SOUTH"])
 		assertSelected(app.buttons["Filter line 4"])
 		XCTAssertEqual(app.buttons["toggleFavorite"].label, "Remove favorite station")
-		let favorite = app.buttons["favoriteStation_" + groupID]
-		XCTAssertTrue(favorite.waitForExistence(timeout: 5))
+		// The picker lists favorites first, so the group is reachable without header chips.
+		app.buttons["findStation"].tap()
+		let favorite = app.buttons["station_" + groupID]
+		scrollTo(favorite, in: app)
 		favorite.tap()
 		assertSelectedStation(name, in: app)
 		assertSelected(app.buttons["direction_NORTH"])
@@ -131,7 +156,6 @@ final class CombinedStationsTests: XCTestCase {
 		let selectedName = app.buttons["selectedStation"].label
 		let remainingMembers = ["Fulton St", "Cortlandt St / Chambers St / World Trade Center / Park Place", "World Trade Center (PATH)"]
 		XCTAssertTrue(remainingMembers.contains { selectedName.contains($0) }, "Deleting the selected group falls back to a saved real member, got \(selectedName)")
-		XCTAssertFalse(app.buttons["favoriteStation_" + groupID].exists)
 		screenshot("combined-stations-deleted-real-member-fallback", app: app)
 		assertGroupAbsent(groupID, query: editedName, in: app)
 		openCombinedStations(in: app)
@@ -141,16 +165,15 @@ final class CombinedStationsTests: XCTestCase {
 
 		app = launch(reset: false)
 		XCTAssertFalse(app.buttons["selectedStation"].label.contains(editedName))
-		XCTAssertFalse(app.buttons["favoriteStation_" + groupID].exists)
 		assertGroupAbsent(groupID, query: editedName, in: app)
 		selectStation("628", query: "Fulton", name: "Fulton St", in: app)
 	}
 
-	private func launch(reset: Bool = true) -> XCUIApplication {
+	private func launch(reset: Bool = true, offline: Bool = false) -> XCUIApplication {
 		continueAfterFailure = false
 		let app = XCUIApplication()
 		app.launchEnvironment["SFN_API_BASE_URL"] = ProcessInfo.processInfo.environment["SFN_WIDGET_QA_API"] ?? "http://127.0.0.1:8092/subwaysForNerds/api/v1/"
-		app.launchEnvironment["SFN_SIMULATE_OUTAGE"] = "0"
+		app.launchEnvironment["SFN_SIMULATE_OUTAGE"] = offline ? "1" : "0"
 		app.launchEnvironment["SFN_RESET_STATE"] = reset ? "1" : "0"
 		app.launchEnvironment["SFN_DISABLE_LOCATION"] = "1"
 		app.launchEnvironment["SFN_TEST_NOW"] = String(ISO8601DateFormatter().date(from: "2026-09-06T00:59:40Z")!.timeIntervalSince1970)
@@ -255,7 +278,8 @@ final class CombinedStationsTests: XCTestCase {
 			field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: value.count))
 		}
 		field.typeText(text)
-		XCTAssertEqual(field.value as? String, text)
+		// The field's value can trail the last keystrokes on a busy simulator.
+		XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", text), object: field)], timeout: 5), .completed, "The field reads \(field.value as? String ?? "")")
 		if field.elementType == .textField { field.typeText("\n") }
 	}
 

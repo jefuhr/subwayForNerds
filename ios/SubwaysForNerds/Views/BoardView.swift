@@ -6,7 +6,6 @@ enum BoardDetail: Hashable {
 	case train(String)
 	case departure(String, String)
 	case station
-	case savedTrips
 }
 
 /// Regular widths keep the board beside train details or station info; compact widths push them.
@@ -50,7 +49,6 @@ struct BoardDetailView: View {
 		switch detail {
 		case .train(let key): TrainDetailView(tripKey: key)
 		case .departure(let key, let row): TrainDetailView(tripKey: key, origin: app.departureOrigin(row))
-		case .savedTrips: SavedTripsView()
 		case .station: if let station = app.station { ContextView(station: station) }
 		}
 	}
@@ -81,10 +79,6 @@ struct BoardView: View {
 		return groupDepartures(board, direction: app.preference.direction, routes: app.preference.routes, order: app.preference.view, now: app.now, cached: app.boardIsCached, cachedDepartureKeys: app.cachedDepartureKeys)
 	}
 	private var trainSources: [SourceState] { app.board?.sources.filter { !["subway-alerts", "helium"].contains($0.id) } ?? [] }
-	private var live: Bool {
-		if let combined = app.combinedBoard { return app.connected && combined.members.contains { !$0.cached && $0.board.map { Display.hasLivePredictions($0, now: app.now) } == true } }
-		return app.board.map { Display.hasLivePredictions($0, now: app.now, cached: app.boardIsCached) } ?? false
-	}
 	private var degraded: Bool { app.combinedBoard?.members.contains { $0.cached || $0.board == nil || $0.error != nil } == true || trainSources.contains { Display.freshness($0, now: app.now) != .live || $0.error != nil } }
 	private var externalDepartures: Bool { app.board?.usesExternalDepartures ?? app.station.map { $0.departureMode == "external" || $0.isNjt } ?? false }
 	private var configuredNJT: Bool { app.board?.njt?.configured == true }
@@ -122,10 +116,10 @@ struct BoardView: View {
 				if let error = app.boardError {
 					Section {
 						Notice(text: error).accessibilityIdentifier("boardError")
-						if app.board == nil, !app.connected { deviceNetworkRows(provenance: nil) }
+						if app.board == nil, !app.connected { deviceNetworkRows }
 					}
 				}
-				else if degraded { Section { Notice(text: "Some feeds are stale or unavailable. Check source ages below.") } }
+				else if degraded, !app.boardIsCached { Section { Notice(text: "Some feeds are stale or unavailable. Check source ages below.") } }
 				if app.board != nil, app.boardIsCached { Section { offlineStatus } }
 				Section {
 					VStack(alignment: .leading, spacing: 0) {
@@ -139,17 +133,16 @@ struct BoardView: View {
 					Section {
 						if app.boardError == nil {
 							LoadingBar(title: "Loading departures", progress: app.boardLoad).accessibilityIdentifier("boardLoading")
-							if !app.connected { deviceNetworkRows(provenance: nil) }
+							if !app.connected { deviceNetworkRows }
 						}
 						Button("Find a station") { stationPicker = .search }.actionStyle()
 					}
 				} else if groups.isEmpty {
 					Section {
-						ContentUnavailableView(configuredNJT && app.board?.departures.isEmpty == true ? "No arrival predictions" : "No departures match", systemImage: "tram", description: Text(app.board.flatMap { Display.njtPredictionMessage($0, now: app.now, cached: app.boardIsCached) } ?? "An empty board does not mean service is suspended. Try all directions and lines, or refresh the feed."))
+						ContentUnavailableView(configuredNJT && app.board?.departures.isEmpty == true ? "No arrival predictions" : "No departures match", systemImage: "tram", description: app.board.flatMap { Display.njtPredictionMessage($0, now: app.now, cached: app.boardIsCached) }.map { Text($0) })
 							.accessibilityIdentifier("boardNoPredictions")
 						Button("Reset filters") { app.resetFilters() }.actionStyle()
 						if !app.hiddenRoutes.isEmpty {
-							Text("Some lines are hidden in settings. Resetting station filters keeps those lines hidden.").font(.footnote).foregroundStyle(.secondary)
 							Button("Manage lines") { showLines = true }.actionStyle().accessibilityIdentifier("manageLines")
 						}
 					}
@@ -165,7 +158,7 @@ struct BoardView: View {
 				if let board = app.board {
 					Section {
 						SourcesView(sources: board.sources, now: app.now)
-					} header: { ListHeader("Feed check") } footer: { Text("Times are predictions, not promises. Track labels are feed-reported. Times shown in New York time.") }
+					} header: { ListHeader("Feed check") }
 				}
 			}
 		}
@@ -196,128 +189,87 @@ struct BoardView: View {
 		.sheet(isPresented: $showLines) { NavigationStack { LineVisibilityView().toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showLines = false } } } } }
 	}
 
+	/// The station name opens the picker; station info, alerts and the favorite star are icons beside it.
 	private var stationHeading: some View {
-		VStack(alignment: .leading, spacing: 0) {
-			HStack(alignment: .center, spacing: 4) {
-				Button { stationPicker = .search } label: {
-					// Inline so the chevron follows the last line of a wrapped name.
-					Text("\(app.station?.name ?? "Your next train") \(Text(Image(systemName: "chevron.down")).font(.caption.bold()).foregroundStyle(.secondary))")
-						.font(.headline).multilineTextAlignment(.leading)
-						.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
-				}.buttonStyle(.plain).accessibilityIdentifier("selectedStation")
-				Button { app.toggleFavorite(app.stationID) } label: {
-					Image(systemName: app.favorites.contains(app.stationID) ? "star.fill" : "star")
-						.font(.body).frame(width: 44, height: 44).contentShape(Rectangle())
-				}
+		HStack(alignment: .center, spacing: 0) {
+			Button { stationPicker = .search } label: {
+				// Inline so the chevron follows the last line of a wrapped name.
+				Text("\(app.station?.name ?? "Your next train") \(Text(Image(systemName: "chevron.down")).font(.caption.bold()).foregroundStyle(.secondary))")
+					.font(.headline).multilineTextAlignment(.leading)
+					.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+			}.buttonStyle(.plain).accessibilityIdentifier("selectedStation")
+			if app.station != nil {
+				Button { show(.station) } label: { headingIcon("info.circle") }
+					.buttonStyle(.borderless)
+					.accessibilityLabel("Station info")
+					.accessibilityIdentifier("stationInfo")
+			}
+			alertsButton
+			Button { app.toggleFavorite(app.stationID) } label: { headingIcon(app.favorites.contains(app.stationID) ? "star.fill" : "star") }
 				.buttonStyle(.borderless)
 				.accessibilityLabel(app.favorites.contains(app.stationID) ? "Remove favorite station" : "Favorite this station")
 				.accessibilityIdentifier("toggleFavorite")
-			}
-			ViewThatFits(in: .horizontal) {
-				HStack(spacing: 8) { stationMetadata; Spacer(minLength: 4); freshnessLabel }
-				VStack(alignment: .leading, spacing: 3) { stationMetadata; freshnessLabel }
-			}
-			.padding(.trailing, 10)
-			stationActions
 		}
 	}
 
-	private var stationMetadata: some View {
-		Text(app.combinedStations[app.stationID].map { "Combined station · \($0.stationIDs.count) stations" } ?? "\(app.station?.municipality.map { "\($0), " } ?? "")\(boroughName(app.station?.borough ?? "NYC")) · Station \(app.stationID)")
-			.font(.caption2).foregroundStyle(.secondary)
+	private func headingIcon(_ systemImage: String) -> some View {
+		Image(systemName: systemImage).font(.body).frame(width: 44, height: 44).contentShape(Rectangle())
 	}
 
-	/// Saved boards always say they are offline estimates and how old their source is.
+	/// Alerts open the sheet; NJ Transit stations have no alerts feed here, so the icon links out instead.
+	@ViewBuilder private var alertsButton: some View {
+		if externalDepartures {
+			Link(destination: TransitLinks.njtAlerts) { headingIcon("exclamationmark.triangle") }
+				.buttonStyle(.borderless)
+				.accessibilityLabel("NJ Transit alerts")
+				.accessibilityIdentifier("stationAlerts")
+		} else {
+			let count = app.displayBoard?.alerts.count ?? 0
+			Button { showAlerts = true } label: {
+				headingIcon("exclamationmark.triangle")
+					.foregroundStyle(count > 0 ? Color.orange : app.theme.ink)
+					.overlay(alignment: .topTrailing) {
+						if count > 0 {
+							Text(count > 99 ? "99+" : "\(count)")
+								.font(.caption2.bold()).foregroundStyle(.black)
+								.padding(.horizontal, 4)
+								.background(Color.orange, in: Capsule())
+								.offset(x: -2, y: 4)
+								.accessibilityHidden(true)
+						}
+					}
+			}
+			.buttonStyle(.borderless)
+			.accessibilityLabel("Alerts, \(count)")
+			.accessibilityIdentifier("stationAlerts")
+		}
+	}
+
+	/// A saved board says it is an offline estimate and how old its source is; the card opens System status.
 	private var offlineStatus: some View {
 		// The oldest prediction, not the newest alerts or car-assignment report.
 		let source = app.board.flatMap(AppModel.predictionSourceTimestamp)
-		return VStack(alignment: .leading, spacing: 2) {
-			Label(OfflineDisplay.estimateLabel(timestamp: source, now: app.now, preferences: app.offlinePreferences), systemImage: "icloud.slash")
-				.font(.caption.weight(.semibold))
-				.accessibilityIdentifier("boardOfflineEstimate")
-			deviceNetworkRows(provenance: OfflineDisplay.boardProvenance(savedAt: app.boardSavedAt, now: app.now))
+		return Button { app.openSystemStatus() } label: {
+			VStack(alignment: .leading, spacing: 2) {
+				Label(OfflineDisplay.estimateLabel(timestamp: source, now: app.now, preferences: app.offlinePreferences), systemImage: "icloud.slash")
+					.font(.caption.weight(.semibold))
+					.accessibilityIdentifier("boardOfflineEstimate")
+				DeviceNetworkLabel()
+			}
+			.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
 		}
+		.buttonStyle(.plain)
+		.accessibilityHint("Opens System status")
 	}
 
-	/// Live boards show only a cloud beside the freshness label for how much of this station is ready offline.
-	@ViewBuilder private var offlineReadinessIcon: some View {
-		if app.board != nil, !app.boardIsCached, !externalDepartures {
-			let readiness = app.readiness
-			let trips = readiness.wanted.isEmpty ? "" : " · \(readiness.savedCount) of \(readiness.wanted.count) next trips\(readiness.partial.isEmpty ? "" : ", \(readiness.partial.count) partial")"
-			let readinessText = readiness.boardFailed ? "Offline copy failed to save" : readiness.boardSaved ? "Saved for offline\(trips)" : "Saving for offline…"
-			Image(systemName: readiness.boardFailed ? "exclamationmark.icloud" : readiness.boardSaved ? "checkmark.icloud" : "icloud.and.arrow.down")
-				.font(.caption2.weight(.semibold)).foregroundStyle(readiness.boardFailed ? Color.orange : .secondary)
-				.accessibilityLabel(readinessText)
-				.accessibilityIdentifier("offlineReadiness")
-		}
-	}
-
-	/// What the phone is doing, what the app waits to fetch and, with a saved board, when it was saved.
-	private func deviceNetworkRows(provenance: String?) -> some View {
+	/// What the phone is doing and what the app waits to fetch, when there is no board to show.
+	private var deviceNetworkRows: some View {
 		VStack(alignment: .leading, spacing: 2) {
 			DeviceNetworkLabel()
-			Text([app.networkActivity, provenance].compactMap { $0 }.joined(separator: " · "))
+			Text(app.networkActivity)
 				.font(.caption2).foregroundStyle(.secondary)
 				.accessibilityIdentifier("deviceNetworkDetail")
 		}
-	}
-
-	private var freshnessLabel: some View {
-		HStack(spacing: 5) {
-			freshnessText
-			offlineReadinessIcon
-		}
-	}
-
-	private var freshnessText: some View {
-		Label(externalDepartures ? "Station directory" : live ? (degraded ? "Partial live data" : "Live feed") : app.boardIsCached && app.board != nil ? (app.boardSavedAt == nil ? "Last board" : "Saved board · offline") : "Awaiting live data", systemImage: externalDepartures ? "map" : live ? "dot.radiowaves.left.and.right" : "clock")
-			.font(.caption2.weight(.semibold)).foregroundStyle(live ? app.theme.accent : app.theme.ink.opacity(0.7))
-			.accessibilityIdentifier("boardFreshness")
-	}
-
-	/// Station actions and other favorites sit in one scrolling row rather than behind a menu.
-	private var stationActions: some View {
-		ScrollView(.horizontal) {
-			HStack(spacing: 6) {
-				if app.station != nil {
-					Button { show(.station) } label: {
-						HStack(spacing: 4) { Image(systemName: "info.circle"); Text("Station info") }.chip()
-					}
-					.buttonStyle(.plain).accessibilityIdentifier("stationInfo")
-				}
-				if externalDepartures {
-					Link(destination: TransitLinks.njtAlerts) {
-						HStack(spacing: 4) { Image(systemName: "arrow.up.right"); Text("Alerts") }.chip()
-					}
-					.buttonStyle(.plain)
-				} else {
-					let count = app.displayBoard?.alerts.count ?? 0
-					Button { showAlerts = true } label: {
-						HStack(spacing: 4) {
-							Image(systemName: "exclamationmark.triangle").foregroundStyle(count > 0 ? Color.orange : app.theme.ink)
-							Text("Alerts (\(count))")
-						}.chip()
-					}
-					.buttonStyle(.plain).accessibilityIdentifier("stationAlerts")
-				}
-				if !app.savedTrips.isEmpty {
-					Button { show(.savedTrips) } label: {
-						HStack(spacing: 4) { Image(systemName: "arrow.down.circle"); Text("Saved trains (\(app.savedTrips.count))") }.chip()
-					}
-					.buttonStyle(.plain).accessibilityIdentifier("savedTrips")
-				}
-				ForEach(app.favoriteStations.filter { $0.id != app.stationID }) { station in
-					Button { app.selectStation(station.id) } label: {
-						HStack(spacing: 4) { Image(systemName: "star.fill").foregroundStyle(app.theme.accent); Text(station.name) }
-							.frame(maxWidth: 170).chip()
-					}
-					.buttonStyle(.plain)
-					.accessibilityLabel("Favorite station \(station.name)")
-					.accessibilityIdentifier("favoriteStation_\(station.id)")
-				}
-			}
-		}
-		.scrollIndicators(.hidden)
 	}
 
 	private var routeChoices: [String] {
@@ -529,7 +481,7 @@ private struct NjtPositionsSection: View {
 					}
 				}.accessibilityElement(children: .combine).accessibilityIdentifier("njtPosition_" + position.id)
 			}
-		} header: { ListHeader("Reported vehicle locations") } footer: { Text("GPS reports age independently of arrival estimates. Locations over five minutes old are hidden.") }
+		} header: { ListHeader("Reported vehicle locations") } footer: { Text("Locations over five minutes old are hidden.") }
 	}
 }
 

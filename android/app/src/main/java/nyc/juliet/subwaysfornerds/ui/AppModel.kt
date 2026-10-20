@@ -84,19 +84,6 @@ sealed interface TripFailure {
 	data class Unavailable(val message: String) : TripFailure
 }
 
-/** How much of the selected station is saved for offline use. */
-data class OfflineReadiness(
-	val stationID: String? = null,
-	val boardSaved: Boolean = false,
-	val boardFailed: Boolean = false,
-	/** Next trips per line and direction the preferences ask to keep. */
-	val wanted: List<String> = emptyList(),
-	val saved: Set<String> = emptySet(),
-	val partial: Set<String> = emptySet(),
-) {
-	val savedCount: Int get() = wanted.count { it in saved }
-}
-
 /** Why the activity should show the system location dialog. */
 enum class PermissionPurpose { NEARBY, STARTUP, WIDGET }
 
@@ -257,7 +244,6 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 	private var storageCheckToken: UUID? = null
 	var offlineFailures by mutableStateOf<List<CacheFailure>>(emptyList()); private set
 	var offlineActionError by mutableStateOf<String?>(null)
-	var readiness by mutableStateOf(OfflineReadiness()); private set
 	/** Latest fetched details for trips whose details are open, kept after the connection drops. */
 	var liveTrips by mutableStateOf<Map<String, LiveTrip>>(emptyMap()); private set
 	private val openTrips = mutableMapOf<String, Int>()
@@ -805,7 +791,6 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		lastCatalogAttempt = 0.0
 		// Cached content belongs to one endpoint; restore this endpoint's ride and boards.
 		board = null; boardSavedAt = null; activeRide = null; activeRideTrip = null; savedTrips = emptyList(); surroundingBoards = emptyMap(); liveTrips = emptyMap()
-		readiness = OfflineReadiness()
 		scope.launch {
 			runCatching { deps.settingsStore.saveApiBase(normalized) }
 			restoreOffline(); planOffline()
@@ -1002,7 +987,6 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		board = cached.board
 		boardSavedAt = cached.savedAt
 		boardIsCached = true
-		updateReadiness()
 	}
 
 	/** Keeps the board on screen as offline estimates when it cannot be refreshed. */
@@ -1017,11 +1001,10 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		boardIsCached = true
 		if (board == null) loadCachedBoard(id)
 		if (id != stationID) return
-		boardError = if (board == null) {
-			if (connected) "Could not reach the train feed. Pull to retry or choose a saved station." else "No connection and no saved board for this station. Choose a saved station or reconnect."
-		} else {
-			if (connected) "Showing a saved board. Reconnect for current predictions." else "No connection. Showing a saved board; times are offline estimates."
-		}
+		// A saved board speaks for itself through the offline estimate card, so only a missing board is an error.
+		boardError = if (board != null) null
+			else if (connected) "Could not reach the train feed. Pull to retry or choose a saved station."
+			else "No connection and no saved board for this station. Choose a saved station or reconnect."
 	}
 
 	private fun rebuildCombinedBoard() {
@@ -1049,8 +1032,6 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		boardError = value.warnings.takeIf { it.isNotEmpty() }?.joinToString("\n")
 		val supported = members.filter { it.station.departureMode != "external" || it.station.isNjt }
 		boardSavedAt = if (supported.isNotEmpty() && supported.all { it.savedAt != null }) supported.mapNotNull { it.savedAt }.minOrNull() else null
-		updateReadiness()
-		readiness = readiness.copy(boardSaved = boardSavedAt != null)
 	}
 
 	/** The bar shown before the selected station has any departures on screen. */
@@ -1243,33 +1224,6 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 			activeRideTrip = ride?.let { runCatching { cache.tripSnapshot(it.key) }.getOrNull() }
 		}
 		offlineUsage = usage
-		refreshReadiness()
-	}
-
-	private fun updateReadiness() {
-		if (readiness.stationID != stationID) readiness = OfflineReadiness(stationID = stationID)
-		val board = board
-		if (board == null || board.station.id != stationID) { readiness = readiness.copy(wanted = emptyList()); return }
-		readiness = readiness.copy(
-			boardSaved = readiness.boardSaved || boardSavedAt != null,
-			wanted = OfflinePlanner.tripKeysToSnapshot(board, offlinePreferences),
-		)
-	}
-
-	private suspend fun refreshReadiness() {
-		updateReadiness()
-		val wanted = readiness.wanted
-		if (wanted.isEmpty()) return
-		val requested = endpoint
-		val id = stationID
-		val saved = mutableSetOf<String>()
-		val partial = mutableSetOf<String>()
-		for (key in wanted) {
-			val trip = runCatching { cache.tripSnapshot(key) }.getOrNull() ?: continue
-			if (trip.isComplete) saved += key else partial += key
-		}
-		if (id != stationID || requested != endpoint) return
-		readiness = readiness.copy(saved = saved, partial = partial)
 	}
 
 	/**
@@ -1280,7 +1234,6 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		if (!loaded) return
 		val requests = plannedRequests()
 		plannedRequestCount = requests.size
-		updateReadiness()
 		scope.launch { coordinator.updatePlan(requests) }
 	}
 
@@ -1349,11 +1302,8 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 				boardError = null
 				now = deps.fixedNow ?: deps.clock()
 				if (savedAt != null) boardSavedAt = savedAt
-				updateReadiness()
-				readiness = readiness.copy(boardSaved = merged != null, boardFailed = merged == null)
 				deps.widgets.boardSaved(shown)
 				planOffline()
-				refreshReadiness()
 				return
 			}
 			if (id in realStationIDs(favorites)) deps.widgets.boardSaved(shown)
@@ -1408,7 +1358,6 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 		} finally {
 			token?.let { endFetch(target, it) }
 		}
-		if (key in readiness.wanted) refreshReadiness()
 	}
 
 	private fun trackFetch(target: OfflineFetchTarget): UUID = UUID.randomUUID().also { fetchTokens[target] = it }

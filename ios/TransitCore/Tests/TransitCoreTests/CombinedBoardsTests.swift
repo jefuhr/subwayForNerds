@@ -32,6 +32,21 @@ struct CombinedBoardsTests {
 		#expect(snapshot.origins[rows[0].key]?.station.id == "624")
 		#expect(!snapshot.warnings.isEmpty)
 	}
+	@Test func savedMemberWarningCanBeOmittedWithoutHidingRealProblems() {
+		let saved = station("saved"), missing = station("missing"), stale = station("stale"), unknown = station("unknown"), live = station("live")
+		let snapshot = CombinedBoardSnapshot(station: station(id), members: [
+			MemberBoardSnapshot(station: saved, board: Board(station: saved, generatedAt: 1000, departures: [row("a")]), cached: true, savedAt: 1000),
+			MemberBoardSnapshot(station: missing, board: nil, cached: true),
+			// A saved board that could not refresh is still just a saved board.
+			MemberBoardSnapshot(station: stale, board: Board(station: stale, generatedAt: 1000, departures: [row("b")]), cached: true, savedAt: 1000, error: "Feed unavailable"),
+			MemberBoardSnapshot(station: unknown, board: nil, cached: true, error: "Station missing from catalog"),
+			MemberBoardSnapshot(station: live, board: Board(station: live, generatedAt: 1000, departures: [row("c")]), cached: false)
+		])
+		// Widgets keep saying which members are saved; the app's board labels those itself.
+		#expect(snapshot.warnings == snapshot.warnings(includeSaved: true))
+		#expect(snapshot.warnings == ["saved: Saved departures · offline estimates", "missing: Departures unavailable", "stale: Feed unavailable", "unknown: Station missing from catalog"])
+		#expect(snapshot.warnings(includeSaved: false) == ["missing: Departures unavailable", "unknown: Station missing from catalog"])
+	}
 	@Test func mixedWidgetPrioritizesUpcomingTrainOverPassedCachedEstimate() {
 		let a = station("628"), b = station("624")
 		let snapshot = CombinedBoardSnapshot(station: station(id), members: [

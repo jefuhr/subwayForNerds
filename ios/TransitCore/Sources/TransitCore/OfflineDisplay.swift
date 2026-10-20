@@ -4,7 +4,7 @@ import Foundation
 /// prediction counted down by the device clock: it is an estimate, never an
 /// observation, so callers must always show `estimateLabel` beside it.
 public enum OfflineDisplay {
-	public static let estimatedNextStopLabel = "Estimated next stop · not observed"
+	public static let estimatedNextStopLabel = "Estimated next stop"
 	public static let partialTripLabel = "Partial trip · onward stops from the station board"
 
 	/// True only for a known, non-future source timestamp no older than the estimate limit.
@@ -42,12 +42,6 @@ public enum OfflineDisplay {
 		guard timestamp <= now else { return "Offline · source time is ahead of this device · no estimate" }
 		let age = "source " + Display.ageLabel(timestamp, now: now)
 		return isEstimateUsable(timestamp: timestamp, now: now, preferences: preferences) ? "Offline estimate · \(age)" : "Last known times · \(age)"
-	}
-
-	/// When a cached board was saved, shown beside the device network status.
-	public static func boardProvenance(savedAt: TimeInterval?, now: TimeInterval) -> String {
-		guard let savedAt else { return "Last board from this visit · not saved offline" }
-		return "Board saved \(Display.ageLabel(savedAt, now: now)) · countdowns use this device's clock; trains that left say estimate passed"
 	}
 
 	/// Index of the next saved stop whose predicted time is still ahead. This is an

@@ -94,6 +94,8 @@ class AuthCallbackTest {
 	private fun showAccount() {
 		compose.onNodeWithTag("tab_settings").performClick()
 		compose.onNodeWithTag("settingsScreen").performScrollToNode(hasTestTag("signOut"))
+		// How far the list scrolls depends on how much content follows, so scroll to the signed-in label itself.
+		compose.onNodeWithTag("settingsScreen").performScrollToNode(hasText("Google · rider@example.com"))
 		compose.onNodeWithText("Google · rider@example.com").assertExists()
 	}
 

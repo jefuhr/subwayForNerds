@@ -39,7 +39,7 @@ struct FleetSplitView: View {
 				if let selection {
 					FleetDetailView(id: selection.id, kind: selection.kind, preferSaved: app.useSavedFleet)
 				} else {
-					ContentUnavailableView("Choose a car or consist", systemImage: "train.side.front.car", description: Text("Reports, roster facts and movement history appear here."))
+					ContentUnavailableView("Choose a car or consist", systemImage: "train.side.front.car")
 						.themedList()
 				}
 			}
@@ -139,9 +139,9 @@ struct FleetView: View {
 					.accessibilityIdentifier("fleet_\(row.id)")
 				}
 				if data.rows.isEmpty {
-					ContentUnavailableView("No matching cars", systemImage: "tram", description: Text(usingSaved && filters.status == "reporting" ? "Saved reports are historical. Choose any reporting status to browse this download." : "Try another car number or change the filters."))
+					ContentUnavailableView("No matching cars", systemImage: "tram")
 				}
-			} header: { ListHeader("\(data.total.formatted()) matching \(filters.view == "cars" ? "cars" : "groups")") } footer: { Text("Missing from a feed does not mean inactive.") }
+			} header: { ListHeader("\(data.total.formatted()) matching \(filters.view == "cars" ? "cars" : "groups")") }
 			Section {
 				HStack {
 					Button("Previous") { filters.page = max(1, data.page - 1) }.disabled(data.page <= 1)
@@ -156,7 +156,6 @@ struct FleetView: View {
 					VStack(alignment: .leading, spacing: 6) {
 						ForEach(Array(data.coverage.enumerated()), id: \.offset) { _, coverage in Text("\(coverage.category): \(coverage.count.formatted()) cars. \(coverage.note)") }
 						ForEach(Array(data.sources.enumerated()), id: \.offset) { _, evidence in EvidenceView(evidence: evidence) }
-						Text(usingSaved ? "Inventory and coverage refer to this saved scope, including linked cars. Historical formations can mention other cars whose details are outside the pack." : "“All” covers the imported inventory, not every vehicle ever built. Collection starts when the server runs; historical movements cannot be reconstructed from a missing feed.").foregroundStyle(.secondary)
 					}
 					.font(.caption)
 				}
@@ -288,7 +287,7 @@ struct FleetDetailView: View {
 						.scrollIndicators(.hidden)
 						.listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 10))
 					} else { Text("Next stop unavailable").font(.subheadline).foregroundStyle(.secondary) }
-				} footer: { Text("Reported order does not establish the leading end. Historical formations are not confirmed current links.") }
+				}
 				ForEach(data.cars) { car in carSection(car) }
 				Section {
 					ForEach(Array(data.history.enumerated()), id: \.offset) { _, observation in
@@ -313,7 +312,7 @@ struct FleetDetailView: View {
 						}
 					}
 				} header: { ListHeader(usingSaved ? "Downloaded movement history" : "Observed changes · last 30 days") } footer: {
-					Text(usingSaved ? "All changes included in this saved history window are available using Load more history. Historical events can mention cars outside the saved scope. Times are observation times, not inferred movement times." : "Latest 200 changes. Prepare a fleet pack in Settings to save 7 or 30 days of history. Times are observation times, not inferred movement times.")
+					if !usingSaved { Text("Latest 200 changes") }
 				}
 				Section { RawJSONView(value: data, title: "Fleet identifiers & reports") }
 			} else if error == nil {

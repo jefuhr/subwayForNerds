@@ -135,10 +135,10 @@ class TrackMapE2ETest {
 		await("station result") { exists("track-map-result-602") }
 		node("track-map-result-602").performClick()
 		val before = viewport()
+		node("track-map-trains").performClick()
 		selectL()
 		scenario.onActivity { activity -> assertEquals("Selected line must reach the model before inspecting rows", setOf("L"), network.model(activity).trackMap.routeFilter) }
 		network.evidence.note("L filter verified in UI and model before list/detail regression")
-		node("track-map-trains").performClick()
 		reveal("track-map-train-$TRIP")
 		val row = node("track-map-train-$TRIP").fetchSemanticsNode()
 		val label = row.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().joinToString(" ")
@@ -159,11 +159,92 @@ class TrackMapE2ETest {
 	}
 
 	@Test
+	fun routeChipsAndSlowZoneRowAppearOnlyInsideTheTrainsPanelInBothLayouts() = withMap { scenario ->
+		// Closed panel: the map overlay holds the search field and the footer credit, no chips or legend.
+		assertClosedPanelOverlayIsClean()
+		assertNoMatchSearchIsShort()
+		node("track-map-trains").performClick()
+		await("the trains panel") { exists("track-map-train-list") }
+		assertPanelOrder("portrait")
+		shot("13-trains-panel-portrait")
+		// The chips edit the same selected-lines state live, with the same accessible names.
+		chooseLThenAllLines(scenario)
+
+		// The wide layout puts the same panel beside the map.
+		scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+		await("landscape") { network.context.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE }
+		await("landscape trains panel") { exists("track-map-train-list") && exists(CANVAS) }
+		assertPanelOrder("landscape")
+		chooseLThenAllLines(scenario)
+		shot("14-trains-panel-landscape")
+		scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+		await("portrait") { network.context.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT }
+		await("portrait trains panel") { exists("track-map-train-list") && exists(CANVAS) }
+
+		// Closing the panel takes the chips and the legend away again; the credit never leaves.
+		node("track-map-trains").performClick()
+		await("the panel to close") { !exists("track-map-train-list") }
+		assertClosedPanelOverlayIsClean()
+	}
+
+	/** Choosing a line and then All lines edits the model live, in whichever layout is showing. */
+	private fun chooseLThenAllLines(scenario: ActivityScenario<MainActivity>) {
+		selectL()
+		scenario.onActivity { activity -> assertEquals(setOf("L"), network.model(activity).trackMap.routeFilter) }
+		// Choosing L scrolled the chip row, so bring the first chip back into view before tapping it.
+		compose.onAllNodes(hasText("All lines")).onFirst().performScrollTo().performClick()
+		scenario.onActivity { activity -> assertEquals(emptySet<String>(), network.model(activity).trackMap.routeFilter) }
+		// The chip shows it too, not only the model.
+		await("All lines to show as selected") { compose.onAllNodes(hasText("All lines")).onFirst().fetchSemanticsNode().config.getOrNull(SemanticsProperties.Selected) == true }
+		compose.waitForIdle()
+	}
+
+	/** The overlay without the panel: no line chips, no slow zone pill, and the required map credit. */
+	private fun assertClosedPanelOverlayIsClean() {
+		assertFalse("Line chips belong to the trains panel", existsText("All lines"))
+		assertFalse("The slow zone pill belongs to the trains panel", exists("track-map-slow-zones"))
+		assertTrue("Source credit must remain visible", compose.onAllNodes(hasText("vanshnookenraggen", substring = true)).fetchSemanticsNodes().isNotEmpty())
+		// Partial coverage keeps its short label; the sentence explaining it is gone.
+		assertFalse("The partial coverage explanation is gone", existsText("trains appear only on reviewed lines"))
+	}
+
+	/** A search with no match says so without explaining the map's coverage. */
+	private fun assertNoMatchSearchIsShort() {
+		search("zzzzzz")
+		await("the no-match message") { existsText("No mapped station matches.") }
+		assertFalse("The coverage explanation is gone", existsText("The map covers reviewed lines only."))
+		search("")
+		hideKeyboard()
+	}
+
+	/** Typing opens the keyboard, which would cover the trains panel in screenshots and shrink the map. */
+	private fun hideKeyboard() {
+		fun shown() = network.shell("dumpsys input_method").contains("mInputShown=true")
+		if (shown()) network.shell("input keyevent KEYCODE_BACK")
+		await("the keyboard to close") { !shown() }
+	}
+
+	/** Inside the panel the order is line chips, then the slow zone row (when the snapshot has zones), then trains. */
+	private fun assertPanelOrder(layout: String) {
+		await("the all lines chip in the $layout panel") { existsText("All lines") }
+		val chips = compose.onAllNodes(hasText("All lines")).onFirst().fetchSemanticsNode().boundsInRoot
+		val list = node("track-map-train-list").fetchSemanticsNode().boundsInRoot
+		assertTrue("$layout: the chips sit inside the trains panel: $chips in $list", chips.top >= list.top - 1f && chips.bottom <= list.bottom + 1f)
+		if (exists("track-map-slow-zones")) {
+			val zones = node("track-map-slow-zones").fetchSemanticsNode().boundsInRoot
+			assertTrue("$layout: the slow zone row follows the chips: $chips then $zones", zones.top >= chips.bottom - 1f)
+			val firstTrain = compose.onAllNodes(prefix("track-map-train-") and hasClickAction()).fetchSemanticsNodes().firstOrNull { it.layoutInfo.isPlaced }
+			if (firstTrain != null) assertTrue("$layout: trains follow the slow zone row", firstTrain.boundsInRoot.top >= zones.bottom - 1f)
+		}
+		assertTrue("Source credit must remain visible in the $layout layout", compose.onAllNodes(hasText("vanshnookenraggen", substring = true)).fetchSemanticsNodes().isNotEmpty())
+	}
+
+	@Test
 	fun unplacedRecordedTrainHasIndividualAccessibleRowAndReason() = withMap { _ ->
 		val unplaced = trains(recordedSnapshot()).firstOrNull { it.getString("placement") == "unplaced" && it.getString("route") == "L" }
 			?: throw AssertionError("The frozen acceptance feed needs an unplaced train")
-		selectL()
 		node("track-map-trains").performClick()
+		selectL()
 		val tag = "track-map-train-${unplaced.getString("key")}"
 		reveal(tag)
 		val label = node(tag).fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().joinToString(" ")
@@ -177,8 +258,8 @@ class TrackMapE2ETest {
 	fun reportedTrackDoesNotImplyCertainPosition() = withMap { _ ->
 		val uncertain = trains(recordedSnapshot()).firstOrNull { it.getString("route") == "L" && it.getString("placement") == "near-stop" && it.getString("trackBasis") == "reported" }
 			?: throw AssertionError("The frozen feed needs a reported-track, near-stop L train")
-		selectL()
 		node("track-map-trains").performClick()
+		selectL()
 		val tag = "track-map-train-${uncertain.getString("key")}"
 		reveal(tag)
 		val label = node(tag).fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().joinToString(" ")
@@ -389,6 +470,7 @@ class TrackMapE2ETest {
 
 	private fun node(tag: String): SemanticsNodeInteraction = compose.onAllNodesWithTag(tag).onFirst()
 	private fun exists(tag: String): Boolean = compose.onAllNodesWithTag(tag).fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
+	private fun existsText(text: String): Boolean = compose.onAllNodes(hasText(text)).fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
 	private fun prefix(value: String) = SemanticsMatcher("tag starts with $value") { it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith(value) == true }
 	private fun texts(tag: String): List<String> = compose.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes(atLeastOneRootRequired = false).flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty().map { text -> text.text } }
 	private fun search(query: String) { node("track-map-search").performTextReplacement(query) }

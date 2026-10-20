@@ -21,6 +21,7 @@ import kotlinx.coroutines.withContext
 import nyc.juliet.subwaysfornerds.core.Board
 import nyc.juliet.subwaysfornerds.core.CombinedStation
 import nyc.juliet.subwaysfornerds.core.Departure
+import nyc.juliet.subwaysfornerds.core.DepartureRowSettings
 import nyc.juliet.subwaysfornerds.core.DeviceNetworkStatus
 import nyc.juliet.subwaysfornerds.core.Display
 import nyc.juliet.subwaysfornerds.core.NerdsCodec
@@ -173,6 +174,7 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 	val hiddenRoutes: List<String> by derivedStateOf(structuralEqualityPolicy()) { settings.hiddenRoutes }
 	val combinedStations: Map<String, CombinedStation> by derivedStateOf(structuralEqualityPolicy()) { settings.combinedStations }
 	val trainFavorites: TrainFavorites get() = settings.trainFavorites
+	val departureRows: DepartureRowSettings get() = settings.departureRows
 
 	// MARK: Network and catalog
 
@@ -498,6 +500,10 @@ class AppModel(private val scope: CoroutineScope, private val deps: AppDependenc
 	}
 	fun setDistanceUnit(value: String) = updateSettings { it.copy(units = it.units.copy(distance = value)) }
 	fun setTimeFormat(value: String) = updateSettings { it.copy(units = it.units.copy(time = value)) }
+	fun setShowTrackProvenance(value: Boolean) = updateSettings { it.copy(departureRows = it.departureRows.copy(showTrackProvenance = value)) }
+	fun setCombinePosition(value: Boolean) = updateSettings { it.copy(departureRows = it.departureRows.copy(combinePosition = value)) }
+	fun setShowConsist(value: Boolean) = updateSettings { it.copy(departureRows = it.departureRows.copy(showConsist = value)) }
+	fun setShowHeadway(value: Boolean) = updateSettings { it.copy(departureRows = it.departureRows.copy(showHeadway = value)) }
 	fun setTrainMatch(value: String) = updateSettings { it.copy(trainFavorites = it.trainFavorites.copy(match = value)) }
 	fun setStationSelection(value: StationSelection) {
 		// A settings change must not let an older startup location request navigate.

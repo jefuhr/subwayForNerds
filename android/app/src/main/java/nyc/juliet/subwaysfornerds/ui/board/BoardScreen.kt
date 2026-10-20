@@ -407,7 +407,7 @@ private fun Filters(model: AppModel) {
 }
 
 private fun LazyListScope.platformSection(model: AppModel, group: DepartureSection, predecessors: List<Departure?>, station: Station?, view: String, now: Double, open: (Route) -> Unit, selected: Route?) {
-	val (heading, subtitle) = BoardLogic.heading(group, station, view)
+	val (heading, subtitle) = BoardLogic.heading(group, station, view, model.departureRows.showTrackProvenance)
 	val key = "group:${group.id}"
 	val expandedState = model.expandedGroups
 	val expanded = group.id in expandedState
@@ -437,7 +437,7 @@ private fun LazyListScope.platformSection(model: AppModel, group: DepartureSecti
 				) {
 					DepartureRow(
 						departure, now, model.departureIsCached(departure.key), predecessors[index], view != "track",
-						model.offlinePreferences, model.timeFormat, model.trainFavorites,
+						model.offlinePreferences, model.timeFormat, model.trainFavorites, model.departureRows,
 						boardingStation = if (station?.isCombined == true) model.departureOrigin(departure.key)?.station?.name else null,
 					)
 				}

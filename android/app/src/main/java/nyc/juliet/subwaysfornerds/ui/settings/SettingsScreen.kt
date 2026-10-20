@@ -99,6 +99,13 @@ fun SettingsScreen(model: AppModel, account: AccountModel, actions: SettingsActi
 			row { NavigationRow("Favorite trains", { open(Route.FavoriteTrains) }, Modifier.testTag("favoriteTrainsSettings")) }
 			row { SwitchRow("Save transfer filters separately", model.settings.transfers.separateFilters, { model.setSeparateTransferFilters(it) }, Modifier.testTag("separateTransferFilters"), subtitle = TransferText.mode(model.settings.transfers)) }
 		}
+		section("departureRows", header = "Departure rows") {
+			val rows = model.departureRows
+			row { SwitchRow("Track source (reported/scheduled)", rows.showTrackProvenance, { model.setShowTrackProvenance(it) }, Modifier.testTag("departureRowsTrackSource")) }
+			row { SwitchRow("Position on one line", rows.combinePosition, { model.setCombinePosition(it) }, Modifier.testTag("departureRowsCombinePosition")) }
+			row { SwitchRow("Car numbers", rows.showConsist, { model.setShowConsist(it) }, Modifier.testTag("departureRowsCarNumbers")) }
+			row { SwitchRow("Gap after previous train", rows.showHeadway, { model.setShowHeadway(it) }, Modifier.testTag("departureRowsGap")) }
+		}
 		section("units", header = "Units") {
 			row {
 				ChipRow(Modifier.padding(horizontal = 12.dp).semantics { contentDescription = "Distance units" }) {

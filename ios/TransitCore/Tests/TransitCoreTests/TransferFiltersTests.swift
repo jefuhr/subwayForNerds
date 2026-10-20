@@ -11,6 +11,7 @@ struct TransferFiltersTests {
 		var root = try settingsJSON(NerdsSettingsFile(settings: PortableSettings(), lastStation: "602").data())
 		var settings = root["settings"] as! [String: Any]
 		settings["transfers"] = transfers
+		if version < 6 { settings["departureRows"] = nil }
 		if version < 4 { settings["combinedStations"] = nil; settings["hiddenRoutes"] = nil }
 		if version < 3 { settings["offline"] = nil }
 		root["settings"] = settings; root["version"] = version
@@ -126,7 +127,7 @@ struct TransferFiltersTests {
 		#expect(file.settings.transfers.stations["602"] == TransferStationPreference(direction: "SOUTH", routes: ["5", "6"]))
 		#expect(file.settings.transfers.stations["path-wtc"] == TransferStationPreference(direction: "TO_NJ", routes: []))
 		let reencoded = try NerdsSettingsFile.decode(file.data())
-		#expect(reencoded.version == 5)
+		#expect(reencoded.version == 6)
 		#expect(reencoded.settings == file.settings)
 		#expect(try reencoded.settings.json() == file.settings.json())
 	}
@@ -145,7 +146,7 @@ struct TransferFiltersTests {
 		settings.transfers.stations["601"] = TransferStationPreference(direction: "SOUTH", routes: ["L", "1"])
 		let data = try NerdsSettingsFile(settings: settings, lastStation: "602").data()
 		let root = try settingsJSON(data)
-		#expect(root["version"] as? Int == 5)
+		#expect(root["version"] as? Int == 6)
 		let transfers = (root["settings"] as! [String: Any])["transfers"] as! [String: Any]
 		#expect(transfers["separateFilters"] as? Bool == true)
 		let routes = ((transfers["stations"] as! [String: Any])["601"] as! [String: Any])["routes"] as? [String]
@@ -163,7 +164,7 @@ struct TransferFiltersTests {
 			#expect(throws: (any Error).self) { try NerdsSettingsFile.decode(fileData(version: version, transfers: ["separateFilters": false, "stations": [:]])) }
 		}
 		#expect(throws: (any Error).self) { try NerdsSettingsFile.decode(fileData(version: 5, transfers: nil)) }
-		#expect(throws: (any Error).self) { try NerdsSettingsFile.decode(fileData(version: 6, transfers: ["separateFilters": false, "stations": [:]])) }
+		#expect(throws: (any Error).self) { try NerdsSettingsFile.decode(fileData(version: 7, transfers: ["separateFilters": false, "stations": [:]])) }
 		_ = try NerdsSettingsFile.decode(fileData(version: 5, transfers: ["separateFilters": false, "stations": [:]]))
 	}
 

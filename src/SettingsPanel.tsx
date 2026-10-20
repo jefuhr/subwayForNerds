@@ -27,12 +27,21 @@ export default function SettingsPanel({stationNames,onTheme,onFleet}:{stationNam
 	const importFile=async(selected:File)=>{setNotice('');setError('');setFile(undefined);try{if(selected.size>MAX_SETTINGS_BYTES)throw new Error('Settings files must be smaller than 1 MiB.');setFile(decodeNerds(await selected.text()));}catch(e){setError((e as Error).message);}};
 	const confirmImport=()=>{if(!file)return;try{saveDeviceSettings({...getDeviceSettings(),settings:file.settings,lastStation:file.lastStation});setFile(undefined);setNotice('Settings imported.');}catch(e){setError((e as Error).message);}};
 	return <div className="settings-panel">
-		<section><h3>Your settings</h3><button className="text-button" onClick={onTheme}>Choose theme</button><div className="settings-actions"><button className="text-button" onClick={exportFile}>Export settings</button><label className="text-button settings-upload">Import settings<input type="file" accept=".nerds" aria-label="Import settings file" onChange={e=>{const selected=e.target.files?.[0];e.target.value='';if(selected)void importFile(selected);}} /></label></div><p className="fine-print">Move favorite stations and trains, station selection, themes, units, time format, board and transfer filters, and widget preferences between devices with a .nerds file. Files work without an account.</p></section>
+		<section><h3>Your settings</h3><button className="text-button" onClick={onTheme}>Choose theme</button><div className="settings-actions"><button className="text-button" onClick={exportFile}>Export settings</button><label className="text-button settings-upload">Import settings<input type="file" accept=".nerds" aria-label="Import settings file" onChange={e=>{const selected=e.target.files?.[0];e.target.value='';if(selected)void importFile(selected);}} /></label></div><p className="fine-print">Move favorite stations and trains, station selection, themes, units, time format, board and transfer filters, departure row details, and widget preferences between devices with a .nerds file. Files work without an account.</p></section>
 		{file&&<section aria-label="Import preview"><h3>Replace settings?</h3><p>{file.settings.favorites.length} favorite stations · {file.settings.trainFavorites.cars.length} cars · {file.settings.trainFavorites.consists.length} consists · {show(file.settings.theme)} · Last station: {stationNames[file.lastStation]||file.lastStation}</p><dl className="settings-diff">{settingsChanges(device.settings,file.settings).map(change=><div key={change.path}><dt>{label(change.path)}</dt><dd><span>Current: {show(change.local)}</span><span>Imported: {show(change.remote)}</span></dd></div>)}</dl><p>{account.account?'This replaces settings on this device and will sync to your account.':'This replaces settings on this device.'}</p><div className="settings-actions"><button className="text-button" onClick={confirmImport}>Replace settings</button><button className="text-button" onClick={()=>setFile(undefined)}>Cancel import</button></div></section>}
 		{(error||device.error)&&<p role="alert" className="notice">{error||device.error}</p>}{notice&&<p role="status">{notice}</p>}
 		<section><h3>Station board</h3>
 			<label className="settings-toggle"><input type="checkbox" checked={device.settings.transfers.separateFilters} onChange={e=>{const separateFilters=e.target.checked;updateSettings(s=>({...s,transfers:{...s.transfers,separateFilters}}));}} />Save transfer filters separately</label>
 			<p className="fine-print">{device.settings.transfers.separateFilters?'Transfer views keep their own direction and line filters for each station. The first visit copies that station’s board filters.':'Transfer views use and change each station’s board direction and line filters.'} Turning this off keeps your separate transfer filters for later.</p>
+		</section>
+		<section><h3>Departure rows</h3>
+			{([
+				['showTrackProvenance', 'Track source (reported/scheduled)'],
+				['combinePosition', 'Position on one line'],
+				['showConsist', 'Car numbers'],
+				['showHeadway', 'Gap after previous train'],
+			] as const).map(([key,label])=><label className="settings-toggle" key={key}><input type="checkbox" checked={device.settings.departureRows[key]} onChange={e=>{const checked=e.target.checked;updateSettings(s=>({...s,departureRows:{...s.departureRows,[key]:checked}}));}} />{label}</label>)}
+			<p className="fine-print">Controls the details shown in departure rows.</p>
 		</section>
 		<UnitSettingsPanel />
 		<FavoriteSettings openFleet={onFleet} />

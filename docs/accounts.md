@@ -5,7 +5,7 @@ are optional. File transfer works offline and before provider configuration.
 
 ## File format and migration
 
-`.nerds` is UTF-8 JSON with `format: "subways-for-nerds"`, `version: 5`, an ISO
+`.nerds` is UTF-8 JSON with `format: "subways-for-nerds"`, `version: 6`, an ISO
 `exportedAt` timestamp, `lastStation`, and `settings`. The latter contains ordered
 favorites, theme ID, station preferences, and widget preferences. Station
 preferences contain direction, route IDs, and board grouping. Widget settings
@@ -53,7 +53,7 @@ The `offline.nerds` fixture in each directory checks version 3 parity.
 
 Version 4 adds `combinedStations` and `hiddenRoutes`. Version 5 adds
 `transfers: { separateFilters: boolean, stations: Record<string, { direction: string, routes: string[] }> }`.
-New exports write version 5. Versions 1–4 import with shared transfer filters and
+New exports write version 6. Versions 1–4 import with shared transfer filters and
 an empty independent station map; those older file versions cannot contain
 `transfers`. Version 5 requires the complete transfer settings object. Legacy
 device and account records without it migrate to the same defaults.
@@ -65,6 +65,15 @@ entry. Turning the option off keeps those entries; turning it back on restores
 them. Global hidden lines apply in both modes. The `transfers.nerds` fixtures
 exercise version 5 parity across TypeScript, Swift, and Kotlin.
 
+Version 6 adds `departureRows`, with exactly four boolean fields:
+`showTrackProvenance: false`, `combinePosition: true`, `showConsist: true`, and
+`showHeadway: true`. The complete object is required in v6 files and forbidden
+in versions 1–5. Older files, device records, and account records without it
+migrate to those defaults. The `departure-rows.nerds` fixtures exercise version 6
+parity across TypeScript, Swift, and Kotlin. Row controls hide or show track-source
+qualifiers, combine location/stops/age, show car numbers, and show headway gaps;
+train-detail track wording and NJ Transit GPS rendering stay the same.
+
 Imports validate the full structure and a 1 MiB limit before showing a replacement
 preview. Unknown station IDs survive offline import and cross-platform round trips.
 Unknown theme IDs remain stored and display the default palette until supported.
@@ -73,7 +82,7 @@ recent-board bookkeeping, cached boards and trips, the active ride, downloaded
 fleet data, and development API addresses. Only offline preferences synchronize.
 Deploy server validation and the old-client downgrade guard before releasing the
 new native syncing client. Older clients that cannot read the new settings need
-an update; the server rejects their attempts to erase non-default offline or transfer preferences.
+an update; the server rejects their attempts to erase non-default offline, transfer, or departure row display preferences.
 
 The native app migrates `preferences.json` and `widgets.json` into an atomic
 `settings.json` record. The website migrates legacy `sfn:` preference keys into

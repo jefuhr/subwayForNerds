@@ -237,7 +237,7 @@ test('v5 settings files preview transfer filters, older files and device records
 	const download = page.waitForEvent('download');
 	await page.getByRole('button', { name: 'Export settings', exact: true }).click();
 	const exported = decodeNerds(readFileSync((await (await download).path())!, 'utf8'));
-	expect(exported.version).toBe(5);
+	expect(exported.version).toBe(6);
 	expect(exported.settings).toEqual(decodeNerds(v5.toString()).settings);
 	const v4 = readFileSync(new URL('../fixtures/combined-stations.nerds', import.meta.url));
 	await page.getByLabel('Import settings file').setInputFiles({ name: 'combined.nerds', mimeType: 'application/json', buffer: v4 });

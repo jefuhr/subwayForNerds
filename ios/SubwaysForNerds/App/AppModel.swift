@@ -36,6 +36,7 @@ final class AppModel {
 	var combinedStations: [String: CombinedStation]
 	var hiddenRoutes: [String]
 	var transferPreferences: TransferPreferences
+	var departureRows = DepartureRowSettings()
 	var combinedBoard: CombinedBoardSnapshot?
 	private var memberBoards: [String: MemberBoardSnapshot] = [:]
 	var settingsError: String?
@@ -183,6 +184,7 @@ final class AppModel {
 		combinedStations = portable?.settings.combinedStations ?? [:]
 		hiddenRoutes = portable?.settings.hiddenRoutes ?? []
 		transferPreferences = portable?.settings.transfers ?? TransferPreferences()
+		departureRows = portable?.settings.departureRows ?? DepartureRowSettings()
 		widgetPreferences = portable?.settings.widgets ?? Self.read(WidgetPreferences.self, at: directory.appendingPathComponent("widgets.json")) ?? WidgetPreferences()
 		offlinePreferences = portable?.settings.offline ?? OfflinePreferences()
 		settingsSync = portable?.sync
@@ -344,6 +346,10 @@ final class AppModel {
 	func clearTransferRoutes(for stationID: String) { updateTransferFilter(for: stationID) { $0.routes = [] } }
 	func resetTransferFilters(for stationID: String) { updateTransferFilter(for: stationID) { $0 = TransferStationPreference() } }
 	func setSeparateTransferFilters(_ value: Bool) { transferPreferences.separateFilters = value; persist() }
+	func setShowTrackProvenance(_ value: Bool) { departureRows.showTrackProvenance = value; persist() }
+	func setCombinePosition(_ value: Bool) { departureRows.combinePosition = value; persist() }
+	func setShowConsist(_ value: Bool) { departureRows.showConsist = value; persist() }
+	func setShowHeadway(_ value: Bool) { departureRows.showHeadway = value; persist() }
 	private var transferSettings: PortableSettings {
 		var value = PortableSettings(); value.stations = stationPreferences; value.transfers = transferPreferences; return value
 	}
@@ -1377,7 +1383,7 @@ final class AppModel {
 		var value = PortableSettings(); value.favorites = favorites; value.theme = themeID
 		value.combinedStations = combinedStations; value.hiddenRoutes = hiddenRoutes
 		value.trainFavorites = trainFavorites; value.stationSelection = stationSelection; value.units = units
-		value.stations = stationPreferences; value.widgets = widgetPreferences; value.offline = offlinePreferences; value.transfers = transferPreferences; return value
+		value.stations = stationPreferences; value.widgets = widgetPreferences; value.offline = offlinePreferences; value.transfers = transferPreferences; value.departureRows = departureRows; return value
 	}
 	private var settingsStore: DeviceSettingsStore { DeviceSettingsStore(fileURL: directory.appendingPathComponent("settings.json")) }
 	private func record(settings: PortableSettings, lastStation: String, sync: SettingsSyncState?) -> DeviceSettings {
@@ -1394,7 +1400,7 @@ final class AppModel {
 				favorites = saved.favorites; themeID = saved.theme
 				trainFavorites = saved.trainFavorites; stationSelection = saved.stationSelection; units = saved.units
 				stationPreferences = saved.stations; widgetPreferences = saved.widgets; offlinePreferences = saved.offline
-				combinedStations = saved.combinedStations; hiddenRoutes = saved.hiddenRoutes; transferPreferences = saved.transfers
+				combinedStations = saved.combinedStations; hiddenRoutes = saved.hiddenRoutes; transferPreferences = saved.transfers; departureRows = saved.departureRows
 			}
 			settingsError = "Settings could not be saved on this device. Your previous preferences are unchanged. " + error.localizedDescription
 		}
@@ -1407,7 +1413,7 @@ final class AppModel {
 		}
 		let definitionChanged = combinedStations[selected] != settings.combinedStations[selected]
 		try settingsStore.save(record(settings: settings, lastStation: selected, sync: sync), replacingUnreadable: replacingUnreadable)
-		combinedStations = settings.combinedStations; hiddenRoutes = settings.hiddenRoutes; transferPreferences = settings.transfers
+		combinedStations = settings.combinedStations; hiddenRoutes = settings.hiddenRoutes; transferPreferences = settings.transfers; departureRows = settings.departureRows
 		favorites = settings.favorites; themeID = settings.theme; stationPreferences = settings.stations; widgetPreferences = settings.widgets; settingsSync = sync; settingsError = nil
 		trainFavorites = settings.trainFavorites; stationSelection = settings.stationSelection; units = settings.units
 		let offlineChanged = offlinePreferences != settings.offline

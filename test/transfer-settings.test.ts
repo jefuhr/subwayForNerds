@@ -18,12 +18,12 @@ test('v5 exports require transfers and v1-v4 files import in shared mode', () =>
 	const settings = defaults();
 	settings.transfers = { separateFilters: true, stations: { '602': { direction: 'SOUTH', routes: ['6', '4'] } } };
 	const exported = JSON.parse(encodeNerds(settings, '602'));
-	assert.equal(exported.version, 5);
+	assert.equal(exported.version, 6);
 	assert.deepEqual(decodeNerds(JSON.stringify(exported)).settings.transfers, { separateFilters: true, stations: { '602': { direction: 'SOUTH', routes: ['4', '6'] } } });
 	const missing = structuredClone(exported); delete missing.settings.transfers;
 	assert.throws(() => decodeNerds(JSON.stringify(missing)));
 	for (const version of [1, 2, 3, 4]) {
-		const older = structuredClone(missing); older.version = version;
+		const older = structuredClone(missing); older.version = version; delete older.settings.departureRows;
 		if (version < 4) { delete older.settings.combinedStations; delete older.settings.hiddenRoutes; }
 		if (version < 3) delete older.settings.offline;
 		assert.deepEqual(decodeNerds(JSON.stringify(older)).settings.transfers, defaultTransfers(), 'v' + version);
@@ -31,7 +31,7 @@ test('v5 exports require transfers and v1-v4 files import in shared mode', () =>
 		older.settings.transfers = defaultTransfers();
 		assert.throws(() => decodeNerds(JSON.stringify(older)), Error, 'v' + version + ' with transfers');
 	}
-	assert.throws(() => decodeNerds(encodeNerds(defaults(), '602').replace('"version": 5', '"version": 6')), /not supported/);
+	assert.throws(() => decodeNerds(encodeNerds(defaults(), '602').replace('"version": 6', '"version": 7')), /not supported/);
 });
 
 test('transfer entries follow station filter limits and never carry a board view', () => {

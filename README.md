@@ -57,6 +57,9 @@ the app beyond localhost so geolocation and service workers work.
   A complex includes its constituent stations. Direction, constituent station and
   reported/scheduled track define the default groups. A group is a feed-based boarding
   area, not a guarantee of shared platform access. Unknown tracks stay unknown.
+- Settings → Departure rows controls track-source qualifiers, position layout,
+  car numbers, and gaps after the previous train. By default, positions combine
+  location, stops away, and age on one line, and track-source qualifiers are hidden.
 - Trains from different routes are interleaved by predicted time. Five rows per
   group are shown initially; each group can expand. Route and direction filters
   persist across visits. Tap a train for its full remaining stop sequence and raw

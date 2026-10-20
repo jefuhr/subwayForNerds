@@ -1,0 +1,112 @@
+{
+  "format": "subways-for-nerds",
+  "version": 6,
+  "exportedAt": "2026-10-19T12:00:00Z",
+  "lastStation": "602",
+  "settings": {
+    "favorites": [
+      "602",
+      "path-wtc"
+    ],
+    "theme": "subway",
+    "stations": {
+      "602": {
+        "direction": "NORTH",
+        "routes": [
+          "4"
+        ],
+        "view": "family"
+      }
+    },
+    "trainFavorites": {
+      "cars": [],
+      "consists": [],
+      "match": "exact"
+    },
+    "stationSelection": {
+      "mode": "favorite",
+      "radiusFeet": 5280
+    },
+    "units": {
+      "distance": "auto",
+      "time": "24h"
+    },
+    "offline": {
+      "departuresPerLineDirection": 20,
+      "tripDetailsPerLineDirection": 0,
+      "saveOpenedTrips": false,
+      "nearbyRadiusFeet": 0,
+      "preloadOtherStationTrips": true,
+      "estimateLimitMinutes": 120,
+      "retentionHours": 24,
+      "storageLimitMiB": 250,
+      "widgetsFollowActiveRide": true
+    },
+    "widgets": {
+      "stationSelection": {
+        "followApp": true,
+        "selection": {
+          "mode": "favorite",
+          "radiusFeet": 5280
+        }
+      },
+      "matchAppFilters": false,
+      "stations": {},
+      "display": {
+        "fields": [
+          "destination",
+          "stationName"
+        ],
+        "compact": true,
+        "trainsPerDirection": 0,
+        "timeStyle": "countdown"
+      },
+      "lockScreen": {
+        "display": {
+          "fields": [
+            "stationName"
+          ],
+          "compact": true,
+          "trainsPerDirection": 2,
+          "timeStyle": "minutes"
+        },
+        "directionOrder": "downtownLeft",
+        "showService": true
+      }
+    },
+    "combinedStations": {},
+    "hiddenRoutes": [
+      "6X",
+      "SIR"
+    ],
+    "transfers": {
+      "separateFilters": true,
+      "stations": {
+        "602": {
+          "direction": "SOUTH",
+          "routes": [
+            "5",
+            "6"
+          ]
+        },
+        "future:station": {
+          "direction": "ALL",
+          "routes": [
+            "S",
+            "SIR"
+          ]
+        },
+        "path-wtc": {
+          "direction": "TO_NJ",
+          "routes": []
+        }
+      }
+    },
+    "departureRows": {
+      "showTrackProvenance": true,
+      "combinePosition": false,
+      "showConsist": false,
+      "showHeadway": true
+    }
+  }
+}

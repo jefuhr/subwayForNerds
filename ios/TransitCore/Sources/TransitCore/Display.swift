@@ -21,6 +21,14 @@ public enum TransitLinks {
 	public static let njtAccessibility = URL(string: "https://www.njtransit.com/ride-lightrail")!
 }
 
+/// A row's position text, split so the location can read stronger than its details.
+public struct PositionLine: Sendable, Equatable {
+	public let location: String
+	public let detail: String
+	public init(location: String, detail: String) { self.location = location; self.detail = detail }
+	public var text: String { [location, detail].filter { !$0.isEmpty }.joined(separator: " · ") }
+}
+
 public enum Display {
 	public static func freshness(_ timestamp: TimeInterval?, now: TimeInterval, staleAfter: TimeInterval? = nil) -> Freshness {
 		guard let timestamp, timestamp.isFinite, timestamp > 0, timestamp <= now else { return .unavailable }
@@ -123,7 +131,8 @@ public enum Display {
 
 	/// The API's area usually already ends in its track; preserve that boarding
 	/// context and add provenance without repeating the same track number.
-	public static func boardingLabel(_ departure: Departure) -> String {
+	/// `showProvenance` adds the trailing "reported" or "scheduled" qualifier.
+	public static func boardingLabel(_ departure: Departure, showProvenance: Bool = true) -> String {
 		func nonempty(_ value: String?) -> String? {
 			guard let text = value?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
 			return text
@@ -134,8 +143,37 @@ public enum Display {
 		let trackLabel = "Track \(track)"
 		let provenance = actualTrack == nil ? "scheduled" : "reported"
 		let includesTrack = area == trackLabel || area.hasSuffix(" · " + trackLabel)
+		if !showProvenance { return includesTrack ? area : "\(area) · \(trackLabel)" }
 		return includesTrack ? "\(area) · \(provenance)" : "\(area) · \(trackLabel) · \(provenance)"
 	}
+
+	/// The track half of a track-view group header.
+	public static func trackGroupLabel(track: String?, reported: Bool, showProvenance: Bool) -> String {
+		guard let track else { return "Track unknown" }
+		return showProvenance ? "Track \(track) · \(reported ? "reported" : "scheduled")" : "Track \(track)"
+	}
+
+	/// The stops-away and report-age text of a row's second line.
+	public static func stopDetail(stopsAway: Int?, reportedAt: TimeInterval?, now: TimeInterval) -> String {
+		var detail = "Stop-relative position"
+		if let stopsAway, stopsAway >= 0 { detail = "\(stopsAway) \(stopsAway == 1 ? "stop" : "stops") away" }
+		if let reportedAt { detail += " · \(ageLabel(reportedAt, now: now))" }
+		return detail
+	}
+
+	/// Location, stops away, and report age for the single-line row layout. Missing
+	/// parts are dropped, and the fallback text only appears when nothing else is known.
+	public static func positionLine(location: String, historical: Bool, stopsAway: Int?, reportedAt: TimeInterval?, now: TimeInterval) -> PositionLine {
+		guard !location.isEmpty else { return PositionLine(location: "", detail: stopDetail(stopsAway: stopsAway, reportedAt: reportedAt, now: now)) }
+		var parts: [String] = []
+		if let stopsAway, stopsAway >= 0 { parts.append("\(stopsAway) \(stopsAway == 1 ? "stop" : "stops") away") }
+		if let reportedAt { parts.append(ageLabel(reportedAt, now: now)) }
+		return PositionLine(location: (historical ? "Last report: " : "") + location, detail: parts.joined(separator: " · "))
+	}
+
+	public static func headwayLabel(_ minutes: Int) -> String { "+\(minutes)m gap" }
+	public static func splitHeadwayLabel(_ minutes: Int) -> String { "+\(minutes)m after previous" }
+	public static func headwayAccessibilityLabel(_ minutes: Int) -> String { "\(minutes) \(minutes == 1 ? "minute" : "minutes") after previous train" }
 
 	public static func currentConsist(_ consist: Consist?, now: TimeInterval) -> Bool {
 		guard let consist else { return false }

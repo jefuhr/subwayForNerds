@@ -1,4 +1,4 @@
-FROM node:24-bookworm-slim AS build
+FROM node:24.22.1-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -7,7 +7,7 @@ ARG APP_BASE=/subwaysForNerds/
 ENV APP_BASE=$APP_BASE
 RUN npm run build && npm prune --omit=dev
 
-FROM node:24-bookworm-slim
+FROM node:24.22.1-bookworm-slim
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=8091 APP_BASE=/subwaysForNerds/ STATE_DIR=/app/state
 WORKDIR /app
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
